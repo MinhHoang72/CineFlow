@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project-private xmlns="http://www.netbeans.org/ns/project-private/1">
+    <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
+    <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
+        <group>
+            <file>file:/D:/Project%20SWP/Cine_Flow/src/java/utils/PasswordUtils.java</file>
+            <file>file:/D:/Project%20SWP/Cine_Flow/src/java/controller/RegisterServlet.java</file>
+            <file>file:/D:/Project%20SWP/Cine_Flow/src/java/controller/ResetPasswordServlet.java</file>
+            <file>file:/D:/Project%20SWP/Cine_Flow/src/java/dao/UserDAO.java</file>
+            <file>file:/D:/Project%20SWP/Cine_Flow/src/java/utils/EmailUtils.java</file>
+            <file>file:/D:/Project%20SWP/Cine_Flow/src/java/controller/ChangePasswordServlet.java</file>
+            <file>file:/D:/Project%20SWP/Cine_Flow/src/java/filter/AuthenticationFilter.java</file>
+            <file>file:/D:/Project%20SWP/Cine_Flow/web/reset-password.jsp</file>
+            <file>file:/D:/Project%20SWP/Cine_Flow/src/java/model/User.java</file>
+            <file>file:/D:/Project%20SWP/Cine_Flow/src/java/test/TestRegister.java</file>
+            <file>file:/D:/Project%20SWP/Cine_Flow/web/WEB-INF/web.xml</file>
+            <file>file:/D:/Project%20SWP/Cine_Flow/src/java/controller/ForgotPasswordServlet.java</file>
+            <file>file:/D:/Project%20SWP/Cine_Flow/web/register.jsp</file>
+            <file>file:/D:/Project%20SWP/Cine_Flow/web/forgot-password.jsp</file>
+            <file>file:/D:/Project%20SWP/Cine_Flow/src/java/utils/DBContext.java</file>
+            <file>file:/D:/Project%20SWP/Cine_Flow/src/java/controller/LoginServlet.java</file>
+            <file>file:/D:/Project%20SWP/Cine_Flow/web/index.jsp</file>
+            <file>file:/D:/Project%20SWP/Cine_Flow/src/java/controller/LogoutServlet.java</file>
+            <file>file:/D:/Project%20SWP/Cine_Flow/web/change-password.jsp</file>
+            <file>file:/D:/Project%20SWP/Cine_Flow/web/login.jsp</file>
+        </group>
+    </open-files>
+</project-private>
