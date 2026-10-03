@@ -1,0 +1,23 @@
+:root {
+    --cf-primary: #d71920;
+    --cf-primary-hover: #b91218;
+    --cf-text: #1e2933;
+    --cf-muted: #697782;
+    --cf-background: #f4f6f8;
+    --cf-surface: #ffffff;
+    --cf-border: #dfe5e9;
+    --cf-success: #21844b;
+    --cf-warning: #a86c12;
+    --cf-danger: #b42318;
+    --cf-info: #1769aa;
+    --cf-radius-sm: 4px;
+    --cf-radius-md: 8px;
+    --cf-radius-lg: 12px;
+    --cf-shadow-sm: 0 2px 8px rgba(20, 39, 52, .06);
+    --cf-shadow-md: 0 10px 28px rgba(20, 39, 52, .09);
+    --cf-container: 1200px;
+    --cf-sidebar: 248px;
+    --cf-topbar: 68px;
+    /* Dùng font hệ thống để giao diện không phụ thuộc Internet/Google Fonts. */
+    --cf-font: "Segoe UI", "Tahoma", "Arial", sans-serif;
+}
