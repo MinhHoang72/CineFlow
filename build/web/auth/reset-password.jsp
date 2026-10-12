@@ -1,7 +1,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,6 +10,7 @@
 
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/auth/reset-password.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/auth/base.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/auth/cineflow-auth.css">
 </head>
 
 <body>
@@ -26,13 +27,13 @@
 
     <div class="hero">
 
-        <div class="logo">
+        <a class="logo" href="${pageContext.request.contextPath}/home/index.jsp">
             Cine<span>Flow</span>
-        </div>
+        </a>
 
         <h1>
             Tạo mật khẩu<br>
-            <span>password.</span>
+            <span>mới.</span>
         </h1>
 
         <p>
@@ -43,12 +44,12 @@
 
             <div class="security-item">
                 <div class="check">✓</div>
-                <span>Secure password recovery</span>
+                <span>Khôi phục mật khẩu an toàn</span>
             </div>
 
             <div class="security-item">
                 <div class="check">✓</div>
-                <span>OTP verification is required</span>
+                <span>Yêu cầu xác minh OTP</span>
             </div>
 
             <div class="security-item">
@@ -65,14 +66,10 @@
 
     <div class="card">
 
-        <div class="icon-circle">
-            🔒
-        </div>
-
         <h2>Đặt lại mật khẩu</h2>
 
         <div class="subtitle">
-            Nhập mật khẩu mới below.
+            Nhập mật khẩu mới cho tài khoản của bạn.
         </div>
 
 
@@ -149,8 +146,7 @@
 
             <div class="password-rule">
                 Mã đặt lại mật khẩu có hiệu lực trong 15 phút.
-                After successfully changing your password,
-                the reset link can no longer be used.
+                Sau khi đổi mật khẩu thành công, mã đặt lại sẽ không thể sử dụng lại.
             </div>
 
         </form>

@@ -6,6 +6,27 @@
 <%@ page import="java.text.SimpleDateFormat" %>
 <%@ page import="java.util.List" %>
 <%!
+    private User sessionUser(Object value) {
+        if (value instanceof User) {
+            return (User) value;
+        }
+        // Compatibility with sessions created by an older deployment that used
+        // model.user.User. Do not let a stale session cause a ClassCastException.
+        if (value == null) {
+            return null;
+        }
+        try {
+            User compatible = new User();
+            Class<?> type = value.getClass();
+            compatible.setFullName((String) type.getMethod("getFullName").invoke(value));
+            compatible.setAccount((String) type.getMethod("getAccount").invoke(value));
+            compatible.setRole((String) type.getMethod("getRole").invoke(value));
+            return compatible;
+        } catch (ReflectiveOperationException | ClassCastException ignored) {
+            return null;
+        }
+    }
+
     private String escapeHtml(String value) {
         if (value == null) {
             return "";
@@ -35,7 +56,7 @@
 
 %>
 <%
-    User signedInUser = (User) session.getAttribute("user");
+    User signedInUser = sessionUser(session.getAttribute("user"));
     String memberName = signedInUser == null ? "" : signedInUser.getFullName();
     if (memberName == null || memberName.trim().isEmpty()) {
         memberName = signedInUser == null ? "" : signedInUser.getAccount();
@@ -70,9 +91,10 @@
             <% } else { %>
                 <span>Xin chào, <%= escapeHtml(memberName) %></span>
                 <a href="<%= contextPath %>/account">Tài khoản của tôi</a>
-                <% if ("MANAGER".equals(signedInUser.getRole())) { %>
+                <% if ("ADMIN".equals(signedInUser.getRole())) { %>
+                    <a href="<%= contextPath %>/admin/movies">Quản lý phim</a>
+                <% } else if ("MANAGER".equals(signedInUser.getRole())) { %>
                     <a href="<%= contextPath %>/staff">Trung tâm của tôi</a>
-                    <a href="<%= contextPath %>/manager/movies">Quản lý phim</a>
                 <% } %>
                 <form class="account-form" action="<%= contextPath %>/logout" method="post"><button type="submit">Đăng xuất</button></form>
             <% } %>
@@ -81,15 +103,14 @@
         </div>
     </div>
     <header class="brand-header">
-        <a class="logo" href="<%= contextPath %>/index.jsp"><span class="logo-mark">C</span><span class="logo-word">Cine<span>Flow</span></span></a>
+<a class="logo" href="<%= contextPath %>/home/index.jsp"><span class="logo-mark">C</span><span class="logo-word">Cine<span>Flow</span></span></a>
     </header>
     <nav class="main-nav" aria-label="Điều hướng chính">
         <div class="nav-inner">
-            <a class="active" href="<%= contextPath %>/index.jsp">TRANG CHỦ</a>
+            <a class="active" href="<%= contextPath %>/home/index.jsp">TRANG CHỦ</a>
             <a href="<%= contextPath %>/booking/booking.jsp">MUA VÉ</a>
-            <a href="#movies">PHIM</a>
-            <a href="#movies">TIN MỚI &amp; ƯU ĐÃI</a>
-            <a href="#cinemas">RẠP CHIẾU PHIM</a>
+            <a href="#promotions">TIN MỚI &amp; ƯU ĐÃI</a>
+            <a href="<%= contextPath %>/cinema/index.jsp">RẠP CHIẾU PHIM</a>
             <a href="#support">HỖ TRỢ KHÁCH HÀNG</a>
         </div>
     </nav>
@@ -102,7 +123,7 @@
             <article class="hero-slide active">
                 <div class="hero-fallback">CF</div>
                 <div class="hero-overlay"></div>
-                <div class="hero-content"><p class="hero-label">CINEFLOW FEATURE</p><h1>TRẢI NGHIỆM<br>ĐIỆN ẢNH ĐỈNH CAO</h1><p>Khám phá những bộ phim nổi bật đang được trình chiếu tại CineFlow.</p><div class="hero-buttons"><a href="#movies">Xem phim</a><a class="outline" href="#cinemas">Hệ thống rạp</a></div></div>
+                <div class="hero-content"><p class="hero-label">CINEFLOW FEATURE</p><h1>TRẢI NGHIỆM<br>ĐIỆN ẢNH ĐỈNH CAO</h1><p>Khám phá những bộ phim nổi bật đang được trình chiếu tại CineFlow.</p><div class="hero-buttons"><a href="#movies">Xem phim</a><a class="outline" href="#promotions">Tin mới &amp; ưu đãi</a></div></div>
             </article>
         <% } else { %>
             <% String[] heroImages = {"https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=1800&q=85", "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&w=1800&q=85", "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=1800&q=85"}; %>
@@ -200,37 +221,21 @@
                     </div>
         </section>
 
-        <section class="search-section" aria-label="Tìm phim và rạp">
-            <div><h2>TÌM PHIM &amp; SUẤT CHIẾU</h2><p>Khám phá bộ phim và rạp chiếu phù hợp với bạn.</p></div>
-            <form class="search-box" id="homepageSearch">
-                <input id="movieSearch" type="search" placeholder="Nhập tên phim..." aria-label="Tên phim">
-                <select id="genreFilter" aria-label="Thể loại"><option value="">Tất cả thể loại</option></select>
-                <select id="branchFilter" aria-label="Rạp chiếu"><option value="">Tất cả rạp</option>
-                    <% for (Branch branch : branches) { %><option value="<%= branch.getBranchId() %>"><%= escapeHtml(branch.getBranchName()) %></option><% } %>
-                </select>
-                <button type="submit">Tìm kiếm</button>
-            </form>
+        <section class="promotion-section" id="promotions" aria-labelledby="promotions-title">
+            <div class="section-title"><span></span><h2 id="promotions-title">TIN MỚI &amp; ƯU ĐÃI</h2><span></span></div>
+            <div class="promotion-grid">
+                <article class="promotion-card"><img src="https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&amp;fit=crop&amp;w=900&amp;q=85" alt="Không gian phòng chiếu CineFlow"><div class="promotion-content"><span class="promotion-tag">ƯU ĐÃI ĐẶC BIỆT</span><h3>Thứ Ba thành viên</h3><p>Giảm đến 30% giá vé cho thành viên CineFlow mỗi thứ Ba.</p><a href="<%= contextPath %>/booking/booking.jsp">Đặt vé ngay →</a></div></article>
+                <article class="promotion-card"><img src="https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&amp;fit=crop&amp;w=900&amp;q=85" alt="Trải nghiệm điện ảnh CineFlow"><div class="promotion-content"><span class="promotion-tag">TIN MỚI</span><h3>Đêm phim cuối tuần</h3><p>Cùng bạn bè tận hưởng những suất chiếu đặc biệt cuối tuần.</p><a href="<%= contextPath %>/booking/booking.jsp">Xem lịch chiếu →</a></div></article>
+                <article class="promotion-card"><img src="https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&amp;fit=crop&amp;w=900&amp;q=85" alt="Bắp nước tại CineFlow"><div class="promotion-content"><span class="promotion-tag">COMBO MỚI</span><h3>Combo đi cùng bạn</h3><p>Thưởng thức phim trọn vẹn với combo bắp nước dành cho hai người.</p><a href="<%= contextPath %>/booking/booking.jsp">Khám phá ngay →</a></div></article>
+            </div>
         </section>
 
-        <section class="cinema-section" id="cinemas" aria-labelledby="cinemas-title">
-            <div class="section-title"><span></span><h2 id="cinemas-title">HỆ THỐNG RẠP CINEFLOW</h2><span></span></div>
-            <div class="branch-grid">
-                <% if (branches.isEmpty()) { %>
-                    <p class="empty-state">Chưa có rạp đang hoạt động.</p>
-                <% } else { %>
-                    <% for (Branch branch : branches) { %>
-                        <article class="branch-card" data-branch-id="<%= branch.getBranchId() %>"><div class="cinema-icon">CF</div><div><h3><%= escapeHtml(branch.getBranchName()) %></h3><p><%= escapeHtml(branch.getCity()) %><% if (branch.getAddress() != null) { %> · <%= escapeHtml(branch.getAddress()) %><% } %></p><a href="<%= contextPath %>/booking/booking.jsp?branchId=<%= branch.getBranchId() %>">Xem suất chiếu →</a></div></article>
-                    <% } %>
-                <% } %>
-            </div>
-            <p class="empty-state" id="branchFilterEmpty" hidden>Không tìm thấy rạp phù hợp.</p>
-        </section>
     </main>
 
     <footer class="footer">
         <div class="footer-inner">
-            <div class="footer-brand"><a class="logo" href="<%= contextPath %>/index.jsp"><span class="logo-mark">C</span><span class="logo-word">Cine<span>Flow</span></span></a><p>Hệ thống rạp chiếu phim CineFlow.</p></div>
-            <div><h4>CINEFLOW</h4><a href="#cinemas">Rạp chiếu phim</a><a href="#movies">Phim đang chiếu</a><a href="<%= contextPath %>/booking/booking.jsp?view=schedule">Lịch chiếu</a></div>
+<div class="footer-brand"><a class="logo" href="<%= contextPath %>/home/index.jsp"><span class="logo-mark">C</span><span class="logo-word">Cine<span>Flow</span></span></a><p>Hệ thống rạp chiếu phim CineFlow.</p></div>
+            <div><h4>CINEFLOW</h4><a href="#promotions">Tin mới &amp; ưu đãi</a><a href="<%= contextPath %>/cinema/index.jsp">Rạp chiếu phim</a><a href="#movies">Phim đang chiếu</a><a href="<%= contextPath %>/booking/booking.jsp?view=schedule">Lịch chiếu</a></div>
             <div id="support"><h4>HỖ TRỢ</h4><a href="#top">Hỗ trợ khách hàng</a><a href="#top">Câu hỏi thường gặp</a><a href="#top">Liên hệ</a></div>
             <div><h4>TÀI KHOẢN</h4><a href="<%= contextPath %>/auth/login.jsp">Đăng nhập</a><a href="<%= contextPath %>/auth/register.jsp">Tạo tài khoản</a></div>
         </div>
@@ -273,12 +278,6 @@
         const moviePagination = document.querySelector(".movie-pagination");
         const pageDots = document.querySelector(".movie-page-dots");
         const pageButtons = Array.from(document.querySelectorAll("[data-page]"));
-        const searchForm = document.getElementById("homepageSearch");
-        const movieSearch = document.getElementById("movieSearch");
-        const genreFilter = document.getElementById("genreFilter");
-        const branchFilter = document.getElementById("branchFilter");
-        const branchCards = Array.from(document.querySelectorAll(".branch-card"));
-        const branchFilterEmpty = document.getElementById("branchFilterEmpty");
         let activeGrid = document.getElementById("nowShowingGrid");
         let currentPage = 0;
         const pageSize = 4;
@@ -345,29 +344,6 @@
             });
         });
 
-        const genres = new Set();
-        document.querySelectorAll(".movie-card[data-genre]").forEach((card) => {
-            const genre = card.dataset.genre.trim();
-            if (genre) genres.add(genre);
-        });
-        Array.from(genres).sort().forEach((genre) => {
-            const option = document.createElement("option");
-            option.value = normalize(genre);
-            option.textContent = genre;
-            genreFilter.appendChild(option);
-        });
-
-        searchForm.addEventListener("submit", (event) => {
-            event.preventDefault();
-            searchTerm = normalize(movieSearch.value.trim());
-            selectedGenre = genreFilter.value;
-            selectedBranchId = branchFilter.value;
-            branchCards.forEach((card) => { card.hidden = Boolean(selectedBranchId) && card.dataset.branchId !== selectedBranchId; });
-            branchFilterEmpty.hidden = !selectedBranchId || branchCards.some((card) => !card.hidden);
-            currentPage = 0;
-            renderMovies();
-            document.getElementById(selectedBranchId ? "cinemas" : "movies").scrollIntoView({ behavior: "smooth" });
-        });
         renderMovies();
     }());
 </script>

@@ -55,12 +55,15 @@ public class ForgotPasswordServlet extends HttpServlet {
         User user = userDAO.getUserByEmail(email);
 
         if (user == null) {
-
-            response.sendError(
-                    HttpServletResponse.SC_NOT_FOUND,
-                    "Email does not exist."
+            String encodedEmail = java.net.URLEncoder.encode(
+                    email,
+                    java.nio.charset.StandardCharsets.UTF_8
             );
-
+            response.sendRedirect(
+                    request.getContextPath()
+                    + "/auth/forgot-password.jsp?error=email&email="
+                    + encodedEmail
+            );
             return;
         }
 

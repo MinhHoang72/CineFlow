@@ -40,12 +40,9 @@ public class AuthenticationFilter implements Filter {
             chain.doFilter(request, response);
 
         } else {
-
-            // Chưa đăng nhập → từ chối truy cập
-            httpResponse.sendError(
-                    HttpServletResponse.SC_UNAUTHORIZED,
-                    "You must login first."
-            );
+            // Session không còn hợp lệ: đưa người dùng về màn đăng nhập.
+            String loginUrl = httpRequest.getContextPath() + "/auth/login.jsp?error=session";
+            httpResponse.sendRedirect(httpResponse.encodeRedirectURL(loginUrl));
         }
     }
 }

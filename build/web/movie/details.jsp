@@ -18,7 +18,7 @@
 </head>
 <body>
     <main class="movie-detail-page">
-        <a class="back-link" href="${pageContext.request.contextPath}/index.jsp">← Quay lại danh mục phim</a>
+<a class="back-link" href="${pageContext.request.contextPath}/home/index.jsp">← Quay lại danh mục phim</a>
         <article class="movie-detail-card">
             <div class="movie-detail-poster">
                 <% if (movie.getPosterUrl() != null && !movie.getPosterUrl().trim().isEmpty()) { %>

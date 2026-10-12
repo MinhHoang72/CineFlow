@@ -7,10 +7,11 @@
         <title>CineFlow - Xác minh OTP</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/auth/verify-otp.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/auth/base.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/auth/cineflow-auth.css">
 </head>
 <body>
     <main class="card">
-        <div class="logo">Cine<span>Flow</span></div>
+        <a class="logo" href="${pageContext.request.contextPath}/home/index.jsp">Cine<span>Flow</span></a>
         <h1>Xác minh email</h1>
         <p>Nhập mã OTP gồm 6 chữ số được gửi đến email của bạn. Mã có hiệu lực trong 15 phút.</p>
         <form action="${pageContext.request.contextPath}/verify-otp" method="post">

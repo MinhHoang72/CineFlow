@@ -78,6 +78,9 @@ public class RegisterServlet extends HttpServlet {
             // =========================================
             // 3. CONFIRM PASSWORD
             // =========================================
+            password = password.trim();
+            confirmPassword = confirmPassword.trim();
+
             if (!password.equals(confirmPassword)) {
 
                 response.sendError(
@@ -123,11 +126,11 @@ public class RegisterServlet extends HttpServlet {
             );
 
             if (accountExists) {
-
-                response.sendError(
-                        HttpServletResponse.SC_CONFLICT,
-                        "Account already exists."
-                );
+                String encodedAccount = java.net.URLEncoder.encode(account, java.nio.charset.StandardCharsets.UTF_8);
+                String encodedEmail = java.net.URLEncoder.encode(email, java.nio.charset.StandardCharsets.UTF_8);
+                response.sendRedirect(request.getContextPath()
+                        + "/auth/register.jsp?error=account&account=" + encodedAccount
+                        + "&email=" + encodedEmail);
                 return;
             }
 
@@ -144,11 +147,11 @@ public class RegisterServlet extends HttpServlet {
             );
 
             if (emailExists) {
-
-                response.sendError(
-                        HttpServletResponse.SC_CONFLICT,
-                        "Email already exists."
-                );
+                String encodedAccount = java.net.URLEncoder.encode(account, java.nio.charset.StandardCharsets.UTF_8);
+                String encodedEmail = java.net.URLEncoder.encode(email, java.nio.charset.StandardCharsets.UTF_8);
+                response.sendRedirect(request.getContextPath()
+                        + "/auth/register.jsp?error=email&account=" + encodedAccount
+                        + "&email=" + encodedEmail);
                 return;
             }
 

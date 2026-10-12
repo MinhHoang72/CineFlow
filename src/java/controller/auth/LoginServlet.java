@@ -100,7 +100,8 @@ public class LoginServlet extends HttpServlet {
         // Cập nhật thời gian đăng nhập
         userDAO.updateLastLogin(user.getUserId());
 
-        String dashboard = "CUSTOMER".equalsIgnoreCase(user.getRole()) ? "/index.jsp" : "/dashboard";
+        // The home page was moved to /home/index.jsp; keep the post-login
+        String dashboard = "CUSTOMER".equalsIgnoreCase(user.getRole()) ? "/home/index.jsp" : "/dashboard";
         response.sendRedirect(request.getContextPath() + dashboard);
     }
 

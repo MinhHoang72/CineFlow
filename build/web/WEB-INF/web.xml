@@ -43,6 +43,15 @@
     </servlet-mapping>
 
     <servlet>
+        <servlet-name>MediaResourceServlet</servlet-name>
+        <servlet-class>controller.media.MediaResourceServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>MediaResourceServlet</servlet-name>
+        <url-pattern>/uploads/*</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
         <servlet-name>StaffServlet</servlet-name>
         <servlet-class>controller.staff.StaffServlet</servlet-class>
     </servlet>
@@ -54,27 +63,27 @@
 
     <servlet>
         <servlet-name>MovieManagementServlet</servlet-name>
-        <servlet-class>controller.manager.MovieManagementServlet</servlet-class>
+        <servlet-class>controller.admin.MovieManagementServlet</servlet-class>
     </servlet>
 
     <servlet-mapping>
         <servlet-name>MovieManagementServlet</servlet-name>
-        <url-pattern>/manager/movies</url-pattern>
+        <url-pattern>/admin/movies</url-pattern>
     </servlet-mapping>
 
     <servlet-mapping>
         <servlet-name>MovieManagementServlet</servlet-name>
-        <url-pattern>/manager/movie</url-pattern>
+        <url-pattern>/admin/movie</url-pattern>
     </servlet-mapping>
 
     <servlet>
         <servlet-name>DistributionServlet</servlet-name>
-        <servlet-class>controller.manager.DistributionServlet</servlet-class>
+        <servlet-class>controller.admin.DistributionServlet</servlet-class>
     </servlet>
 
     <servlet-mapping>
         <servlet-name>DistributionServlet</servlet-name>
-        <url-pattern>/manager/distribution</url-pattern>
+        <url-pattern>/admin/distribution</url-pattern>
     </servlet-mapping>
 
     <servlet>

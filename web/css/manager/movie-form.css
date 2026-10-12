@@ -7,4 +7,7 @@
 .cf-danger-card h2 { margin: 0 0 6px; font-size: 16px; }
 .cf-danger-card p { margin: 0 0 16px; color: var(--cf-muted); font-size: 12px; }
 .cf-danger-actions { display: flex; gap: 8px; }
+.movie-form-card { border: 1px solid var(--cf-border); border-radius: var(--cf-radius-lg); background: var(--cf-surface); box-shadow: var(--cf-shadow-sm); }
+.movie-form-card .cf-card-header { padding: 21px 23px; border-bottom: 1px solid var(--cf-border); }
+.movie-form-card .cf-card-body { padding: 23px; }
 @media (max-width: 650px) { .media-fields { grid-template-columns: 1fr; } .cf-form-actions { flex-direction: column-reverse; } .cf-form-actions .cf-btn { width: 100%; } }

@@ -1,7 +1,17 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%!
+    private String escRegister(String value) {
+        return value == null ? "" : value.replace("&", "&amp;").replace("\"", "&quot;").replace("<", "&lt;").replace(">", "&gt;");
+    }
+%>
+<%
+    String registerError = request.getParameter("error");
+    String submittedAccount = request.getParameter("account");
+    String submittedEmail = request.getParameter("email");
+%>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 
 <head>
 
@@ -15,6 +25,7 @@
 
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/auth/register.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/auth/base.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/auth/cineflow-auth.css">
 
 </head>
 
@@ -49,27 +60,26 @@
 
         <div class="hero">
 
-            <div class="logo">
+            <a class="logo" href="${pageContext.request.contextPath}/home/index.jsp">
 
                 Cine<span>Flow</span>
 
-            </div>
+            </a>
 
 
             <h1>
 
                 Tạo<br>
 
-                <span>cinema</span> account.
+                <span>tài khoản</span> CineFlow.
 
             </h1>
 
 
             <p>
 
-                Join CineFlow and make your movie experience
-                simpler. Discover films, find showtimes and
-                manage your cinema journey in one place.
+                Tham gia CineFlow để khám phá phim, xem lịch chiếu
+                và quản lý hành trình điện ảnh trong một nơi.
 
             </p>
 
@@ -119,7 +129,7 @@
 
                     <label>
 
-                        Full Name
+                        Họ và tên
 
                     </label>
 
@@ -171,6 +181,7 @@
                         <input
                             type="text"
                             name="account"
+                            value="<%= escRegister(submittedAccount) %>"
                             placeholder="Chọn tên tài khoản"
                             autocomplete="username"
                             required>
@@ -206,6 +217,7 @@
                         <input
                             type="email"
                             name="email"
+                            value="<%= escRegister(submittedEmail) %>"
                             placeholder="Nhập email của bạn"
                             autocomplete="email"
                             required>
@@ -275,7 +287,7 @@
 
                             <span>
 
-                                At least 9 characters
+                                Ít nhất 9 ký tự
 
                             </span>
 
@@ -295,7 +307,7 @@
 
                             <span>
 
-                                Contains an uppercase letter
+                                Có chữ cái viết hoa
 
                             </span>
 
@@ -315,7 +327,7 @@
 
                             <span>
 
-                                Contains a lowercase letter
+                                Có chữ cái viết thường
 
                             </span>
 
@@ -335,13 +347,11 @@
 
                             <span>
 
-                                Contains a number
+                                Có chữ số
 
                             </span>
 
                         </div>
-
-
 
                         <div
                             id="specialRequirement"
@@ -355,7 +365,7 @@
 
                             <span>
 
-                                Contains a special character
+                                Có ký tự đặc biệt
 
                             </span>
 
@@ -364,30 +374,19 @@
                     </div>
 
                 </div>
-
-
-
                 <!-- ================================
                      confirmPasswordPASSWORD
                      ================================ -->
-
                 <div class="form-group">
-
                     <label>
-
                         Xác nhận mật khẩu
 
                     </label>
-
-
                     <div class="input-wrapper">
 
                         <span class="input-icon">
-
                             ●
-
                         </span>
-
 
                         <input
                             id="confirmPassword"
@@ -396,65 +395,41 @@
                             placeholder="Xác nhận mật khẩu"
                             autocomplete="new-password"
                             required>
-
-
                         <span
                             class="password-toggle"
                             onclick="togglePassword('confirmPassword', this)">
-
                             Hiện
-
                         </span>
-
                     </div>
-
-
                     <!-- confirmPasswordPASSWORD MESSAGE -->
-
                     <div
-                        id="confirmPassword"
+                        id="confirmPasswordMessage"
                         class="confirmPasswordMessage">
-
                     </div>
-
                 </div>
-
-
-
                 <!-- ================================
                      SUBMIT
                      ================================ -->
-
                 <button
                     type="submit"
                     class="register-btn">
-
                     Tạo tài khoản
-
                 </button>
-
-
-
+                <% if ("account".equals(registerError)) { %>
+                    <p class="form-error" role="alert">Tên tài khoản này đã tồn tại. Vui lòng chọn tên khác.</p>
+                <% } else if ("email".equals(registerError)) { %>
+                    <p class="form-error" role="alert">Email này đã được đăng ký. Vui lòng sử dụng email khác.</p>
+                <% } %>
                 <!-- TERMS -->
-
                 <div class="terms">
-
-                    By creating an account, you agree to the
-
+                    Khi tạo tài khoản, bạn đồng ý với
                     <span>
-
-                        terms and conditions
-
+                        điều khoản sử dụng
                     </span>
-
                     of CineFlow.
 
                 </div>
-
-
             </form>
-
-
 
             <!-- ================================
                  LOGIN LINK
@@ -462,7 +437,7 @@
 
             <div class="login-link">
 
-                Already have an account?
+                Đã có tài khoản?
 
 
                 <a
@@ -675,11 +650,11 @@
 
 
                     const password =
-                        passwordInput.value;
+                        passwordInput.value.trim();
 
 
                     const confirmPassword =
-                        confirmPasswordInput.value;
+                        confirmPasswordInput.value.trim();
 
 
                     /*
@@ -713,22 +688,9 @@
 
                     if (password === confirmPassword) {
 
-                        confirmPasswordMessage.style.display =
-                            "block";
-
-
-                        confirmPasswordMessage.classList.remove(
-                            "invalid"
-                        );
-
-
-                        confirmPasswordMessage.classList.add(
-                            "valid"
-                        );
-
-
-                        confirmPasswordMessage.textContent =
-                            "✓ Mật khẩu khớp nhau";
+                        confirmPasswordMessage.style.display = "none";
+                        confirmPasswordMessage.classList.remove("valid", "invalid");
+                        confirmPasswordMessage.textContent = "";
 
                     }
 

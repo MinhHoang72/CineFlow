@@ -1,7 +1,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,6 +10,7 @@
 
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/auth/login.css">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/auth/base.css">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/auth/cineflow-auth.css">
     </head>
 
     <body>
@@ -24,9 +25,9 @@
             <!-- LEFT SIDE -->
             <div class="hero">
 
-                <div class="logo">
+                <a class="logo" href="${pageContext.request.contextPath}/home/index.jsp">
                     Cine<span>Flow</span>
-                </div>
+                </a>
 
                 <h1>
                     Bộ phim của bạn.<br>
@@ -34,8 +35,8 @@
                 </h1>
 
                 <p>
-                    Discover movies, explore showtimes and manage your
-                    cinema experience with CineFlow.
+                    Khám phá phim, xem lịch chiếu và quản lý trải nghiệm
+                    điện ảnh của bạn cùng CineFlow.
                 </p>
 
                 <div class="features">
@@ -47,7 +48,7 @@
 
                     <div class="feature">
                         <div class="feature-icon">◷</div>
-                        <span>Find Hiệntimes</span>
+                        <span>Xem lịch chiếu</span>
                     </div>
 
                     <div class="feature">
@@ -66,8 +67,11 @@
                 <h2>Chào mừng bạn trở lại</h2>
 
                 <div class="subtitle">
-                    Đăng nhập to continue to CineFlow
+                    Đăng nhập để tiếp tục với CineFlow
                 </div>
+                <% if ("session".equals(request.getParameter("error"))) { %>
+                <p class="form-error" role="alert">Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.</p>
+                <% } %>
 
                 <form action="${pageContext.request.contextPath}/login"
                       method="post">
@@ -75,7 +79,7 @@
                     <!-- Tài khoản / Email -->
                     <div class="form-group">
 
-                        <label>Tài khoản or Email</label>
+                        <label>Tài khoản hoặc email</label>
 
                         <div class="input-wrapper">
 
@@ -87,7 +91,6 @@
                                 placeholder="Nhập tài khoản hoặc email"
                                 autocomplete="username"
                                 required>
-
                         </div>
 
                     </div>
@@ -152,14 +155,14 @@
 
 
                 <div class="divider">
-                    OR
+                    HOẶC
                 </div>
 
 
                 <!-- Register -->
                 <div class="register">
 
-                    Don't have an account?
+                    Chưa có tài khoản?
 
                     <a href="${pageContext.request.contextPath}/auth/register.jsp">
                         Tạo tài khoản

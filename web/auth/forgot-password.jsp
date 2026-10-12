@@ -1,7 +1,11 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%
+    String error = request.getParameter("error");
+    String submittedEmail = request.getParameter("email");
+%>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,6 +14,7 @@
 
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/auth/forgot-password.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/auth/base.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/auth/cineflow-auth.css">
 </head>
 
 <body>
@@ -26,19 +31,18 @@
 
     <div class="hero">
 
-        <div class="logo">
+        <a class="logo" href="${pageContext.request.contextPath}/home/index.jsp">
             Cine<span>Flow</span>
-        </div>
+        </a>
 
         <h1>
             Bạn quên<br>
-            <span>password?</span>
+            <span>mật khẩu?</span>
         </h1>
 
         <p>
-            Đừng lo. Hãy nhập địa chỉ email đã đăng ký
-            with your CineFlow account and we'll send you
-            a one-time verification code.
+            Đừng lo. Hãy nhập email đã đăng ký,
+            chúng tôi sẽ gửi mã xác minh một lần.
         </p>
 
         <div class="steps">
@@ -67,15 +71,12 @@
 
     <div class="card">
 
-        <div class="icon-circle">
-            @
-        </div>
 
             <h2>Đặt lại mật khẩu</h2>
 
         <div class="subtitle">
             Nhập địa chỉ email, chúng tôi sẽ gửi cho bạn
-            a one-time password (OTP).
+            một mã xác minh (OTP).
         </div>
 
 
@@ -93,6 +94,7 @@
                     <input
                         type="email"
                         name="email"
+                        value="<%= submittedEmail == null ? "" : submittedEmail.replace("&", "&amp;").replace("\"", "&quot;").replace("<", "&lt;").replace(">", "&gt;") %>"
                         placeholder="Nhập email của bạn"
                         autocomplete="email"
                         required>
@@ -105,14 +107,18 @@
             <button
                 type="submit"
                 class="submit-btn">
-                Send OTP
+                Gửi mã OTP
             </button>
+
+            <% if ("email".equals(error)) { %>
+                <p class="form-error" role="alert">Email này chưa được đăng ký. Vui lòng kiểm tra lại.</p>
+            <% } %>
 
         </form>
 
 
         <div class="security-note">
-            For security, the OTP will expire after 15 minutes.
+            Vì lý do bảo mật, mã OTP sẽ hết hạn sau 15 phút.
         </div>
 
 
