@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import model.User;
 import java.io.IOException;
 
 public class DashboardServlet extends HttpServlet {
@@ -16,12 +17,18 @@ public class DashboardServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         HttpSession session = request.getSession(false);
-        String role = session == null ? null : (String) session.getAttribute("role");
-        if (role == null) {
-            response.sendRedirect(request.getContextPath() + "/auth/login.jsp");
+        if (session == null || session.getAttribute("userId") == null) {
+            String loginUrl = request.getContextPath() + "/auth/login.jsp?redirect=" + java.net.URLEncoder.encode("/dashboard", "UTF-8");
+            response.sendRedirect(loginUrl);
             return;
         }
-        if ("ADMIN".equals(role)) {
+
+        String role = (String) session.getAttribute("role");
+        if (role == null && session.getAttribute("user") instanceof User) {
+            role = ((User) session.getAttribute("user")).getRole();
+        }
+
+        if ("ADMIN".equalsIgnoreCase(role)) {
             request.setAttribute("reportSummary", reportDAO.getSummary());
             request.setAttribute("topMovies", reportDAO.revenueByMovie());
             request.setAttribute("branchRevenue", reportDAO.revenueByBranch());
@@ -30,7 +37,16 @@ public class DashboardServlet extends HttpServlet {
             request.getRequestDispatcher("/admin/dashboard.jsp").forward(request, response);
             return;
         }
-        String page = "MANAGER".equals(role) ? "/manager/dashboard.jsp" : "STAFF".equals(role) ? "/staff/dashboard.jsp" : "/home/index.jsp";
-        request.getRequestDispatcher(page).forward(request, response);
+        if ("MANAGER".equalsIgnoreCase(role)) {
+            request.getRequestDispatcher("/manager/dashboard.jsp").forward(request, response);
+            return;
+        }
+        if ("STAFF".equalsIgnoreCase(role)) {
+            request.getRequestDispatcher("/staff/dashboard.jsp").forward(request, response);
+            return;
+        }
+
+        // CUSTOMER role
+        response.sendRedirect(request.getContextPath() + "/home/index.jsp");
     }
 }

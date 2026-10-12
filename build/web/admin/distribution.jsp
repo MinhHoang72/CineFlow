@@ -1,5 +1,15 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ page import="model.Movie,model.Branch,java.util.List,java.util.Set,java.util.HashSet,java.util.Map,java.util.LinkedHashMap" %>
+<%
+    String authRole = (String) session.getAttribute("role");
+    if (authRole == null && session.getAttribute("user") instanceof model.User) {
+        authRole = ((model.User) session.getAttribute("user")).getRole();
+    }
+    if (!"ADMIN".equalsIgnoreCase(authRole)) {
+        response.sendError(HttpServletResponse.SC_FORBIDDEN, "Chỉ Quản trị viên (ADMIN) mới có quyền truy cập trang này.");
+        return;
+    }
+%>
 <%!
     private String esc(String value) {
         if (value == null) return "";
@@ -15,6 +25,10 @@
 %>
 <%
     Movie movie = (Movie) request.getAttribute("movie");
+    if (movie == null) {
+        response.sendRedirect(request.getContextPath() + "/admin/movies");
+        return;
+    }
     List<Branch> branches = (List<Branch>) request.getAttribute("branches");
     if (branches == null) branches = java.util.Collections.emptyList();
     Set<Integer> exceptionBranchIds = (Set<Integer>) request.getAttribute("exceptionBranchIds");

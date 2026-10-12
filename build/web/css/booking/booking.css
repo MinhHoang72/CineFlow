@@ -1,116 +1,124 @@
-@import url("https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap");
-* { box-sizing: border-box; margin: 0; padding: 0; }
-        :root { --red: #c91624; --dark: #202020; --gold: #c9b27a; --border: #dedede; --light: #f5f4f0; }
-        html { scroll-behavior: smooth; }
-        body { min-width: 320px; background: #f7f5ef; color: #222; font-family: "Be Vietnam Pro", Arial, sans-serif; }
-        a { color: inherit; text-decoration: none; }
-        button { font: inherit; }
-        .top-bar { height: 38px; background: #f0eee4; border-bottom: 1px solid #ddd7c5; color: #555; font-size: 12px; }
-        .top-inner { width: min(1250px, calc(100% - 40px)); height: 100%; display: flex; align-items: center; justify-content: space-between; margin: auto; }
-        .top-left, .top-right { display: flex; align-items: center; gap: 24px; }
-        .top-right a:hover { color: var(--red); }
-        .account-form { display: inline-flex; margin: 0; }
-        .account-form button { padding: 0; border: 0; background: transparent; color: inherit; cursor: pointer; font: inherit; }
-        .brand-header { height: 105px; display: flex; align-items: center; justify-content: center; border-bottom: 3px solid #d3c28d; background: #fff; }
-        .logo { display: flex; align-items: center; gap: 10px; color: var(--red); font-size: 39px; font-weight: 800; }
-        .logo-mark { width: 48px; height: 48px; display: grid; place-items: center; transform: rotate(-8deg); border-radius: 50% 50% 50% 8px; background: var(--red); color: #fff; font-family: Georgia, serif; font-size: 29px; }
-        .logo-word span { color: #252525; }
-        .main-nav { border-bottom: 1px solid #ddd; background: #fff; }
-        .nav-inner { width: min(1250px, 100%); min-height: 72px; display: flex; align-items: center; justify-content: center; margin: auto; }
-        .nav-inner a { height: 27px; display: flex; align-items: center; padding: 0 24px; border-right: 1px solid #ddd; color: #404040; font-size: 14px; white-space: nowrap; }
-        .nav-inner a:last-child { border-right: 0; }
-        .nav-inner a:hover, .nav-inner a.active { color: var(--red); font-weight: 700; }
-        .top-menu { min-height: 55px; display: flex; justify-content: center; align-items: stretch; gap: 64px; border-bottom: 1px solid #d0c6a5; background: #ded5b8; }
-        .top-menu a { display: flex; align-items: center; border-bottom: 2px solid transparent; font-size: 14px; }
-        .top-menu a.active, .top-menu a:hover { border-bottom-color: #222; font-weight: 700; }
-        .container { width: min(1100px, calc(100% - 40px)); margin: 35px auto 60px; border-top: 2px solid #222; background: #fff; }
-        .date-section { position: relative; min-height: 125px; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid #ddd; }
-        .date-arrow { position: absolute; top: 39px; z-index: 1; width: 36px; height: 48px; border: 0; background: transparent; color: #999; cursor: pointer; font-size: 38px; }
-        .date-arrow.left { left: 14px; }
-        .date-arrow.right { right: 14px; }
-        .month-label { position: absolute; top: 19px; left: 78px; color: #666; font-size: 12px; font-weight: 700; }
-        .dates { width: calc(100% - 140px); display: flex; align-items: center; justify-content: center; gap: clamp(12px, 4vw, 48px); overflow-x: auto; padding: 20px 0 10px; }
-        .date { min-width: 52px; display: flex; align-items: center; flex-direction: column; gap: 7px; padding: 0; border: 0; background: transparent; color: #333; cursor: pointer; }
-        .day-name { font-size: 12px; }
-        .day-number { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; font-size: 16px; font-weight: 700; }
-        .date.sunday { color: #e53935; }
-        .date.saturday { color: #4285d4; }
-        .date.active .day-number { background: #222; color: #fff; }
-        .booking-content { display: grid; grid-template-columns: minmax(0, 1fr) 400px; min-height: 500px; }
-        .cinema-panel { border-right: 1px solid #ccc; }
-        .panel-title { padding: 20px 30px; border-bottom: 1px solid #ddd; font-size: 23px; font-weight: 700; }
-        .login-row { display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 18px 30px; border-bottom: 1px solid #eee; }
-        .login-row strong, .login-row span { display: block; }
-        .login-row strong { margin-bottom: 5px; font-size: 14px; }
-        .login-row span { color: #888; font-size: 12px; }
-        .login-row a { flex: 0 0 auto; padding: 8px 14px; border: 1px solid #999; font-size: 12px; }
-        .city-tabs { display: flex; flex-wrap: wrap; gap: 20px; padding: 17px 30px 10px; border-bottom: 1px solid #eee; }
-        .city-tab { padding: 0 0 7px; border: 0; border-bottom: 2px solid transparent; background: transparent; cursor: pointer; font-size: 13px; }
-        .city-tab.active { border-bottom-color: #222; font-weight: 700; }
-        .centre-area { padding: 18px 30px; }
-        .centre-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
-        .centre { min-height: 44px; padding: 6px; border: 1px solid #eee; background: #fafafa; color: #777; cursor: pointer; font-size: 12px; }
-        .centre:hover { border-color: #333; color: #222; }
-        .centre.active { border-color: #292526; background: #292526; color: #fff; }
-        .movie-panel { min-width: 0; }
-        .movie-tabs { display: flex; justify-content: center; gap: 13px; padding: 20px 10px; border-bottom: 1px solid #ddd; color: #777; font-size: 12px; }
-        .movie-tabs strong { color: #222; }
-        .movie-list { max-height: 460px; overflow-y: auto; }
-        .movie-item { width: 100%; display: flex; align-items: center; gap: 12px; padding: 14px 18px; border: 0; border-bottom: 1px solid #eee; background: #fff; cursor: pointer; text-align: left; }
-        .movie-item:hover { background: #f7f7f7; }
-        .movie-item.active { border: 1px solid #777; background: #fff; }
-        .movie-age { width: 25px; height: 25px; display: grid; flex: 0 0 25px; place-items: center; border-radius: 50%; background: #c2185b; color: #fff; font-size: 10px; font-weight: 700; }
-        .age-13 { background: #1976d2; }
-        .age-16 { background: #c2185b; }
-        .age-18 { background: #e53935; }
-        .age-p { background: #f9a825; }
-        .movie-name { overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
-        .booking-showtimes { grid-column: 1 / 3; padding: 24px 30px; border-top: 1px solid #ccc; background: #fafafa; }
-        .booking-showtimes h2 { margin-bottom: 15px; font-size: 20px; }
-        .selected-info { margin-bottom: 17px; color: #666; font-size: 12px; line-height: 1.6; }
-        .showtimes { display: flex; flex-wrap: wrap; gap: 10px; }
-        .showtime { min-width: 78px; padding: 10px 15px; border: 1px solid #999; background: #fff; cursor: pointer; font-size: 13px; }
-        .showtime:hover, .showtime.active { background: #222; color: #fff; }
-        .booking-message { min-height: 20px; margin-top: 14px; color: #666; font-size: 12px; }
-        .booking-message a { color: var(--red); font-weight: 700; }
-        .empty-state { padding: 25px 10px; color: #777; font-size: 13px; }
-        [hidden] { display: none !important; }
-        @media (max-width: 1150px) {
-            .container { width: calc(100% - 32px); }
-            .dates { gap: 22px; }
-            .booking-content { grid-template-columns: minmax(0, 1fr) 360px; }
-            .centre-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-        }
-        @media (max-width: 800px) {
-            .top-inner { width: calc(100% - 24px); justify-content: center; }
-            .top-left { display: none; }
-            .top-right { gap: 14px; font-size: 11px; }
-            .brand-header { height: 85px; }
-            .logo { font-size: 31px; }
-            .logo-mark { width: 40px; height: 40px; }
-            .nav-inner { overflow-x: auto; justify-content: flex-start; }
-            .nav-inner a { padding: 0 15px; }
-            .top-menu { gap: 28px; }
-            .container { margin-top: 18px; }
-            .booking-content { grid-template-columns: 1fr; }
-            .cinema-panel { border-right: 0; border-bottom: 1px solid #ccc; }
-            .booking-showtimes { grid-column: 1; }
-            .movie-list { max-height: 320px; }
-            .dates { width: calc(100% - 84px); justify-content: flex-start; gap: 18px; }
-            .month-label { left: 20px; }
-            .date-arrow.left { left: 0; }
-            .date-arrow.right { right: 0; }
-            .panel-title, .login-row, .city-tabs, .centre-area, .booking-showtimes { padding-right: 20px; padding-left: 20px; }
-        }
-        @media (max-width: 480px) {
-            .top-right { gap: 10px; font-size: 10px; }
-            .top-menu { gap: 18px; }
-            .top-menu a { font-size: 11px; }
-            .container { width: calc(100% - 20px); }
-            .date-section { min-height: 116px; }
-            .dates { gap: 14px; }
-            .centre-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-            .city-tabs { gap: 14px; }
-        }
+@import url("../common/layout.css");
 
+:root {
+    --red: #e21b23;
+    --red-dark: #bd1118;
+    --dark: #202020;
+    --ink: #222222;
+    --gold: #c9b27a;
+    --gold-dark: #b9a66c;
+    --border: #e5e1d7;
+    --light: #f8f7f4;
+}
 
+/* Sub nav menu */
+.top-menu { min-height: 50px; display: flex; justify-content: center; align-items: stretch; gap: 48px; border-bottom: 1px solid var(--border); background: #ffffff; }
+.top-menu a { display: flex; align-items: center; border-bottom: 2px solid transparent; font-size: 14px; color: #555; transition: all .15s ease; }
+.top-menu a.active, .top-menu a:hover { border-bottom-color: var(--ink); color: var(--ink); font-weight: 700; }
+
+/* Main booking container */
+.container { width: min(1160px, calc(100% - 40px)); margin: 32px auto 60px; border: 1px solid var(--border); border-top: 3px solid var(--ink); border-radius: 6px; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+
+/* Date Picker */
+.date-section { position: relative; min-height: 120px; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid var(--border); }
+.date-arrow { position: absolute; top: 36px; z-index: 1; width: 36px; height: 48px; border: 0; background: transparent; color: #999; cursor: pointer; font-size: 38px; }
+.date-arrow:hover { color: var(--ink); }
+.date-arrow.left { left: 14px; }
+.date-arrow.right { right: 14px; }
+.month-label { position: absolute; top: 16px; left: 78px; color: #666; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+.dates { width: calc(100% - 140px); display: flex; align-items: center; justify-content: center; gap: clamp(12px, 4vw, 42px); overflow-x: auto; padding: 20px 0 10px; }
+.date { min-width: 52px; display: flex; align-items: center; flex-direction: column; gap: 7px; padding: 0; border: 0; background: transparent; color: #444; cursor: pointer; }
+.day-name { font-size: 12px; font-weight: 500; }
+.day-number { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; font-size: 15px; font-weight: 700; transition: all .15s ease; }
+.date.sunday { color: #dc2626; }
+.date.saturday { color: #2563eb; }
+.date:hover .day-number { background: #f0ede4; }
+.date.active .day-number { background: var(--ink); color: #fff; }
+
+/* Booking 2-column layout */
+.booking-content { display: grid; grid-template-columns: minmax(0, 1fr) 420px; min-height: 500px; }
+.cinema-panel { border-right: 1px solid var(--border); }
+.panel-title { padding: 20px 30px; border-bottom: 1px solid var(--border); font-size: 20px; font-weight: 700; color: var(--ink); }
+.login-row { display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 16px 30px; border-bottom: 1px solid #f0eee9; }
+.login-row strong, .login-row span { display: block; }
+.login-row strong { margin-bottom: 4px; font-size: 13.5px; color: var(--ink); }
+.login-row span { color: #777; font-size: 12px; }
+.login-row a { flex: 0 0 auto; padding: 7px 14px; border: 1px solid var(--ink); color: var(--ink); font-size: 12px; font-weight: 600; border-radius: 3px; transition: all .15s; }
+.login-row a:hover { background: var(--ink); color: #fff; }
+
+/* City tabs & centres */
+.city-tabs { display: flex; flex-wrap: wrap; gap: 20px; padding: 16px 30px 10px; border-bottom: 1px solid var(--border); }
+.city-tab { padding: 0 0 7px; border: 0; border-bottom: 2px solid transparent; background: transparent; cursor: pointer; font-size: 13px; font-weight: 600; color: #555; transition: all .15s; }
+.city-tab:hover { color: var(--ink); }
+.city-tab.active { border-bottom-color: var(--ink); color: var(--ink); font-weight: 700; }
+.centre-area { padding: 20px 30px; }
+.centre-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.centre { min-height: 44px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 4px; background: #faf9f6; color: #555; cursor: pointer; font-size: 12.5px; font-weight: 500; transition: all .15s; }
+.centre:hover { border-color: var(--gold); color: var(--ink); background: #fff; }
+.centre.active { border-color: var(--ink); background: var(--ink); color: #fff; font-weight: 600; }
+
+/* Movie Panel */
+.movie-panel { min-width: 0; }
+.movie-tabs { display: flex; justify-content: center; gap: 14px; padding: 18px 10px; border-bottom: 1px solid var(--border); color: #777; font-size: 12px; }
+.movie-tabs strong { color: var(--ink); font-weight: 700; }
+.movie-list { max-height: 460px; overflow-y: auto; }
+.movie-item { width: 100%; display: flex; align-items: center; gap: 12px; padding: 14px 20px; border: 0; border-bottom: 1px solid #f0eee9; background: #fff; cursor: pointer; text-align: left; transition: background .15s; }
+.movie-item:hover { background: #faf9f6; }
+.movie-item.active { border-left: 3px solid var(--gold); background: #faf9f6; font-weight: 600; }
+.movie-age { width: 25px; height: 25px; display: grid; flex: 0 0 25px; place-items: center; border-radius: 50%; background: #c2185b; color: #fff; font-size: 10px; font-weight: 700; }
+.age-13 { background: #2563eb; }
+.age-16 { background: #d97706; }
+.age-18 { background: #dc2626; }
+.age-p { background: #16a34a; }
+.movie-name { overflow: hidden; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); }
+
+/* Showtimes Area */
+.booking-showtimes { grid-column: 1 / 3; padding: 26px 30px; border-top: 1px solid var(--border); background: #faf9f6; }
+.booking-showtimes h2 { margin-bottom: 14px; font-size: 18px; font-weight: 700; color: var(--ink); }
+.selected-info { margin-bottom: 16px; color: #555; font-size: 13px; line-height: 1.6; }
+.showtimes { display: flex; flex-wrap: wrap; gap: 10px; }
+.showtime { min-width: 82px; padding: 10px 16px; border: 1px solid #dcd7cb; border-radius: 4px; background: #fff; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--ink); transition: all .15s; }
+.showtime:hover, .showtime.active { background: var(--ink); border-color: var(--ink); color: #fff; }
+.booking-message { min-height: 20px; margin-top: 14px; color: #666; font-size: 12.5px; }
+.booking-message a { color: var(--red); font-weight: 700; }
+.empty-state { padding: 25px 10px; color: #777; font-size: 13px; }
+[hidden] { display: none !important; }
+
+/* Responsive */
+@media (max-width: 1150px) {
+    .container { width: calc(100% - 32px); }
+    .dates { gap: 22px; }
+    .booking-content { grid-template-columns: minmax(0, 1fr) 360px; }
+    .centre-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 800px) {
+    .top-inner { width: calc(100% - 24px); justify-content: center; }
+    .top-left { display: none; }
+    .top-right { gap: 14px; font-size: 11px; }
+    .brand-header { height: 85px; }
+    .logo { font-size: 31px; }
+    .logo-mark { width: 40px; height: 40px; }
+    .nav-inner { overflow-x: auto; justify-content: flex-start; }
+    .nav-inner a { padding: 0 15px; }
+    .top-menu { gap: 28px; }
+    .container { margin-top: 18px; }
+    .booking-content { grid-template-columns: 1fr; }
+    .cinema-panel { border-right: 0; border-bottom: 1px solid var(--border); }
+    .booking-showtimes { grid-column: 1; }
+    .movie-list { max-height: 320px; }
+    .dates { width: calc(100% - 84px); justify-content: flex-start; gap: 18px; }
+    .month-label { left: 20px; }
+    .date-arrow.left { left: 0; }
+    .date-arrow.right { right: 0; }
+    .panel-title, .login-row, .city-tabs, .centre-area, .booking-showtimes { padding-right: 20px; padding-left: 20px; }
+}
+@media (max-width: 480px) {
+    .top-right { gap: 10px; font-size: 10px; }
+    .top-menu { gap: 18px; }
+    .top-menu a { font-size: 11px; }
+    .container { width: calc(100% - 20px); }
+    .date-section { min-height: 116px; }
+    .dates { gap: 14px; }
+    .centre-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .city-tabs { gap: 14px; }
+}

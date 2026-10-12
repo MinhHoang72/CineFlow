@@ -1,11 +1,24 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ page import="model.ReportSummary,model.RevenueReport,model.ShowtimeMetric,java.util.List,java.math.BigDecimal" %>
 <%
+    String authRole = (String) session.getAttribute("role");
+    if (authRole == null && session.getAttribute("user") instanceof model.User) {
+        authRole = ((model.User) session.getAttribute("user")).getRole();
+    }
+    if (!"ADMIN".equalsIgnoreCase(authRole)) {
+        response.sendError(HttpServletResponse.SC_FORBIDDEN, "Chỉ Quản trị viên (ADMIN) mới có quyền truy cập trang này.");
+        return;
+    }
+
+    ReportSummary s = (ReportSummary) request.getAttribute("reportSummary");
+    if (s == null) {
+        response.sendRedirect(request.getContextPath() + "/reports");
+        return;
+    }
+
     request.setAttribute("activeNav", "reports");
     request.setAttribute("pageTitle", "Báo cáo & Phân tích toàn chuỗi");
     request.setAttribute("pageBreadcrumb", "Báo cáo toàn hệ thống");
-
-    ReportSummary s = (ReportSummary) request.getAttribute("reportSummary");
     List<RevenueReport> branches = (List<RevenueReport>) request.getAttribute("branchRevenue");
     List<RevenueReport> movies = (List<RevenueReport>) request.getAttribute("movieRevenue");
     List<ShowtimeMetric> showtimes = (List<ShowtimeMetric>) request.getAttribute("showtimeMetrics");

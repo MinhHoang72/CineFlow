@@ -10,7 +10,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class CinemaDAO {
@@ -122,6 +124,59 @@ public class CinemaDAO {
             exception.printStackTrace();
         }
 
+        return branches;
+    }
+
+    public Map<String, Integer> getActiveCitiesWithCount() {
+        String sql = "SELECT City, COUNT(BranchID) AS CinemaCount "
+                + "FROM Branches WHERE Status = 'ACTIVE' AND City IS NOT NULL AND LTRIM(RTRIM(City)) <> '' "
+                + "GROUP BY City ORDER BY City";
+        Map<String, Integer> cities = new LinkedHashMap<>();
+        try (Connection connection = DBContext.getConnection();
+                PreparedStatement statement = connection.prepareStatement(sql);
+                ResultSet resultSet = statement.executeQuery()) {
+            while (resultSet.next()) {
+                String city = resultSet.getString("City");
+                if (city != null && !city.trim().isEmpty()) {
+                    cities.put(city.trim(), resultSet.getInt("CinemaCount"));
+                }
+            }
+        } catch (Exception exception) {
+            exception.printStackTrace();
+        }
+        return cities;
+    }
+
+    public List<Branch> getActiveBranchesByCity(String city) {
+        String sql = "SELECT b.BranchID, b.BranchName, b.Address, b.City, b.Phone, "
+                + "COUNT(DISTINCT h.HallID) AS HallCount, "
+                + "COALESCE(SUM(h.Capacity), 0) AS SeatCount "
+                + "FROM Branches b "
+                + "LEFT JOIN Halls h ON h.BranchID = b.BranchID "
+                + "WHERE b.Status = 'ACTIVE' AND LTRIM(RTRIM(b.City)) = LTRIM(RTRIM(?)) "
+                + "GROUP BY b.BranchID, b.BranchName, b.Address, b.City, b.Phone "
+                + "ORDER BY b.BranchName";
+        List<Branch> branches = new ArrayList<>();
+        try (Connection connection = DBContext.getConnection();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, city != null ? city.trim() : "");
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    Branch branch = new Branch();
+                    branch.setBranchId(resultSet.getInt("BranchID"));
+                    branch.setBranchName(resultSet.getString("BranchName"));
+                    branch.setAddress(resultSet.getString("Address"));
+                    branch.setCity(resultSet.getString("City"));
+                    branch.setPhone(resultSet.getString("Phone"));
+                    branch.setStatus("ACTIVE");
+                    branch.setHallCount(resultSet.getInt("HallCount"));
+                    branch.setSeatCount(resultSet.getInt("SeatCount"));
+                    branches.add(branch);
+                }
+            }
+        } catch (Exception exception) {
+            exception.printStackTrace();
+        }
         return branches;
     }
 

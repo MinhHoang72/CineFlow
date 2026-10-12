@@ -155,6 +155,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/layout.css?v=<%= System.currentTimeMillis() %>">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/movie/details.css?v=<%= System.currentTimeMillis() %>">
     <style>
         /* Inline CSS guarantee: ensures instant styling without browser cache delays */
@@ -180,33 +181,6 @@
             --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.05);
             --font-main: "Be Vietnam Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
-        * { box-sizing: border-box; }
-        html { scroll-behavior: smooth; }
-        body { margin: 0; min-width: 320px; background: var(--bg-page) !important; color: var(--ink) !important; font-family: var(--font-main); font-size: 14px; line-height: 1.6; }
-        a { color: inherit; text-decoration: none; }
-        button { font-family: inherit; cursor: pointer; }
-        
-        /* Top bar */
-        .top-bar { height: 38px; background: #f0eee4; border-bottom: 1px solid #ddd7c5; color: #555; font-size: 12px; }
-        .top-inner { width: min(1250px, calc(100% - 40px)); height: 100%; display: flex; align-items: center; justify-content: space-between; margin: auto; }
-        .top-left, .top-right { display: flex; align-items: center; gap: 20px; }
-        .top-right a:hover { color: var(--red); }
-        .account-form { display: inline-flex; margin: 0; }
-        .account-form button { padding: 0; border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; }
-        .account-form button:hover { color: var(--red); }
-        
-        /* Brand header */
-        .brand-header { height: 105px; display: flex; align-items: center; justify-content: center; background: #fff; border-bottom: 3px solid #d3c28d; }
-        .logo { display: flex; align-items: center; gap: 10px; color: var(--red); font-size: 39px; font-weight: 800; }
-        .logo-mark { width: 48px; height: 48px; display: grid; place-items: center; transform: rotate(-8deg); border-radius: 50% 50% 50% 8px; background: var(--red); color: #fff; font-family: Georgia, serif; font-size: 29px; }
-        .logo-word span { color: #252525; }
-        
-        /* Nav */
-        .main-nav { border-bottom: 1px solid #ddd; background: #fff; }
-        .nav-inner { width: min(1250px, 100%); min-height: 72px; display: flex; align-items: center; justify-content: center; margin: auto; }
-        .nav-inner a { height: 27px; display: flex; align-items: center; padding: 0 24px; border-right: 1px solid #ddd; color: #404040; font-size: 14px; white-space: nowrap; transition: color 0.2s; }
-        .nav-inner a:last-child { border-right: 0; }
-        .nav-inner a:hover, .nav-inner a.active { color: var(--red); font-weight: 700; }
         
         /* Container & Breadcrumb */
         .movie-detail-container { width: min(1200px, calc(100% - 40px)); margin: 0 auto; padding: 24px 0 64px; }
@@ -325,61 +299,15 @@
             .movie-specs-list { grid-template-columns: 1fr; gap: 8px; }
             .movie-action-buttons { justify-content: flex-start; }
             .rating-section-bar { flex-direction: column; align-items: flex-start; text-align: left; }
-            .footer-inner { grid-template-columns: 1fr; gap: 24px; }
-            .top-left { display: none; }
-            .nav-inner { overflow-x: auto; justify-content: flex-start; padding: 0 12px; }
         }
     </style>
 </head>
 <body id="top">
-
-    <!-- Top utility bar -->
-    <div class="top-bar">
-        <div class="top-inner">
-            <div class="top-left">
-                <span>CineFlow</span>
-                <span>|</span>
-                <span>Hệ thống rạp chiếu phim chuẩn quốc tế</span>
-            </div>
-            <div class="top-right">
-                <% if (signedInUser == null) { %>
-                    <a href="<%= loginWithRedirectUrl %>">Đăng nhập</a>
-                    <a href="<%= registerWithRedirectUrl %>">Đăng ký</a>
-                <% } else { %>
-                    <span>Xin chào, <strong><%= escapeHtml(memberName) %></strong></span>
-                    <a href="${pageContext.request.contextPath}/account">Tài khoản</a>
-                    <% if ("ADMIN".equalsIgnoreCase(signedInUser.getRole())) { %>
-                        <a href="${pageContext.request.contextPath}/admin/movies">Quản lý phim</a>
-                    <% } else if ("MANAGER".equalsIgnoreCase(signedInUser.getRole())) { %>
-                        <a href="${pageContext.request.contextPath}/staff">Quản trị cụm rạp</a>
-                    <% } %>
-                    <form class="account-form" action="${pageContext.request.contextPath}/logout" method="post">
-                        <button type="submit">Đăng xuất</button>
-                    </form>
-                <% } %>
-                <a href="${pageContext.request.contextPath}/home/index.jsp#support">Hỗ trợ khách hàng</a>
-            </div>
-        </div>
-    </div>
-
-    <!-- Brand header -->
-    <header class="brand-header">
-        <a class="logo" href="${pageContext.request.contextPath}/home/index.jsp" aria-label="CineFlow Cinema Home">
-            <span class="logo-mark">C</span>
-            <span class="logo-word">Cine<span>Flow</span></span>
-        </a>
-    </header>
-
-    <!-- Main Navigation Bar -->
-    <nav class="main-nav" aria-label="Điều hướng chính">
-        <div class="nav-inner">
-            <a href="${pageContext.request.contextPath}/home/index.jsp">TRANG CHỦ</a>
-            <a href="${pageContext.request.contextPath}/booking/booking.jsp">MUA VÉ</a>
-            <a href="${pageContext.request.contextPath}/home/index.jsp#promotions">TIN MỚI &amp; ƯU ĐÃI</a>
-            <a href="${pageContext.request.contextPath}/cinema/index.jsp">RẠP CHIẾU PHIM</a>
-            <a href="${pageContext.request.contextPath}/home/index.jsp#support">HỖ TRỢ KHÁCH HÀNG</a>
-        </div>
-    </nav>
+<div class="page-shell">
+    <!-- Common Header & Navigation -->
+    <jsp:include page="/common/header.jsp">
+        <jsp:param name="activeNav" value="home"/>
+    </jsp:include>
 
     <!-- Main Page Content -->
     <main class="movie-detail-container">
@@ -809,5 +737,9 @@
             });
         }
     </script>
+
+    <!-- Common Footer -->
+    <jsp:include page="/common/footer.jsp"/>
+</div>
 </body>
 </html>

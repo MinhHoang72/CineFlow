@@ -1,11 +1,24 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ page import="model.User,model.Branch,java.util.List" %>
 <%
+    String authRole = (String) session.getAttribute("role");
+    if (authRole == null && session.getAttribute("user") instanceof model.User) {
+        authRole = ((model.User) session.getAttribute("user")).getRole();
+    }
+    if (!"MANAGER".equalsIgnoreCase(authRole) && !"ADMIN".equalsIgnoreCase(authRole)) {
+        response.sendError(HttpServletResponse.SC_FORBIDDEN, "Bạn không có quyền truy cập trang quản lý nhân sự.");
+        return;
+    }
+    if (request.getAttribute("staff") == null) {
+        response.sendRedirect(request.getContextPath() + "/staff");
+        return;
+    }
+
     List<User> staff = (List<User>) request.getAttribute("staff");
     List<Branch> branches = (List<Branch>) request.getAttribute("branches");
     Integer selectedBranchId = (Integer) request.getAttribute("selectedBranchId");
     String role = (String) session.getAttribute("role");
-    boolean managerView = "MANAGER".equals(role);
+    boolean managerView = "MANAGER".equalsIgnoreCase(role);
 
     int totalStaff = staff != null ? staff.size() : 0;
     int managerCount = 0;

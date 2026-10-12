@@ -1,11 +1,24 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ page import="model.Movie,java.util.List,java.util.Set,java.util.TreeSet" %>
 <%
+    String authRole = (String) session.getAttribute("role");
+    if (authRole == null && session.getAttribute("user") instanceof model.User) {
+        authRole = ((model.User) session.getAttribute("user")).getRole();
+    }
+    if (!"ADMIN".equalsIgnoreCase(authRole)) {
+        response.sendError(HttpServletResponse.SC_FORBIDDEN, "Chỉ Quản trị viên (ADMIN) mới có quyền truy cập trang này.");
+        return;
+    }
+
+    List<Movie> movies = (List<Movie>) request.getAttribute("movies");
+    if (movies == null) {
+        response.sendRedirect(request.getContextPath() + "/admin/movies");
+        return;
+    }
+
     request.setAttribute("activeNav", "movies");
     request.setAttribute("pageTitle", "Quản lý phim");
     request.setAttribute("pageBreadcrumb", "Danh mục phim");
-
-    List<Movie> movies = (List<Movie>) request.getAttribute("movies");
     int totalMovies = movies != null ? movies.size() : 0;
     int nowShowingCount = 0;
     int comingSoonCount = 0;

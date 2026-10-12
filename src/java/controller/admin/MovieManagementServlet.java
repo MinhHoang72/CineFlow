@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import model.Movie;
+import model.User;
 import utils.MediaStorage;
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -20,7 +21,17 @@ public class MovieManagementServlet extends HttpServlet {
     private final CinemaDAO dao = new CinemaDAO();
 
     private boolean allowed(HttpSession session) {
-        return session != null && "ADMIN".equals(session.getAttribute("role"));
+        if (session == null) return false;
+        Object roleObj = session.getAttribute("role");
+        if (roleObj instanceof String && "ADMIN".equalsIgnoreCase((String) roleObj)) {
+            return true;
+        }
+        Object userObj = session.getAttribute("user");
+        if (userObj instanceof User) {
+            String role = ((User) userObj).getRole();
+            return role != null && "ADMIN".equalsIgnoreCase(role);
+        }
+        return false;
     }
 
     @Override

@@ -208,7 +208,7 @@
 
 
     <!-- ===================================================== -->
-    <!-- AUTHENTICATION FILTER -->
+    <!-- 1. AUTHENTICATION FILTER -->
     <!-- ===================================================== -->
 
     <filter>
@@ -226,6 +226,77 @@
         <url-pattern>/account</url-pattern>
     </filter-mapping>
 
+    <filter-mapping>
+        <filter-name>AuthenticationFilter</filter-name>
+        <url-pattern>/account/*</url-pattern>
+    </filter-mapping>
+
+    <!-- ===================================================== -->
+    <!-- 2. ADMIN AUTHORIZATION FILTER -->
+    <!-- ===================================================== -->
+
+    <filter>
+        <filter-name>AdminFilter</filter-name>
+        <filter-class>filter.AdminFilter</filter-class>
+    </filter>
+
+    <filter-mapping>
+        <filter-name>AdminFilter</filter-name>
+        <url-pattern>/admin/*</url-pattern>
+    </filter-mapping>
+
+    <filter-mapping>
+        <filter-name>AdminFilter</filter-name>
+        <url-pattern>/admin</url-pattern>
+    </filter-mapping>
+
+    <!-- ===================================================== -->
+    <!-- 3. MANAGER AUTHORIZATION FILTER -->
+    <!-- ===================================================== -->
+
+    <filter>
+        <filter-name>ManagerFilter</filter-name>
+        <filter-class>filter.ManagerFilter</filter-class>
+    </filter>
+
+    <filter-mapping>
+        <filter-name>ManagerFilter</filter-name>
+        <url-pattern>/manager/*</url-pattern>
+    </filter-mapping>
+
+    <filter-mapping>
+        <filter-name>ManagerFilter</filter-name>
+        <url-pattern>/manager</url-pattern>
+    </filter-mapping>
+
+    <filter-mapping>
+        <filter-name>ManagerFilter</filter-name>
+        <url-pattern>/staff</url-pattern>
+    </filter-mapping>
+
+    <filter-mapping>
+        <filter-name>ManagerFilter</filter-name>
+        <url-pattern>/staff/directory.jsp</url-pattern>
+    </filter-mapping>
+
+    <filter-mapping>
+        <filter-name>ManagerFilter</filter-name>
+        <url-pattern>/reports</url-pattern>
+    </filter-mapping>
+
+    <!-- ===================================================== -->
+    <!-- 4. STAFF AUTHORIZATION FILTER -->
+    <!-- ===================================================== -->
+
+    <filter>
+        <filter-name>StaffFilter</filter-name>
+        <filter-class>filter.StaffFilter</filter-class>
+    </filter>
+
+    <filter-mapping>
+        <filter-name>StaffFilter</filter-name>
+        <url-pattern>/staff/dashboard.jsp</url-pattern>
+    </filter-mapping>
 
 </web-app>
 

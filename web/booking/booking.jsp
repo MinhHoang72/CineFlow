@@ -124,42 +124,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#f0eee4">
     <title>CineFlow - Mua vé xem phim</title>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/layout.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/booking/booking.css">
 </head>
 <body>
-    <div class="top-bar">
-        <div class="top-inner">
-            <div class="top-left"><span>CineFlow</span><span>Hệ thống rạp chiếu phim</span></div>
-            <div class="top-right">
-                <% 
-                    String currentBookingRedirect = "/booking/booking.jsp" + (request.getQueryString() != null ? "?" + request.getQueryString() : "");
-                    String bookingLoginUrl = contextPath + "/auth/login.jsp?redirect=" + java.net.URLEncoder.encode(currentBookingRedirect, "UTF-8");
-                    String bookingRegisterUrl = contextPath + "/auth/register.jsp?redirect=" + java.net.URLEncoder.encode(currentBookingRedirect, "UTF-8");
-                    if (signedInUser == null) { 
-                %>
-                    <a href="<%= bookingLoginUrl %>">Đăng nhập</a>
-                    <a href="<%= bookingRegisterUrl %>">Đăng ký</a>
-                <% } else { %>
-                    <span>Xin chào, <%= escapeHtml(memberName) %></span>
-                    <form class="account-form" action="<%= contextPath %>/logout" method="post"><button type="submit">Đăng xuất</button></form>
-                <% } %>
-                <a href="<%= contextPath %>/home/index.jsp#support">Hỗ trợ khách hàng</a>
-            </div>
-        </div>
-    </div>
-    <header class="brand-header">
-        <a class="logo" href="<%= contextPath %>/home/index.jsp"><span class="logo-mark">C</span><span class="logo-word">Cine<span>Flow</span></span></a>
-    </header>
-    <nav class="main-nav" aria-label="Điều hướng chính">
-        <div class="nav-inner">
-            <a href="<%= contextPath %>/home/index.jsp">TRANG CHỦ</a>
-            <a class="active" href="<%= contextPath %>/booking/booking.jsp">MUA VÉ</a>
-            <a href="<%= contextPath %>/home/index.jsp#movies">PHIM</a>
-            <a href="<%= contextPath %>/home/index.jsp#movies">TIN MỚI &amp; ƯU ĐÃI</a>
-            <a href="<%= contextPath %>/home/index.jsp#cinemas">RẠP CHIẾU PHIM</a>
-            <a href="<%= contextPath %>/home/index.jsp#support">HỖ TRỢ KHÁCH HÀNG</a>
-        </div>
-    </nav>
+<div class="page-shell">
+    <!-- Common Header & Navigation -->
+    <jsp:include page="/common/header.jsp">
+        <jsp:param name="activeNav" value="booking"/>
+    </jsp:include>
     <nav class="top-menu" aria-label="Điều hướng mua vé">
         <a class="<%= scheduleView ? "" : "active" %>" href="#booking">MUA VÉ XEM PHIM</a>
         <a class="<%= scheduleView ? "active" : "" %>" href="#booking-showtimes">LỊCH CHIẾU PHIM</a>
@@ -198,7 +171,6 @@
                         <a href="<%= contextPath %>/auth/login.jsp">Đăng nhập</a>
                     <% } else { %>
                         <div><strong><%= escapeHtml(memberName) %></strong><span>Chọn rạp và suất chiếu phù hợp</span></div>
-                        <a href="<%= contextPath %>/home/index.jsp#cinemas">Đổi rạp</a>
                     <% } %>
                 </div>
                 <div class="city-tabs" aria-label="Lọc theo thành phố">
@@ -339,6 +311,10 @@
             if (new URLSearchParams(window.location.search).get("view") === "schedule") document.getElementById("booking-showtimes").scrollIntoView();
         }());
     </script>
+
+    <!-- Common Footer -->
+    <jsp:include page="/common/footer.jsp"/>
+</div>
 </body>
 </html>
 

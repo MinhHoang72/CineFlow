@@ -81,39 +81,10 @@
 </head>
 <body id="top">
 <div class="page-shell">
-    <div class="top-bar">
-        <div class="top-inner">
-            <div class="top-left"><span>CineFlow</span><span>Hệ thống rạp chiếu phim</span></div>
-            <div class="top-right">
-            <% if (signedInUser == null) { %>
-                <a href="<%= contextPath %>/auth/login.jsp">Đăng nhập</a>
-                <a href="<%= contextPath %>/auth/register.jsp">Đăng ký</a>
-            <% } else { %>
-                <span>Xin chào, <%= escapeHtml(memberName) %></span>
-                <a href="<%= contextPath %>/account">Tài khoản của tôi</a>
-                <% if ("ADMIN".equals(signedInUser.getRole())) { %>
-                    <a href="<%= contextPath %>/admin/movies">Quản lý phim</a>
-                <% } else if ("MANAGER".equals(signedInUser.getRole())) { %>
-                    <a href="<%= contextPath %>/staff">Trung tâm của tôi</a>
-                <% } %>
-                <form class="account-form" action="<%= contextPath %>/logout" method="post"><button type="submit">Đăng xuất</button></form>
-            <% } %>
-                <a href="#support">Hỗ trợ khách hàng</a>
-            </div>
-        </div>
-    </div>
-    <header class="brand-header">
-<a class="logo" href="<%= contextPath %>/home/index.jsp"><span class="logo-mark">C</span><span class="logo-word">Cine<span>Flow</span></span></a>
-    </header>
-    <nav class="main-nav" aria-label="Điều hướng chính">
-        <div class="nav-inner">
-            <a class="active" href="<%= contextPath %>/home/index.jsp">TRANG CHỦ</a>
-            <a href="<%= contextPath %>/booking/booking.jsp">MUA VÉ</a>
-            <a href="#promotions">TIN MỚI &amp; ƯU ĐÃI</a>
-            <a href="<%= contextPath %>/cinema/index.jsp">RẠP CHIẾU PHIM</a>
-            <a href="#support">HỖ TRỢ KHÁCH HÀNG</a>
-        </div>
-    </nav>
+    <!-- Common Header & Navigation -->
+    <jsp:include page="/common/header.jsp">
+        <jsp:param name="activeNav" value="home"/>
+    </jsp:include>
 
     <main>
     <section class="hot-section">
@@ -232,15 +203,8 @@
 
     </main>
 
-    <footer class="footer">
-        <div class="footer-inner">
-<div class="footer-brand"><a class="logo" href="<%= contextPath %>/home/index.jsp"><span class="logo-mark">C</span><span class="logo-word">Cine<span>Flow</span></span></a><p>Hệ thống rạp chiếu phim CineFlow.</p></div>
-            <div><h4>CINEFLOW</h4><a href="#promotions">Tin mới &amp; ưu đãi</a><a href="<%= contextPath %>/cinema/index.jsp">Rạp chiếu phim</a><a href="#movies">Phim đang chiếu</a><a href="<%= contextPath %>/booking/booking.jsp?view=schedule">Lịch chiếu</a></div>
-            <div id="support"><h4>HỖ TRỢ</h4><a href="#top">Hỗ trợ khách hàng</a><a href="#top">Câu hỏi thường gặp</a><a href="#top">Liên hệ</a></div>
-            <div><h4>TÀI KHOẢN</h4><a href="<%= contextPath %>/auth/login.jsp">Đăng nhập</a><a href="<%= contextPath %>/auth/register.jsp">Tạo tài khoản</a></div>
-        </div>
-        <div class="copyright">© 2026 CineFlow. All rights reserved.</div>
-    </footer>
+    <!-- Common Footer -->
+    <jsp:include page="/common/footer.jsp"/>
 </div>
 
 <nav class="quick-rail" aria-label="Tiện ích nhanh">

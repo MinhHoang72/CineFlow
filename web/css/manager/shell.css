@@ -4,7 +4,7 @@
 .cf-manager-shell { min-height: 100vh; }
 .cf-sidebar { position: fixed; inset: 0 auto 0 0; z-index: 5; width: var(--cf-sidebar); padding: 22px 14px; border-right: 1px solid #27343c; background: #14232c; color: #d9e2e7; }
 .cf-sidebar-brand { display: block; padding: 0 13px 24px; color: #fff; font-size: 23px; font-weight: 700; text-decoration: none; }
-.cf-sidebar-brand span { color: #ef4a50; }
+.cf-sidebar-brand span { color: #e21b23; }
 .cf-sidebar-section { margin: 18px 10px 7px; color: #84949d; font-size: 10px; font-weight: 700; letter-spacing: .1em; }
 .cf-sidebar-nav { display: grid; gap: 3px; }
 .cf-sidebar-nav a { display: flex; align-items: center; gap: 10px; padding: 11px 12px; border-radius: 6px; color: #b6c5cc; font-size: 13px; text-decoration: none; }

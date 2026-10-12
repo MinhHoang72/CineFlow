@@ -4,8 +4,8 @@
    CINEFLOW ADMIN COMPLETE DESIGN SYSTEM
    ========================================================================== */
 :root {
-    --cf-primary: #d71920;
-    --cf-primary-hover: #b91218;
+    --cf-primary: #e21b23;
+    --cf-primary-hover: #bd1118;
     --cf-primary-light: #fce4e5;
     --cf-sidebar-bg: #14232c;
     --cf-sidebar-hover: #27343c;
@@ -89,7 +89,7 @@ html, body {
 }
 
 .brand-highlight {
-    color: #d71920;
+    color: #e21b23;
 }
 
 .sidebar-badge {
@@ -149,7 +149,7 @@ html, body {
 }
 
 .nav-item.active {
-    background: #d71920 !important;
+    background: #e21b23 !important;
     color: #ffffff !important;
     font-weight: 600 !important;
     box-shadow: 0 3px 10px rgba(225, 29, 72, 0.3) !important;
@@ -193,7 +193,7 @@ html, body {
     width: 34px;
     height: 34px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #d71920, #9f1239);
+    background: linear-gradient(135deg, #e21b23, #9f1239);
     color: #ffffff;
     display: flex;
     align-items: center;
@@ -294,7 +294,7 @@ html, body {
 }
 
 .crumb-link:hover {
-    color: #d71920;
+    color: #e21b23;
 }
 
 .crumb-sep {
@@ -344,7 +344,7 @@ html, body {
     align-items: center;
     gap: 8px;
     padding: 8px 16px;
-    background: #d71920;
+    background: #e21b23;
     color: #ffffff;
     font-size: 13px;
     font-weight: 600;
@@ -357,7 +357,7 @@ html, body {
 }
 
 .topbar-action-btn:hover {
-    background: #b91218;
+    background: #bd1118;
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(225, 29, 72, 0.35);
 }
@@ -383,7 +383,7 @@ html, body {
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #d71920, #b91218);
+    background: linear-gradient(135deg, #e21b23, #bd1118);
     color: #fff;
     display: flex;
     align-items: center;
@@ -436,7 +436,7 @@ html, body {
     font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.1em;
-    color: #d71920;
+    color: #e21b23;
     text-transform: uppercase;
     margin: 0 0 6px;
 }
@@ -498,7 +498,7 @@ html, body {
     height: 3px;
 }
 
-.kpi-card.ruby::before { background: #d71920; }
+.kpi-card.ruby::before { background: #e21b23; }
 .kpi-card.emerald::before { background: #10b981; }
 .kpi-card.sky::before { background: #0284c7; }
 .kpi-card.amber::before { background: #f59e0b; }
@@ -527,7 +527,7 @@ html, body {
     font-size: 18px;
 }
 
-.kpi-card.ruby .kpi-icon { background: #fce4e5; color: #d71920; }
+.kpi-card.ruby .kpi-icon { background: #fce4e5; color: #e21b23; }
 .kpi-card.emerald .kpi-icon { background: #ecfdf5; color: #10b981; }
 .kpi-card.sky .kpi-icon { background: #f0f9ff; color: #0284c7; }
 .kpi-card.amber .kpi-icon { background: #fffbeb; color: #f59e0b; }
@@ -615,7 +615,7 @@ html, body {
 }
 
 .search-box input:focus {
-    border-color: #d71920;
+    border-color: #e21b23;
     box-shadow: 0 0 0 3px rgba(225, 29, 72, 0.15);
 }
 
@@ -656,7 +656,7 @@ html, body {
 
 .filter-pill.active {
     background: #ffffff;
-    color: #d71920;
+    color: #e21b23;
     font-weight: 700;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
@@ -674,7 +674,7 @@ html, body {
 }
 
 .filter-select:focus {
-    border-color: #d71920;
+    border-color: #e21b23;
     box-shadow: 0 0 0 3px rgba(225, 29, 72, 0.15);
 }
 
@@ -699,7 +699,7 @@ html, body {
 
 .view-toggle-btn.active {
     background: #f1f5f9;
-    color: #d71920;
+    color: #e21b23;
 }
 
 /* DATA TABLE */
@@ -780,7 +780,7 @@ html, body {
 }
 
 .movie-title-link:hover {
-    color: #d71920;
+    color: #e21b23;
 }
 
 .movie-sub-info {
@@ -858,13 +858,13 @@ html, body {
 }
 
 .cf-btn-primary {
-    background: #d71920 !important;
+    background: #e21b23 !important;
     color: #ffffff !important;
-    border-color: #d71920 !important;
+    border-color: #e21b23 !important;
 }
 
 .cf-btn-primary:hover {
-    background: #b91218 !important;
+    background: #bd1118 !important;
 }
 
 .cf-btn-secondary {
@@ -875,7 +875,7 @@ html, body {
 
 .cf-btn-secondary:hover {
     border-color: #fecdd3 !important;
-    color: #d71920 !important;
+    color: #e21b23 !important;
     background: #fce4e5 !important;
 }
 
@@ -927,12 +927,12 @@ html, body {
 .page-btn:hover:not(:disabled) {
     border-color: #fecdd3 !important;
     background: #fce4e5 !important;
-    color: #d71920 !important;
+    color: #e21b23 !important;
 }
 
 .page-btn.active {
-    background: #d71920 !important;
-    border-color: #d71920 !important;
+    background: #e21b23 !important;
+    border-color: #e21b23 !important;
     color: #ffffff !important;
     box-shadow: 0 2px 6px rgba(225, 29, 72, 0.3) !important;
 }

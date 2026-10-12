@@ -2,25 +2,25 @@
 
 :root {
     --red: #e21b23;
-    --red-hover: #c4131a;
+    --red-hover: #bd1118;
     --red-subtle: #fef2f2;
     --red-border: #fecaca;
     --gold: #c9b27a;
     --cream: #eee9d8;
-    --ink: #1f2937;
-    --ink-dark: #111827;
-    --text-muted: #6b7280;
-    --text-body: #374151;
-    --border-color: #e5e7eb;
-    --bg-page: #f8f9fa;
+    --ink: #222222;
+    --ink-dark: #1a1a1a;
+    --text-muted: #555555;
+    --text-body: #333333;
+    --border-color: #e5e1d7;
+    --bg-page: #f8f7f4;
     --bg-card: #ffffff;
     --star-gold: #f59e0b;
     --star-gray: #d1d5db;
     --radius-sm: 6px;
     --radius-md: 10px;
     --radius-lg: 16px;
-    --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.05);
-    --shadow-hover: 0 8px 28px rgba(0, 0, 0, 0.1);
+    --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.04);
+    --shadow-hover: 0 8px 28px rgba(0, 0, 0, 0.08);
     --font-main: "Be Vietnam Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 

@@ -1,5 +1,19 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ page import="model.ReportSummary,model.RevenueReport,model.ShowtimeMetric,java.util.List,java.text.SimpleDateFormat" %>
+<%
+    String authRole = (String) session.getAttribute("role");
+    if (authRole == null && session.getAttribute("user") instanceof model.User) {
+        authRole = ((model.User) session.getAttribute("user")).getRole();
+    }
+    if (!"MANAGER".equalsIgnoreCase(authRole) && !"ADMIN".equalsIgnoreCase(authRole)) {
+        response.sendError(HttpServletResponse.SC_FORBIDDEN, "Chỉ Quản lý (MANAGER) mới có quyền truy cập trang này.");
+        return;
+    }
+    if (request.getAttribute("reportSummary") == null) {
+        response.sendRedirect(request.getContextPath() + "/reports");
+        return;
+    }
+%>
 <%! private String money(java.math.BigDecimal n){return String.format("%,.0f đ", n == null ? java.math.BigDecimal.ZERO : n);} %>
 <% ReportSummary summary=(ReportSummary)request.getAttribute("reportSummary"); List<RevenueReport> branches=(List<RevenueReport>)request.getAttribute("branchRevenue"); List<RevenueReport> movies=(List<RevenueReport>)request.getAttribute("movieRevenue"); List<ShowtimeMetric> shows=(List<ShowtimeMetric>)request.getAttribute("showtimeMetrics"); SimpleDateFormat df=new SimpleDateFormat("dd/MM/yyyy HH:mm"); %>
 <!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Báo cáo hoạt động | CineFlow</title><link rel="stylesheet" href="${pageContext.request.contextPath}/css/manager/shell.css"><link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/tables.css"><link rel="stylesheet" href="${pageContext.request.contextPath}/css/manager/reports.css"></head><body><div class="cf-manager-shell"><jsp:include page="/manager/sidebar.jsp"/><div class="cf-manager-main"><jsp:include page="/manager/topbar.jsp"/><main class="cf-content">
