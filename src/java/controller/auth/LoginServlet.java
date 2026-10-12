@@ -100,7 +100,23 @@ public class LoginServlet extends HttpServlet {
         // Cập nhật thời gian đăng nhập
         userDAO.updateLastLogin(user.getUserId());
 
-        // The home page was moved to /home/index.jsp; keep the post-login
+        // Kiểm tra tham số chuyển hướng (redirect) sau khi đăng nhập thành công
+        String redirect = request.getParameter("redirect");
+        if (redirect != null && !redirect.trim().isEmpty()) {
+            redirect = redirect.trim();
+            if (redirect.startsWith(request.getContextPath())) {
+                redirect = redirect.substring(request.getContextPath().length());
+            }
+            // Chỉ chấp nhận đường dẫn nội bộ hợp lệ, tránh Open Redirect
+            if (redirect.startsWith("/") && !redirect.startsWith("//")
+                    && !redirect.toLowerCase().contains("/auth/login.jsp")
+                    && !redirect.toLowerCase().contains("/login")) {
+                response.sendRedirect(request.getContextPath() + redirect);
+                return;
+            }
+        }
+
+        // Mặc định chuyển về trang chủ (CUSTOMER) hoặc trang quản trị (ADMIN/MANAGER)
         String dashboard = "CUSTOMER".equalsIgnoreCase(user.getRole()) ? "/home/index.jsp" : "/dashboard";
         response.sendRedirect(request.getContextPath() + dashboard);
     }

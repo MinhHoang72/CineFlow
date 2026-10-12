@@ -72,11 +72,35 @@
             break;
         }
     }
+    int requestedMovieId = -1;
+    try {
+        requestedMovieId = Integer.parseInt(request.getParameter("movieId"));
+    } catch (Exception ignored) {
+        requestedMovieId = -1;
+    }
     ShowtimeView initialShowtime = null;
     for (ShowtimeView showtime : showtimes) {
-        if (requestedBranchId > 0 && showtime.getBranchId() == requestedBranchId) {
+        boolean matchBranch = requestedBranchId <= 0 || showtime.getBranchId() == requestedBranchId;
+        boolean matchMovie = requestedMovieId <= 0 || showtime.getMovieId() == requestedMovieId;
+        if (matchBranch && matchMovie) {
             initialShowtime = showtime;
             break;
+        }
+    }
+    if (initialShowtime == null && requestedMovieId > 0) {
+        for (ShowtimeView showtime : showtimes) {
+            if (showtime.getMovieId() == requestedMovieId) {
+                initialShowtime = showtime;
+                break;
+            }
+        }
+    }
+    if (initialShowtime == null && requestedBranchId > 0) {
+        for (ShowtimeView showtime : showtimes) {
+            if (showtime.getBranchId() == requestedBranchId) {
+                initialShowtime = showtime;
+                break;
+            }
         }
     }
     if (initialShowtime == null && !showtimes.isEmpty()) initialShowtime = showtimes.get(0);
@@ -89,8 +113,8 @@
         String selectedCity = requestedBranch != null
             ? requestedBranch.getCity()
             : (initialShowtime == null ? "" : initialShowtime.getCity());
-        int selectedMovieId = initialShowtime != null && initialShowtime.getBranchId() == selectedBranchId
-            ? initialShowtime.getMovieId() : -1;
+        int selectedMovieId = requestedMovieId > 0 ? requestedMovieId : (initialShowtime != null && initialShowtime.getBranchId() == selectedBranchId
+            ? initialShowtime.getMovieId() : -1);
     boolean scheduleView = "schedule".equalsIgnoreCase(request.getParameter("view"));
 %>
 <!DOCTYPE html>
@@ -107,9 +131,14 @@
         <div class="top-inner">
             <div class="top-left"><span>CineFlow</span><span>Hệ thống rạp chiếu phim</span></div>
             <div class="top-right">
-                <% if (signedInUser == null) { %>
-                    <a href="<%= contextPath %>/auth/login.jsp">Đăng nhập</a>
-                    <a href="<%= contextPath %>/auth/register.jsp">Đăng ký</a>
+                <% 
+                    String currentBookingRedirect = "/booking/booking.jsp" + (request.getQueryString() != null ? "?" + request.getQueryString() : "");
+                    String bookingLoginUrl = contextPath + "/auth/login.jsp?redirect=" + java.net.URLEncoder.encode(currentBookingRedirect, "UTF-8");
+                    String bookingRegisterUrl = contextPath + "/auth/register.jsp?redirect=" + java.net.URLEncoder.encode(currentBookingRedirect, "UTF-8");
+                    if (signedInUser == null) { 
+                %>
+                    <a href="<%= bookingLoginUrl %>">Đăng nhập</a>
+                    <a href="<%= bookingRegisterUrl %>">Đăng ký</a>
                 <% } else { %>
                     <span>Xin chào, <%= escapeHtml(memberName) %></span>
                     <form class="account-form" action="<%= contextPath %>/logout" method="post"><button type="submit">Đăng xuất</button></form>
@@ -292,6 +321,7 @@
                 if (showtime) {
                     const details = [showtime.dataset.time, showtime.dataset.hall, showtime.dataset.price].filter(Boolean).join(" · ");
                     message.textContent = isCustomer ? "Đã chọn " + details + ". Bước chọn ghế chưa được tích hợp." : "Đã chọn " + details + ". Đăng nhập để tiếp tục đặt vé.";
+                    loginLink.href = "<%= contextPath %>/auth/login.jsp?redirect=" + encodeURIComponent(window.location.pathname + window.location.search);
                     loginLink.hidden = isCustomer;
                 } else {
                     message.textContent = "Chọn một suất chiếu để tiếp tục.";

@@ -40,8 +40,15 @@ public class AuthenticationFilter implements Filter {
             chain.doFilter(request, response);
 
         } else {
-            // Session không còn hợp lệ: đưa người dùng về màn đăng nhập.
-            String loginUrl = httpRequest.getContextPath() + "/auth/login.jsp?error=session";
+            // Session không còn hợp lệ: đưa người dùng về màn đăng nhập và lưu lại URL đang truy cập
+            String uri = httpRequest.getRequestURI();
+            String qs = httpRequest.getQueryString();
+            String fullPath = uri + (qs != null && !qs.isEmpty() ? "?" + qs : "");
+            if (fullPath.startsWith(httpRequest.getContextPath())) {
+                fullPath = fullPath.substring(httpRequest.getContextPath().length());
+            }
+            String encoded = java.net.URLEncoder.encode(fullPath, "UTF-8");
+            String loginUrl = httpRequest.getContextPath() + "/auth/login.jsp?error=session&redirect=" + encoded;
             httpResponse.sendRedirect(httpResponse.encodeRedirectURL(loginUrl));
         }
     }

@@ -9,6 +9,8 @@ public class Branch {
     private String phone;
     private String status;
     private boolean distributed;
+    private int hallCount;
+    private int seatCount;
 
     public int getBranchId() {
         return branchId;
@@ -55,4 +57,10 @@ public class Branch {
 
     public boolean isDistributed() { return distributed; }
     public void setDistributed(boolean distributed) { this.distributed = distributed; }
+
+    public int getHallCount() { return hallCount; }
+    public void setHallCount(int hallCount) { this.hallCount = hallCount; }
+
+    public int getSeatCount() { return seatCount; }
+    public void setSeatCount(int seatCount) { this.seatCount = seatCount; }
 }

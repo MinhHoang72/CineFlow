@@ -1,23 +1,973 @@
-@import url("https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap");
-* { box-sizing: border-box; }
-body { margin: 0; min-height: 100vh; color: #f5f5f5; background: #090909; font-family: "Be Vietnam Pro", "Segoe UI", sans-serif; }
-.movie-detail-page { width: min(1120px, calc(100% - 40px)); margin: 0 auto; padding: 42px 0 80px; }
-.back-link { color: #c8c8c8; text-decoration: none; }
-.back-link:hover { color: #e31b23; }
-.movie-detail-card { display: grid; grid-template-columns: 320px 1fr; gap: 54px; align-items: center; margin-top: 40px; padding: 36px; border: 1px solid #292929; border-radius: 24px; background: linear-gradient(135deg, #181818, #0f0f0f); }
-.movie-detail-poster { overflow: hidden; min-height: 450px; border-radius: 16px; background: #242424; }
-.movie-detail-poster img { width: 100%; height: 450px; display: block; object-fit: cover; }
-.poster-placeholder { height: 450px; display: grid; place-items: center; font-size: 64px; font-weight: 800; color: #e31b23; }
-.eyebrow { color: #e31b23; font-size: 13px; font-weight: 700; letter-spacing: .16em; }
-h1 { margin: 12px 0 18px; font-size: clamp(38px, 6vw, 68px); line-height: 1; }
-.movie-meta { display: flex; flex-wrap: wrap; gap: 10px; }
-.movie-meta span { padding: 7px 12px; border: 1px solid #454545; border-radius: 999px; color: #ddd; font-size: 13px; }
-.description { max-width: 720px; margin: 28px 0; color: #c4c4c4; line-height: 1.8; }
-.movie-facts { display: grid; gap: 13px; margin: 0 0 32px; }
-.movie-facts div { display: grid; grid-template-columns: 110px 1fr; gap: 14px; }
-.movie-facts dt { color: #8e8e8e; }
-.movie-facts dd { margin: 0; color: #eee; }
-.primary-button { display: inline-block; padding: 14px 20px; border-radius: 8px; color: #fff; background: #e31b23; text-decoration: none; font-weight: 700; }
-.primary-button:hover { background: #ff2932; }
-@media (max-width: 760px) { .movie-detail-card { grid-template-columns: 1fr; gap: 28px; padding: 22px; } .movie-detail-poster, .movie-detail-poster img, .poster-placeholder { min-height: 360px; height: 360px; } }
+@import url("https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap");
 
+:root {
+    --red: #e21b23;
+    --red-hover: #c4131a;
+    --red-subtle: #fef2f2;
+    --red-border: #fecaca;
+    --gold: #c9b27a;
+    --cream: #eee9d8;
+    --ink: #1f2937;
+    --ink-dark: #111827;
+    --text-muted: #6b7280;
+    --text-body: #374151;
+    --border-color: #e5e7eb;
+    --bg-page: #f8f9fa;
+    --bg-card: #ffffff;
+    --star-gold: #f59e0b;
+    --star-gray: #d1d5db;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.05);
+    --shadow-hover: 0 8px 28px rgba(0, 0, 0, 0.1);
+    --font-main: "Be Vietnam Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    margin: 0;
+    min-width: 320px;
+    background: var(--bg-page);
+    color: var(--ink);
+    font-family: var(--font-main);
+    font-size: 14px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+button {
+    font-family: inherit;
+    cursor: pointer;
+}
+
+/* ==========================================================================
+   TOP BAR & HEADER (CineFlow standard)
+   ========================================================================== */
+.top-bar {
+    height: 38px;
+    background: #f0eee4;
+    border-bottom: 1px solid #ddd7c5;
+    color: #555;
+    font-size: 12px;
+}
+
+.top-inner {
+    width: min(1250px, calc(100% - 40px));
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: auto;
+}
+
+.top-left, .top-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.top-right a:hover {
+    color: var(--red);
+}
+
+.account-form {
+    display: inline-flex;
+    margin: 0;
+}
+
+.account-form button {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+
+.account-form button:hover {
+    color: var(--red);
+}
+
+.brand-header {
+    height: 105px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    border-bottom: 3px solid #d3c28d;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--red);
+    font-size: 39px;
+    font-weight: 800;
+}
+
+.logo-mark {
+    width: 48px;
+    height: 48px;
+    display: grid;
+    place-items: center;
+    transform: rotate(-8deg);
+    border-radius: 50% 50% 50% 8px;
+    background: var(--red);
+    color: #fff;
+    font-family: Georgia, serif;
+    font-size: 29px;
+}
+
+.logo-word span {
+    color: #252525;
+}
+
+.main-nav {
+    border-bottom: 1px solid #ddd;
+    background: #fff;
+}
+
+.nav-inner {
+    width: min(1250px, 100%);
+    min-height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: auto;
+}
+
+.nav-inner a {
+    height: 27px;
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    border-right: 1px solid #ddd;
+    color: #404040;
+    font-size: 14px;
+    white-space: nowrap;
+    transition: color 0.2s;
+}
+
+.nav-inner a:last-child {
+    border-right: 0;
+}
+
+.nav-inner a:hover, .nav-inner a.active {
+    color: var(--red);
+    font-weight: 700;
+}
+
+/* ==========================================================================
+   PAGE CONTAINER & BREADCRUMB
+   ========================================================================== */
+.movie-detail-container {
+    width: min(1200px, calc(100% - 40px));
+    margin: 0 auto;
+    padding: 24px 0 64px;
+}
+
+.breadcrumb-nav {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 13px;
+    color: #6b7280;
+    margin-bottom: 24px;
+}
+
+.breadcrumb-nav a {
+    color: #4b5563;
+    transition: color 0.2s;
+}
+
+.breadcrumb-nav a:hover {
+    color: var(--red);
+}
+
+.breadcrumb-separator {
+    color: #9ca3af;
+    font-size: 12px;
+}
+
+.breadcrumb-current {
+    color: var(--red);
+    font-weight: 600;
+}
+
+/* ==========================================================================
+   SECTION HEADING WITH RED ACCENT BAR
+   ========================================================================== */
+.section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    padding-bottom: 4px;
+}
+
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--ink-dark);
+}
+
+.section-title .red-bar {
+    width: 4px;
+    height: 20px;
+    background: var(--red);
+    border-radius: 2px;
+    display: inline-block;
+}
+
+.section-subtitle {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+/* ==========================================================================
+   1. TRAILER SECTION (LOTTE Cinema Style: 16:9 large player & playlist)
+   ========================================================================== */
+.trailer-section {
+    margin-bottom: 32px;
+}
+
+.trailer-wrapper {
+    width: 100%;
+    margin: 0 auto;
+}
+
+.trailer-main-player {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: #111;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.trailer-cover {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+    z-index: 2;
+    transition: opacity 0.3s ease;
+}
+
+.trailer-cover.playing {
+    display: none;
+}
+
+.trailer-backdrop-wrap {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.trailer-backdrop {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: brightness(0.65);
+    display: block;
+}
+
+.trailer-backdrop-fallback {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background: radial-gradient(circle at center, #381316 0%, #121013 100%);
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.cinema-reel-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: 2px dashed rgba(255, 255, 255, 0.25);
+    display: grid;
+    place-items: center;
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--red);
+}
+
+.fallback-cine-text {
+    font-size: 12px;
+    letter-spacing: 3px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.trailer-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.85) 100%);
+}
+
+.trailer-play-button {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: var(--red);
+    color: #fff;
+    border: 3px solid rgba(255, 255, 255, 0.85);
+    display: grid;
+    place-items: center;
+    box-shadow: 0 6px 24px rgba(226, 27, 35, 0.6);
+    transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.2s;
+    cursor: pointer;
+    z-index: 3;
+}
+
+.trailer-play-button svg {
+    width: 28px;
+    height: 28px;
+    fill: #fff;
+    margin-left: 4px;
+}
+
+.trailer-cover:hover .trailer-play-button {
+    transform: translate(-50%, -50%) scale(1.12);
+    background: #c8131a;
+}
+
+.trailer-label-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+    z-index: 3;
+}
+
+.trailer-accent-line {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: var(--red);
+    z-index: 4;
+}
+
+.trailer-frame-container {
+    width: 100%;
+    height: 100%;
+}
+
+.trailer-frame-container iframe,
+.trailer-frame-container video {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    display: block;
+}
+
+.trailer-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    background: linear-gradient(135deg, #1f1f23, #111113);
+    color: #9ca3af;
+    text-align: center;
+    padding: 24px;
+}
+
+.trailer-placeholder svg {
+    width: 56px;
+    height: 56px;
+    fill: #4b5563;
+}
+
+.trailer-placeholder h4 {
+    margin: 0;
+    font-size: 16px;
+    color: #e5e7eb;
+}
+
+.trailer-placeholder p {
+    margin: 0;
+    font-size: 13px;
+    max-width: 360px;
+}
+
+/* ==========================================================================
+   2. MOVIE DETAILS CARD (LOTTE Cinema Style: Left Poster, Right Info & Rating)
+   ========================================================================== */
+.movie-info-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 36px;
+    box-shadow: var(--shadow-card);
+    margin-bottom: 32px;
+}
+
+.movie-info-grid {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 36px;
+    align-items: start;
+}
+
+.movie-poster-wrap {
+    position: relative;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.15);
+    aspect-ratio: 2 / 3;
+    background: #1a1a1a;
+}
+
+.movie-poster-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.poster-fallback {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    place-items: center;
+    background: linear-gradient(135deg, #381216, #1f1214);
+    color: rgba(255,255,255,0.7);
+    font-size: 54px;
+    font-weight: 800;
+    font-family: Georgia, serif;
+}
+
+.movie-details-col {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Status Pill */
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    width: fit-content;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+}
+
+.status-pill.now-showing {
+    background: var(--red-subtle);
+    color: var(--red);
+    border: 1px solid var(--red-border);
+}
+
+.status-pill.coming-soon {
+    background: #fef3c7;
+    color: #b45309;
+    border: 1px solid #fde68a;
+}
+
+.status-pill.ended {
+    background: #f3f4f6;
+    color: #4b5563;
+    border: 1px solid #e5e7eb;
+}
+
+.status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+/* Title */
+.movie-title {
+    margin: 0 0 6px;
+    font-size: 32px;
+    font-weight: 800;
+    line-height: 1.2;
+    color: var(--ink-dark);
+}
+
+.movie-original-title {
+    margin: 0 0 14px;
+    font-size: 15px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+/* Age Rating Badge */
+.age-rating-box {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-weight: 700;
+    border: 1.5px solid var(--red);
+    color: var(--red);
+    background: #fff;
+    line-height: 1.2;
+}
+
+.age-rating-box.general {
+    border-color: #2563eb;
+    color: #2563eb;
+}
+
+/* Movie Specifications (LOTTE Cinema Style) */
+.movie-specs-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px 24px;
+    margin-bottom: 24px;
+    font-size: 13.5px;
+}
+
+.spec-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.spec-label {
+    color: #6b7280;
+    font-weight: 500;
+    min-width: 80px;
+    flex-shrink: 0;
+}
+
+.spec-value {
+    color: var(--ink-dark);
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+/* Action buttons */
+.movie-action-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 28px;
+}
+
+.btn-book-now {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 28px;
+    border-radius: var(--radius-sm);
+    background: var(--red);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+    box-shadow: 0 4px 14px rgba(226, 27, 35, 0.3);
+}
+
+.btn-book-now:hover {
+    background: var(--red-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(226, 27, 35, 0.4);
+}
+
+.btn-book-now svg {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+}
+
+.btn-watch-trailer {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 22px;
+    border-radius: var(--radius-sm);
+    background: #fff;
+    border: 1px solid #d1d5db;
+    color: #374151;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.btn-watch-trailer:hover {
+    border-color: var(--red);
+    color: var(--red);
+    background: var(--red-subtle);
+}
+
+.btn-watch-trailer svg {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+}
+
+/* ==========================================================================
+   3. RATING & VOTING BAR (LOTTE Style)
+   ========================================================================== */
+.rating-section-bar {
+    border-top: 1px solid var(--border-color);
+    padding-top: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+}
+
+.rating-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.rating-number-score {
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--ink-dark);
+    line-height: 1;
+}
+
+.rating-number-score span {
+    font-size: 15px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.rating-stars-visual {
+    display: flex;
+    gap: 3px;
+    color: var(--star-gold);
+    font-size: 18px;
+}
+
+.rating-count-label {
+    font-size: 12.5px;
+    color: var(--text-muted);
+}
+
+.rating-right {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+}
+
+.rating-vote-prompt {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--ink);
+}
+
+.interactive-stars {
+    display: inline-flex;
+    gap: 4px;
+}
+
+.star-btn {
+    border: 0;
+    background: transparent;
+    padding: 2px;
+    font-size: 22px;
+    color: var(--star-gray);
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.15s, transform 0.15s;
+}
+
+.star-btn:hover,
+.star-btn.hovered,
+.star-btn.selected {
+    color: var(--star-gold);
+    transform: scale(1.18);
+}
+
+.rating-chosen-label {
+    font-size: 13px;
+    color: #4b5563;
+    font-weight: 500;
+    min-width: 100px;
+}
+
+.btn-submit-vote {
+    padding: 6px 14px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--red);
+    background: var(--red);
+    color: #fff;
+    font-size: 12.5px;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.btn-submit-vote:hover {
+    background: var(--red-hover);
+}
+
+.rating-feedback-msg {
+    width: 100%;
+    margin-top: 8px;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+}
+
+.rating-feedback-msg.info {
+    background: #eff6ff;
+    color: #1e40af;
+    border: 1px solid #bfdbfe;
+}
+
+.rating-feedback-msg.warning {
+    background: #fffbeb;
+    color: #92400e;
+    border: 1px solid #fde68a;
+}
+
+.rating-feedback-msg.success {
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+}
+
+/* ==========================================================================
+   4. TÓM TẮT NỘI DUNG PHIM (LOTTE Cinema Style)
+   ========================================================================== */
+.movie-synopsis-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 32px 36px;
+    box-shadow: var(--shadow-card);
+    margin-bottom: 32px;
+}
+
+.synopsis-content {
+    margin-top: 14px;
+}
+
+.synopsis-text {
+    font-size: 15px;
+    line-height: 1.9;
+    color: var(--text-body);
+    margin: 0;
+}
+
+
+/* ==========================================================================
+   FOOTER (CineFlow standard)
+   ========================================================================== */
+.footer {
+    border-top: 1px solid #ddd;
+    background: #fff;
+    padding: 50px 0 30px;
+}
+
+.footer-inner {
+    width: min(1250px, calc(100% - 40px));
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 40px;
+    margin: auto;
+}
+
+.footer-brand p {
+    margin-top: 15px;
+    color: #777;
+    font-size: 13px;
+}
+
+.footer h4 {
+    margin: 0 0 16px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #252525;
+}
+
+.footer a {
+    display: block;
+    margin-bottom: 10px;
+    color: #666;
+    font-size: 13px;
+    transition: color 0.2s;
+}
+
+.footer a:hover {
+    color: var(--red);
+}
+
+.copyright {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+    color: #999;
+    text-align: center;
+    font-size: 12px;
+}
+
+/* Quick utility rail */
+.quick-rail {
+    position: fixed;
+    right: 18px;
+    bottom: 24px;
+    z-index: 99;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.quick-rail a {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: #fff;
+    color: #333;
+    font-size: 10px;
+    font-weight: 600;
+    border: 1px solid #e0e0e0;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+    transition: all 0.2s;
+}
+
+.quick-rail a:hover {
+    background: var(--red);
+    color: #fff;
+    border-color: var(--red);
+    transform: translateY(-2px);
+}
+
+.quick-rail .quick-icon {
+    font-size: 16px;
+}
+
+/* ==========================================================================
+   RESPONSIVE DESIGN (Desktop, Tablet, Mobile)
+   ========================================================================== */
+@media (max-width: 992px) {
+    .movie-info-grid {
+        grid-template-columns: 220px 1fr;
+        gap: 28px;
+    }
+
+    .movie-info-card, .movie-synopsis-card {
+        padding: 24px;
+    }
+
+    .footer-inner {
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+    }
+}
+
+@media (max-width: 768px) {
+    .movie-detail-container {
+        width: calc(100% - 24px);
+        padding: 16px 0 48px;
+    }
+
+    .movie-info-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
+    .movie-poster-wrap {
+        max-width: 220px;
+        margin: 0 auto;
+    }
+
+    .movie-details-col {
+        text-align: left;
+    }
+
+    .movie-specs-list {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .movie-action-buttons {
+        justify-content: flex-start;
+    }
+
+    .rating-section-bar {
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: left;
+    }
+
+    .rating-left, .rating-right {
+        justify-content: flex-start;
+    }
+
+    .footer-inner {
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+
+    .top-inner {
+        width: calc(100% - 24px);
+    }
+
+    .top-left {
+        display: none;
+    }
+
+    .nav-inner {
+        overflow-x: auto;
+        justify-content: flex-start;
+        padding: 0 12px;
+    }
+}

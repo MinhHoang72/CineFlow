@@ -33,6 +33,16 @@
     </servlet-mapping>
 
     <servlet>
+        <servlet-name>MovieRatingServlet</servlet-name>
+        <servlet-class>controller.movie.MovieRatingServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>MovieRatingServlet</servlet-name>
+        <url-pattern>/movie/rate</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
         <servlet-name>AccountServlet</servlet-name>
         <servlet-class>controller.account.AccountServlet</servlet-class>
     </servlet>

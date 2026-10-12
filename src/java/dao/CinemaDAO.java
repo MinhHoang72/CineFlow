@@ -93,8 +93,14 @@ public class CinemaDAO {
     }
 
     public List<Branch> getActiveBranches() {
-        String sql = "SELECT BranchID, BranchName, Address, City, Phone "
-                + "FROM Branches WHERE Status = 'ACTIVE' ORDER BY BranchID";
+        String sql = "SELECT b.BranchID, b.BranchName, b.Address, b.City, b.Phone, "
+                + "COUNT(DISTINCT h.HallID) AS HallCount, "
+                + "COALESCE(SUM(h.Capacity), 0) AS SeatCount "
+                + "FROM Branches b "
+                + "LEFT JOIN Halls h ON h.BranchID = b.BranchID "
+                + "WHERE b.Status = 'ACTIVE' "
+                + "GROUP BY b.BranchID, b.BranchName, b.Address, b.City, b.Phone "
+                + "ORDER BY b.City, b.BranchName";
         List<Branch> branches = new ArrayList<>();
 
         try (Connection connection = DBContext.getConnection();
@@ -108,6 +114,8 @@ public class CinemaDAO {
                 branch.setCity(resultSet.getString("City"));
                 branch.setPhone(resultSet.getString("Phone"));
                 branch.setStatus("ACTIVE");
+                branch.setHallCount(resultSet.getInt("HallCount"));
+                branch.setSeatCount(resultSet.getInt("SeatCount"));
                 branches.add(branch);
             }
         } catch (Exception exception) {
@@ -115,6 +123,39 @@ public class CinemaDAO {
         }
 
         return branches;
+    }
+
+    public Branch getBranchById(int branchId) {
+        String sql = "SELECT b.BranchID, b.BranchName, b.Address, b.City, b.Phone, b.Status, "
+                + "COUNT(DISTINCT h.HallID) AS HallCount, "
+                + "COALESCE(SUM(h.Capacity), 0) AS SeatCount "
+                + "FROM Branches b "
+                + "LEFT JOIN Halls h ON h.BranchID = b.BranchID "
+                + "WHERE b.BranchID = ? "
+                + "GROUP BY b.BranchID, b.BranchName, b.Address, b.City, b.Phone, b.Status";
+
+        try (Connection connection = DBContext.getConnection();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, branchId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    Branch branch = new Branch();
+                    branch.setBranchId(resultSet.getInt("BranchID"));
+                    branch.setBranchName(resultSet.getString("BranchName"));
+                    branch.setAddress(resultSet.getString("Address"));
+                    branch.setCity(resultSet.getString("City"));
+                    branch.setPhone(resultSet.getString("Phone"));
+                    branch.setStatus(resultSet.getString("Status"));
+                    branch.setHallCount(resultSet.getInt("HallCount"));
+                    branch.setSeatCount(resultSet.getInt("SeatCount"));
+                    return branch;
+                }
+            }
+        } catch (Exception exception) {
+            exception.printStackTrace();
+        }
+
+        return null;
     }
 
     public List<Branch> getDistributionBranches(int movieId) {
@@ -330,6 +371,84 @@ public class CinemaDAO {
                 showtime.setStartTime(resultSet.getTimestamp("StartTime"));
                 showtime.setBaseTicketPrice(resultSet.getBigDecimal("BaseTicketPrice"));
                 showtimes.add(showtime);
+            }
+        } catch (Exception exception) {
+            exception.printStackTrace();
+        }
+
+        return showtimes;
+    }
+
+    public List<ShowtimeView> getScheduledShowtimesByMovieId(int movieId) {
+        String sql = "SELECT s.ShowtimeID, m.MovieID, b.BranchID, m.Title, "
+                + "b.BranchName, b.City, h.HallName, "
+                + "s.StartTime, s.BaseTicketPrice "
+                + "FROM Showtimes s "
+                + "JOIN Movies m ON m.MovieID = s.MovieID "
+                + "JOIN Halls h ON h.HallID = s.HallID "
+                + "JOIN Branches b ON b.BranchID = h.BranchID "
+                + "WHERE s.Status = 'SCHEDULED' AND s.MovieID = ? "
+                + "ORDER BY s.StartTime";
+        List<ShowtimeView> showtimes = new ArrayList<>();
+
+        try (Connection connection = DBContext.getConnection();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, movieId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    ShowtimeView showtime = new ShowtimeView();
+                    showtime.setShowtimeId(resultSet.getInt("ShowtimeID"));
+                    showtime.setMovieId(resultSet.getInt("MovieID"));
+                    showtime.setBranchId(resultSet.getInt("BranchID"));
+                    showtime.setMovieTitle(resultSet.getString("Title"));
+                    showtime.setBranchName(resultSet.getString("BranchName"));
+                    showtime.setCity(resultSet.getString("City"));
+                    showtime.setHallName(resultSet.getString("HallName"));
+                    showtime.setStartTime(resultSet.getTimestamp("StartTime"));
+                    showtime.setBaseTicketPrice(resultSet.getBigDecimal("BaseTicketPrice"));
+                    showtimes.add(showtime);
+                }
+            }
+        } catch (Exception exception) {
+            exception.printStackTrace();
+        }
+
+        return showtimes;
+    }
+
+    public List<ShowtimeView> getScheduledShowtimesByBranchId(int branchId) {
+        String sql = "SELECT s.ShowtimeID, m.MovieID, b.BranchID, m.Title, m.PosterURL, m.AgeRating, m.Duration, m.Genre, "
+                + "b.BranchName, b.City, h.HallName, "
+                + "s.StartTime, s.BaseTicketPrice "
+                + "FROM Showtimes s "
+                + "JOIN Movies m ON m.MovieID = s.MovieID "
+                + "JOIN Halls h ON h.HallID = s.HallID "
+                + "JOIN Branches b ON b.BranchID = h.BranchID "
+                + "WHERE s.Status = 'SCHEDULED' AND b.BranchID = ? "
+                + "ORDER BY s.StartTime";
+        List<ShowtimeView> showtimes = new ArrayList<>();
+
+        try (Connection connection = DBContext.getConnection();
+                PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, branchId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    ShowtimeView showtime = new ShowtimeView();
+                    showtime.setShowtimeId(resultSet.getInt("ShowtimeID"));
+                    showtime.setMovieId(resultSet.getInt("MovieID"));
+                    showtime.setBranchId(resultSet.getInt("BranchID"));
+                    showtime.setMovieTitle(resultSet.getString("Title"));
+                    showtime.setPosterUrl(resultSet.getString("PosterURL"));
+                    showtime.setAgeRating(resultSet.getString("AgeRating"));
+                    showtime.setDuration(resultSet.getInt("Duration"));
+                    showtime.setGenre(resultSet.getString("Genre"));
+                    showtime.setBranchName(resultSet.getString("BranchName"));
+                    showtime.setCity(resultSet.getString("City"));
+                    showtime.setHallName(resultSet.getString("HallName"));
+                    showtime.setStartTime(resultSet.getTimestamp("StartTime"));
+                    showtime.setBaseTicketPrice(resultSet.getBigDecimal("BaseTicketPrice"));
+                    showtimes.add(showtime);
+                }
             }
         } catch (Exception exception) {
             exception.printStackTrace();

@@ -9,6 +9,10 @@ public class ShowtimeView {
     private int movieId;
     private int branchId;
     private String movieTitle;
+    private String posterUrl;
+    private String ageRating;
+    private int duration;
+    private String genre;
     private String branchName;
     private String city;
     private String hallName;
@@ -45,6 +49,38 @@ public class ShowtimeView {
 
     public void setMovieTitle(String movieTitle) {
         this.movieTitle = movieTitle;
+    }
+
+    public String getPosterUrl() {
+        return posterUrl;
+    }
+
+    public void setPosterUrl(String posterUrl) {
+        this.posterUrl = posterUrl;
+    }
+
+    public String getAgeRating() {
+        return ageRating;
+    }
+
+    public void setAgeRating(String ageRating) {
+        this.ageRating = ageRating;
+    }
+
+    public int getDuration() {
+        return duration;
+    }
+
+    public void setDuration(int duration) {
+        this.duration = duration;
+    }
+
+    public String getGenre() {
+        return genre;
+    }
+
+    public void setGenre(String genre) {
+        this.genre = genre;
     }
 
     public String getBranchName() {
