@@ -1,0 +1,409 @@
+/* ==========================================================================
+   CINEFLOW MOVIE FORM - BALANCED TWO-COLUMN RESPONSIVE LAYOUT
+   Streamlined cinema administration form styling
+   ========================================================================== */
+
+/* 1. CONTAINER BREATHING ROOM (PREVENT STICKY FOOTER OVERLAP) */
+.cf-content {
+    padding-bottom: 90px !important;
+}
+
+/* 2. TWO-COLUMN BALANCED GRID */
+.cf-movie-form-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 24px;
+    align-items: start;
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+@media (max-width: 960px) {
+    .cf-movie-form-layout {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+}
+
+/* 3. MAIN FORM CARD (LEFT COLUMN) */
+.cf-form-main-card {
+    background: #ffffff;
+    border: 1px solid var(--cf-border);
+    border-radius: var(--cf-radius-lg);
+    box-shadow: var(--cf-shadow-sm);
+    padding: 24px;
+}
+
+.cf-form-section-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.cf-form-section-title {
+    margin: 0;
+    font-size: 14.5px;
+    font-weight: 700;
+    color: var(--cf-text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cf-form-section-title svg {
+    color: var(--cf-muted);
+}
+
+.cf-form-divider {
+    height: 1px;
+    background: #edf0f2;
+    margin: 22px 0 20px;
+}
+
+/* 4. FIELD GRIDS */
+.cf-fields-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.cf-field-span-2 {
+    grid-column: 1 / -1;
+}
+
+@media (max-width: 600px) {
+    .cf-fields-grid {
+        grid-template-columns: 1fr;
+        gap: 14px;
+    }
+}
+
+/* 5. FORM FIELD CONTROLS */
+.cf-form-group {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.cf-form-label {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--cf-text);
+    line-height: 1.2;
+    margin-bottom: 6px;
+    display: block;
+}
+
+.cf-form-label .req {
+    color: var(--cf-primary);
+    margin-left: 2px;
+}
+
+.cf-form-control {
+    width: 100%;
+    min-height: 38px;
+    height: 38px;
+    padding: 0 12px;
+    border: 1px solid var(--cf-border);
+    border-radius: var(--cf-radius-sm);
+    font-size: 13.5px;
+    font-family: inherit;
+    color: var(--cf-text);
+    background: #ffffff;
+    box-sizing: border-box;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cf-form-control:focus {
+    border-color: var(--cf-primary);
+    box-shadow: 0 0 0 3px rgba(215, 25, 32, 0.1);
+    outline: none;
+}
+
+.cf-form-control[readonly] {
+    background: #f8fafc;
+    color: var(--cf-muted);
+    cursor: not-allowed;
+}
+
+.cf-form-textarea {
+    width: 100%;
+    min-height: 100px;
+    padding: 10px 12px;
+    border: 1px solid var(--cf-border);
+    border-radius: var(--cf-radius-sm);
+    font-size: 13.5px;
+    font-family: inherit;
+    color: var(--cf-text);
+    background: #ffffff;
+    box-sizing: border-box;
+    resize: vertical;
+    line-height: 1.5;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cf-form-textarea:focus {
+    border-color: var(--cf-primary);
+    box-shadow: 0 0 0 3px rgba(215, 25, 32, 0.1);
+    outline: none;
+}
+
+/* 6. SIDE CARDS (RIGHT COLUMN - MEDIA) */
+.cf-side-card {
+    background: #ffffff;
+    border: 1px solid var(--cf-border);
+    border-radius: var(--cf-radius-lg);
+    box-shadow: var(--cf-shadow-sm);
+    overflow: hidden;
+}
+
+.cf-side-header {
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--cf-border);
+    background: #fcfdfe;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cf-side-title {
+    margin: 0;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--cf-text);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.cf-side-title svg {
+    color: var(--cf-muted);
+}
+
+.cf-side-body {
+    padding: 18px;
+}
+
+/* COMPACT POSTER PREVIEW & CONTROLS */
+.cf-poster-compact-wrap {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+}
+
+.cf-poster-thumb-preview {
+    width: 95px;
+    min-width: 95px;
+    max-width: 95px;
+    height: 138px;
+    border-radius: var(--cf-radius-sm);
+    overflow: hidden;
+    background: #edf1f3;
+    border: 1px solid var(--cf-border);
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+}
+
+.cf-poster-thumb-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.cf-poster-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    color: var(--cf-muted);
+    font-size: 11px;
+    text-align: center;
+    padding: 8px;
+}
+
+.cf-poster-placeholder svg {
+    color: var(--cf-muted);
+    opacity: 0.6;
+}
+
+.cf-poster-controls {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.cf-file-picker-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 34px;
+    padding: 0 12px;
+    border: 1px solid var(--cf-border);
+    border-radius: var(--cf-radius-sm);
+    background: #f8fafc;
+    color: var(--cf-text);
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    user-select: none;
+    box-sizing: border-box;
+}
+
+.cf-file-picker-btn:hover {
+    background: #edf1f4;
+    border-color: #cbd5e1;
+}
+
+.cf-file-name-hint {
+    font-size: 11.5px;
+    color: var(--cf-success);
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: none;
+}
+
+.cf-field-group-compact {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+}
+
+.cf-field-group-compact label {
+    font-size: 11.5px;
+    color: var(--cf-muted);
+    font-weight: 500;
+}
+
+.cf-input-sm {
+    width: 100%;
+    min-height: 34px;
+    height: 34px;
+    padding: 0 10px;
+    border: 1px solid var(--cf-border);
+    border-radius: var(--cf-radius-sm);
+    font-size: 12.5px;
+    font-family: inherit;
+    color: var(--cf-text);
+    background: #ffffff;
+    box-sizing: border-box;
+}
+
+.cf-input-sm:focus {
+    border-color: var(--cf-primary);
+    box-shadow: 0 0 0 2px rgba(215, 25, 32, 0.1);
+    outline: none;
+}
+
+/* COMPACT TRAILER ROW */
+.cf-trailer-compact-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.cf-trailer-file-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+/* 7. DANGER ZONE (BOTTOM BANNER - SEPARATED & CLEAN) */
+.cf-danger-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 16px 20px;
+    background: #fffafa;
+    border: 1px solid #fecaca;
+    border-radius: var(--cf-radius-lg);
+    margin-top: 10px;
+    margin-bottom: 24px;
+}
+
+.cf-danger-info {
+    flex: 1;
+    min-width: 240px;
+}
+
+.cf-danger-title {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--cf-danger);
+    margin-bottom: 2px;
+}
+
+.cf-danger-desc {
+    font-size: 12px;
+    color: var(--cf-muted);
+    line-height: 1.4;
+}
+
+.cf-danger-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+/* 8. STICKY ACTION FOOTER BAR (NON-INTRUSIVE & SAFE) */
+.cf-form-sticky-bar {
+    position: fixed;
+    bottom: 0;
+    left: var(--cf-sidebar);
+    right: 0;
+    z-index: 90;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 32px;
+    background: #ffffff;
+    border-top: 1px solid var(--cf-border);
+    box-shadow: 0 -4px 16px rgba(20, 39, 52, 0.06);
+    box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+    .cf-form-sticky-bar {
+        left: 0;
+        padding: 12px 16px;
+    }
+}
+
+.cf-form-sticky-info {
+    font-size: 13px;
+    color: var(--cf-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cf-form-sticky-info strong {
+    color: var(--cf-text);
+}
+
+.cf-form-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.cf-btn.is-submitting {
+    opacity: 0.7;
+    cursor: wait;
+    pointer-events: none;
+}
