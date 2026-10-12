@@ -69,12 +69,18 @@
                 <div class="subtitle">
                     Đăng nhập để tiếp tục với CineFlow
                 </div>
-                <% if ("session".equals(request.getParameter("error"))) { %>
+                <% 
+                    String redirectUrl = request.getParameter("redirect");
+                    if ("session".equals(request.getParameter("error"))) { 
+                %>
                 <p class="form-error" role="alert">Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.</p>
                 <% } %>
 
                 <form action="${pageContext.request.contextPath}/login"
                       method="post">
+                    <% if (redirectUrl != null && !redirectUrl.trim().isEmpty()) { %>
+                        <input type="hidden" name="redirect" value="<%= redirectUrl.replace("&", "&amp;").replace("\"", "&quot;").replace("<", "&lt;").replace(">", "&gt;") %>">
+                    <% } %>
 
                     <!-- Tài khoản / Email -->
                     <div class="form-group">
@@ -164,7 +170,7 @@
 
                     Chưa có tài khoản?
 
-                    <a href="${pageContext.request.contextPath}/auth/register.jsp">
+                    <a href="${pageContext.request.contextPath}/auth/register.jsp<%= redirectUrl != null && !redirectUrl.trim().isEmpty() ? ("?redirect=" + java.net.URLEncoder.encode(redirectUrl, "UTF-8")) : "" %>">
                         Tạo tài khoản
                     </a>
 
