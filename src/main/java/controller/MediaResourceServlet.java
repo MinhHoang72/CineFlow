@@ -1,4 +1,4 @@
-package controller.media;
+package controller;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;

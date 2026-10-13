@@ -24,7 +24,7 @@
 
     <servlet>
         <servlet-name>MovieDetailsServlet</servlet-name>
-        <servlet-class>controller.movie.MovieDetailsServlet</servlet-class>
+        <servlet-class>controller.MovieDetailsServlet</servlet-class>
     </servlet>
 
     <servlet-mapping>
@@ -34,7 +34,7 @@
 
     <servlet>
         <servlet-name>MovieRatingServlet</servlet-name>
-        <servlet-class>controller.movie.MovieRatingServlet</servlet-class>
+        <servlet-class>controller.MovieRatingServlet</servlet-class>
     </servlet>
 
     <servlet-mapping>
@@ -44,7 +44,7 @@
 
     <servlet>
         <servlet-name>AccountServlet</servlet-name>
-        <servlet-class>controller.account.AccountServlet</servlet-class>
+        <servlet-class>controller.AccountServlet</servlet-class>
     </servlet>
 
     <servlet-mapping>
@@ -54,7 +54,7 @@
 
     <servlet>
         <servlet-name>MediaResourceServlet</servlet-name>
-        <servlet-class>controller.media.MediaResourceServlet</servlet-class>
+        <servlet-class>controller.MediaResourceServlet</servlet-class>
     </servlet>
     <servlet-mapping>
         <servlet-name>MediaResourceServlet</servlet-name>
@@ -63,7 +63,7 @@
 
     <servlet>
         <servlet-name>StaffServlet</servlet-name>
-        <servlet-class>controller.staff.StaffServlet</servlet-class>
+        <servlet-class>controller.StaffServlet</servlet-class>
     </servlet>
 
     <servlet-mapping>
@@ -73,7 +73,7 @@
 
     <servlet>
         <servlet-name>MovieManagementServlet</servlet-name>
-        <servlet-class>controller.admin.MovieManagementServlet</servlet-class>
+        <servlet-class>controller.MovieManagementServlet</servlet-class>
     </servlet>
 
     <servlet-mapping>
@@ -88,7 +88,7 @@
 
     <servlet>
         <servlet-name>DistributionServlet</servlet-name>
-        <servlet-class>controller.admin.DistributionServlet</servlet-class>
+        <servlet-class>controller.DistributionServlet</servlet-class>
     </servlet>
 
     <servlet-mapping>
@@ -98,7 +98,7 @@
 
     <servlet>
         <servlet-name>ReportServlet</servlet-name>
-        <servlet-class>controller.admin.ReportServlet</servlet-class>
+        <servlet-class>controller.ReportServlet</servlet-class>
     </servlet>
 
     <servlet-mapping>
@@ -113,7 +113,7 @@
 
     <servlet>
         <servlet-name>RegisterServlet</servlet-name>
-        <servlet-class>controller.auth.RegisterServlet</servlet-class>
+        <servlet-class>controller.RegisterServlet</servlet-class>
     </servlet>
 
     <servlet-mapping>
@@ -128,7 +128,7 @@
 
     <servlet>
         <servlet-name>LoginServlet</servlet-name>
-        <servlet-class>controller.auth.LoginServlet</servlet-class>
+        <servlet-class>controller.LoginServlet</servlet-class>
     </servlet>
 
     <servlet-mapping>
@@ -143,7 +143,7 @@
 
     <servlet>
         <servlet-name>LogoutServlet</servlet-name>
-        <servlet-class>controller.auth.LogoutServlet</servlet-class>
+        <servlet-class>controller.LogoutServlet</servlet-class>
     </servlet>
 
     <servlet-mapping>
@@ -158,7 +158,7 @@
 
     <servlet>
         <servlet-name>ChangePasswordServlet</servlet-name>
-        <servlet-class>controller.auth.ChangePasswordServlet</servlet-class>
+        <servlet-class>controller.ChangePasswordServlet</servlet-class>
     </servlet>
 
     <servlet-mapping>
@@ -173,7 +173,7 @@
 
     <servlet>
         <servlet-name>ForgotPasswordServlet</servlet-name>
-        <servlet-class>controller.auth.ForgotPasswordServlet</servlet-class>
+        <servlet-class>controller.ForgotPasswordServlet</servlet-class>
     </servlet>
 
     <servlet-mapping>
@@ -183,7 +183,7 @@
 
     <servlet>
         <servlet-name>VerifyOtpServlet</servlet-name>
-        <servlet-class>controller.auth.VerifyOtpServlet</servlet-class>
+        <servlet-class>controller.VerifyOtpServlet</servlet-class>
     </servlet>
 
     <servlet-mapping>
@@ -198,7 +198,7 @@
 
     <servlet>
         <servlet-name>ResetPasswordServlet</servlet-name>
-        <servlet-class>controller.auth.ResetPasswordServlet</servlet-class>
+        <servlet-class>controller.ResetPasswordServlet</servlet-class>
     </servlet>
 
     <servlet-mapping>

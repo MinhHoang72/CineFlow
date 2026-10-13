@@ -1,4 +1,4 @@
-package controller.movie;
+package controller;
 
 import dao.CinemaDAO;
 import dao.RatingDAO;

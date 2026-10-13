@@ -1,4 +1,4 @@
-package controller.admin;
+package controller;
 
 import dao.CinemaDAO;
 import jakarta.servlet.ServletException;
