@@ -91,16 +91,7 @@
                 <% } else if ("MANAGER".equals(headerRole)) { %>
                     <a class="cf-badge-role manager" href="<%= ctx %>/staff" title="Quản lý cụm rạp">Quản lý</a>
                 <% } %>
-                <a class="cf-account-btn" href="<%= ctx %>/account" title="Trang cá nhân của <%= safeEscape(headerMemberName) %>">
-                    <span class="cf-account-avatar">
-                        <% if (headerAvatar != null && !headerAvatar.isBlank()) { %>
-                            <img class="cf-account-avatar-img" src="<%= safeEscape(headerAvatar) %>" alt="<%= safeEscape(headerMemberName) %>">
-                        <% } else { %>
-                            <%= headerInitial %>
-                        <% } %>
-                    </span>
-                    <span class="cf-account-btn-text">Tài khoản</span>
-                </a>
+                <a class="cf-account-btn" href="<%= ctx %>/account" title="Trang cá nhân của <%= safeEscape(headerMemberName) %>">Tài khoản</a>
                 <form class="cf-logout-inline" action="<%= ctx %>/logout" method="post">
                     <button type="submit" class="cf-logout-btn" title="Đăng xuất khỏi hệ thống">
                         Đăng xuất
