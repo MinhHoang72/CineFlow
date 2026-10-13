@@ -61,11 +61,11 @@
                 </div>
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <a href="${pageContext.request.contextPath}/admin/movies" class="cf-btn cf-btn-secondary">
-                        ← Danh mục phim
+                        Danh mục phim
                     </a>
                     <% if (editing) { %>
                         <a href="${pageContext.request.contextPath}/admin/distribution?movieId=<%= movie.getMovieId() %>" class="cf-btn cf-btn-primary">
-                            Phân phối rạp chiếu →
+                        Phân phối rạp chiếu
                         </a>
                     <% } %>
                 </div>
@@ -129,9 +129,12 @@
                                 <select class="cf-form-control" name="status">
                                     <option value="COMING_SOON" <%= "COMING_SOON".equals(status) ? "selected" : "" %>>Sắp chiếu (COMING_SOON)</option>
                                     <option value="NOW_SHOWING" <%= "NOW_SHOWING".equals(status) ? "selected" : "" %>>Đang chiếu (NOW_SHOWING)</option>
-                                    <option value="ENDED" <%= "ENDED".equals(status) ? "selected" : "" %>>Đã kết thúc (ENDED)</option>
-                                    <option value="ARCHIVED" <%= "ARCHIVED".equals(status) ? "selected" : "" %>>Lưu trữ (ARCHIVED)</option>
+                                    <option value="ENDED" <%= "ENDED".equals(status) ? "selected" : "" %>>Đã ngừng chiếu (ENDED)</option>
+                                    <option value="ARCHIVED" <%= "ARCHIVED".equals(status) ? "selected" : "" %>>Lưu trữ kho phim (ARCHIVED)</option>
                                 </select>
+                                <p style="margin: 6px 0 0; font-size: 12px; color: var(--cf-muted); line-height: 1.4;">
+                                    💡 <strong>Vòng đời phim:</strong> Chọn "Đã ngừng chiếu" khi phim hết đợt chiếu hoặc "Lưu trữ" để ẩn khỏi hệ thống bán vé mà vẫn bảo toàn đầy đủ dữ liệu lịch sử đặt vé và báo cáo doanh thu.
+                                </p>
                             </div>
                         </div>
 
@@ -273,26 +276,6 @@
                     </div>
                 </div>
 
-                <!-- KHU VỰC THAO TÁC NGUY HIỂM (ĐẶT Ở CUỐI FORM, TÁCH BIỆT RÕ RÀNG) -->
-                <% if (editing) { %>
-                    <div class="cf-danger-banner">
-                        <div class="cf-danger-info">
-                            <div class="cf-danger-title">Khu vực thao tác nâng cao</div>
-                            <div class="cf-danger-desc">
-                                Lưu trữ phim sẽ dừng toàn bộ việc mở bán vé. Chỉ xóa phim vĩnh viễn khi phim chưa phát sinh bất kỳ dữ liệu giao dịch hoặc suất chiếu nào.
-                            </div>
-                        </div>
-                        <div class="cf-danger-actions">
-                            <button type="submit" form="archiveForm" class="cf-btn cf-btn-secondary cf-btn-sm" style="color: #b45309; border-color: #fde68a;">
-                                Lưu trữ phim
-                            </button>
-                            <button type="submit" form="deleteForm" class="cf-btn cf-btn-danger cf-btn-sm" onclick="return confirm('Bạn có chắc chắn muốn XÓA VĨNH VIỄN phim này? Thao tác này không thể hoàn tác!');">
-                                Xóa phim vĩnh viễn
-                            </button>
-                        </div>
-                    </div>
-                <% } %>
-
                 <!-- THANH HÀNH ĐỘNG CỐ ĐỊNH (FIXED SAFE FOOTER) -->
                 <div class="cf-form-sticky-bar">
                     <div class="cf-form-sticky-info">
@@ -309,18 +292,6 @@
                     </div>
                 </div>
             </form>
-
-            <!-- CÁC FORM PHỤ CHO LƯU TRỮ VÀ XÓA -->
-            <% if (editing) { %>
-                <form id="archiveForm" method="post" action="${pageContext.request.contextPath}/admin/movie" style="display: none;">
-                    <input type="hidden" name="action" value="archive">
-                    <input type="hidden" name="movieId" value="<%= movie.getMovieId() %>">
-                </form>
-                <form id="deleteForm" method="post" action="${pageContext.request.contextPath}/admin/movie" style="display: none;">
-                    <input type="hidden" name="action" value="delete">
-                    <input type="hidden" name="movieId" value="<%= movie.getMovieId() %>">
-                </form>
-            <% } %>
         </main>
     </div>
 </div>

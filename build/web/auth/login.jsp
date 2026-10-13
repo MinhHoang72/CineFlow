@@ -160,10 +160,6 @@
                 </form>
 
 
-                <div class="divider">
-                    HOẶC
-                </div>
-
 
                 <!-- Register -->
                 <div class="register">

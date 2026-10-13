@@ -74,7 +74,7 @@
                     <p>Danh sách và quản lý thông tin các bộ phim được phát hành trên toàn hệ thống CineFlow.</p>
                 </div>
                 <a href="${pageContext.request.contextPath}/admin/movie" class="cf-btn cf-btn-primary">
-                    + Thêm phim mới
+                     Thêm phim mới
                 </a>
             </div>
 

@@ -133,9 +133,10 @@
     String posterUrl = movie.getPosterUrl();
     boolean hasPoster = (posterUrl != null && !posterUrl.trim().isEmpty());
 
+    boolean isComingSoon = movie.isComingSoon();
     String statusText = "Đang chiếu";
     String statusClass = "now-showing";
-    if ("COMING_SOON".equalsIgnoreCase(movie.getStatus())) {
+    if (isComingSoon) {
         statusText = "Sắp chiếu";
         statusClass = "coming-soon";
     } else if ("ENDED".equalsIgnoreCase(movie.getStatus()) || "ARCHIVED".equalsIgnoreCase(movie.getStatus())) {
@@ -266,6 +267,8 @@
         .rating-feedback-msg.info { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
         .rating-feedback-msg.warning { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
         .rating-feedback-msg.success { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+        .rating-coming-soon-notice { display: inline-flex; align-items: center; gap: 10px; background: #fff7ed; border: 1px solid #fed7aa; padding: 10px 16px; border-radius: var(--radius-sm); color: #9a3412; font-size: 13.5px; font-weight: 500; line-height: 1.5; }
+        .rating-coming-soon-notice svg { flex-shrink: 0; color: #ea580c; }
         
         /* Synopsis Card (LOTTE Cinema Style) */
         .movie-synopsis-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 32px 36px; box-shadow: var(--shadow-card); margin-bottom: 32px; }
@@ -450,41 +453,52 @@
                         <!-- Left: Overall Rating -->
                         <div class="rating-left">
                             <div class="rating-number-score">
-                                <span id="avgScoreDisplay"><%= totalVotes > 0 ? String.format(java.util.Locale.US, "%.1f", avgScore10) : "--" %></span> <span>/10</span>
+                                <span id="avgScoreDisplay"><%= !isComingSoon && totalVotes > 0 ? String.format(java.util.Locale.US, "%.1f", avgScore10) : "--" %></span> <span>/10</span>
                             </div>
                             <div>
-                                <div class="rating-stars-visual" id="visualStarsDisplay" title="<%= totalVotes > 0 ? ("Đánh giá trung bình " + String.format(java.util.Locale.US, "%.1f", avgStars5) + "/5 sao") : "Chưa có lượt đánh giá nào" %>">
+                                <div class="rating-stars-visual" id="visualStarsDisplay" title="<%= isComingSoon ? "Phim sắp chiếu - Chưa mở đánh giá" : (totalVotes > 0 ? ("Đánh giá trung bình " + String.format(java.util.Locale.US, "%.1f", avgStars5) + "/5 sao") : "Chưa có lượt đánh giá nào") %>">
                                     <% 
-                                        int fullStars = totalVotes > 0 ? (int) Math.round(avgStars5) : 0;
+                                        int fullStars = (!isComingSoon && totalVotes > 0) ? (int) Math.round(avgStars5) : 0;
                                         for (int s = 1; s <= 5; s++) { 
                                             if (s <= fullStars) { %>★<% } else { %><span style="color: #d1d5db;">★</span><% }
                                         } 
                                     %>
                                 </div>
                                 <div class="rating-count-label">
-                                    <span id="totalVotesDisplay"><%= totalVotes %></span> lượt đánh giá
+                                    <% if (isComingSoon) { %>
+                                        <span id="totalVotesDisplay" style="color: #ea580c; font-weight: 600;">Sắp chiếu (Chưa mở đánh giá)</span>
+                                    <% } else { %>
+                                        <span id="totalVotesDisplay"><%= totalVotes %></span> lượt đánh giá
+                                    <% } %>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Right: Interactive Voting -->
                         <div class="rating-right">
-                            <span class="rating-vote-prompt" id="ratingVotePrompt">
-                                <%= userScore > 0 ? "Đánh giá của bạn:" : "Bạn đánh giá phim này?" %>
-                            </span>
-                            <div class="interactive-stars" id="interactiveStars" role="radiogroup" aria-label="Đánh giá từ 1 đến 5 sao">
-                                <% for (int val = 1; val <= 5; val++) { %>
-                                    <button type="button" class="star-btn <%= val <= userScore ? "selected" : "" %>" data-value="<%= val %>" aria-label="<%= val %> sao" onclick="selectRating(<%= val %>)">★</button>
-                                <% } %>
-                            </div>
-                            <span class="rating-chosen-label" id="ratingChosenLabel">
-                                <%= userScore > 0 ? ("Bạn chọn " + userScore + "/5 sao") : "Chọn số sao" %>
-                            </span>
-                            <button type="button" class="btn-submit-vote" id="btnSubmitVote" onclick="submitRating()">
-                                <%= userScore > 0 ? "Cập nhật đánh giá" : "Gửi đánh giá" %>
-                            </button>
+                            <% if (isComingSoon) { %>
+                                <div class="rating-coming-soon-notice">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                    <span>Phim sắp chiếu chưa mở cổng đánh giá. Khán giả có thể bình chọn sau khi phim khởi chiếu tại rạp.</span>
+                                </div>
+                            <% } else { %>
+                                <span class="rating-vote-prompt" id="ratingVotePrompt">
+                                    <%= userScore > 0 ? "Đánh giá của bạn:" : "Bạn đánh giá phim này?" %>
+                                </span>
+                                <div class="interactive-stars" id="interactiveStars" role="radiogroup" aria-label="Đánh giá từ 1 đến 5 sao">
+                                    <% for (int val = 1; val <= 5; val++) { %>
+                                        <button type="button" class="star-btn <%= val <= userScore ? "selected" : "" %>" data-value="<%= val %>" aria-label="<%= val %> sao" onclick="selectRating(<%= val %>)">★</button>
+                                    <% } %>
+                                </div>
+                                <span class="rating-chosen-label" id="ratingChosenLabel">
+                                    <%= userScore > 0 ? ("Bạn chọn " + userScore + "/5 sao") : "Chọn số sao" %>
+                                </span>
+                                <button type="button" class="btn-submit-vote" id="btnSubmitVote" onclick="submitRating()">
+                                    <%= userScore > 0 ? "Cập nhật đánh giá" : "Gửi đánh giá" %>
+                                </button>
 
-                            <div class="rating-feedback-msg" id="ratingFeedbackBox" hidden></div>
+                                <div class="rating-feedback-msg" id="ratingFeedbackBox" hidden></div>
+                            <% } %>
                         </div>
                     </div>
                 </div>
@@ -643,8 +657,19 @@
             });
         });
 
+        const isMovieComingSoon = <%= isComingSoon %>;
+
         // Submit Rating Action (Real DB AJAX Integration)
         function submitRating() {
+            if (isMovieComingSoon) {
+                const feedback = document.getElementById("ratingFeedbackBox");
+                if (feedback) {
+                    feedback.hidden = false;
+                    feedback.className = "rating-feedback-msg warning";
+                    feedback.textContent = "Phim sắp chiếu chưa mở cổng đánh giá.";
+                }
+                return;
+            }
             const feedback = document.getElementById("ratingFeedbackBox");
             const btn = document.getElementById("btnSubmitVote");
             if (!feedback) return;

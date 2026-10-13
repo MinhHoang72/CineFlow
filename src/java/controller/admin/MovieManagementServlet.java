@@ -72,12 +72,6 @@ public class MovieManagementServlet extends HttpServlet {
         }
 
         String action = request.getParameter("action");
-        try {
-            int movieId = Integer.parseInt(request.getParameter("movieId"));
-            if ("archive".equals(action)) dao.archiveMovie(movieId);
-            else if ("delete".equals(action)) dao.deleteMovie(movieId);
-        } catch (Exception ignored) { }
-
         if ("save".equals(action)) {
             try {
                 Movie movie = readMovie(request);

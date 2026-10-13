@@ -27,7 +27,7 @@ public class CinemaDAO {
 
     private List<Movie> getMoviesByStatus(String status) {
         String sql = "SELECT MovieID, Title, Description, Duration, Genre, Director, Cast, Language, "
-                + "ReleaseDate, EndDate, PosterURL, TrailerURL, AgeRating FROM Movies WHERE Status = ? "
+                + "ReleaseDate, EndDate, PosterURL, TrailerURL, AgeRating, Status FROM Movies WHERE Status = ? "
                 + "ORDER BY ReleaseDate DESC, MovieID DESC";
         List<Movie> movies = new ArrayList<>();
 
@@ -36,21 +36,7 @@ public class CinemaDAO {
             statement.setString(1, status);
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
-                    Movie movie = new Movie();
-                    movie.setMovieId(resultSet.getInt("MovieID"));
-                    movie.setTitle(resultSet.getString("Title"));
-                    movie.setDescription(resultSet.getString("Description"));
-                    movie.setDuration(resultSet.getInt("Duration"));
-                    movie.setGenre(resultSet.getString("Genre"));
-                    movie.setDirector(resultSet.getString("Director"));
-                    movie.setCast(resultSet.getString("Cast"));
-                    movie.setLanguage(resultSet.getString("Language"));
-                    movie.setReleaseDate(resultSet.getDate("ReleaseDate"));
-                    movie.setEndDate(resultSet.getDate("EndDate"));
-                    movie.setPosterUrl(resultSet.getString("PosterURL"));
-                    movie.setTrailerUrl(resultSet.getString("TrailerURL"));
-                    movie.setAgeRating(resultSet.getString("AgeRating"));
-                    movies.add(movie);
+                    movies.add(mapMovie(resultSet));
                 }
             }
         } catch (Exception exception) {
@@ -407,7 +393,7 @@ public class CinemaDAO {
                 + "JOIN Movies m ON m.MovieID = s.MovieID "
                 + "JOIN Halls h ON h.HallID = s.HallID "
                 + "JOIN Branches b ON b.BranchID = h.BranchID "
-                + "WHERE s.Status = 'SCHEDULED' AND m.Status = 'NOW_SHOWING' "
+                + "WHERE s.Status = 'SCHEDULED' AND m.Status IN ('NOW_SHOWING', 'COMING_SOON') "
                 + "ORDER BY s.StartTime";
         List<ShowtimeView> showtimes = new ArrayList<>();
 

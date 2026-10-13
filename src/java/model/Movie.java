@@ -125,4 +125,22 @@ public class Movie {
     public void setAgeRating(String ageRating) {
         this.ageRating = ageRating;
     }
+
+    public boolean isComingSoon() {
+        if (status != null && "COMING_SOON".equalsIgnoreCase(status.trim())) {
+            return true;
+        }
+        if (releaseDate != null) {
+            java.time.LocalDate today = java.time.LocalDate.now();
+            java.time.LocalDate release = releaseDate.toLocalDate();
+            if (release.isAfter(today)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean isRateable() {
+        return !isComingSoon();
+    }
 }

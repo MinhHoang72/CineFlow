@@ -1,5 +1,6 @@
 package controller.movie;
 
+import dao.CinemaDAO;
 import dao.RatingDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -8,10 +9,12 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.util.Locale;
+import model.Movie;
 import model.User;
 
 public class MovieRatingServlet extends HttpServlet {
 
+    private final CinemaDAO cinemaDAO = new CinemaDAO();
     private final RatingDAO ratingDAO = new RatingDAO();
 
     private int extractUserId(HttpServletRequest request) {
@@ -45,12 +48,19 @@ public class MovieRatingServlet extends HttpServlet {
             return;
         }
 
+        Movie movie = cinemaDAO.getMovieById(movieId);
+        if (movie == null) {
+            response.getWriter().write("{\"success\":false,\"message\":\"Không tìm thấy phim.\"}");
+            return;
+        }
+
+        boolean comingSoon = movie.isComingSoon();
         int userId = extractUserId(request);
         RatingDAO.MovieRatingSummary summary = ratingDAO.getRatingSummary(movieId, userId > 0 ? userId : null);
 
         String json = String.format(Locale.US,
-            "{\"success\":true,\"averageScore10\":%.1f,\"averageStars5\":%.1f,\"totalVotes\":%d,\"userScore\":%d}",
-            summary.getAverageScore10(), summary.getAverageStars5(), summary.getTotalVotes(), summary.getUserScore()
+            "{\"success\":true,\"isRateable\":%b,\"isComingSoon\":%b,\"averageScore10\":%.1f,\"averageStars5\":%.1f,\"totalVotes\":%d,\"userScore\":%d}",
+            !comingSoon, comingSoon, summary.getAverageScore10(), summary.getAverageStars5(), summary.getTotalVotes(), summary.getUserScore()
         );
         response.getWriter().write(json);
     }
@@ -77,6 +87,19 @@ public class MovieRatingServlet extends HttpServlet {
         if (movieId <= 0 || score < 1 || score > 5) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             response.getWriter().write("{\"success\":false,\"message\":\"Dữ liệu đánh giá không hợp lệ. Vui lòng chọn từ 1 đến 5 sao.\"}");
+            return;
+        }
+
+        Movie movie = cinemaDAO.getMovieById(movieId);
+        if (movie == null) {
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            response.getWriter().write("{\"success\":false,\"message\":\"Không tìm thấy phim.\"}");
+            return;
+        }
+
+        if (movie.isComingSoon()) {
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            response.getWriter().write("{\"success\":false,\"message\":\"Phim sắp chiếu chưa mở cổng đánh giá. Bạn có thể đánh giá sau khi phim chính thức công chiếu!\"}");
             return;
         }
 

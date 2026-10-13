@@ -17,8 +17,6 @@ public class User {
     private Timestamp createdAt;
     private Timestamp updatedAt;
 
-    private String googleId;
-    private String loginProvider;
     private boolean emailVerified;
     private boolean phoneVerified;
     private Timestamp lastLoginAt;
@@ -120,21 +118,6 @@ public class User {
         this.updatedAt = updatedAt;
     }
 
-    public String getGoogleId() {
-        return googleId;
-    }
-
-    public void setGoogleId(String googleId) {
-        this.googleId = googleId;
-    }
-
-    public String getLoginProvider() {
-        return loginProvider;
-    }
-
-    public void setLoginProvider(String loginProvider) {
-        this.loginProvider = loginProvider;
-    }
 
     public boolean isEmailVerified() {
         return emailVerified;

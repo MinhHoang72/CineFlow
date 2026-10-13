@@ -3,7 +3,28 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/D:/SWP_PRJ/CineFlow/Project%20SWP/Cine_Flow/src/java/controller/DashboardServlet.java</file>
+            <file>file:/D:/SWP_PRJ/Cine_Flow/web/cinema/index.jsp</file>
+            <file>file:/D:/SWP_PRJ/Cine_Flow/web/cinema/details.jsp</file>
+            <file>file:/D:/SWP_PRJ/Cine_Flow/web/manager/dashboard.jsp</file>
+            <file>file:/D:/SWP_PRJ/Cine_Flow/src/java/dao/UserDAO.java</file>
+            <file>file:/D:/SWP_PRJ/Cine_Flow/src/java/dao/ReportDAO.java</file>
+            <file>file:/D:/SWP_PRJ/Cine_Flow/web/staff/directory.jsp</file>
+            <file>file:/D:/SWP_PRJ/Cine_Flow/web/admin/reports.jsp</file>
+            <file>file:/D:/SWP_PRJ/Cine_Flow/web/manager/profile.jsp</file>
+            <file>file:/D:/SWP_PRJ/Cine_Flow/web/manager/distribution.jsp</file>
+            <file>file:/D:/SWP_PRJ/Cine_Flow/web/movie/details.jsp</file>
+            <file>file:/D:/SWP_PRJ/Cine_Flow/src/java/dao/RatingDAO.java</file>
+            <file>file:/D:/SWP_PRJ/Cine_Flow/web/js/admin-pagination.js</file>
+            <file>file:/D:/SWP_PRJ/Cine_Flow/web/admin/movies.jsp</file>
+            <file>file:/D:/SWP_PRJ/Cine_Flow/web/account/profile.jsp</file>
+            <file>file:/D:/SWP_PRJ/Cine_Flow/web/admin/profile.jsp</file>
+            <file>file:/D:/SWP_PRJ/Cine_Flow/web/admin/distribution.jsp</file>
+            <file>file:/D:/SWP_PRJ/Cine_Flow/web/manager/movie-management.jsp</file>
+            <file>file:/D:/SWP_PRJ/Cine_Flow/web/admin/topbar.jsp</file>
+            <file>file:/D:/SWP_PRJ/Cine_Flow/web/admin/sidebar.jsp</file>
+            <file>file:/D:/SWP_PRJ/Cine_Flow/web/admin/dashboard.jsp</file>
+            <file>file:/D:/SWP_PRJ/Cine_Flow/web/admin/movie-management.jsp</file>
+            <file>file:/D:/SWP_PRJ/Cine_Flow/web/staff/dashboard.jsp</file>
         </group>
     </open-files>
 </project-private>

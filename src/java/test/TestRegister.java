@@ -78,8 +78,8 @@ public class TestRegister {
 
         String rawSql =
                 "INSERT INTO Users "
-                + "(FullName, Account, Email, Password, Role, Status, LoginProvider) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?)";
+                + "(FullName, Account, Email, Password, Role, Status) "
+                + "VALUES (?, ?, ?, ?, ?, ?)";
 
 
         try (Connection connection =
@@ -101,7 +101,6 @@ public class TestRegister {
                 );
                 ps.setString(5, "CUSTOMER");
                 ps.setString(6, "ACTIVE");
-                ps.setString(7, "LOCAL");
 
 
                 int rows =
@@ -235,7 +234,7 @@ public class TestRegister {
 
         String checkSql =
                 "SELECT UserID, FullName, Account, "
-                + "Email, Role, Status, LoginProvider "
+                + "Email, Role, Status "
                 + "FROM Users "
                 + "WHERE Account = ?";
 
@@ -290,11 +289,6 @@ public class TestRegister {
                     System.out.println(
                             "Status = "
                             + rs.getString("Status")
-                    );
-
-                    System.out.println(
-                            "LoginProvider = "
-                            + rs.getString("LoginProvider")
                     );
 
 
