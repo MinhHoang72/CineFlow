@@ -351,7 +351,18 @@
 
             function render() {
                 // 1. Date Buttons
-                dateButtons.forEach((button) => button.classList.toggle("active", button.dataset.date === selectedDate));
+                dateButtons.forEach((button) => {
+                    button.classList.toggle("active", button.dataset.date === selectedDate);
+                    if (selectedMovieId) {
+                        const dateHasShows = showtimeButtons.some((s) =>
+                            s.dataset.date === button.dataset.date &&
+                            s.dataset.movieId === selectedMovieId
+                        );
+                        button.classList.toggle("no-shows", !dateHasShows);
+                    } else {
+                        button.classList.remove("no-shows");
+                    }
+                });
                 const activeDate = dateButtons.find((button) => button.dataset.date === selectedDate);
                 if (activeDate && activeDate.dataset.month) {
                     bookingMonth.textContent = activeDate.dataset.month;
@@ -361,13 +372,62 @@
                 cityButtons.forEach((button) => {
                     const btnCity = button.dataset.city || "";
                     button.classList.toggle("active", normalize(btnCity) === normalize(selectedCity));
+                    if (selectedMovieId && btnCity) {
+                        const cityHasShows = showtimeButtons.some((s) =>
+                            normalize(s.dataset.city || "") === normalize(btnCity) &&
+                            s.dataset.movieId === selectedMovieId &&
+                            (!selectedDate || s.dataset.date === selectedDate)
+                        );
+                        button.classList.toggle("no-shows", !cityHasShows);
+                    } else {
+                        button.classList.remove("no-shows");
+                    }
                 });
 
                 // 3. Cinema / Centre Buttons
                 centreButtons.forEach((button) => {
-                    button.hidden = Boolean(selectedCity) && normalize(button.dataset.city || "") !== normalize(selectedCity);
+                    const matchCity = !selectedCity || normalize(button.dataset.city || "") !== normalize(selectedCity) ? false : true;
+                    button.hidden = !matchCity;
+
+                    if (selectedMovieId) {
+                        const branchHasShows = showtimeButtons.some((s) =>
+                            s.dataset.branchId === button.dataset.branchId &&
+                            s.dataset.movieId === selectedMovieId &&
+                            s.dataset.date === selectedDate
+                        );
+                        button.classList.toggle("has-shows", branchHasShows);
+                        button.classList.toggle("no-shows", !branchHasShows);
+                    } else {
+                        button.classList.remove("has-shows");
+                        button.classList.remove("no-shows");
+                    }
                 });
+
+                // Auto-select rạp tối ưu:
+                // Nếu rạp hiện tại bị ẩn hoặc không có suất chiếu cho phim và ngày này,
+                // ưu tiên tự động chọn rạp đầu tiên CÓ suất chiếu trong thành phố đã chọn!
                 let activeCentre = centreButtons.find((button) => button.dataset.branchId === selectedBranchId && !button.hidden);
+                const activeHasShows = activeCentre && showtimeButtons.some((s) =>
+                    s.dataset.branchId === activeCentre.dataset.branchId &&
+                    s.dataset.movieId === selectedMovieId &&
+                    s.dataset.date === selectedDate
+                );
+
+                if ((!activeCentre || !activeHasShows) && Boolean(selectedMovieId)) {
+                    const firstAvailableInCity = centreButtons.find((button) =>
+                        !button.hidden &&
+                        showtimeButtons.some((s) =>
+                            s.dataset.branchId === button.dataset.branchId &&
+                            s.dataset.movieId === selectedMovieId &&
+                            s.dataset.date === selectedDate
+                        )
+                    );
+                    if (firstAvailableInCity) {
+                        activeCentre = firstAvailableInCity;
+                        selectedBranchId = activeCentre.dataset.branchId;
+                    }
+                }
+
                 if (!activeCentre) {
                     activeCentre = centreButtons.find((button) => !button.hidden);
                     selectedBranchId = activeCentre ? activeCentre.dataset.branchId : "";
@@ -460,20 +520,40 @@
                     );
 
                     if (!hasCurrentSlot) {
-                        // Check if this movie has showtimes at the currently selected branch on any date
-                        const branchSlot = showtimeButtons.find((s) =>
+                        // 1. Ưu tiên tìm rạp khác trong CÙNG thành phố và CÙNG ngày hiện tại
+                        const sameCitySameDate = showtimeButtons.find((s) =>
                             s.dataset.movieId === selectedMovieId &&
-                            s.dataset.branchId === selectedBranchId
+                            s.dataset.date === selectedDate &&
+                            (!selectedCity || normalize(s.dataset.city || "") === normalize(selectedCity))
                         );
-                        if (branchSlot) {
-                            selectedDate = branchSlot.dataset.date;
+                        if (sameCitySameDate) {
+                            selectedBranchId = sameCitySameDate.dataset.branchId;
                         } else {
-                            // Find any showtime for this movie across all branches
-                            const anySlot = showtimeButtons.find((s) => s.dataset.movieId === selectedMovieId);
-                            if (anySlot) {
-                                selectedDate = anySlot.dataset.date;
-                                selectedBranchId = anySlot.dataset.branchId;
-                                selectedCity = anySlot.dataset.city || "";
+                            // 2. Tìm ngày khác tại chính rạp đang chọn
+                            const branchSlot = showtimeButtons.find((s) =>
+                                s.dataset.movieId === selectedMovieId &&
+                                s.dataset.branchId === selectedBranchId
+                            );
+                            if (branchSlot) {
+                                selectedDate = branchSlot.dataset.date;
+                            } else {
+                                // 3. Tìm bất kỳ rạp/ngày nào trong cùng thành phố
+                                const citySlot = showtimeButtons.find((s) =>
+                                    s.dataset.movieId === selectedMovieId &&
+                                    (!selectedCity || normalize(s.dataset.city || "") === normalize(selectedCity))
+                                );
+                                if (citySlot) {
+                                    selectedDate = citySlot.dataset.date;
+                                    selectedBranchId = citySlot.dataset.branchId;
+                                } else {
+                                    // 4. Mở rộng tìm toàn quốc nếu thành phố không có rạp chiếu
+                                    const anySlot = showtimeButtons.find((s) => s.dataset.movieId === selectedMovieId);
+                                    if (anySlot) {
+                                        selectedDate = anySlot.dataset.date;
+                                        selectedBranchId = anySlot.dataset.branchId;
+                                        selectedCity = anySlot.dataset.city || "";
+                                    }
+                                }
                             }
                         }
                     }

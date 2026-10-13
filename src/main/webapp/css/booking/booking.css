@@ -208,19 +208,79 @@
     cursor: pointer;
     font-size: 12.5px;
     font-weight: 500;
-    transition: all .15s;
+    transition: all .2s ease;
+    position: relative;
 }
 .centre:hover {
     border-color: rgba(255, 255, 255, 0.25);
     color: #fff;
     background: #1A202C;
 }
+
+/* Rạp CÓ suất chiếu: Nổi bật, viền sáng và chấm chỉ báo xanh neon */
+.centre.has-shows {
+    border-color: rgba(99, 102, 241, 0.45);
+    background: #141A28;
+    color: #F8FAFC;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+.centre.has-shows::after {
+    content: '';
+    position: absolute;
+    top: 7px;
+    right: 7px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #10B981;
+    box-shadow: 0 0 6px rgba(16, 185, 129, 0.9);
+}
+.centre.has-shows:hover {
+    border-color: #6366F1;
+    background: #1A2234;
+    box-shadow: 0 0 12px rgba(99, 102, 241, 0.35);
+}
+
+/* Rạp KHÔNG CÓ suất chiếu: Mờ hơn hẳn (opacity 0.38) tránh người dùng phải bấm mò từng rạp */
+.centre.no-shows {
+    opacity: 0.38;
+    color: #64748B;
+    background: rgba(15, 20, 30, 0.35);
+    border: 1px dashed rgba(255, 255, 255, 0.08);
+}
+.centre.no-shows:hover {
+    opacity: 0.7;
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #94A3B8;
+}
+
 .centre.active {
+    opacity: 1 !important;
     border-color: var(--red);
-    background: var(--cf-primary-gradient, linear-gradient(135deg, #FF2A54, #E11D48));
-    color: #fff;
+    background: var(--cf-primary-gradient, linear-gradient(135deg, #FF2A54, #E11D48)) !important;
+    color: #fff !important;
     font-weight: 600;
-    box-shadow: 0 0 12px rgba(255, 42, 84, 0.35);
+    box-shadow: 0 0 14px rgba(255, 42, 84, 0.45) !important;
+}
+.centre.active::after {
+    display: none;
+}
+
+/* Tab Thành phố & Nút Ngày mờ khi không có phim chiếu */
+.city-tab.no-shows {
+    opacity: 0.4;
+}
+.city-tab.no-shows:hover {
+    opacity: 0.8;
+}
+.date.no-shows {
+    opacity: 0.38;
+}
+.date.no-shows:hover {
+    opacity: 0.75;
+}
+.date.active, .city-tab.active {
+    opacity: 1 !important;
 }
 
 /* Movie Panel */
