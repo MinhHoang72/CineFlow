@@ -967,12 +967,12 @@ GO
    12. SAMPLE USERS
    ========================================================= */
 INSERT INTO Users
-(FullName, Account, Email, Password, Phone, Role, Status, BranchID)
+(FullName, Account, Email, Password, Phone, Role, Status, BranchID, EmailVerified)
 VALUES
-(N'Nguyễn Văn Customer', 'customer', 'customer@gmail.com', '123456', '0900000001', 'CUSTOMER', 'ACTIVE', NULL),
-(N'Nguyễn Văn Staff',    'staff',    'staff@gmail.com',    '123456', '0900000002', 'STAFF',    'ACTIVE', 1),
-(N'Nguyễn Văn Manager',  'manager',  'manager@gmail.com',  '123456', '0900000003', 'MANAGER',  'ACTIVE', NULL),
-(N'Administrator',       'admin',    'admin@gmail.com',    '123456', '0900000004', 'ADMIN',    'ACTIVE', NULL);
+(N'Nguyễn Văn Customer', 'customer', 'customer@gmail.com', '123456', '0900000001', 'CUSTOMER', 'ACTIVE', NULL, 1),
+(N'Nguyễn Văn Staff',    'staff',    'staff@gmail.com',    '123456', '0900000002', 'STAFF',    'ACTIVE', 1, 1),
+(N'Nguyễn Văn Manager',  'manager',  'manager@gmail.com',  '123456', '0900000003', 'MANAGER',  'ACTIVE', NULL, 1),
+(N'Administrator',       'admin',    'admin@gmail.com',    '123456', '0900000004', 'ADMIN',    'ACTIVE', NULL, 1);
 GO
 
 

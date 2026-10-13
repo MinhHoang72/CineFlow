@@ -78,10 +78,19 @@ public class LoginServlet extends HttpServlet {
             return;
         }
 
-        if ("INACTIVE".equalsIgnoreCase(user.getStatus()) || !user.isEmailVerified()) {
+        // Chỉ tài khoản khách hàng (CUSTOMER) mới bắt buộc xác thực OTP kích hoạt email
+        // Các tài khoản nội bộ (ADMIN, MANAGER, STAFF) do quản trị cấp trực tiếp
+        boolean requiresVerification = "CUSTOMER".equalsIgnoreCase(user.getRole());
+        if ("INACTIVE".equalsIgnoreCase(user.getStatus()) || (requiresVerification && !user.isEmailVerified())) {
             String encodedEmail = java.net.URLEncoder.encode(user.getEmail(), java.nio.charset.StandardCharsets.UTF_8);
             response.sendRedirect(request.getContextPath() + "/auth/login.jsp?error=unverified&email=" + encodedEmail);
             return;
+        }
+
+        // Tự động đồng bộ EmailVerified cho tài khoản nội bộ nếu chưa được đánh dấu
+        if (!requiresVerification && !user.isEmailVerified()) {
+            userDAO.activateUser(user.getUserId());
+            user.setEmailVerified(true);
         }
 
 
