@@ -180,95 +180,278 @@ button, input, select, textarea {
     color: #ffffff;
 }
 
-/* Logged-in User Chip */
-.cf-user-chip {
+/* ============================================================
+   User Dropdown Menu — Cinema Modern Dark
+   ============================================================ */
+.cf-user-menu {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+/* ---- Trigger pill ---- */
+.cf-user-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 12px 5px 6px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 999px;
+    background: rgba(22, 27, 38, 0.75);
+    backdrop-filter: blur(8px);
+    color: #E2E8F0;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    font-family: inherit;
+}
+
+.cf-user-trigger:hover,
+.cf-menu-open .cf-user-trigger {
+    background: rgba(30, 36, 51, 0.95);
+    border-color: rgba(255, 255, 255, 0.18);
+    color: #ffffff;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+/* Trigger avatar */
+.cf-trigger-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.cf-trigger-initial {
+    display: grid;
+    place-items: center;
+    background: linear-gradient(135deg, #6366F1, #FF2A54);
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.cf-trigger-name {
+    max-width: 130px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cf-trigger-chevron {
+    opacity: 0.6;
+    transition: transform 0.25s ease;
+    flex-shrink: 0;
+}
+.cf-menu-open .cf-trigger-chevron {
+    transform: rotate(180deg);
+    opacity: 0.9;
+}
+
+/* ---- Dropdown Panel ---- */
+.cf-dropdown-panel {
+    display: none;
+    position: absolute;
+    top: calc(100% + 12px);
+    right: 0;
+    width: 272px;
+    background: rgba(18, 23, 34, 0.97);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 16px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7),
+                0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+    z-index: 9999;
+    overflow: hidden;
+    transform: translateY(-8px);
+    opacity: 0;
+    animation: none;
+}
+
+.cf-dropdown-panel.cf-dp-open {
+    display: block;
+    animation: cfDropIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes cfDropIn {
+    from { opacity: 0; transform: translateY(-8px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
+/* ---- Dropdown Header / User card ---- */
+.cf-dp-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 16px 14px;
+}
+
+.cf-dp-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.cf-dp-initial {
+    display: grid;
+    place-items: center;
+    background: linear-gradient(135deg, #6366F1, #FF2A54);
+    color: #ffffff;
+    font-size: 17px;
+    font-weight: 700;
+}
+
+.cf-dp-userinfo {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.cf-dp-fullname {
+    color: #F8FAFC;
+    font-size: 14px;
+    font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cf-dp-account {
+    color: #64748B;
+    font-size: 11.5px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Role badge inside panel header */
+.cf-dp-badge {
+    padding: 3px 9px;
+    border-radius: 6px;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+}
+.cf-dp-badge.admin {
+    background: rgba(99, 102, 241, 0.18);
+    color: #A5B4FC;
+    border: 1px solid rgba(99, 102, 241, 0.35);
+}
+.cf-dp-badge.manager {
+    background: rgba(245, 158, 11, 0.15);
+    color: #FCD34D;
+    border: 1px solid rgba(245, 158, 11, 0.32);
+}
+
+/* ---- Divider ---- */
+.cf-dp-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.06);
+    margin: 0 0;
+}
+
+/* ---- Nav Items ---- */
+.cf-dp-nav {
+    padding: 6px 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.cf-dp-item {
     display: flex;
     align-items: center;
     gap: 10px;
-    background: rgba(22, 27, 38, 0.85);
-    border: 1px solid var(--cf-border, rgba(255, 255, 255, 0.08));
-    border-radius: var(--cf-radius-pill, 999px);
-    padding: 4px 12px 4px 6px;
+    padding: 9px 12px;
+    border-radius: 10px;
+    color: #CBD5E1;
+    font-size: 13px;
+    font-weight: 500;
+    transition: background 0.15s ease, color 0.15s ease;
+    text-decoration: none;
+}
+.cf-dp-item:hover {
+    background: rgba(255, 255, 255, 0.07);
+    color: #ffffff;
+    text-decoration: none;
+}
+.cf-dp-item:hover .cf-dp-item-icon {
+    color: #FF2A54;
 }
 
-.cf-user-avatar {
+.cf-dp-item-icon {
     width: 28px;
     height: 28px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--cf-violet, #6366F1), var(--cf-primary, #FF2A54));
-    color: #ffffff;
     display: grid;
     place-items: center;
-    font-size: 12px;
-    font-weight: 700;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    color: #94A3B8;
+    flex-shrink: 0;
+    transition: color 0.15s ease, background 0.15s ease;
 }
 
-.cf-user-greeting {
-    color: var(--cf-muted, #94A3B8);
-    font-size: 12px;
-}
-
-.cf-user-greeting strong {
-    color: #ffffff;
-    font-weight: 600;
-}
-
-.cf-account-link {
-    color: #CBD5E1;
-    font-size: 12px;
-    font-weight: 500;
-    padding: 3px 8px;
-    border-radius: 4px;
-    transition: all 0.15s ease;
-}
-
-.cf-account-link:hover {
-    color: #ffffff;
-    background: rgba(255, 255, 255, 0.08);
-}
-
-.cf-badge-role {
-    padding: 3px 8px;
-    border-radius: 4px;
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-}
-
-.cf-badge-role.admin {
-    background: rgba(99, 102, 241, 0.18);
+/* Admin / Manager special item accents */
+.cf-dp-item--admin {
     color: #A5B4FC;
-    border: 1px solid rgba(99, 102, 241, 0.38);
+}
+.cf-dp-item--admin .cf-dp-item-icon {
+    background: rgba(99, 102, 241, 0.12);
+    color: #A5B4FC;
+}
+.cf-dp-item--admin:hover {
+    background: rgba(99, 102, 241, 0.1);
+    color: #C7D2FE;
 }
 
-.cf-badge-role.manager {
-    background: rgba(245, 158, 11, 0.18);
+.cf-dp-item--manager {
     color: #FCD34D;
-    border: 1px solid rgba(245, 158, 11, 0.38);
+}
+.cf-dp-item--manager .cf-dp-item-icon {
+    background: rgba(245, 158, 11, 0.12);
+    color: #FCD34D;
+}
+.cf-dp-item--manager:hover {
+    background: rgba(245, 158, 11, 0.1);
+    color: #FDE68A;
 }
 
-.cf-logout-inline {
-    display: inline-flex;
+/* ---- Logout Button ---- */
+.cf-dp-footer {
+    padding: 6px 6px 8px;
+}
+.cf-dp-footer form {
     margin: 0;
 }
-
-.cf-logout-btn {
-    width: 26px;
-    height: 26px;
-    display: grid;
-    place-items: center;
-    padding: 0;
-    border: 0;
+.cf-dp-logout {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 9px 12px;
+    border-radius: 10px;
     background: transparent;
-    color: var(--cf-muted, #94A3B8);
+    border: none;
+    color: #F87171;
+    font-size: 13px;
+    font-weight: 600;
     cursor: pointer;
-    border-radius: 50%;
-    transition: all 0.2s ease;
+    font-family: inherit;
+    transition: background 0.15s ease, color 0.15s ease;
 }
-
-.cf-logout-btn:hover {
-    color: var(--cf-primary, #FF2A54);
-    background: rgba(255, 42, 84, 0.15);
+.cf-dp-logout:hover {
+    background: rgba(255, 42, 84, 0.12);
+    color: #FF2A54;
 }
 
 /* --------------------------------------------------------------------------
@@ -409,7 +592,7 @@ button, input, select, textarea {
     .cf-header-container {
         width: calc(100% - 24px);
     }
-    .cf-user-greeting {
+    .cf-trigger-name {
         display: none;
     }
     .footer-inner {
