@@ -4,9 +4,9 @@
    CINEFLOW ADMIN COMPLETE DESIGN SYSTEM
    ========================================================================== */
 :root {
-    --cf-primary: #e21b23;
-    --cf-primary-hover: #bd1118;
-    --cf-primary-light: #fce4e5;
+    --cf-primary: #FF2A54;
+    --cf-primary-hover: #E11D48;
+    --cf-primary-light: rgba(255, 42, 84, 0.12);
     --cf-sidebar-bg: #14232c;
     --cf-sidebar-hover: #27343c;
     --cf-sidebar-text: #94a3b8;

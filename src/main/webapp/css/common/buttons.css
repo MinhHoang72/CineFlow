@@ -1,11 +1,54 @@
 @import url("variables.css");
 
-.cf-btn { display: inline-flex; align-items: center; justify-content: center; min-height: 38px; gap: 7px; padding: 0 15px; border: 1px solid transparent; border-radius: var(--cf-radius-sm); font-size: 13px; font-weight: 600; text-decoration: none; transition: background .15s, border-color .15s, color .15s; }
-.cf-btn-primary { background: var(--cf-primary); color: #fff; }
-.cf-btn-primary:hover { background: var(--cf-primary-hover); }
-.cf-btn-secondary { border-color: var(--cf-border); background: #fff; color: var(--cf-text); }
-.cf-btn-secondary:hover { border-color: #aab6bd; background: #f8fafb; }
-.cf-btn-danger { background: var(--cf-danger); color: #fff; }
-.cf-btn-ghost { background: transparent; color: var(--cf-muted); }
-.cf-btn-ghost:hover { color: var(--cf-primary); background: #fff4f4; }
-.cf-btn-sm { min-height: 32px; padding: 0 10px; font-size: 12px; }
+.cf-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    gap: 7px;
+    padding: 0 16px;
+    border: 1px solid transparent;
+    border-radius: var(--cf-radius-sm, 6px);
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all .18s ease;
+}
+.cf-btn-primary {
+    background: var(--cf-primary-gradient, linear-gradient(135deg, #FF2A54 0%, #E11D48 100%));
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(255, 42, 84, 0.35);
+}
+.cf-btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(255, 42, 84, 0.55);
+    color: #fff;
+}
+.cf-btn-secondary {
+    border-color: var(--cf-border, rgba(255, 255, 255, 0.12));
+    background: var(--cf-surface, #161B26);
+    color: var(--cf-text, #F8FAFC);
+}
+.cf-btn-secondary:hover {
+    border-color: rgba(255, 255, 255, 0.25);
+    background: var(--cf-bg-card-hover, #1E2433);
+    color: #fff;
+}
+.cf-btn-danger {
+    background: var(--cf-danger, #EF4444);
+    color: #fff;
+}
+.cf-btn-ghost {
+    background: transparent;
+    color: var(--cf-muted, #94A3B8);
+}
+.cf-btn-ghost:hover {
+    color: var(--cf-primary, #FF2A54);
+    background: rgba(255, 42, 84, 0.1);
+}
+.cf-btn-sm {
+    min-height: 32px;
+    padding: 0 11px;
+    font-size: 12px;
+}

@@ -1,8 +1,8 @@
 @import url("./variables.css");
-@import url("https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Barlow+Condensed:wght@600;700&display=swap");
 
 /* ==========================================================================
-   CineFlow Universal Customer Layout & Common Components
+   CineFlow Cinema Modern Dark Universal Layout & Header
    ========================================================================== */
 * {
     box-sizing: border-box;
@@ -15,16 +15,18 @@ html {
 body {
     min-width: 320px;
     margin: 0;
-    background-color: var(--cf-bg-page, #f8f7f4);
-    color: var(--cf-ink, #252525);
-    font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: var(--cf-bg-page, #0B0F17);
+    color: var(--cf-text, #F8FAFC);
+    font-family: var(--cf-font, 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
     font-size: 14px;
     line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
 }
 
 a {
     color: inherit;
     text-decoration: none;
+    transition: color 0.2s ease, opacity 0.2s ease;
 }
 
 button, input, select, textarea {
@@ -37,178 +39,291 @@ button, input, select, textarea {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    background-color: var(--cf-bg-page, #0B0F17);
 }
 
 /* --------------------------------------------------------------------------
-   Top Utility Bar
+   Unified Cinema Sticky Header (Single Modern Header)
    -------------------------------------------------------------------------- */
-.top-bar {
-    height: 38px;
-    background: #f0eee4;
-    border-bottom: 1px solid var(--cf-border, #e5e1d7);
-    color: #555555;
-    font-size: 12px;
+.cf-main-header {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    width: 100%;
+    background: rgba(11, 15, 23, 0.88);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--cf-border, rgba(255, 255, 255, 0.08));
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.45);
+    transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-.top-inner {
-    width: min(1250px, calc(100% - 40px));
-    height: 100%;
+.cf-header-container {
+    max-width: var(--cf-container, 1240px);
+    width: calc(100% - 40px);
+    height: 68px;
+    margin: 0 auto;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin: auto;
-}
-
-.top-left, .top-right {
-    display: flex;
-    align-items: center;
     gap: 24px;
 }
 
-.top-right a:hover {
-    color: var(--cf-red, #e21b23);
+/* Brand Logo */
+.cf-brand {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    text-decoration: none;
+    flex-shrink: 0;
 }
 
-.account-form {
+.cf-brand-icon {
+    width: 36px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    border-radius: 9px;
+    background: var(--cf-primary-gradient, linear-gradient(135deg, #FF2A54 0%, #E11D48 100%));
+    color: #ffffff;
+    font-family: var(--cf-font-display, 'Barlow Condensed', sans-serif);
+    font-size: 22px;
+    font-weight: 700;
+    box-shadow: 0 0 16px rgba(255, 42, 84, 0.45);
+    transform: rotate(-3deg);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.cf-brand:hover .cf-brand-icon {
+    transform: rotate(0deg) scale(1.05);
+    box-shadow: 0 0 22px rgba(255, 42, 84, 0.65);
+}
+
+.cf-brand-name {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: #ffffff;
+}
+
+.cf-brand-glow {
+    color: var(--cf-primary, #FF2A54);
+    text-shadow: 0 0 14px rgba(255, 42, 84, 0.5);
+}
+
+/* Navigation Menu */
+.cf-navbar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.cf-nav-item {
+    padding: 8px 14px;
+    border-radius: 8px;
+    color: var(--cf-muted, #94A3B8);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+
+.cf-nav-item:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.cf-nav-item.active {
+    color: #ffffff;
+    background: rgba(255, 42, 84, 0.14);
+    border: 1px solid rgba(255, 42, 84, 0.35);
+    box-shadow: 0 0 14px rgba(255, 42, 84, 0.22);
+}
+
+/* Header Right / Auth Actions */
+.cf-header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+.cf-auth-link {
+    padding: 8px 14px;
+    border-radius: 8px;
+    color: var(--cf-ink-soft, #E2E8F0);
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.cf-auth-link:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.07);
+}
+
+.cf-auth-btn {
+    padding: 8px 18px;
+    border-radius: 8px;
+    background: var(--cf-primary-gradient, linear-gradient(135deg, #FF2A54 0%, #E11D48 100%));
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 700;
+    box-shadow: 0 4px 14px rgba(255, 42, 84, 0.35);
+    transition: all 0.2s ease;
+}
+
+.cf-auth-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(255, 42, 84, 0.55);
+    color: #ffffff;
+}
+
+/* Logged-in User Chip */
+.cf-user-chip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(22, 27, 38, 0.85);
+    border: 1px solid var(--cf-border, rgba(255, 255, 255, 0.08));
+    border-radius: var(--cf-radius-pill, 999px);
+    padding: 4px 12px 4px 6px;
+}
+
+.cf-user-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--cf-violet, #6366F1), var(--cf-primary, #FF2A54));
+    color: #ffffff;
+    display: grid;
+    place-items: center;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.cf-user-greeting {
+    color: var(--cf-muted, #94A3B8);
+    font-size: 12px;
+}
+
+.cf-user-greeting strong {
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.cf-account-link {
+    color: #CBD5E1;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 3px 8px;
+    border-radius: 4px;
+    transition: all 0.15s ease;
+}
+
+.cf-account-link:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.cf-badge-role {
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.cf-badge-role.admin {
+    background: rgba(99, 102, 241, 0.18);
+    color: #A5B4FC;
+    border: 1px solid rgba(99, 102, 241, 0.38);
+}
+
+.cf-badge-role.manager {
+    background: rgba(245, 158, 11, 0.18);
+    color: #FCD34D;
+    border: 1px solid rgba(245, 158, 11, 0.38);
+}
+
+.cf-logout-inline {
     display: inline-flex;
     margin: 0;
 }
 
-.account-form button {
+.cf-logout-btn {
+    width: 26px;
+    height: 26px;
+    display: grid;
+    place-items: center;
     padding: 0;
     border: 0;
     background: transparent;
-    color: inherit;
+    color: var(--cf-muted, #94A3B8);
     cursor: pointer;
-    font: inherit;
+    border-radius: 50%;
+    transition: all 0.2s ease;
 }
 
-.account-form button:hover {
-    color: var(--cf-red, #e21b23);
+.cf-logout-btn:hover {
+    color: var(--cf-primary, #FF2A54);
+    background: rgba(255, 42, 84, 0.15);
 }
 
 /* --------------------------------------------------------------------------
-   Brand Header
+   Backwards Compatibility for Older Layout Classes
    -------------------------------------------------------------------------- */
-.brand-header {
-    height: 105px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #ffffff;
-    border-bottom: 3px solid var(--cf-gold-border, #d3c28d);
-}
-
-.logo {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    color: var(--cf-red, #e21b23);
-    font-size: 39px;
-    font-weight: 800;
-}
-
-.logo-mark {
-    width: 48px;
-    height: 48px;
-    display: grid;
-    place-items: center;
-    transform: rotate(-8deg);
-    border-radius: 50% 50% 50% 8px;
-    background: var(--cf-red, #e21b23);
-    color: #ffffff;
-    font-family: Georgia, serif;
-    font-size: 29px;
-}
-
-.logo-word span {
-    color: var(--cf-ink, #252525);
+.top-bar, .brand-header, .main-nav {
+    display: none !important;
 }
 
 /* --------------------------------------------------------------------------
-   Main Navigation Bar
-   -------------------------------------------------------------------------- */
-.main-nav {
-    border-bottom: 1px solid #dddddd;
-    background: #ffffff;
-}
-
-.nav-inner {
-    width: min(1250px, 100%);
-    min-height: 72px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: auto;
-}
-
-.nav-inner a {
-    height: 27px;
-    display: flex;
-    align-items: center;
-    padding: 0 24px;
-    border-right: 1px solid #dddddd;
-    color: #404040;
-    font-size: 14px;
-    white-space: nowrap;
-    transition: color 0.2s;
-}
-
-.nav-inner a:last-child {
-    border-right: 0;
-}
-
-.nav-inner a:hover,
-.nav-inner a.active {
-    color: var(--cf-red, #e21b23);
-    font-weight: 700;
-}
-
-/* --------------------------------------------------------------------------
-   Common Breadcrumb
+   Common Breadcrumbs
    -------------------------------------------------------------------------- */
 .cf-breadcrumb-nav {
-    width: min(1200px, calc(100% - 40px));
+    width: min(var(--cf-container, 1240px), calc(100% - 40px));
     margin: 20px auto 0;
     display: flex;
     align-items: center;
     flex-wrap: wrap;
     gap: 8px;
     font-size: 13px;
-    color: var(--cf-muted, #555555);
+    color: var(--cf-muted, #94A3B8);
 }
 
 .cf-breadcrumb-nav a {
-    color: #444444;
+    color: var(--cf-muted, #94A3B8);
 }
 
 .cf-breadcrumb-nav a:hover {
-    color: var(--cf-red, #e21b23);
+    color: var(--cf-primary, #FF2A54);
 }
 
 .cf-breadcrumb-sep {
-    color: #999999;
+    color: var(--cf-text-sub, #64748B);
     font-size: 11px;
 }
 
 .cf-breadcrumb-current {
-    color: var(--cf-ink, #222222);
+    color: #ffffff;
     font-weight: 600;
 }
 
 /* --------------------------------------------------------------------------
-   Footer
+   Footer (Cinema Modern Dark)
    -------------------------------------------------------------------------- */
 .footer {
     margin-top: auto;
-    padding: 45px 0 0;
-    background: var(--cf-footer-bg, #202020);
-    color: #cccccc;
-    font-size: 12px;
+    padding: 55px 0 0;
+    background: var(--cf-footer-bg, #070A0F);
+    border-top: 1px solid var(--cf-border, rgba(255, 255, 255, 0.08));
+    color: var(--cf-muted, #94A3B8);
+    font-size: 13px;
 }
 
 .footer-inner {
-    width: min(1250px, calc(100% - 50px));
+    width: min(var(--cf-container, 1240px), calc(100% - 40px));
     display: grid;
     grid-template-columns: 2fr 1fr 1fr 1fr;
     gap: 40px;
@@ -217,91 +332,88 @@ button, input, select, textarea {
 }
 
 .footer-brand .logo {
-    color: var(--cf-red, #e21b23);
+    display: flex;
+    align-items: center;
+    gap: 10px;
     font-size: 26px;
+    font-weight: 800;
+    color: #ffffff;
 }
 
 .footer-brand .logo-mark {
-    width: 34px;
-    height: 34px;
-    font-size: 20px;
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    border-radius: 8px;
+    background: var(--cf-primary-gradient, linear-gradient(135deg, #FF2A54 0%, #E11D48 100%));
+    color: #ffffff;
+    font-size: 18px;
+    font-family: var(--cf-font-display, 'Barlow Condensed', sans-serif);
+}
+
+.footer-brand .logo-word span {
+    color: var(--cf-primary, #FF2A54);
 }
 
 .footer-brand p {
     margin-top: 15px;
-    color: #999999;
+    color: var(--cf-text-sub, #64748B);
+    line-height: 1.6;
 }
 
 .footer h4 {
     margin: 0 0 18px;
     color: #ffffff;
-    font-size: 13px;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
 }
 
 .footer a {
     display: block;
     margin-bottom: 11px;
-    color: #999999;
-    transition: color 0.2s;
+    color: var(--cf-muted, #94A3B8);
+    transition: color 0.2s ease, transform 0.2s ease;
 }
 
 .footer a:hover {
     color: #ffffff;
+    transform: translateX(2px);
 }
 
 .copyright {
-    padding: 18px;
-    border-top: 1px solid #333333;
-    color: #777777;
+    padding: 22px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    color: var(--cf-text-sub, #64748B);
     text-align: center;
-    font-size: 11px;
+    font-size: 12px;
 }
 
 /* --------------------------------------------------------------------------
-   Layout Media Queries
+   Responsive Media Queries
    -------------------------------------------------------------------------- */
-@media (max-width: 760px) {
-    .page-shell {
-        width: 100%;
+@media (max-width: 900px) {
+    .cf-header-container {
+        height: 60px;
     }
-    .top-inner {
-        width: calc(100% - 24px);
-        justify-content: center;
-    }
-    .top-left {
+    .cf-navbar {
         display: none;
-    }
-    .top-right {
-        gap: 14px;
-        font-size: 11px;
-    }
-    .brand-header {
-        height: 85px;
-    }
-    .logo {
-        font-size: 31px;
-    }
-    .logo-mark {
-        width: 40px;
-        height: 40px;
-    }
-    .nav-inner {
-        overflow-x: auto;
-        justify-content: flex-start;
-        min-height: 56px;
-    }
-    .nav-inner a {
-        padding: 0 16px;
-        font-size: 13px;
     }
     .footer-inner {
         grid-template-columns: 1fr 1fr;
     }
 }
 
-@media (max-width: 450px) {
+@media (max-width: 600px) {
+    .cf-header-container {
+        width: calc(100% - 24px);
+    }
+    .cf-user-greeting {
+        display: none;
+    }
     .footer-inner {
         grid-template-columns: 1fr;
-        gap: 24px;
+        gap: 28px;
     }
 }

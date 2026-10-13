@@ -1,9 +1,43 @@
 @import url("variables.css");
 
-.cf-table-wrap { overflow-x: auto; border: 1px solid var(--cf-border); border-radius: var(--cf-radius-md); background: #fff; }
-.cf-table { width: 100%; border-collapse: collapse; text-align: left; }
-.cf-table th { padding: 13px 15px; border-bottom: 1px solid var(--cf-border); background: #f8fafb; color: var(--cf-muted); font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; }
-.cf-table td { padding: 14px 15px; border-bottom: 1px solid #edf0f2; color: var(--cf-text); font-size: 13px; vertical-align: middle; }
-.cf-table tbody tr:hover { background: #fffafa; }
-.cf-table tbody tr:last-child td { border-bottom: 0; }
-.cf-table-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.cf-table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--cf-border, rgba(255, 255, 255, 0.08));
+    border-radius: var(--cf-radius-md, 10px);
+    background: var(--cf-surface, #161B26);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+}
+.cf-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+.cf-table th {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--cf-border, rgba(255, 255, 255, 0.08));
+    background: rgba(11, 15, 23, 0.6);
+    color: var(--cf-muted, #94A3B8);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+.cf-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    color: var(--cf-text, #F8FAFC);
+    font-size: 13px;
+    vertical-align: middle;
+}
+.cf-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+.cf-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+.cf-table-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}

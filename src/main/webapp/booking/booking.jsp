@@ -168,104 +168,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#f0eee4">
+    <meta name="theme-color" content="#0B0F17">
     <title>CineFlow - Mua vé xem phim</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/layout.css?v=<%= System.currentTimeMillis() %>">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/booking/booking.css?v=<%= System.currentTimeMillis() %>">
-    <style>
-        /* Modern Cinema Movie Filter Pills (Lotte Cinema style) */
-        .movie-tab-filter {
-            display: flex;
-            gap: 8px;
-            padding: 12px 18px;
-            background: #faf8f5;
-            border-bottom: 1px solid #e5e1d7;
-        }
-        .movie-tab-btn {
-            flex: 1;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 7px;
-            padding: 8px 10px;
-            border: 1px solid #dcd7cb;
-            border-radius: 20px;
-            background: #ffffff;
-            color: #4b5563;
-            font-family: inherit;
-            font-size: 12.5px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            outline: none;
-            -webkit-appearance: none;
-            appearance: none;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-        }
-        .movie-tab-btn:hover {
-            border-color: #e21b23;
-            color: #e21b23;
-            background: #ffffff;
-            transform: translateY(-1px);
-            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.06);
-        }
-        .movie-tab-btn.active {
-            background: #e21b23 !important;
-            border-color: #e21b23 !important;
-            color: #ffffff !important;
-            font-weight: 700 !important;
-            box-shadow: 0 3px 10px rgba(226, 27, 35, 0.3) !important;
-            transform: translateY(-1px);
-        }
-        .movie-tab-btn .tab-count {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-width: 19px;
-            height: 19px;
-            padding: 0 6px;
-            border-radius: 999px;
-            font-size: 11px;
-            font-weight: 700;
-            background: #f0eee8;
-            color: #6b7280;
-            line-height: 1;
-            transition: all 0.2s;
-        }
-        .movie-tab-btn.active .tab-count {
-            background: rgba(255, 255, 255, 0.28) !important;
-            color: #ffffff !important;
-        }
-        .movie-tab-btn:hover:not(.active) .tab-count {
-            background: #fee2e2;
-            color: #e21b23;
-        }
-
-        /* Movie list and items */
-        .movie-list { max-height: 460px; overflow-y: auto; scroll-behavior: smooth; }
-        .movie-item {
-            width: 100%;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 13px 20px;
-            border: 0;
-            border-bottom: 1px solid #f0eee9;
-            border-left: 4px solid transparent;
-            background: #fff;
-            cursor: pointer;
-            text-align: left;
-            transition: all .15s ease;
-            font-family: inherit;
-            outline: none;
-        }
-        .movie-item:hover { background: #fbfaf7; }
-        .movie-item.active { border-left: 4px solid #e21b23 !important; background: #fff5f5 !important; }
-        .movie-item.active .movie-name { color: #e21b23 !important; font-weight: 700 !important; }
-        .badge-coming-soon { font-size: 10px; font-weight: 700; color: #b45309; background: #fef3c7; border: 1px solid #fde68a; padding: 2px 7px; border-radius: 999px; margin-left: auto; flex-shrink: 0; }
-        .badge-now-showing { font-size: 10px; font-weight: 600; color: #15803d; background: #dcfce7; border: 1px solid #bbf7d0; padding: 2px 7px; border-radius: 999px; margin-left: auto; flex-shrink: 0; }
-        .showtime:hover, .showtime.active { background: #e21b23 !important; border-color: #e21b23 !important; color: #fff !important; }
-    </style>
 </head>
 <body>
 <div class="page-shell">

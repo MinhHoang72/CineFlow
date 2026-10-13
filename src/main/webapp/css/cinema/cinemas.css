@@ -1,29 +1,29 @@
 @import url("../common/layout.css");
 
 /* ==========================================================================
-   CineFlow Cinema Module Styles (Lotte Cinema Inspired Design)
+   CineFlow Cinema Module Styles (Cinema Modern Dark)
    ========================================================================== */
 
 :root {
-    --cf-ink: #222222;
-    --cf-ink-soft: #2b2b2b;
-    --cf-ink-hover: #3d3d3d;
-    --cf-gold: #c9b27a;
-    --cf-gold-dark: #b9a66c;
-    --cf-gold-light: #f7f4ea;
-    --cf-cream: #eee9d8;
-    --cf-page-bg: #f8f7f4;
-    --cf-card-bg: #ffffff;
-    --cf-border: #e5e1d7;
-    --cf-border-light: #ece8df;
-    --cf-text-main: #252525;
-    --cf-text-muted: #555555;
-    --cf-text-sub: #777777;
-    --cf-radius-sm: 4px;
-    --cf-radius-md: 6px;
-    --cf-radius-pill: 24px;
-    --cf-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
-    --cf-shadow-hover: 0 6px 18px rgba(0, 0, 0, 0.08);
+    --cf-ink: #F8FAFC;
+    --cf-ink-soft: #1E2433;
+    --cf-ink-hover: #2D3748;
+    --cf-gold: var(--cf-gold, #F59E0B);
+    --cf-gold-dark: #D97706;
+    --cf-gold-light: rgba(245, 158, 11, 0.15);
+    --cf-cream: #141A24;
+    --cf-page-bg: var(--cf-bg-page, #0B0F17);
+    --cf-card-bg: var(--cf-surface, #161B26);
+    --cf-border: rgba(255, 255, 255, 0.08);
+    --cf-border-light: rgba(255, 255, 255, 0.05);
+    --cf-text-main: #F8FAFC;
+    --cf-text-muted: #94A3B8;
+    --cf-text-sub: #64748B;
+    --cf-radius-sm: 6px;
+    --cf-radius-md: 10px;
+    --cf-radius-pill: 999px;
+    --cf-shadow-sm: 0 4px 14px rgba(0, 0, 0, 0.35);
+    --cf-shadow-hover: 0 10px 28px rgba(0, 0, 0, 0.55);
 }
 
 /* Page Outer Wrapper */
@@ -35,33 +35,33 @@
     padding-bottom: 60px;
 }
 
-/* Cinema Main Wrapper (Wraps title & main container) */
+/* Cinema Main Wrapper */
 .cinema-main-wrap {
-    width: min(1160px, calc(100% - 40px));
+    width: min(1180px, calc(100% - 40px));
     margin: 32px auto 0;
 }
 
-/* Page Header & Title (Outside the card - Flat & Modern) */
+/* Page Header & Title */
 .cf-page-header {
-    margin-bottom: 20px;
+    margin-bottom: 24px;
 }
 
 .cf-page-title {
-    font-size: 24px;
-    font-weight: 700;
-    color: var(--cf-ink);
+    font-size: 22px;
+    font-weight: 800;
+    color: #FFFFFF;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 1px;
     margin: 0;
     padding-left: 14px;
-    border-left: 4px solid var(--cf-gold);
+    border-left: 4px solid var(--cf-primary, #FF2A54);
     line-height: 1.25;
 }
 
 /* Main Cinema Card Container */
 .cinema-container {
     width: 100%;
-    background: #ffffff;
+    background: var(--cf-card-bg);
     border: 1px solid var(--cf-border);
     border-radius: var(--cf-radius-md);
     padding: 32px 36px;
@@ -87,34 +87,34 @@
     font-weight: 600;
     cursor: pointer;
     text-decoration: none;
-    border: 1px solid #dcd7cb;
-    background: #ffffff;
-    color: #444444;
+    border: 1px solid var(--cf-border);
+    background: #111622;
+    color: #CBD5E1;
     transition: all 0.18s ease;
     user-select: none;
 }
 
 .cf-city-pill:hover {
-    border-color: var(--cf-ink);
-    color: var(--cf-ink);
-    background: #faf9f6;
+    border-color: rgba(255, 255, 255, 0.25);
+    color: #ffffff;
+    background: #1A202C;
 }
 
 .cf-city-pill.active {
-    background: var(--cf-ink-soft);
-    border-color: var(--cf-ink-soft);
+    background: var(--cf-primary-gradient, linear-gradient(135deg, #FF2A54, #E11D48));
+    border-color: transparent;
     color: #ffffff;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
+    box-shadow: 0 0 14px rgba(255, 42, 84, 0.4);
 }
 
 .cf-city-pill .pill-count {
-    font-size: 12px;
-    font-weight: 500;
+    font-size: 11px;
+    font-weight: 700;
     opacity: 0.85;
 }
 
 .cf-city-pill.active .pill-count {
-    color: #e5e5e5;
+    color: #ffffff;
 }
 
 /* Section Divider */
@@ -129,9 +129,9 @@
 .cf-city-heading {
     font-size: 16px;
     font-weight: 700;
-    color: var(--cf-ink);
+    color: #FFFFFF;
     text-transform: uppercase;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.5px;
     margin: 0 0 20px;
 }
 
@@ -147,17 +147,18 @@
     align-items: center;
     justify-content: space-between;
     gap: 24px;
-    padding: 18px 22px;
-    background: #ffffff;
+    padding: 20px 24px;
+    background: #111622;
     border: 1px solid var(--cf-border);
     border-radius: var(--cf-radius-sm);
     box-shadow: var(--cf-shadow-sm);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .cf-cinema-card:hover {
-    border-color: var(--cf-gold);
-    box-shadow: var(--cf-shadow-hover);
+    border-color: rgba(255, 42, 84, 0.4);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 14px rgba(255, 42, 84, 0.2);
+    transform: translateY(-2px);
 }
 
 .cf-cinema-img-wrap {
@@ -166,7 +167,7 @@
     height: 105px;
     border-radius: var(--cf-radius-sm);
     overflow: hidden;
-    background: #ece9e0;
+    background: #0E131E;
 }
 
 .cf-cinema-img {
@@ -190,7 +191,7 @@
     margin: 0 0 6px;
     font-size: 17px;
     font-weight: 700;
-    color: var(--cf-ink);
+    color: #FFFFFF;
 }
 
 .cf-cinema-name a {
@@ -200,7 +201,7 @@
 }
 
 .cf-cinema-name a:hover {
-    color: var(--cf-gold-dark);
+    color: var(--cf-primary, #FF2A54);
 }
 
 .cf-cinema-address {
@@ -217,7 +218,7 @@
 }
 
 .cf-cinema-phone strong {
-    color: #444444;
+    color: #CBD5E1;
     font-weight: 600;
 }
 
@@ -230,20 +231,21 @@
     align-items: center;
     gap: 6px;
     padding: 9px 20px;
-    background: var(--cf-ink-soft);
+    background: var(--cf-primary-gradient, linear-gradient(135deg, #FF2A54, #E11D48));
     color: #ffffff;
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 700;
     border-radius: var(--cf-radius-sm);
     text-decoration: none;
-    border: 1px solid var(--cf-ink-soft);
+    border: 0;
+    box-shadow: 0 4px 14px rgba(255, 42, 84, 0.35);
     transition: all 0.18s ease;
     white-space: nowrap;
 }
 
 .cf-btn-detail:hover {
-    background: var(--cf-ink-hover);
-    border-color: var(--cf-ink-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(255, 42, 84, 0.55);
     color: #ffffff;
 }
 
@@ -253,7 +255,7 @@
     text-align: center;
     color: var(--cf-text-muted);
     font-size: 14px;
-    background: #ffffff;
+    background: #111622;
     border: 1px dashed var(--cf-border);
     border-radius: var(--cf-radius-sm);
 }
@@ -274,8 +276,8 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 7px 16px;
-    background: #ffffff;
+    padding: 8px 18px;
+    background: #161B26;
     border: 1px solid var(--cf-border);
     border-radius: var(--cf-radius-sm);
     color: var(--cf-text-muted);
@@ -286,13 +288,13 @@
 }
 
 .cf-btn-back:hover {
-    border-color: var(--cf-ink);
-    color: var(--cf-ink);
-    background: #faf9f6;
+    border-color: rgba(255, 255, 255, 0.25);
+    color: #ffffff;
+    background: #1E2433;
 }
 
 .cf-detail-card {
-    background: #ffffff;
+    background: var(--cf-card-bg);
     border: 1px solid var(--cf-border);
     border-radius: var(--cf-radius-md);
     overflow: hidden;
@@ -302,7 +304,7 @@
 .cf-detail-img-banner {
     position: relative;
     height: 280px;
-    background: #1f1f1f;
+    background: #0B0F17;
     overflow: hidden;
 }
 
@@ -316,7 +318,7 @@
 .cf-detail-img-overlay {
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.85) 100%);
+    background: linear-gradient(180deg, rgba(11,15,23,0.2) 0%, rgba(11,15,23,0.5) 50%, rgba(11,15,23,0.92) 100%);
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
@@ -326,13 +328,13 @@
 .cf-detail-badge {
     display: inline-block;
     align-self: flex-start;
-    padding: 3px 9px;
-    background: var(--cf-gold);
-    color: #1f1f1f;
+    padding: 4px 10px;
+    background: var(--cf-primary, #FF2A54);
+    color: #ffffff;
     font-size: 11px;
     font-weight: 700;
     letter-spacing: 1px;
-    border-radius: 3px;
+    border-radius: 4px;
     text-transform: uppercase;
     margin-bottom: 8px;
 }
@@ -341,14 +343,14 @@
     margin: 0 0 4px;
     color: #ffffff;
     font-size: 26px;
-    font-weight: 700;
+    font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
 }
 
 .cf-detail-city-tag {
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--cf-text-muted);
     font-size: 13px;
 }
 
@@ -369,7 +371,7 @@
     display: flex;
     flex-direction: column;
     gap: 14px;
-    background: #faf9f6;
+    background: #111622;
     padding: 22px 26px;
     border-radius: var(--cf-radius-sm);
     border: 1px solid var(--cf-border);
@@ -391,7 +393,7 @@
 
 .cf-detail-value {
     flex: 1;
-    color: var(--cf-ink);
+    color: #F8FAFC;
 }
 
 .cf-detail-actions {
@@ -400,102 +402,53 @@
     gap: 14px;
 }
 
-.cf-btn-map {
+.cf-btn-primary-action {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 9px 20px;
-    background: #ffffff;
-    border: 1px solid var(--cf-border);
+    gap: 8px;
+    padding: 11px 26px;
+    background: var(--cf-primary-gradient, linear-gradient(135deg, #FF2A54, #E11D48));
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 700;
     border-radius: var(--cf-radius-sm);
-    color: #333333;
-    font-size: 13px;
-    font-weight: 600;
     text-decoration: none;
-    transition: all 0.18s ease;
+    box-shadow: 0 4px 14px rgba(255, 42, 84, 0.4);
+    transition: all 0.2s ease;
 }
 
-.cf-btn-map:hover {
-    border-color: var(--cf-ink);
-    color: var(--cf-ink);
-    background: #faf9f6;
-}
-
-/* ==========================================================================
-   Responsive
-   ========================================================================== */
-@media (max-width: 900px) {
-    .cinema-container {
-        padding: 28px 24px;
-    }
-}
-
-@media (max-width: 900px) {
-    .cinema-main-wrap {
-        width: calc(100% - 32px);
-        margin-top: 24px;
-    }
-    .cinema-container {
-        padding: 26px 22px;
-    }
+.cf-btn-primary-action:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 42, 84, 0.6);
+    color: #ffffff;
 }
 
 @media (max-width: 768px) {
-    .cinema-main-wrap {
-        width: calc(100% - 24px);
-        margin-top: 20px;
-    }
-
-    .cf-page-title {
-        font-size: 20px;
-    }
-
     .cinema-container {
         padding: 20px 16px;
     }
-
     .cf-cinema-card {
         flex-direction: column;
-        align-items: flex-start;
-        gap: 14px;
-        padding: 16px;
+        align-items: stretch;
     }
-
     .cf-cinema-img-wrap {
         width: 100%;
-        height: 160px;
+        height: 180px;
     }
-
     .cf-cinema-action {
         width: 100%;
     }
-
     .cf-btn-detail {
         width: 100%;
         justify-content: center;
     }
-
-    .cf-detail-img-banner {
-        height: 200px;
-    }
-
-    .cf-detail-img-overlay {
-        padding: 20px;
-    }
-
-    .cf-detail-title {
-        font-size: 22px;
-    }
-
     .cf-detail-body {
-        padding: 20px;
+        padding: 20px 16px;
     }
-
     .cf-detail-info-row {
         flex-direction: column;
         gap: 4px;
     }
-
     .cf-detail-label {
         flex: auto;
     }

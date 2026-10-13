@@ -1,64 +1,83 @@
 /* ==========================================================================
-   CineFlow Universal Design System Tokens
+   CineFlow Cinema Modern Dark Design System Tokens
+   Phong cách: Điện ảnh số hiện đại (Deep Obsidian / Cyber Crimson / Violet)
    ========================================================================== */
 :root {
-    /* Brand Red (Thương hiệu CineFlow) */
-    --cf-red: #e21b23;
-    --cf-red-dark: #bd1118;
-    --cf-red-soft: #fef2f2;
-    --cf-red-border: #fecaca;
-    --cf-primary: #e21b23;
-    --cf-primary-hover: #bd1118;
+    /* Brand Accent: Cyber Crimson (Đỏ điện ảnh hiện đại) */
+    --cf-red: #FF2A54;
+    --cf-red-dark: #E11D48;
+    --cf-red-soft: rgba(255, 42, 84, 0.12);
+    --cf-red-border: rgba(255, 42, 84, 0.32);
+    --cf-primary: #FF2A54;
+    --cf-primary-hover: #E11D48;
+    --cf-primary-gradient: linear-gradient(135deg, #FF2A54 0%, #E11D48 100%);
 
-    /* Charcoal / Dark Ink (Đen than: tiêu đề, chữ chính, footer) */
-    --cf-ink: #222222;
-    --cf-ink-soft: #282828;
-    --cf-ink-hover: #3d3d3d;
-    --cf-text: #222222;
-    --cf-footer-bg: #202020;
+    /* Tech Accent: Electric Violet / Indigo */
+    --cf-violet: #6366F1;
+    --cf-violet-dark: #4F46E5;
+    --cf-violet-soft: rgba(99, 102, 241, 0.14);
+    --cf-violet-border: rgba(99, 102, 241, 0.32);
+    --cf-cyan: #06B6D4;
 
-    /* Champagne Gold (Vàng ánh kim / Vàng champagne nhấn nhẹ phong cách Lotte) */
-    --cf-gold: #c9b27a;
-    --cf-gold-dark: #b9a66c;
-    --cf-gold-light: #f7f4ea;
-    --cf-gold-border: #d3c28d;
+    /* Cinema Amber Gold (Dùng cho Sao đánh giá, Phim Hot, VIP) */
+    --cf-gold: #F59E0B;
+    --cf-gold-dark: #D97706;
+    --cf-gold-light: rgba(245, 158, 11, 0.14);
+    --cf-gold-border: rgba(245, 158, 11, 0.35);
 
-    /* Backgrounds (Trắng & Trắng ngà nhẹ nhàng, sạch sẽ) */
-    --cf-bg-page: #f8f7f4;
-    --cf-background: #f8f7f4;
-    --cf-surface: #ffffff;
-    --cf-bg-card: #ffffff;
-    --cf-bg-subtle: #f4f3ef;
+    /* Deep Obsidian Backgrounds (Đen ánh xanh than sâu thẳm chuẩn phòng chiếu) */
+    --cf-bg-page: #0B0F17;
+    --cf-background: #0B0F17;
+    --cf-surface: #161B26;
+    --cf-bg-card: #161B26;
+    --cf-bg-card-hover: #1E2433;
+    --cf-bg-subtle: #141A24;
+    --cf-bg-input: #111622;
+    --cf-footer-bg: #070A0F;
 
-    /* Text & Neutral Grays (Chữ phụ, viền mảnh trung tính) */
-    --cf-muted: #555555;
-    --cf-text-sub: #777777;
-    --cf-border: #e5e1d7;
-    --cf-border-light: #ece8df;
-    --cf-border-dark: #cccccc;
+    /* Typography: Sắc nét, tương phản cao, dịu mắt */
+    --cf-ink: #F8FAFC;
+    --cf-ink-soft: #E2E8F0;
+    --cf-ink-hover: #FFFFFF;
+    --cf-text: #F8FAFC;
+    --cf-muted: #94A3B8;
+    --cf-text-sub: #64748B;
+
+    /* Fine Glass Borders */
+    --cf-border: rgba(255, 255, 255, 0.08);
+    --cf-border-light: rgba(255, 255, 255, 0.05);
+    --cf-border-dark: rgba(255, 255, 255, 0.16);
 
     /* Functional States */
-    --cf-success: #15803d;
-    --cf-success-bg: #f0fdf4;
-    --cf-warning: #b45309;
-    --cf-warning-bg: #fffbeb;
-    --cf-danger: #dc2626;
-    --cf-danger-bg: #fef2f2;
-    --cf-info: #0369a1;
-    --cf-info-bg: #f0f9ff;
+    --cf-success: #10B981;
+    --cf-success-bg: rgba(16, 185, 129, 0.12);
+    --cf-warning: #F59E0B;
+    --cf-warning-bg: rgba(245, 158, 11, 0.12);
+    --cf-danger: #EF4444;
+    --cf-danger-bg: rgba(239, 68, 68, 0.12);
+    --cf-info: #38BDF8;
+    --cf-info-bg: rgba(56, 189, 248, 0.12);
 
-    /* Geometry & Shadows */
-    --cf-radius-sm: 4px;
-    --cf-radius-md: 6px;
-    --cf-radius-lg: 10px;
-    --cf-radius-pill: 24px;
-    --cf-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
-    --cf-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+    /* Geometry, Shadows & Neon Glow */
+    --cf-radius-sm: 6px;
+    --cf-radius-md: 10px;
+    --cf-radius-lg: 16px;
+    --cf-radius-pill: 999px;
+    --cf-shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.35);
+    --cf-shadow-md: 0 10px 30px rgba(0, 0, 0, 0.55);
+    --cf-glow-primary: 0 0 22px rgba(255, 42, 84, 0.35);
+    --cf-glow-violet: 0 0 22px rgba(99, 102, 241, 0.35);
 
-    /* Layout metrics */
-    --cf-container: 1200px;
-    --cf-sidebar: 248px;
-    --cf-topbar: 68px;
+    /* Glassmorphism */
+    --cf-glass-bg: rgba(11, 15, 23, 0.85);
+    --cf-glass-card: rgba(22, 27, 38, 0.75);
+    --cf-glass-border: 1px solid rgba(255, 255, 255, 0.08);
+    --cf-backdrop-blur: blur(16px);
+
+    /* Layout Metrics */
+    --cf-container: 1240px;
+    --cf-sidebar: 250px;
+    --cf-topbar: 70px;
 
     /* Fonts */
     --cf-font: "Be Vietnam Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;

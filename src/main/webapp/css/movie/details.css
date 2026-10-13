@@ -1,174 +1,27 @@
-@import url("https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap");
+@import url("../common/layout.css");
 
 :root {
-    --red: #e21b23;
-    --red-hover: #bd1118;
-    --red-subtle: #fef2f2;
-    --red-border: #fecaca;
-    --gold: #c9b27a;
-    --cream: #eee9d8;
-    --ink: #222222;
-    --ink-dark: #1a1a1a;
-    --text-muted: #555555;
-    --text-body: #333333;
-    --border-color: #e5e1d7;
-    --bg-page: #f8f7f4;
-    --bg-card: #ffffff;
-    --star-gold: #f59e0b;
-    --star-gray: #d1d5db;
+    --red: var(--cf-primary, #FF2A54);
+    --red-hover: var(--cf-primary-hover, #E11D48);
+    --red-subtle: rgba(255, 42, 84, 0.12);
+    --red-border: rgba(255, 42, 84, 0.35);
+    --gold: var(--cf-gold, #F59E0B);
+    --cream: #141A24;
+    --ink: #F8FAFC;
+    --ink-dark: #FFFFFF;
+    --text-muted: #94A3B8;
+    --text-body: #CBD5E1;
+    --border-color: rgba(255, 255, 255, 0.08);
+    --bg-page: var(--cf-bg-page, #0B0F17);
+    --bg-card: var(--cf-surface, #161B26);
+    --star-gold: #F59E0B;
+    --star-gray: #334155;
     --radius-sm: 6px;
     --radius-md: 10px;
     --radius-lg: 16px;
-    --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.04);
-    --shadow-hover: 0 8px 28px rgba(0, 0, 0, 0.08);
+    --shadow-card: 0 6px 20px rgba(0, 0, 0, 0.35);
+    --shadow-hover: 0 12px 30px rgba(0, 0, 0, 0.55);
     --font-main: "Be Vietnam Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-}
-
-* {
-    box-sizing: border-box;
-}
-
-html {
-    scroll-behavior: smooth;
-}
-
-body {
-    margin: 0;
-    min-width: 320px;
-    background: var(--bg-page);
-    color: var(--ink);
-    font-family: var(--font-main);
-    font-size: 14px;
-    line-height: 1.6;
-    -webkit-font-smoothing: antialiased;
-}
-
-a {
-    color: inherit;
-    text-decoration: none;
-}
-
-button {
-    font-family: inherit;
-    cursor: pointer;
-}
-
-/* ==========================================================================
-   TOP BAR & HEADER (CineFlow standard)
-   ========================================================================== */
-.top-bar {
-    height: 38px;
-    background: #f0eee4;
-    border-bottom: 1px solid #ddd7c5;
-    color: #555;
-    font-size: 12px;
-}
-
-.top-inner {
-    width: min(1250px, calc(100% - 40px));
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin: auto;
-}
-
-.top-left, .top-right {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-}
-
-.top-right a:hover {
-    color: var(--red);
-}
-
-.account-form {
-    display: inline-flex;
-    margin: 0;
-}
-
-.account-form button {
-    padding: 0;
-    border: 0;
-    background: transparent;
-    color: inherit;
-    font: inherit;
-    cursor: pointer;
-}
-
-.account-form button:hover {
-    color: var(--red);
-}
-
-.brand-header {
-    height: 105px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #fff;
-    border-bottom: 3px solid #d3c28d;
-}
-
-.logo {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    color: var(--red);
-    font-size: 39px;
-    font-weight: 800;
-}
-
-.logo-mark {
-    width: 48px;
-    height: 48px;
-    display: grid;
-    place-items: center;
-    transform: rotate(-8deg);
-    border-radius: 50% 50% 50% 8px;
-    background: var(--red);
-    color: #fff;
-    font-family: Georgia, serif;
-    font-size: 29px;
-}
-
-.logo-word span {
-    color: #252525;
-}
-
-.main-nav {
-    border-bottom: 1px solid #ddd;
-    background: #fff;
-}
-
-.nav-inner {
-    width: min(1250px, 100%);
-    min-height: 72px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: auto;
-}
-
-.nav-inner a {
-    height: 27px;
-    display: flex;
-    align-items: center;
-    padding: 0 24px;
-    border-right: 1px solid #ddd;
-    color: #404040;
-    font-size: 14px;
-    white-space: nowrap;
-    transition: color 0.2s;
-}
-
-.nav-inner a:last-child {
-    border-right: 0;
-}
-
-.nav-inner a:hover, .nav-inner a.active {
-    color: var(--red);
-    font-weight: 700;
 }
 
 /* ==========================================================================
@@ -804,56 +657,6 @@ button {
 }
 
 
-/* ==========================================================================
-   FOOTER (CineFlow standard)
-   ========================================================================== */
-.footer {
-    border-top: 1px solid #ddd;
-    background: #fff;
-    padding: 50px 0 30px;
-}
-
-.footer-inner {
-    width: min(1250px, calc(100% - 40px));
-    display: grid;
-    grid-template-columns: 2fr 1fr 1fr 1fr;
-    gap: 40px;
-    margin: auto;
-}
-
-.footer-brand p {
-    margin-top: 15px;
-    color: #777;
-    font-size: 13px;
-}
-
-.footer h4 {
-    margin: 0 0 16px;
-    font-size: 14px;
-    font-weight: 700;
-    color: #252525;
-}
-
-.footer a {
-    display: block;
-    margin-bottom: 10px;
-    color: #666;
-    font-size: 13px;
-    transition: color 0.2s;
-}
-
-.footer a:hover {
-    color: var(--red);
-}
-
-.copyright {
-    margin-top: 40px;
-    padding-top: 20px;
-    border-top: 1px solid #eee;
-    color: #999;
-    text-align: center;
-    font-size: 12px;
-}
 
 /* Quick utility rail */
 .quick-rail {

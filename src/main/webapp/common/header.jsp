@@ -49,44 +49,45 @@
     String headerRole = headerUser == null ? "" : (headerUser.getRole() == null ? "" : headerUser.getRole().toUpperCase());
     String ctx = request.getContextPath();
 %>
-<div class="top-bar">
-    <div class="top-inner">
-        <div class="top-left">
-            <span>CineFlow</span>
-            <span>Hệ thống rạp chiếu phim</span>
-        </div>
-        <div class="top-right">
+<header class="cf-main-header" id="cfMainHeader">
+    <div class="cf-header-container">
+        <!-- Logo Brand -->
+        <a class="cf-brand" href="<%= ctx %>/home/index.jsp" aria-label="CineFlow Cinema Home">
+            <span class="cf-brand-icon">C</span>
+            <span class="cf-brand-name">Cine<span class="cf-brand-glow">Flow</span></span>
+        </a>
+
+        <!-- Main Nav Menu -->
+        <nav class="cf-navbar" aria-label="Điều hướng chính">
+            <a class="cf-nav-item <%= "home".equalsIgnoreCase(activeNav) ? "active" : "" %>" href="<%= ctx %>/home/index.jsp">TRANG CHỦ</a>
+            <a class="cf-nav-item <%= "booking".equalsIgnoreCase(activeNav) ? "active" : "" %>" href="<%= ctx %>/booking/booking.jsp">MUA VÉ</a>
+            <a class="cf-nav-item <%= "promotions".equalsIgnoreCase(activeNav) ? "active" : "" %>" href="<%= ctx %>/home/index.jsp#promotions">TIN MỚI &amp; ƯU ĐÃI</a>
+            <a class="cf-nav-item <%= "cinema".equalsIgnoreCase(activeNav) ? "active" : "" %>" href="<%= ctx %>/cinema/index.jsp">RẠP CHIẾU PHIM</a>
+            <a class="cf-nav-item <%= "support".equalsIgnoreCase(activeNav) ? "active" : "" %>" href="<%= ctx %>/home/index.jsp#support">HỖ TRỢ</a>
+        </nav>
+
+        <!-- Right Side / Account & Auth Actions -->
+        <div class="cf-header-right">
             <% if (headerUser == null) { %>
-                <a href="<%= ctx %>/auth/login.jsp">Đăng nhập</a>
-                <a href="<%= ctx %>/auth/register.jsp">Đăng ký</a>
+                <a class="cf-auth-link" href="<%= ctx %>/auth/login.jsp">Đăng nhập</a>
+                <a class="cf-auth-btn" href="<%= ctx %>/auth/register.jsp">Đăng ký</a>
             <% } else { %>
-                <span>Xin chào, <%= safeEscape(headerMemberName) %></span>
-                <a href="<%= ctx %>/account">Tài khoản của tôi</a>
-                <% if ("ADMIN".equals(headerRole)) { %>
-                    <a href="<%= ctx %>/admin/movies">Quản lý phim</a>
-                <% } else if ("MANAGER".equals(headerRole)) { %>
-                    <a href="<%= ctx %>/staff">Trung tâm của tôi</a>
-                <% } %>
-                <form class="account-form" action="<%= ctx %>/logout" method="post">
-                    <button type="submit">Đăng xuất</button>
-                </form>
+                <div class="cf-user-chip">
+                    <span class="cf-user-avatar"><%= headerMemberName.isEmpty() ? "U" : headerMemberName.substring(0, 1).toUpperCase() %></span>
+                    <span class="cf-user-greeting">Chào, <strong><%= safeEscape(headerMemberName) %></strong></span>
+                    <a class="cf-account-link" href="<%= ctx %>/account" title="Trang cá nhân">Tài khoản</a>
+                    <% if ("ADMIN".equals(headerRole)) { %>
+                        <a class="cf-badge-role admin" href="<%= ctx %>/admin/movies" title="Bảng quản trị hệ thống">Admin</a>
+                    <% } else if ("MANAGER".equals(headerRole)) { %>
+                        <a class="cf-badge-role manager" href="<%= ctx %>/staff" title="Quản lý cụm rạp">Quản lý</a>
+                    <% } %>
+                    <form class="cf-logout-inline" action="<%= ctx %>/logout" method="post">
+                        <button type="submit" class="cf-logout-btn" title="Đăng xuất khỏi hệ thống">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                        </button>
+                    </form>
+                </div>
             <% } %>
-            <a href="<%= ctx %>/home/index.jsp#support">Hỗ trợ khách hàng</a>
         </div>
     </div>
-</div>
-<header class="brand-header">
-    <a class="logo" href="<%= ctx %>/home/index.jsp" aria-label="CineFlow Cinema">
-        <span class="logo-mark">C</span>
-        <span class="logo-word">Cine<span>Flow</span></span>
-    </a>
 </header>
-<nav class="main-nav" aria-label="Điều hướng chính">
-    <div class="nav-inner">
-        <a class="<%= "home".equalsIgnoreCase(activeNav) ? "active" : "" %>" href="<%= ctx %>/home/index.jsp">TRANG CHỦ</a>
-        <a class="<%= "booking".equalsIgnoreCase(activeNav) ? "active" : "" %>" href="<%= ctx %>/booking/booking.jsp">MUA VÉ</a>
-        <a class="<%= "promotions".equalsIgnoreCase(activeNav) ? "active" : "" %>" href="<%= ctx %>/home/index.jsp#promotions">TIN MỚI &amp; ƯU ĐÃI</a>
-        <a class="<%= "cinema".equalsIgnoreCase(activeNav) ? "active" : "" %>" href="<%= ctx %>/cinema/index.jsp">RẠP CHIẾU PHIM</a>
-        <a class="<%= "support".equalsIgnoreCase(activeNav) ? "active" : "" %>" href="<%= ctx %>/home/index.jsp#support">HỖ TRỢ KHÁCH HÀNG</a>
-    </div>
-</nav>

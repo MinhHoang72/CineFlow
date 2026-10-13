@@ -1,6 +1,24 @@
 @import url("variables.css");
 
-.cf-alert { margin-bottom: 18px; padding: 12px 14px; border: 1px solid var(--cf-border); border-radius: var(--cf-radius-sm); font-size: 13px; }
-.cf-alert-success { border-color: #b8e3c7; color: var(--cf-success); background: #edf9f1; }
-.cf-alert-error { border-color: #f2c1bd; color: var(--cf-danger); background: #fff1f0; }
-.cf-alert-info { border-color: #bcd7ef; color: var(--cf-info); background: #eff7ff; }
+.cf-alert {
+    margin-bottom: 18px;
+    padding: 14px 16px;
+    border-radius: var(--cf-radius-sm, 6px);
+    font-size: 13px;
+    line-height: 1.5;
+}
+.cf-alert-success {
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    color: #34D399;
+    background: rgba(16, 185, 129, 0.12);
+}
+.cf-alert-error {
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    color: #F87171;
+    background: rgba(239, 68, 68, 0.12);
+}
+.cf-alert-info {
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    color: #38BDF8;
+    background: rgba(56, 189, 248, 0.12);
+}
