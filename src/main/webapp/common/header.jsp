@@ -121,26 +121,23 @@
 
                         <div class="cf-dp-divider"></div>
 
-                        <!-- Nav Items -->
+                        <!-- Primary Actions: 2-column row -->
+                        <div class="cf-dp-actions">
+                            <a class="cf-dp-action-btn cf-dp-action-account" href="<%= ctx %>/account" role="menuitem">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                                Tài khoản
+                            </a>
+                            <form action="<%= ctx %>/logout" method="post" style="display:contents">
+                                <button type="submit" class="cf-dp-action-btn cf-dp-action-logout" role="menuitem">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                                    Đăng xuất
+                                </button>
+                            </form>
+                        </div>
+
+                        <% if ("ADMIN".equals(headerRole) || "MANAGER".equals(headerRole)) { %>
+                        <div class="cf-dp-divider"></div>
                         <nav class="cf-dp-nav" role="none">
-                            <a class="cf-dp-item" href="<%= ctx %>/account" role="menuitem">
-                                <span class="cf-dp-item-icon">
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-                                </span>
-                                Tài khoản của tôi
-                            </a>
-                            <a class="cf-dp-item" href="<%= ctx %>/account#history" role="menuitem">
-                                <span class="cf-dp-item-icon">
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
-                                </span>
-                                Lịch sử đặt vé
-                            </a>
-                            <a class="cf-dp-item" href="<%= ctx %>/auth/change-password.jsp" role="menuitem">
-                                <span class="cf-dp-item-icon">
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                                </span>
-                                Đổi mật khẩu
-                            </a>
                             <% if ("ADMIN".equals(headerRole)) { %>
                             <a class="cf-dp-item cf-dp-item--admin" href="<%= ctx %>/admin/movies" role="menuitem">
                                 <span class="cf-dp-item-icon">
@@ -148,7 +145,7 @@
                                 </span>
                                 Bảng quản trị
                             </a>
-                            <% } else if ("MANAGER".equals(headerRole)) { %>
+                            <% } else { %>
                             <a class="cf-dp-item cf-dp-item--manager" href="<%= ctx %>/staff" role="menuitem">
                                 <span class="cf-dp-item-icon">
                                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
@@ -157,18 +154,7 @@
                             </a>
                             <% } %>
                         </nav>
-
-                        <div class="cf-dp-divider"></div>
-
-                        <!-- Logout -->
-                        <div class="cf-dp-footer">
-                            <form action="<%= ctx %>/logout" method="post">
-                                <button type="submit" class="cf-dp-logout" role="menuitem">
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                                    Đăng xuất
-                                </button>
-                            </form>
-                        </div>
+                        <% } %>
                     </div>
                 </div>
             <% } %>

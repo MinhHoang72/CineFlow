@@ -426,32 +426,54 @@ button, input, select, textarea {
     color: #FDE68A;
 }
 
-/* ---- Logout Button ---- */
-.cf-dp-footer {
-    padding: 6px 6px 8px;
+/* ---- Primary Action Row: Tài khoản | Đăng xuất ---- */
+.cf-dp-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 10px 10px 12px;
 }
-.cf-dp-footer form {
-    margin: 0;
-}
-.cf-dp-logout {
-    display: flex;
+
+.cf-dp-action-btn {
+    display: inline-flex;
     align-items: center;
-    gap: 10px;
-    width: 100%;
+    justify-content: center;
+    gap: 6px;
     padding: 9px 12px;
     border-radius: 10px;
-    background: transparent;
-    border: none;
-    color: #F87171;
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+    border: none;
     font-family: inherit;
-    transition: background 0.15s ease, color 0.15s ease;
+    text-decoration: none;
+    white-space: nowrap;
 }
-.cf-dp-logout:hover {
-    background: rgba(255, 42, 84, 0.12);
+
+/* Tài khoản — subtle blue/indigo pill */
+.cf-dp-action-account {
+    background: rgba(99, 102, 241, 0.12);
+    color: #A5B4FC;
+    border: 1px solid rgba(99, 102, 241, 0.2);
+}
+.cf-dp-action-account:hover {
+    background: rgba(99, 102, 241, 0.22);
+    color: #C7D2FE;
+    box-shadow: 0 2px 12px rgba(99, 102, 241, 0.2);
+    text-decoration: none;
+}
+
+/* Đăng xuất — red pill */
+.cf-dp-action-logout {
+    background: rgba(255, 42, 84, 0.1);
+    color: #F87171;
+    border: 1px solid rgba(255, 42, 84, 0.2);
+}
+.cf-dp-action-logout:hover {
+    background: rgba(255, 42, 84, 0.2);
     color: #FF2A54;
+    box-shadow: 0 2px 12px rgba(255, 42, 84, 0.2);
 }
 
 /* --------------------------------------------------------------------------
