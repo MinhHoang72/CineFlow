@@ -1,19 +1,227 @@
 @import url("../common/reset.css");
+@import url("../common/variables.css");
 @import url("../common/buttons.css");
 
-body { min-height: 100vh; background: #f4f6f8 !important; color: var(--cf-text) !important; }
-.background { min-height: 100vh; background: transparent !important; }
-.light, .lights, .movie-line { display: none !important; }
-.container { width: min(1050px, calc(100% - 36px)) !important; margin: 0 auto !important; padding: 36px 0 !important; }
-.hero { color: var(--cf-text) !important; }
-.hero .logo, .card .logo, .login-card .logo, .register-card .logo { color: var(--cf-primary) !important; }
-.hero h1, .hero h2, .card h2, .login-card h2, .register-card h2 { color: var(--cf-text) !important; }
-.card, .login-card, .register-card { border: 1px solid var(--cf-border) !important; border-radius: var(--cf-radius-lg) !important; background: #fff !important; box-shadow: var(--cf-shadow-md) !important; color: var(--cf-text) !important; }
-.subtitle, .hero p, .security-list, .steps, .features { color: var(--cf-muted) !important; }
-.form-group label { color: var(--cf-text) !important; }
-.form-group input, .form-group select, .form-group textarea, .input-wrapper input { border: 1px solid var(--cf-border) !important; border-radius: var(--cf-radius-sm) !important; background: #fff !important; color: var(--cf-text) !important; }
-.form-group input:focus, .form-group select:focus, .form-group textarea:focus, .input-wrapper input:focus { border-color: var(--cf-primary) !important; box-shadow: 0 0 0 3px rgba(215, 25, 32, .1) !important; }
-.card button, .login-card button, .register-card button { border-radius: var(--cf-radius-sm) !important; background: var(--cf-primary) !important; color: #fff !important; }
-.card button:hover, .login-card button:hover, .register-card button:hover { background: var(--cf-primary-hover) !important; }
-.card a, .login-card a, .register-card a { color: var(--cf-primary); }
-@media (max-width: 700px) { .container { width: calc(100% - 28px) !important; padding: 22px 0 !important; } }
+/* ==========================================================================
+   CineFlow Cinema Modern Dark - Base Auth Styles
+   ========================================================================== */
+
+body {
+    min-height: 100vh;
+    background: #0B0F17 !important;
+    color: #F8FAFC !important;
+    font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+}
+
+.background {
+    position: fixed;
+    inset: 0;
+    min-height: 100vh;
+    z-index: 0;
+    pointer-events: none;
+    background: radial-gradient(circle at 10% 20%, rgba(255, 42, 84, 0.12), transparent 32%),
+                radial-gradient(circle at 90% 80%, rgba(99, 102, 241, 0.14), transparent 35%),
+                #0B0F17 !important;
+}
+
+.light, .lights, .movie-line {
+    display: none !important;
+}
+
+.container {
+    position: relative;
+    z-index: 1;
+    width: min(1140px, calc(100% - 36px)) !important;
+    margin: 0 auto !important;
+    padding: 36px 0 !important;
+}
+
+.hero {
+    color: #F8FAFC !important;
+}
+
+.hero .logo, .card .logo, .login-card .logo, .register-card .logo {
+    color: #ffffff !important;
+}
+
+.hero .logo span, .card .logo span, .login-card .logo span, .register-card .logo span {
+    color: var(--cf-primary, #FF2A54) !important;
+    text-shadow: 0 0 14px rgba(255, 42, 84, 0.5) !important;
+}
+
+.hero h1, .hero h2, .card h2, .login-card h2, .register-card h2 {
+    color: #ffffff !important;
+}
+
+.hero h1 span {
+    color: var(--cf-primary, #FF2A54) !important;
+    text-shadow: 0 0 16px rgba(255, 42, 84, 0.4) !important;
+}
+
+.card, .login-card, .register-card, .change-password-card {
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: var(--cf-radius-lg, 16px) !important;
+    background: rgba(22, 27, 38, 0.85) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55) !important;
+    color: #F8FAFC !important;
+}
+
+.subtitle, .hero p, .security-list, .steps, .features, .options, .register, .login-link, .back-login {
+    color: #94A3B8 !important;
+}
+
+.form-group label {
+    color: #CBD5E1 !important;
+    font-weight: 600 !important;
+}
+
+.form-group input, .form-group select, .form-group textarea, .input-wrapper input {
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border-radius: var(--cf-radius-sm, 6px) !important;
+    background: #111622 !important;
+    color: #F8FAFC !important;
+    outline: none !important;
+}
+
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus, .input-wrapper input:focus {
+    border-color: var(--cf-primary, #FF2A54) !important;
+    box-shadow: 0 0 0 3px rgba(255, 42, 84, 0.22) !important;
+}
+
+.form-group input::placeholder, .input-wrapper input::placeholder {
+    color: #64748B !important;
+}
+
+.card button, .login-card button, .register-card button, .change-password-card button,
+.login-btn, .register-btn, .reset-btn, .submit-btn, .change-btn {
+    border-radius: var(--cf-radius-sm, 6px) !important;
+    background: linear-gradient(135deg, #FF2A54 0%, #E11D48 100%) !important;
+    color: #ffffff !important;
+    border: 0 !important;
+    box-shadow: 0 4px 16px rgba(255, 42, 84, 0.4) !important;
+    font-weight: 700 !important;
+    cursor: pointer !important;
+    transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.card button:hover, .login-card button:hover, .register-card button:hover, .change-password-card button:hover,
+.login-btn:hover, .register-btn:hover, .reset-btn:hover, .submit-btn:hover, .change-btn:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 6px 22px rgba(255, 42, 84, 0.6) !important;
+}
+
+.card a, .login-card a, .register-card a, .change-password-card a,
+.forgot, .login-link a, .register a, .back-login a, .back-home a {
+    color: var(--cf-primary, #FF2A54) !important;
+    text-decoration: none !important;
+    font-weight: 600 !important;
+}
+
+.card a:hover, .login-card a:hover, .register-card a:hover,
+.forgot:hover, .login-link a:hover, .register a:hover, .back-login a:hover, .back-home a:hover {
+    color: #FF5A7A !important;
+    text-decoration: underline !important;
+}
+
+.feature, .security-item {
+    color: #CBD5E1 !important;
+}
+
+.feature-icon, .check {
+    border: 1px solid rgba(255, 42, 84, 0.3) !important;
+    background: rgba(255, 42, 84, 0.12) !important;
+    color: var(--cf-primary, #FF2A54) !important;
+}
+
+.icon-circle {
+    border: 1px solid rgba(255, 42, 84, 0.3) !important;
+    background: rgba(255, 42, 84, 0.12) !important;
+    color: var(--cf-primary, #FF2A54) !important;
+}
+
+.divider {
+    color: #64748B !important;
+}
+
+.divider::before, .divider::after {
+    background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.password-toggle {
+    color: #94A3B8 !important;
+}
+
+.password-toggle:hover {
+    color: #ffffff !important;
+}
+
+.step {
+    display: flex !important;
+    align-items: center !important;
+    gap: 14px !important;
+    margin-bottom: 14px !important;
+    color: #CBD5E1 !important;
+    font-size: 13.5px !important;
+}
+
+.step-number {
+    width: 32px !important;
+    min-width: 32px !important;
+    height: 32px !important;
+    border-radius: 50% !important;
+    border: 1px solid rgba(255, 42, 84, 0.3) !important;
+    background: rgba(255, 42, 84, 0.12) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: var(--cf-primary, #FF2A54) !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+}
+
+.password-requirements {
+    color: #94A3B8 !important;
+    margin-top: 10px !important;
+    margin-bottom: 14px !important;
+}
+
+.requirement {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    font-size: 12px !important;
+    margin: 4px 0 !important;
+}
+
+.requirement-icon {
+    width: 16px !important;
+    min-width: 16px !important;
+    font-weight: 700 !important;
+    text-align: center !important;
+}
+
+.requirement.valid {
+    color: #34D399 !important;
+}
+
+.requirement.invalid {
+    color: #F87171 !important;
+}
+
+.terms, .password-rule, .security-note, .password-note {
+    color: #64748B !important;
+}
+
+.form-error, .confirmPasswordMessage, .confirm-password-message {
+    color: #F87171 !important;
+}
+
+@media (max-width: 700px) {
+    .container {
+        width: calc(100% - 28px) !important;
+        padding: 22px 0 !important;
+    }
+}
+

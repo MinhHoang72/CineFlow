@@ -4,10 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>CineFlow - Xác minh OTP</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/auth/verify-otp.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/auth/base.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/auth/cineflow-auth.css">
+    <meta name="theme-color" content="#0B0F17">
+    <title>CineFlow - Xác minh OTP</title>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/auth/base.css?v=<%= System.currentTimeMillis() %>">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/auth/verify-otp.css?v=<%= System.currentTimeMillis() %>">
 </head>
 <body>
     <main class="card">

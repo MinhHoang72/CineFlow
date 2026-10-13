@@ -6,11 +6,11 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+        <meta name="theme-color" content="#0B0F17">
         <title>CineFlow - Đăng nhập</title>
 
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/auth/login.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/auth/base.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/auth/cineflow-auth.css">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/auth/base.css?v=<%= System.currentTimeMillis() %>">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/auth/cineflow-auth.css?v=<%= System.currentTimeMillis() %>">
     </head>
 
     <body>
