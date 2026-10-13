@@ -29,7 +29,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Tài khoản của tôi | CineFlow</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/layout.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/layout.css?v=<%= System.currentTimeMillis() %>">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/account/account.css?v=<%= System.currentTimeMillis() %>">
 </head>
 <body>
@@ -84,8 +84,6 @@
                     </div>
 
                     <div class="overview-details">
-                        <span class="detail-item"><strong>@</strong><%= esc(user.getAccount()) %></span>
-                        <span class="detail-dot">•</span>
                         <span class="detail-item">✉ <%= esc(user.getEmail()) %></span>
                         <span class="detail-dot">•</span>
                         <span class="detail-item">📞 <%= user.getPhone() == null || user.getPhone().isBlank() ? "Chưa có SĐT" : esc(user.getPhone()) %></span>
