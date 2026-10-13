@@ -96,7 +96,7 @@
 .hero-content {
     position: absolute;
     top: 50%;
-    left: 8%;
+    left: max(5%, calc((100% - var(--cf-container, 1240px)) / 2 + 24px));
     width: min(580px, 80%);
     transform: translateY(-50%);
     color: #fff;
