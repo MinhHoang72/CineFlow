@@ -48,21 +48,7 @@ public class LoginServlet extends HttpServlet {
         User user = userDAO.getUserByAccountOrEmail(accountOrEmail);
 
         if (user == null) {
-
-            response.sendError(
-            HttpServletResponse.SC_UNAUTHORIZED,
-            "Invalid Account or Password."
-            );
-            return;
-        }
-
-        // Kiểm tra trạng thái tài khoản
-        if (!"ACTIVE".equalsIgnoreCase(user.getStatus())) {
-
-            response.sendError(
-                    HttpServletResponse.SC_FORBIDDEN,
-                    "Your account is not active."
-            );
+            response.sendRedirect(request.getContextPath() + "/auth/login.jsp?error=invalid");
             return;
         }
 
@@ -82,13 +68,22 @@ public class LoginServlet extends HttpServlet {
         }
 
         if (!passwordCorrect) {
-
-            response.sendError(
-                    HttpServletResponse.SC_UNAUTHORIZED,
-                    "Invalid Account/Email or Password."
-            );
+            response.sendRedirect(request.getContextPath() + "/auth/login.jsp?error=invalid");
             return;
         }
+
+        // Kiểm tra trạng thái tài khoản
+        if ("LOCKED".equalsIgnoreCase(user.getStatus())) {
+            response.sendRedirect(request.getContextPath() + "/auth/login.jsp?error=locked");
+            return;
+        }
+
+        if ("INACTIVE".equalsIgnoreCase(user.getStatus()) || !user.isEmailVerified()) {
+            String encodedEmail = java.net.URLEncoder.encode(user.getEmail(), java.nio.charset.StandardCharsets.UTF_8);
+            response.sendRedirect(request.getContextPath() + "/auth/login.jsp?error=unverified&email=" + encodedEmail);
+            return;
+        }
+
 
         // Login thành công
         HttpSession session = request.getSession();

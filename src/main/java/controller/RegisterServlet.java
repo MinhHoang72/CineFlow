@@ -135,18 +135,42 @@ public class RegisterServlet extends HttpServlet {
             }
 
             // =========================================
+            // 5.1 CHECK DISPOSABLE / TEMP EMAIL
+            // =========================================
+            String lowerEmail = email.toLowerCase();
+            if (lowerEmail.endsWith("@tempmail.com") || lowerEmail.endsWith("@10minutemail.com")
+                    || lowerEmail.endsWith("@guerrillamail.com") || lowerEmail.endsWith("@mailinator.com")
+                    || lowerEmail.endsWith("@throwawaymail.com")) {
+                String encodedAccount = java.net.URLEncoder.encode(account, java.nio.charset.StandardCharsets.UTF_8);
+                response.sendRedirect(request.getContextPath()
+                        + "/auth/register.jsp?error=tempmail&account=" + encodedAccount);
+                return;
+            }
+
+            // =========================================
             // 6. CHECK EMAIL
             // =========================================
             System.out.println("Checking email...");
 
-            boolean emailExists
-                    = userDAO.isEmailExists(email);
+            User existingUser = userDAO.getUserByEmail(email);
 
-            System.out.println(
-                    "Email exists = " + emailExists
-            );
+            if (existingUser != null) {
+                // Nếu tài khoản đã đăng ký nhưng chưa kích hoạt email -> Gửi lại mã kích hoạt!
+                if ("INACTIVE".equalsIgnoreCase(existingUser.getStatus()) || !existingUser.isEmailVerified()) {
+                    String otp = String.format("%06d", java.util.concurrent.ThreadLocalRandom.current().nextInt(0, 1_000_000));
+                    java.sql.Timestamp expiry = new java.sql.Timestamp(System.currentTimeMillis() + (15 * 60 * 1000));
+                    userDAO.updateActivationOtp(existingUser.getUserId(), otp, expiry);
+                    try {
+                        utils.EmailUtils.sendAccountActivationOtpEmail(email, otp, existingUser.getFullName());
+                    } catch (Exception ex) {
+                        System.out.println("Warning: Could not resend activation email: " + ex.getMessage());
+                    }
+                    String encodedEmail = java.net.URLEncoder.encode(email, java.nio.charset.StandardCharsets.UTF_8);
+                    response.sendRedirect(request.getContextPath()
+                            + "/auth/verify-otp.jsp?email=" + encodedEmail + "&action=register&resent=true");
+                    return;
+                }
 
-            if (emailExists) {
                 String encodedAccount = java.net.URLEncoder.encode(account, java.nio.charset.StandardCharsets.UTF_8);
                 String encodedEmail = java.net.URLEncoder.encode(email, java.nio.charset.StandardCharsets.UTF_8);
                 response.sendRedirect(request.getContextPath()
@@ -169,7 +193,7 @@ public class RegisterServlet extends HttpServlet {
             );
 
             // =========================================
-            // 8. CREATE USER
+            // 8. CREATE USER & GENERATE ACTIVATION OTP
             // =========================================
             User user = new User();
 
@@ -178,17 +202,20 @@ public class RegisterServlet extends HttpServlet {
             user.setEmail(email);
             user.setPassword(hashedPassword);
 
-            System.out.println("User object created.");
+            String otp = String.format("%06d", java.util.concurrent.ThreadLocalRandom.current().nextInt(0, 1_000_000));
+            java.sql.Timestamp expiry = new java.sql.Timestamp(System.currentTimeMillis() + (15 * 60 * 1000));
+
+            System.out.println("User object created. Generated OTP = " + otp);
 
             // =========================================
-            // 9. REGISTER
+            // 9. REGISTER (INACTIVE - AWAITING OTP)
             // =========================================
             System.out.println(
                     ">>> CALLING userDAO.register()..."
             );
 
             boolean success
-                    = userDAO.register(user);
+                    = userDAO.register(user, otp, expiry);
 
             System.out.println(
                     ">>> userDAO.register() RESULT = "
@@ -212,19 +239,29 @@ public class RegisterServlet extends HttpServlet {
             }
 
             // =========================================
-            // 11. SUCCESS
+            // 11. SEND ACTIVATION EMAIL & REDIRECT TO OTP
             // =========================================
+            try {
+                utils.EmailUtils.sendAccountActivationOtpEmail(email, otp, fullName);
+                System.out.println("Activation OTP email sent to " + email);
+            } catch (Exception ex) {
+                System.out.println("Warning: Failed to send activation email: " + ex.getMessage());
+                ex.printStackTrace();
+            }
+
             System.out.println();
             System.out.println("========================================");
-            System.out.println(" REGISTER SUCCESS");
+            System.out.println(" REGISTER SUCCESS - AWAITING OTP VERIFICATION");
             System.out.println(" Account = " + account);
             System.out.println(" Email   = " + email);
             System.out.println("========================================");
 
+            String encodedEmail = java.net.URLEncoder.encode(email, java.nio.charset.StandardCharsets.UTF_8);
             response.sendRedirect(
                     request.getContextPath()
-                    + "/auth/login.jsp"
+                    + "/auth/verify-otp.jsp?email=" + encodedEmail + "&action=register"
             );
+
 
         } catch (Exception e) {
 

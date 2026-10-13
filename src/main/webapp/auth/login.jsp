@@ -71,10 +71,30 @@
                 </div>
                 <% 
                     String redirectUrl = request.getParameter("redirect");
-                    if ("session".equals(request.getParameter("error"))) { 
+                    String errorParam = request.getParameter("error");
+                    String unverifiedEmail = request.getParameter("email");
+                    String verifiedParam = request.getParameter("verified");
                 %>
-                <p class="form-error" role="alert">Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.</p>
+                <% if ("session".equals(errorParam)) { %>
+                    <p class="form-error" role="alert">Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.</p>
+                <% } else if ("invalid".equals(errorParam)) { %>
+                    <p class="form-error" role="alert">Tài khoản/email hoặc mật khẩu không chính xác.</p>
+                <% } else if ("locked".equals(errorParam)) { %>
+                    <p class="form-error" role="alert">Tài khoản này đã bị tạm khóa bởi Quản trị viên.</p>
+                <% } else if ("unverified".equals(errorParam)) { %>
+                    <div style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); color: #F59E0B; padding: 12px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 18px; line-height: 1.5;">
+                        ⚠ Tài khoản của bạn chưa được kích hoạt qua email.<br>
+                        <a href="${pageContext.request.contextPath}/verify-otp?action=resend&email=<%= unverifiedEmail != null ? java.net.URLEncoder.encode(unverifiedEmail, "UTF-8") : "" %>&type=register" style="color: #FF2A54; font-weight: 700; text-decoration: underline;">
+                            Nhận mã OTP và kích hoạt ngay ›
+                        </a>
+                    </div>
                 <% } %>
+                <% if ("true".equals(verifiedParam)) { %>
+                    <div style="background: rgba(52, 211, 153, 0.12); border: 1px solid rgba(52, 211, 153, 0.3); color: #34D399; padding: 12px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 18px;">
+                        ✓ Kích hoạt tài khoản thành công! Bạn có thể đăng nhập ngay bây giờ.
+                    </div>
+                <% } %>
+
 
                 <form action="${pageContext.request.contextPath}/login"
                       method="post">

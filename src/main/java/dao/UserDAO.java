@@ -62,46 +62,60 @@ public class UserDAO {
     }
 
     public boolean register(User user) {
+        return register(user, null, null);
+    }
 
-        String sql
-                = "INSERT INTO Users "
-            + "(FullName, Account, Email, Password, Role, Status) "
-            + "VALUES (?, ?, ?, ?, ?, ?)";
+    public boolean register(User user, String otp, java.sql.Timestamp expiry) {
+        String sql = "INSERT INTO Users "
+                + "(FullName, Account, Email, Password, Role, Status, ResetToken, ResetTokenExpiry, EmailVerified) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-        try (Connection connection = DBContext.getConnection(); PreparedStatement ps
-                = connection.prepareStatement(sql)) {
-
+        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, user.getFullName());
             ps.setString(2, user.getAccount());
             ps.setString(3, user.getEmail());
             ps.setString(4, user.getPassword());
-
             ps.setString(5, "CUSTOMER");
-            ps.setString(6, "ACTIVE");
+            ps.setString(6, otp != null ? "INACTIVE" : "ACTIVE");
+            ps.setString(7, otp);
+            ps.setTimestamp(8, expiry);
+            ps.setBoolean(9, otp == null);
 
             int rows = ps.executeUpdate();
-
-            System.out.println();
-            System.out.println("----------------------------------------");
-            System.out.println("USERDAO REGISTER");
-            System.out.println("Rows inserted = " + rows);
-            System.out.println("----------------------------------------");
-
             return rows > 0;
-
         } catch (SQLException e) {
-
-            System.out.println();
-            System.out.println("----------------------------------------");
-            System.out.println("USERDAO REGISTER SQL ERROR");
-            System.out.println("----------------------------------------");
-
             LOGGER.log(Level.SEVERE, "Registration INSERT failed", e);
             e.printStackTrace();
-
             return false;
         }
     }
+
+    public boolean activateUser(int userId) {
+        String sql = "UPDATE Users SET Status = 'ACTIVE', EmailVerified = 1, ResetToken = NULL, ResetTokenExpiry = NULL, UpdatedAt = GETDATE() WHERE UserID = ?";
+        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, userId);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "activateUser failed", e);
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean updateActivationOtp(int userId, String otp, java.sql.Timestamp expiry) {
+        String sql = "UPDATE Users SET ResetToken = ?, ResetTokenExpiry = ?, UpdatedAt = GETDATE() WHERE UserID = ?";
+        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, otp);
+            ps.setTimestamp(2, expiry);
+            ps.setInt(3, userId);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "updateActivationOtp failed", e);
+            e.printStackTrace();
+            return false;
+        }
+    }
+
 
     // =========================================================
     // 4. FIND USER BY ACCOUNT OR EMAIL

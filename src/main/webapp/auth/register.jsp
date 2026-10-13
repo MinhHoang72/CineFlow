@@ -413,6 +413,8 @@
                     <p class="form-error" role="alert">Tên tài khoản này đã tồn tại. Vui lòng chọn tên khác.</p>
                 <% } else if ("email".equals(registerError)) { %>
                     <p class="form-error" role="alert">Email này đã được đăng ký. Vui lòng sử dụng email khác.</p>
+                <% } else if ("tempmail".equals(registerError)) { %>
+                    <p class="form-error" role="alert">Vui lòng sử dụng địa chỉ email chính thức (Gmail, Outlook, v.v.) để đăng ký và nhận vé xem phim.</p>
                 <% } %>
                 <!-- TERMS -->
                 <div class="terms">
