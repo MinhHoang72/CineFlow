@@ -182,309 +182,120 @@ button, input, select, textarea {
 }
 
 /* ============================================================
-   User Dropdown Menu — Cinema Modern Dark
+   Logged-in User Action Buttons (Tài khoản & Đăng xuất)
    ============================================================ */
-.cf-user-menu {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-}
-
-/* ---- Trigger pill ---- */
-.cf-user-trigger {
+.cf-account-btn {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 5px 12px 5px 6px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 999px;
+    padding: 6px 14px 6px 7px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
     background: rgba(22, 27, 38, 0.75);
     backdrop-filter: blur(8px);
     color: #E2E8F0;
     font-size: 13px;
     font-weight: 600;
-    cursor: pointer;
+    text-decoration: none;
     transition: all 0.2s ease;
     white-space: nowrap;
-    font-family: inherit;
 }
 
-.cf-user-trigger:hover,
-.cf-menu-open .cf-user-trigger {
-    background: rgba(30, 36, 51, 0.95);
-    border-color: rgba(255, 255, 255, 0.18);
+.cf-account-btn:hover {
+    background: rgba(99, 102, 241, 0.18);
+    border-color: rgba(99, 102, 241, 0.45);
     color: #ffffff;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+    box-shadow: 0 2px 12px rgba(99, 102, 241, 0.25);
+    text-decoration: none;
 }
 
-/* Trigger avatar */
-.cf-trigger-avatar {
-    width: 30px;
-    height: 30px;
+.cf-account-avatar {
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
-    object-fit: cover;
-    flex-shrink: 0;
-}
-
-.cf-trigger-initial {
-    display: grid;
-    place-items: center;
     background: linear-gradient(135deg, #6366F1, #FF2A54);
     color: #ffffff;
-    font-size: 13px;
+    display: grid;
+    place-items: center;
+    font-size: 11px;
     font-weight: 700;
-}
-
-.cf-trigger-name {
-    max-width: 110px;
     overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.cf-trigger-chevron {
-    opacity: 0.6;
-    transition: transform 0.25s ease;
     flex-shrink: 0;
 }
-.cf-menu-open .cf-trigger-chevron {
-    transform: rotate(180deg);
-    opacity: 0.9;
-}
 
-/* ---- Dropdown Panel ---- */
-.cf-dropdown-panel {
-    display: none;
-    position: absolute;
-    top: calc(100% + 12px);
-    right: 0;
-    width: 272px;
-    background: rgba(18, 23, 34, 0.97);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.09);
-    border-radius: 16px;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7),
-                0 0 0 1px rgba(255, 255, 255, 0.04) inset;
-    z-index: 9999;
-    overflow: hidden;
-    transform: translateY(-8px);
-    opacity: 0;
-    animation: none;
-}
-
-.cf-dropdown-panel.cf-dp-open {
+.cf-account-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
     display: block;
-    animation: cfDropIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-@keyframes cfDropIn {
-    from { opacity: 0; transform: translateY(-8px) scale(0.97); }
-    to   { opacity: 1; transform: translateY(0)    scale(1);    }
+.cf-account-btn-text {
+    line-height: 1;
 }
 
-/* ---- Dropdown Header / User card ---- */
-.cf-dp-header {
-    display: flex;
+.cf-logout-inline {
+    display: inline-flex;
+    margin: 0;
+    padding: 0;
+}
+
+.cf-logout-btn {
+    display: inline-flex;
     align-items: center;
-    gap: 12px;
-    padding: 16px 16px 14px;
+    justify-content: center;
+    padding: 8px 16px;
+    border-radius: 8px;
+    background: rgba(255, 42, 84, 0.12);
+    border: 1px solid rgba(255, 42, 84, 0.28);
+    color: #F87171;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    line-height: 1.2;
 }
 
-.cf-dp-avatar {
-    width: 42px;
-    height: 42px;
-    border-radius: 50%;
-    object-fit: cover;
-    flex-shrink: 0;
-    border: 2px solid rgba(255, 255, 255, 0.1);
-}
-
-.cf-dp-initial {
-    display: grid;
-    place-items: center;
-    background: linear-gradient(135deg, #6366F1, #FF2A54);
+.cf-logout-btn:hover {
+    background: var(--cf-primary, #FF2A54);
+    border-color: var(--cf-primary, #FF2A54);
     color: #ffffff;
-    font-size: 17px;
-    font-weight: 700;
+    box-shadow: 0 4px 16px rgba(255, 42, 84, 0.4);
 }
 
-.cf-dp-userinfo {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
-.cf-dp-fullname {
-    color: #F8FAFC;
-    font-size: 14px;
-    font-weight: 700;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.cf-dp-account {
-    color: #64748B;
-    font-size: 11.5px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-/* Role badge inside panel header */
-.cf-dp-badge {
-    padding: 3px 9px;
+.cf-badge-role {
+    padding: 5px 10px;
     border-radius: 6px;
-    font-size: 10.5px;
+    font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    flex-shrink: 0;
+    text-decoration: none;
+    transition: all 0.2s ease;
 }
-.cf-dp-badge.admin {
+
+.cf-badge-role.admin {
     background: rgba(99, 102, 241, 0.18);
     color: #A5B4FC;
     border: 1px solid rgba(99, 102, 241, 0.35);
 }
-.cf-dp-badge.manager {
+
+.cf-badge-role.admin:hover {
+    background: rgba(99, 102, 241, 0.3);
+    color: #ffffff;
+}
+
+.cf-badge-role.manager {
     background: rgba(245, 158, 11, 0.15);
     color: #FCD34D;
     border: 1px solid rgba(245, 158, 11, 0.32);
 }
 
-/* ---- Divider ---- */
-.cf-dp-divider {
-    height: 1px;
-    background: rgba(255, 255, 255, 0.06);
-    margin: 0 0;
-}
-
-/* ---- Nav Items ---- */
-.cf-dp-nav {
-    padding: 6px 6px;
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-}
-
-.cf-dp-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 9px 12px;
-    border-radius: 10px;
-    color: #CBD5E1;
-    font-size: 13px;
-    font-weight: 500;
-    transition: background 0.15s ease, color 0.15s ease;
-    text-decoration: none;
-}
-.cf-dp-item:hover {
-    background: rgba(255, 255, 255, 0.07);
+.cf-badge-role.manager:hover {
+    background: rgba(245, 158, 11, 0.28);
     color: #ffffff;
-    text-decoration: none;
-}
-.cf-dp-item:hover .cf-dp-item-icon {
-    color: #FF2A54;
-}
-
-.cf-dp-item-icon {
-    width: 28px;
-    height: 28px;
-    display: grid;
-    place-items: center;
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.05);
-    color: #94A3B8;
-    flex-shrink: 0;
-    transition: color 0.15s ease, background 0.15s ease;
-}
-
-/* Admin / Manager special item accents */
-.cf-dp-item--admin {
-    color: #A5B4FC;
-}
-.cf-dp-item--admin .cf-dp-item-icon {
-    background: rgba(99, 102, 241, 0.12);
-    color: #A5B4FC;
-}
-.cf-dp-item--admin:hover {
-    background: rgba(99, 102, 241, 0.1);
-    color: #C7D2FE;
-}
-
-.cf-dp-item--manager {
-    color: #FCD34D;
-}
-.cf-dp-item--manager .cf-dp-item-icon {
-    background: rgba(245, 158, 11, 0.12);
-    color: #FCD34D;
-}
-.cf-dp-item--manager:hover {
-    background: rgba(245, 158, 11, 0.1);
-    color: #FDE68A;
-}
-
-/* ---- Primary Action Row: Tài khoản | Đăng xuất ---- */
-.cf-dp-actions {
-    display: flex;
-    gap: 8px;
-    padding: 10px 10px 12px;
-}
-
-/* Form wrapper participates in flex layout as half-width */
-.cf-dp-action-form {
-    flex: 1;
-    display: flex;
-    margin: 0;
-    padding: 0;
-}
-
-.cf-dp-action-btn {
-    flex: 1;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 9px 10px;
-    border-radius: 10px;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
-    border: 1px solid transparent;
-    font-family: inherit;
-    text-decoration: none;
-    white-space: nowrap;
-    line-height: 1;
-}
-
-/* Tài khoản — subtle blue/indigo pill */
-.cf-dp-action-account {
-    background: rgba(99, 102, 241, 0.12);
-    color: #A5B4FC;
-    border-color: rgba(99, 102, 241, 0.22);
-}
-.cf-dp-action-account:hover {
-    background: rgba(99, 102, 241, 0.22);
-    color: #C7D2FE;
-    box-shadow: 0 2px 12px rgba(99, 102, 241, 0.2);
-    text-decoration: none;
-}
-
-/* Đăng xuất — red pill */
-.cf-dp-action-logout {
-    background: rgba(255, 42, 84, 0.1);
-    color: #F87171;
-    border-color: rgba(255, 42, 84, 0.22);
-    width: 100%;
-}
-.cf-dp-action-logout:hover {
-    background: rgba(255, 42, 84, 0.2);
-    color: #FF2A54;
-    box-shadow: 0 2px 12px rgba(255, 42, 84, 0.2);
 }
 
 /* --------------------------------------------------------------------------
@@ -627,8 +438,11 @@ button, input, select, textarea {
     .cf-header-container {
         width: calc(100% - 24px);
     }
-    .cf-trigger-name {
-        display: none;
+    .cf-account-btn {
+        padding: 6px 10px;
+    }
+    .cf-logout-btn {
+        padding: 6px 12px;
     }
     .footer-inner {
         grid-template-columns: 1fr;

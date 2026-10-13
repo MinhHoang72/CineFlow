@@ -86,108 +86,27 @@
                 <a class="cf-auth-link" href="<%= ctx %>/auth/login.jsp">Đăng nhập</a>
                 <a class="cf-auth-btn" href="<%= ctx %>/auth/register.jsp">Đăng ký</a>
             <% } else { %>
-                <!-- Modern User Dropdown Menu -->
-                <div class="cf-user-menu" id="cfUserMenu">
-                    <!-- Trigger pill: Avatar + Name + Chevron -->
-                    <button class="cf-user-trigger" id="cfUserTrigger" aria-haspopup="true" aria-expanded="false" aria-label="Tài khoản của tôi">
+                <% if ("ADMIN".equals(headerRole)) { %>
+                    <a class="cf-badge-role admin" href="<%= ctx %>/admin/movies" title="Bảng quản trị hệ thống">Admin</a>
+                <% } else if ("MANAGER".equals(headerRole)) { %>
+                    <a class="cf-badge-role manager" href="<%= ctx %>/staff" title="Quản lý cụm rạp">Quản lý</a>
+                <% } %>
+                <a class="cf-account-btn" href="<%= ctx %>/account" title="Trang cá nhân của <%= safeEscape(headerMemberName) %>">
+                    <span class="cf-account-avatar">
                         <% if (headerAvatar != null && !headerAvatar.isBlank()) { %>
-                            <img class="cf-trigger-avatar" src="<%= safeEscape(headerAvatar) %>" alt="<%= safeEscape(headerMemberName) %>">
+                            <img class="cf-account-avatar-img" src="<%= safeEscape(headerAvatar) %>" alt="<%= safeEscape(headerMemberName) %>">
                         <% } else { %>
-                            <span class="cf-trigger-avatar cf-trigger-initial"><%= headerInitial %></span>
+                            <%= headerInitial %>
                         <% } %>
-                        <span class="cf-trigger-name"><%= safeEscape(headerMemberName.length() > 16 ? headerMemberName.substring(0, 15) + "…" : headerMemberName) %></span>
-                        <svg class="cf-trigger-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    </span>
+                    <span class="cf-account-btn-text">Tài khoản</span>
+                </a>
+                <form class="cf-logout-inline" action="<%= ctx %>/logout" method="post">
+                    <button type="submit" class="cf-logout-btn" title="Đăng xuất khỏi hệ thống">
+                        Đăng xuất
                     </button>
-
-                    <!-- Dropdown Panel -->
-                    <div class="cf-dropdown-panel" id="cfDropdownPanel" role="menu">
-                        <!-- User Info Card -->
-                        <div class="cf-dp-header">
-                            <% if (headerAvatar != null && !headerAvatar.isBlank()) { %>
-                                <img class="cf-dp-avatar" src="<%= safeEscape(headerAvatar) %>" alt="<%= safeEscape(headerMemberName) %>">
-                            <% } else { %>
-                                <span class="cf-dp-avatar cf-dp-initial"><%= headerInitial %></span>
-                            <% } %>
-                            <div class="cf-dp-userinfo">
-                                <span class="cf-dp-fullname"><%= safeEscape(headerMemberName) %></span>
-                                <span class="cf-dp-account"><%= headerAccount.contains("@") ? safeEscape(headerAccount) : "@" + safeEscape(headerAccount) %></span>
-                            </div>
-                            <% if ("ADMIN".equals(headerRole)) { %>
-                                <span class="cf-dp-badge admin">Admin</span>
-                            <% } else if ("MANAGER".equals(headerRole)) { %>
-                                <span class="cf-dp-badge manager">Manager</span>
-                            <% } %>
-                        </div>
-
-                        <div class="cf-dp-divider"></div>
-
-                        <!-- Primary Actions: 2-column row -->
-                        <div class="cf-dp-actions">
-                            <a class="cf-dp-action-btn cf-dp-action-account" href="<%= ctx %>/account" role="menuitem">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-                                Tài khoản
-                            </a>
-                            <form class="cf-dp-action-form" action="<%= ctx %>/logout" method="post">
-                                <button type="submit" class="cf-dp-action-btn cf-dp-action-logout" role="menuitem">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                                    Đăng xuất
-                                </button>
-                            </form>
-                        </div>
-
-                        <% if ("ADMIN".equals(headerRole) || "MANAGER".equals(headerRole)) { %>
-                        <div class="cf-dp-divider"></div>
-                        <nav class="cf-dp-nav" role="none">
-                            <% if ("ADMIN".equals(headerRole)) { %>
-                            <a class="cf-dp-item cf-dp-item--admin" href="<%= ctx %>/admin/movies" role="menuitem">
-                                <span class="cf-dp-item-icon">
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-                                </span>
-                                Bảng quản trị
-                            </a>
-                            <% } else { %>
-                            <a class="cf-dp-item cf-dp-item--manager" href="<%= ctx %>/staff" role="menuitem">
-                                <span class="cf-dp-item-icon">
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                                </span>
-                                Quản lý cụm rạp
-                            </a>
-                            <% } %>
-                        </nav>
-                        <% } %>
-                    </div>
-                </div>
+                </form>
             <% } %>
         </div>
     </div>
 </header>
-
-<script>
-(function () {
-    var trigger = document.getElementById('cfUserTrigger');
-    var panel   = document.getElementById('cfDropdownPanel');
-    var menu    = document.getElementById('cfUserMenu');
-    if (!trigger || !panel) return;
-
-    function open() {
-        panel.classList.add('cf-dp-open');
-        trigger.setAttribute('aria-expanded', 'true');
-        menu.classList.add('cf-menu-open');
-    }
-    function close() {
-        panel.classList.remove('cf-dp-open');
-        trigger.setAttribute('aria-expanded', 'false');
-        menu.classList.remove('cf-menu-open');
-    }
-    trigger.addEventListener('click', function (e) {
-        e.stopPropagation();
-        panel.classList.contains('cf-dp-open') ? close() : open();
-    });
-    document.addEventListener('click', function (e) {
-        if (!menu.contains(e.target)) close();
-    });
-    document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape') close();
-    });
-})();
-</script>
