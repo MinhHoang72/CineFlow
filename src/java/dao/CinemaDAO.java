@@ -299,33 +299,18 @@ public class CinemaDAO {
         } catch (Exception exception) { exception.printStackTrace(); return false; }
     }
 
-    public boolean saveMovieDistribution(int movieId, String scope, String city,
-            Set<Integer> selectedBranchIds, Set<Integer> exceptionBranchIds) {
-        if (!"system".equals(scope) && !"city".equals(scope)) return false;
-        if ("city".equals(scope) && city == null) return false;
+    public boolean saveMovieDistribution(int movieId, Set<Integer> selectedBranchIds) {
         String disableInactiveSql = "UPDATE bm SET bm.IsActive = 0, bm.UpdatedAt = GETDATE() "
                 + "FROM BranchMovies bm JOIN Branches b ON b.BranchID = bm.BranchID "
                 + "WHERE bm.MovieID = ? AND (b.Status IS NULL OR UPPER(b.Status) <> 'ACTIVE')";
-        String disableSystemSql = "UPDATE BranchMovies SET IsActive = 0, UpdatedAt = GETDATE() WHERE MovieID = ?";
-        String disableCitySql = "UPDATE bm SET bm.IsActive = 0, bm.UpdatedAt = GETDATE() "
-                + "FROM BranchMovies bm JOIN Branches b ON b.BranchID = bm.BranchID "
-                + "WHERE bm.MovieID = ? AND ((? = 1 AND (b.City IS NULL OR LTRIM(RTRIM(b.City)) = '')) "
-                + "OR (? = 0 AND LTRIM(RTRIM(b.City)) = ?))";
+        String disableAllSql = "UPDATE BranchMovies SET IsActive = 0, UpdatedAt = GETDATE() WHERE MovieID = ?";
         String mergeSql = "MERGE BranchMovies AS target "
                 + "USING (SELECT ? AS BranchID, ? AS MovieID WHERE EXISTS ("
                 + "SELECT 1 FROM Branches b WHERE b.BranchID = ? AND UPPER(b.Status) = 'ACTIVE')) AS source "
                 + "ON target.BranchID = source.BranchID AND target.MovieID = source.MovieID "
                 + "WHEN MATCHED THEN UPDATE SET IsActive = 1, UpdatedAt = GETDATE() "
                 + "WHEN NOT MATCHED THEN INSERT (BranchID, MovieID, IsActive) VALUES (source.BranchID, source.MovieID, 1);";
-        String saveSettingsSql = "MERGE MovieDistributionSettings AS target "
-                + "USING (SELECT ? AS MovieID, ? AS Scope, ? AS City) AS source ON target.MovieID = source.MovieID "
-                + "WHEN MATCHED THEN UPDATE SET Scope = source.Scope, City = source.City, UpdatedAt = GETDATE() "
-                + "WHEN NOT MATCHED THEN INSERT (MovieID, Scope, City) VALUES (source.MovieID, source.Scope, source.City);";
-        String deleteAllExceptionsSql = "DELETE FROM MovieDistributionExceptions WHERE MovieID = ?";
-        String deleteCityExceptionsSql = "DELETE e FROM MovieDistributionExceptions e "
-                + "JOIN Branches b ON b.BranchID = e.BranchID WHERE e.MovieID = ? "
-                + "AND ((? = 1 AND (b.City IS NULL OR LTRIM(RTRIM(b.City)) = '')) OR (? = 0 AND LTRIM(RTRIM(b.City)) = ?))";
-        String insertExceptionSql = "INSERT INTO MovieDistributionExceptions (MovieID, BranchID) VALUES (?, ?)";
+
         try (Connection connection = DBContext.getConnection()) {
             connection.setAutoCommit(false);
             try {
@@ -333,47 +318,19 @@ public class CinemaDAO {
                     inactive.setInt(1, movieId);
                     inactive.executeUpdate();
                 }
-                try (PreparedStatement disable = connection.prepareStatement(
-                        "system".equals(scope) ? disableSystemSql : disableCitySql)) {
+                try (PreparedStatement disable = connection.prepareStatement(disableAllSql)) {
                     disable.setInt(1, movieId);
-                    if ("city".equals(scope)) {
-                        boolean uncategorized = city.isBlank();
-                        disable.setBoolean(2, uncategorized);
-                        disable.setBoolean(3, uncategorized);
-                        disable.setString(4, city);
-                    }
                     disable.executeUpdate();
                 }
-                try (PreparedStatement merge = connection.prepareStatement(mergeSql)) {
-                    for (Integer branchId : selectedBranchIds) {
-                        merge.setInt(1, branchId);
-                        merge.setInt(2, movieId);
-                        merge.setInt(3, branchId);
-                        merge.addBatch();
-                    }
-                    merge.executeBatch();
-                }
-                try (PreparedStatement settings = connection.prepareStatement(saveSettingsSql)) {
-                    settings.setInt(1, movieId);
-                    settings.setString(2, scope);
-                    if (city == null || city.isBlank()) settings.setNull(3, java.sql.Types.NVARCHAR);
-                    else settings.setString(3, city);
-                    settings.executeUpdate();
-                }
-                if ("system".equals(scope)) {
-                    try (PreparedStatement delete = connection.prepareStatement(deleteAllExceptionsSql)) {
-                        delete.setInt(1, movieId);
-                        delete.executeUpdate();
-                    }
-                    if (exceptionBranchIds != null && !exceptionBranchIds.isEmpty()) {
-                        try (PreparedStatement insert = connection.prepareStatement(insertExceptionSql)) {
-                            for (Integer branchId : exceptionBranchIds) {
-                                insert.setInt(1, movieId);
-                                insert.setInt(2, branchId);
-                                insert.addBatch();
-                            }
-                            insert.executeBatch();
+                if (selectedBranchIds != null && !selectedBranchIds.isEmpty()) {
+                    try (PreparedStatement merge = connection.prepareStatement(mergeSql)) {
+                        for (Integer branchId : selectedBranchIds) {
+                            merge.setInt(1, branchId);
+                            merge.setInt(2, movieId);
+                            merge.setInt(3, branchId);
+                            merge.addBatch();
                         }
+                        merge.executeBatch();
                     }
                 }
                 connection.commit();
@@ -382,7 +339,15 @@ public class CinemaDAO {
                 connection.rollback();
                 throw exception;
             }
-        } catch (Exception exception) { exception.printStackTrace(); return false; }
+        } catch (Exception exception) {
+            exception.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean saveMovieDistribution(int movieId, String scope, String city,
+            Set<Integer> selectedBranchIds, Set<Integer> exceptionBranchIds) {
+        return saveMovieDistribution(movieId, selectedBranchIds);
     }
 
     public List<ShowtimeView> getScheduledShowtimes() {

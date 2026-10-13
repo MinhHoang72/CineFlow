@@ -3,7 +3,7 @@
    Unified with Movie Catalog (Danh mục phim) design tokens
    ========================================================================== */
 
-/* 1. MOVIE INFO HEADER CARD (EXACT MATCH WITH USER MOCKUP) */
+/* 1. MOVIE INFO HEADER CARD */
 .cf-dist-movie-info {
     display: flex;
     align-items: flex-start;
@@ -96,86 +96,164 @@
     text-overflow: ellipsis;
 }
 
-/* 2. SUB-TOOLBAR FOR CITIES & QUICK ACTIONS */
-.cf-city-subbar {
+/* 2. TOOLBAR FOR CITIES, SEARCH & QUICK ACTIONS */
+.cf-dist-toolbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 16px;
-    padding: 10px 20px;
+    padding: 12px 20px;
     background: #fcfdfe;
     border-bottom: 1px solid var(--cf-border);
-}
-
-.cf-city-tabs {
-    display: flex;
-    align-items: center;
-    gap: 6px;
     flex-wrap: wrap;
 }
 
-.cf-city-tab {
+.cf-dist-toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.cf-dist-toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-left: auto;
+}
+
+/* Filter pills (Tabs thành phố) */
+.cf-filter-pills {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #edf1f4;
+    padding: 3px;
+    border-radius: 6px;
+    flex-wrap: wrap;
+}
+
+.cf-pill {
     display: inline-flex;
     align-items: center;
     gap: 6px;
     padding: 6px 12px;
-    border-radius: var(--cf-radius-sm);
-    border: 1px solid transparent;
+    border: none;
     background: transparent;
-    color: var(--cf-muted);
-    font-size: 12.5px;
+    border-radius: 4px;
+    font-size: 12px;
     font-weight: 600;
+    color: var(--cf-muted);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all .15s ease;
+    white-space: nowrap;
+    text-decoration: none;
 }
 
-.cf-city-tab:hover {
+.cf-pill:hover {
     color: var(--cf-text);
-    background: #edf1f4;
 }
 
-.cf-city-tab.active {
-    background: #ffffff;
-    color: var(--cf-text);
-    border-color: var(--cf-border);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+.cf-pill.active {
+    background: #fff;
+    color: var(--cf-primary);
+    font-weight: 700;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .08);
 }
 
-.cf-city-tab .cf-city-counter {
+.cf-pill .cf-pill-count {
     font-size: 11px;
     font-weight: 700;
     padding: 1px 6px;
     border-radius: 999px;
-    background: #edf1f4;
+    background: #e2e8f0;
     color: var(--cf-muted);
 }
 
-.cf-city-tab.active .cf-city-counter {
-    background: #e8f2fc;
-    color: var(--cf-info);
+.cf-pill.active .cf-pill-count {
+    background: #fee2e2;
+    color: var(--cf-primary);
 }
 
-.cf-city-quick-actions {
-    display: flex;
+/* Search Box */
+.cf-search-box {
+    position: relative;
+    width: 250px;
+}
+
+.cf-search-box input {
+    width: 100%;
+    min-height: 34px;
+    height: 34px;
+    padding: 0 12px 0 32px;
+    border: 1px solid var(--cf-border);
+    border-radius: var(--cf-radius-sm);
+    background: #fff;
+    font-size: 12.5px;
+    color: var(--cf-text);
+    outline: none;
+    box-sizing: border-box;
+    transition: all .15s ease;
+}
+
+.cf-search-box input:focus {
+    border-color: var(--cf-primary);
+    box-shadow: 0 0 0 3px rgba(215, 25, 32, .1);
+}
+
+.cf-search-box::before {
+    content: '🔍';
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 12px;
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+/* Action Button Group */
+.cf-dist-btn-group {
+    display: inline-flex;
     align-items: center;
-    gap: 12px;
+    gap: 6px;
 }
 
-.cf-btn-text {
-    border: none;
-    background: transparent;
-    color: var(--cf-muted);
+.cf-dist-btn-group .cf-btn-sm {
+    height: 34px;
+    min-height: 34px;
+    padding: 0 12px;
     font-size: 12px;
     font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: var(--cf-radius-sm);
     cursor: pointer;
-    padding: 3px 6px;
-    border-radius: 4px;
-    transition: color 0.15s;
+    transition: all .15s ease;
 }
 
-.cf-btn-text:hover {
+.cf-dist-btn-group .cf-btn-secondary {
+    border: 1px solid var(--cf-border);
+    background: #fff;
     color: var(--cf-text);
-    text-decoration: underline;
+}
+
+.cf-dist-btn-group .cf-btn-secondary:hover {
+    background: #f8fafc;
+    border-color: #94a3b8;
+}
+
+.cf-dist-btn-group .cf-btn-ghost {
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--cf-muted);
+}
+
+.cf-dist-btn-group .cf-btn-ghost:hover {
+    color: var(--cf-primary);
+    background: #fff4f4;
 }
 
 /* 3. STREAMLINED CINEMA BRANCH LIST VIEW */
@@ -212,10 +290,6 @@
 .cf-branch-item.is-disabled {
     opacity: 0.55;
     background: #fafbfc;
-}
-
-.cf-branch-item.is-excluded {
-    background: #fff8f8;
 }
 
 /* Three distinct columns */
@@ -330,43 +404,7 @@
     font-weight: 500;
 }
 
-.cf-dist-state.state-excluded {
-    color: var(--cf-danger);
-    font-weight: 600;
-}
-
-.cf-dist-state.state-default {
-    color: var(--cf-success);
-}
-
-/* 4. SYSTEM MODE EXCEPTION DRAWER */
-.cf-system-info-bar {
-    padding: 14px 20px;
-    background: #fff;
-    border-bottom: 1px solid var(--cf-border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-}
-
-.cf-dist-exception-panel {
-    border-top: 1px solid var(--cf-border);
-    background: #ffffff;
-}
-
-.cf-dist-exception-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 12px;
-    padding: 10px 20px;
-    background: #fcfdfe;
-    border-bottom: 1px solid var(--cf-border);
-}
-
-/* 5. STICKY ACTION FOOTER BAR (COMPACT & UNIFIED) */
+/* 4. STICKY ACTION FOOTER BAR */
 .cf-dist-sticky-bar {
     position: sticky;
     bottom: 0;
@@ -402,18 +440,26 @@
     pointer-events: none;
 }
 
-/* 6. RESPONSIVE ADJUSTMENTS */
-@media (max-width: 850px) {
+/* 5. RESPONSIVE ADJUSTMENTS */
+@media (max-width: 900px) {
+    .cf-dist-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .cf-dist-toolbar-right {
+        margin-left: 0;
+        justify-content: space-between;
+    }
+    .cf-search-box {
+        flex: 1;
+        width: auto;
+    }
     .cf-dist-movie-info {
         flex-direction: column;
     }
     .cf-dist-movie-meta-grid {
         grid-template-columns: repeat(2, 1fr);
         gap: 12px;
-    }
-    .cf-city-subbar {
-        flex-direction: column;
-        align-items: flex-start;
     }
     .cf-branch-center {
         display: none;
