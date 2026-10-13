@@ -428,34 +428,43 @@ button, input, select, textarea {
 
 /* ---- Primary Action Row: Tài khoản | Đăng xuất ---- */
 .cf-dp-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    display: flex;
     gap: 8px;
     padding: 10px 10px 12px;
 }
 
+/* Form wrapper participates in flex layout as half-width */
+.cf-dp-action-form {
+    flex: 1;
+    display: flex;
+    margin: 0;
+    padding: 0;
+}
+
 .cf-dp-action-btn {
+    flex: 1;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
-    padding: 9px 12px;
+    padding: 9px 10px;
     border-radius: 10px;
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
     transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
-    border: none;
+    border: 1px solid transparent;
     font-family: inherit;
     text-decoration: none;
     white-space: nowrap;
+    line-height: 1;
 }
 
 /* Tài khoản — subtle blue/indigo pill */
 .cf-dp-action-account {
     background: rgba(99, 102, 241, 0.12);
     color: #A5B4FC;
-    border: 1px solid rgba(99, 102, 241, 0.2);
+    border-color: rgba(99, 102, 241, 0.22);
 }
 .cf-dp-action-account:hover {
     background: rgba(99, 102, 241, 0.22);
@@ -468,7 +477,8 @@ button, input, select, textarea {
 .cf-dp-action-logout {
     background: rgba(255, 42, 84, 0.1);
     color: #F87171;
-    border: 1px solid rgba(255, 42, 84, 0.2);
+    border-color: rgba(255, 42, 84, 0.22);
+    width: 100%;
 }
 .cf-dp-action-logout:hover {
     background: rgba(255, 42, 84, 0.2);

@@ -110,7 +110,7 @@
                             <% } %>
                             <div class="cf-dp-userinfo">
                                 <span class="cf-dp-fullname"><%= safeEscape(headerMemberName) %></span>
-                                <span class="cf-dp-account">@<%= safeEscape(headerAccount) %></span>
+                                <span class="cf-dp-account"><%= headerAccount.contains("@") ? safeEscape(headerAccount) : "@" + safeEscape(headerAccount) %></span>
                             </div>
                             <% if ("ADMIN".equals(headerRole)) { %>
                                 <span class="cf-dp-badge admin">Admin</span>
@@ -127,7 +127,7 @@
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
                                 Tài khoản
                             </a>
-                            <form action="<%= ctx %>/logout" method="post" style="display:contents">
+                            <form class="cf-dp-action-form" action="<%= ctx %>/logout" method="post">
                                 <button type="submit" class="cf-dp-action-btn cf-dp-action-logout" role="menuitem">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
                                     Đăng xuất
