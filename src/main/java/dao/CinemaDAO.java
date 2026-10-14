@@ -169,11 +169,13 @@ public class CinemaDAO {
     public Branch getBranchById(int branchId) {
         String sql = "SELECT b.BranchID, b.BranchName, b.Address, b.City, b.Phone, b.Status, "
                 + "COUNT(DISTINCT h.HallID) AS HallCount, "
-                + "COALESCE(SUM(h.Capacity), 0) AS SeatCount "
+                + "COALESCE(SUM(h.Capacity), 0) AS SeatCount, "
+                + "u.UserID AS ManagerID, u.FullName AS ManagerName, u.Email AS ManagerEmail "
                 + "FROM Branches b "
                 + "LEFT JOIN Halls h ON h.BranchID = b.BranchID "
+                + "LEFT JOIN Users u ON u.BranchID = b.BranchID AND u.Role = 'MANAGER' AND u.Status = 'ACTIVE' "
                 + "WHERE b.BranchID = ? "
-                + "GROUP BY b.BranchID, b.BranchName, b.Address, b.City, b.Phone, b.Status";
+                + "GROUP BY b.BranchID, b.BranchName, b.Address, b.City, b.Phone, b.Status, u.UserID, u.FullName, u.Email";
 
         try (Connection connection = DBContext.getConnection();
                 PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -189,6 +191,12 @@ public class CinemaDAO {
                     branch.setStatus(resultSet.getString("Status"));
                     branch.setHallCount(resultSet.getInt("HallCount"));
                     branch.setSeatCount(resultSet.getInt("SeatCount"));
+                    int mgrId = resultSet.getInt("ManagerID");
+                    if (!resultSet.wasNull()) {
+                        branch.setManagerId(mgrId);
+                        branch.setManagerName(resultSet.getString("ManagerName"));
+                        branch.setManagerEmail(resultSet.getString("ManagerEmail"));
+                    }
                     return branch;
                 }
             }
@@ -509,4 +517,45 @@ public class CinemaDAO {
     private void setMovieParams(PreparedStatement ps, Movie movie, boolean update) throws java.sql.SQLException {
         ps.setString(1, movie.getTitle()); ps.setString(2, movie.getDescription()); ps.setInt(3, movie.getDuration()); ps.setString(4, movie.getGenre()); ps.setString(5, movie.getDirector()); ps.setString(6, movie.getCast()); ps.setString(7, movie.getLanguage()); ps.setDate(8, movie.getReleaseDate()); ps.setDate(9, movie.getEndDate()); ps.setString(10, movie.getPosterUrl()); ps.setString(11, movie.getTrailerUrl()); ps.setString(12, movie.getAgeRating()); ps.setString(13, movie.getStatus()); if (update) ps.setInt(14, movie.getMovieId());
     }
+
+    public List<Branch> getAllBranchesWithManager() {
+        String sql = "SELECT b.BranchID, b.BranchName, b.Address, b.City, b.Phone, b.Status, "
+                + "COUNT(DISTINCT h.HallID) AS HallCount, "
+                + "COALESCE(SUM(h.Capacity), 0) AS SeatCount, "
+                + "u.UserID AS ManagerID, u.FullName AS ManagerName, u.Email AS ManagerEmail "
+                + "FROM Branches b "
+                + "LEFT JOIN Halls h ON h.BranchID = b.BranchID "
+                + "LEFT JOIN Users u ON u.BranchID = b.BranchID AND u.Role = 'MANAGER' AND u.Status = 'ACTIVE' "
+                + "GROUP BY b.BranchID, b.BranchName, b.Address, b.City, b.Phone, b.Status, u.UserID, u.FullName, u.Email "
+                + "ORDER BY b.BranchID DESC";
+        List<Branch> list = new ArrayList<>();
+        try (Connection connection = DBContext.getConnection();
+             PreparedStatement ps = connection.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                Branch branch = new Branch();
+                branch.setBranchId(rs.getInt("BranchID"));
+                branch.setBranchName(rs.getString("BranchName"));
+                branch.setAddress(rs.getString("Address"));
+                branch.setCity(rs.getString("City"));
+                branch.setPhone(rs.getString("Phone"));
+                branch.setStatus(rs.getString("Status"));
+                branch.setHallCount(rs.getInt("HallCount"));
+                branch.setSeatCount(rs.getInt("SeatCount"));
+
+                int mgrId = rs.getInt("ManagerID");
+                if (!rs.wasNull()) {
+                    branch.setManagerId(mgrId);
+                    branch.setManagerName(rs.getString("ManagerName"));
+                    branch.setManagerEmail(rs.getString("ManagerEmail"));
+                }
+                list.add(branch);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
 }
+

@@ -132,7 +132,7 @@
                                     <option value="ENDED" <%= "ENDED".equals(status) ? "selected" : "" %>>Đã ngừng chiếu (ENDED)</option>
                                     <option value="ARCHIVED" <%= "ARCHIVED".equals(status) ? "selected" : "" %>>Lưu trữ kho phim (ARCHIVED)</option>
                                 </select>
-                                <p style="margin: 6px 0 0; font-size: 12px; color: var(--cf-muted); line-height: 1.4;">
+                                <p style="margin: 6px 0 0; font-size: 12px; color: #64748B; line-height: 1.4;">
                                     💡 <strong>Vòng đời phim:</strong> Chọn "Đã ngừng chiếu" khi phim hết đợt chiếu hoặc "Lưu trữ" để ẩn khỏi hệ thống bán vé mà vẫn bảo toàn đầy đủ dữ liệu lịch sử đặt vé và báo cáo doanh thu.
                                 </p>
                             </div>

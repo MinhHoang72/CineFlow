@@ -249,7 +249,7 @@
                     </div>
                 </div>
                 <a href="${pageContext.request.contextPath}/booking/booking.jsp" class="new-booking-btn">
-                    + Đặt vé mới
+                    Đặt vé mới
                 </a>
             </div>
 

@@ -107,6 +107,27 @@
     </servlet-mapping>
 
 
+    <servlet>
+        <servlet-name>StaffTransferServlet</servlet-name>
+        <servlet-class>controller.StaffTransferServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>StaffTransferServlet</servlet-name>
+        <url-pattern>/admin/transfers</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>ManagerAccountServlet</servlet-name>
+        <servlet-class>controller.ManagerAccountServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>ManagerAccountServlet</servlet-name>
+        <url-pattern>/admin/managers</url-pattern>
+    </servlet-mapping>
+
+
     <!-- ===================================================== -->
     <!-- REGISTER -->
     <!-- ===================================================== -->

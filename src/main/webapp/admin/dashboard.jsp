@@ -157,22 +157,22 @@
             margin-bottom: 28px;
         }
         .quick-nav-card {
-            background: var(--cf-surface);
-            border: 1px solid var(--cf-border);
-            border-radius: var(--cf-radius);
+            background: #ffffff;
+            border: 1px solid #E2E8F0;
+            border-radius: var(--cf-radius, 10px);
             padding: 18px;
             display: flex;
             align-items: center;
             gap: 14px;
             text-decoration: none;
-            color: var(--cf-text);
-            box-shadow: var(--cf-shadow-xs);
+            color: #111827;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
             transition: var(--cf-transition);
         }
         .quick-nav-card:hover {
-            border-color: var(--cf-primary-border);
+            border-color: #CBD5E1;
             transform: translateY(-2px);
-            box-shadow: var(--cf-shadow-md);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
         }
         .quick-nav-icon {
             width: 44px;
@@ -188,11 +188,12 @@
             margin: 0 0 3px;
             font-size: 14px;
             font-weight: 700;
+            color: #111827;
         }
         .quick-nav-meta p {
             margin: 0;
             font-size: 11.5px;
-            color: var(--cf-text-muted);
+            color: #64748B;
         }
         .metric-progress-item {
             margin-bottom: 18px;
@@ -321,7 +322,7 @@
             <!-- QUICK SHORTCUT TILES -->
             <div class="quick-nav-grid">
                 <a href="${pageContext.request.contextPath}/admin/movies" class="quick-nav-card">
-                    <div class="quick-nav-icon" style="background: #fff1f2; color: #e11d48;">▣</div>
+                    <div class="quick-nav-icon" style="background: #FEE2E2; color: #FF2855;">▣</div>
                     <div class="quick-nav-meta">
                         <h3>Danh mục phim</h3>
                         <p>Thêm phim & thiết lập phân phối</p>
@@ -329,7 +330,7 @@
                 </a>
 
                 <a href="${pageContext.request.contextPath}/reports" class="quick-nav-card">
-                    <div class="quick-nav-icon" style="background: #f0fdf4; color: #16a34a;">▤</div>
+                    <div class="quick-nav-icon" style="background: #D1FAE5; color: #059669;">▤</div>
                     <div class="quick-nav-meta">
                         <h3>Báo cáo doanh thu</h3>
                         <p>Phân tích theo rạp và từng phim</p>
@@ -337,7 +338,7 @@
                 </a>
 
                 <a href="${pageContext.request.contextPath}/staff" class="quick-nav-card">
-                    <div class="quick-nav-icon" style="background: #f0f9ff; color: #0284c7;">♙</div>
+                    <div class="quick-nav-icon" style="background: #E0F2FE; color: #0284c7;">♙</div>
                     <div class="quick-nav-meta">
                         <h3>Nhân sự & Chi nhánh</h3>
                         <p>Quản lý tài khoản quản trị</p>
@@ -345,7 +346,7 @@
                 </a>
 
                 <a href="${pageContext.request.contextPath}/account" class="quick-nav-card">
-                    <div class="quick-nav-icon" style="background: #faf5ff; color: #9333ea;">●</div>
+                    <div class="quick-nav-icon" style="background: #F3E8FF; color: #7e22ce;">●</div>
                     <div class="quick-nav-meta">
                         <h3>Hồ sơ quản trị</h3>
                         <p>Thông tin cá nhân & bảo mật</p>
@@ -387,14 +388,14 @@
                                 %>
                                     <tr>
                                         <td>
-                                            <span style="font-weight: 700; color: <%= rank == 1 ? "#e11d48" : rank <= 3 ? "#f59e0b" : "#64748b" %>">
+                                            <span style="font-weight: 700; color: <%= rank == 1 ? "#FF2855" : rank <= 3 ? "#f59e0b" : "#94a3b8" %>">
                                                 <%= rank %>
                                             </span>
                                         </td>
                                         <td><strong><%= tr.getName() %></strong></td>
                                         <td><%= String.format("%,d", tr.getBookings()) %> đơn</td>
                                         <td><span class="cf-badge cf-badge-info"><%= String.format("%,d", tr.getTickets()) %> vé</span></td>
-                                        <td style="text-align: right; font-weight: 700; color: #0f172a;"><%= formatMoney(tr.getRevenue()) %></td>
+                                        <td style="text-align: right; font-weight: 700; color: #F8FAFC;"><%= formatMoney(tr.getRevenue()) %></td>
                                     </tr>
                                 <% rank++; }} %>
                             </tbody>
@@ -417,7 +418,7 @@
                                 <strong><%= String.format("%.1f%%", occupancyRate) %></strong>
                             </div>
                             <div class="progress-bar-bg">
-                                <div class="progress-bar-fill" style="width: <%= Math.min(100.0, occupancyRate) %>%; background: #e11d48;"></div>
+                                <div class="progress-bar-fill" style="width: <%= Math.min(100.0, occupancyRate) %>%; background: #FF2855;"></div>
                             </div>
                         </div>
 
@@ -441,12 +442,12 @@
                             </div>
                         </div>
 
-                        <div style="margin-top: 24px; padding: 14px; background: #f8fafc; border: 1px solid var(--cf-border); border-radius: 8px;">
+                        <div style="margin-top: 24px; padding: 14px; background: rgba(255, 255, 255, 0.04); border: 1px solid var(--cf-border); border-radius: 8px;">
                             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
                                 <span style="font-size: 16px;">💡</span>
-                                <strong style="font-size: 13px; color: #0f172a;">Gợi ý điều hành</strong>
+                                <strong style="font-size: 13px; color: #F8FAFC;">Gợi ý điều hành</strong>
                             </div>
-                            <p style="margin: 0; font-size: 12px; color: #64748b; line-height: 1.5;">
+                            <p style="margin: 0; font-size: 12px; color: #94a3b8; line-height: 1.5;">
                                 Hãy thường xuyên kiểm tra mục <a href="${pageContext.request.contextPath}/admin/movies" style="color: var(--cf-primary); font-weight: 600;">Quản lý phim</a> để chuyển trạng thái phim sang "Đang chiếu" khi đến ngày phát hành.
                             </p>
                         </div>

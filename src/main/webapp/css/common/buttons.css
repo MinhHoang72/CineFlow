@@ -14,39 +14,56 @@
     text-decoration: none;
     cursor: pointer;
     transition: all .18s ease;
+    white-space: nowrap;
 }
+
 .cf-btn-primary {
-    background: var(--cf-primary-gradient, linear-gradient(135deg, #FF2A54 0%, #E11D48 100%));
-    color: #fff;
-    box-shadow: 0 4px 14px rgba(255, 42, 84, 0.35);
+    background: #FF2855;
+    color: #ffffff !important;
+    border-color: #FF2855;
+    box-shadow: 0 4px 14px rgba(255, 40, 85, 0.35);
 }
+
 .cf-btn-primary:hover {
+    background: #E11D48;
+    color: #ffffff !important;
+    border-color: #E11D48;
     transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(255, 42, 84, 0.55);
-    color: #fff;
+    box-shadow: 0 6px 20px rgba(255, 40, 85, 0.55);
 }
+
 .cf-btn-secondary {
-    border-color: var(--cf-border, rgba(255, 255, 255, 0.12));
-    background: var(--cf-surface, #161B26);
-    color: var(--cf-text, #F8FAFC);
+    border: 1px solid #CBD5E1;
+    background: #ffffff;
+    color: #1E293B !important;
 }
+
 .cf-btn-secondary:hover {
-    border-color: rgba(255, 255, 255, 0.25);
-    background: var(--cf-bg-card-hover, #1E2433);
-    color: #fff;
+    border-color: #94A3B8;
+    background: #F1F5F9;
+    color: #0F172A !important;
 }
+
 .cf-btn-danger {
-    background: var(--cf-danger, #EF4444);
-    color: #fff;
+    background: #EF4444;
+    color: #ffffff !important;
 }
+
+.cf-btn-danger:hover {
+    background: #DC2626;
+    color: #ffffff !important;
+}
+
 .cf-btn-ghost {
     background: transparent;
-    color: var(--cf-muted, #94A3B8);
+    color: #94A3B8;
 }
+
 .cf-btn-ghost:hover {
-    color: var(--cf-primary, #FF2A54);
-    background: rgba(255, 42, 84, 0.1);
+    color: #FF2855;
+    background: rgba(255, 40, 85, 0.1);
 }
+
 .cf-btn-sm {
     min-height: 32px;
     padding: 0 11px;

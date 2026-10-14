@@ -950,6 +950,47 @@ CREATE TABLE MovieRatings (
 );
 GO
 
+/* =========================================================
+   32. STAFF TRANSFER HISTORY - FE-01.2
+   ========================================================= */
+CREATE TABLE StaffTransferHistory (
+    TransferID INT IDENTITY(1,1) PRIMARY KEY,
+    UserID INT NOT NULL,
+    FromBranchID INT NULL,
+    ToBranchID INT NOT NULL,
+    TransferredBy INT NOT NULL,
+    TransferDate DATETIME2 NOT NULL DEFAULT GETDATE(),
+    Reason NVARCHAR(500) NULL,
+    Notes NVARCHAR(500) NULL,
+    CONSTRAINT FK_Transfer_User FOREIGN KEY (UserID) REFERENCES Users(UserID),
+    CONSTRAINT FK_Transfer_FromBranch FOREIGN KEY (FromBranchID) REFERENCES Branches(BranchID),
+    CONSTRAINT FK_Transfer_ToBranch FOREIGN KEY (ToBranchID) REFERENCES Branches(BranchID),
+    CONSTRAINT FK_Transfer_Admin FOREIGN KEY (TransferredBy) REFERENCES Users(UserID)
+);
+GO
+
+/* =========================================================
+   33. BRANCH MANAGER ASSIGNMENTS - FE-01.3
+   ========================================================= */
+CREATE TABLE BranchManagerAssignments (
+    AssignmentID INT IDENTITY(1,1) PRIMARY KEY,
+    BranchID INT NOT NULL,
+    ManagerID INT NOT NULL,
+    AssignedBy INT NOT NULL,
+    StartDate DATETIME2 NOT NULL DEFAULT GETDATE(),
+    EndDate DATETIME2 NULL,
+    Status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
+    Notes NVARCHAR(500) NULL,
+    CreatedAt DATETIME2 NOT NULL DEFAULT GETDATE(),
+    CONSTRAINT FK_BMA_Branch FOREIGN KEY (BranchID) REFERENCES Branches(BranchID),
+    CONSTRAINT FK_BMA_Manager FOREIGN KEY (ManagerID) REFERENCES Users(UserID),
+    CONSTRAINT FK_BMA_Admin FOREIGN KEY (AssignedBy) REFERENCES Users(UserID),
+    CONSTRAINT CK_BMA_Status CHECK (Status IN ('ACTIVE', 'ENDED', 'REPLACED'))
+);
+GO
+
+
+
 
 
 /* =========================================================

@@ -10,7 +10,6 @@ import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.http.Part;
 import java.io.IOException;
 import java.util.UUID;
-import model.User;
 import utils.MediaStorage;
 
 @MultipartConfig(maxFileSize = 2 * 1024 * 1024, maxRequestSize = 3 * 1024 * 1024)

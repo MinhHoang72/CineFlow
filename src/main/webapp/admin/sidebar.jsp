@@ -29,10 +29,15 @@
         </a>
     </nav>
 
-    <div class="cf-sidebar-section">NHÂN SỰ</div>
+
+
+    <div class="cf-sidebar-section">QUẢN LÝ NHÂN SỰ</div>
     <nav class="cf-sidebar-nav">
-        <a class="<%= "staff".equals(activeNav) || cfUri.contains("/staff") ? "active" : "" %>" href="<%= cfPath %>/staff">
-            <span class="icon">👥</span>Danh sách nhân viên
+        <a class="<%= "managers".equals(activeNav) || cfUri.contains("/admin/managers") ? "active" : "" %>" href="<%= cfPath %>/admin/managers">
+            <span class="icon">👔</span>Tài khoản Quản lý
+        </a>
+        <a class="<%= "transfers".equals(activeNav) || cfUri.contains("/admin/transfers") ? "active" : "" %>" href="<%= cfPath %>/admin/transfers">
+            <span class="icon">🔄</span>Bổ nhiệm & Điều chuyển
         </a>
     </nav>
 

@@ -4,13 +4,13 @@
    ========================================================================== */
 :root {
     /* Brand Accent: Cyber Crimson (Đỏ điện ảnh hiện đại) */
-    --cf-red: #FF2A54;
+    --cf-red: #FF2855;
     --cf-red-dark: #E11D48;
-    --cf-red-soft: rgba(255, 42, 84, 0.12);
-    --cf-red-border: rgba(255, 42, 84, 0.32);
-    --cf-primary: #FF2A54;
+    --cf-red-soft: rgba(255, 40, 85, 0.12);
+    --cf-red-border: rgba(255, 40, 85, 0.32);
+    --cf-primary: #FF2855;
     --cf-primary-hover: #E11D48;
-    --cf-primary-gradient: linear-gradient(135deg, #FF2A54 0%, #E11D48 100%);
+    --cf-primary-gradient: linear-gradient(135deg, #FF2855 0%, #E11D48 100%);
 
     /* Tech Accent: Electric Violet / Indigo */
     --cf-violet: #6366F1;
@@ -25,9 +25,9 @@
     --cf-gold-light: rgba(245, 158, 11, 0.14);
     --cf-gold-border: rgba(245, 158, 11, 0.35);
 
-    /* Deep Obsidian Backgrounds (Đen ánh xanh than sâu thẳm chuẩn phòng chiếu) */
-    --cf-bg-page: #0B0F17;
-    --cf-background: #0B0F17;
+    /* Main Content Background: #0B0F16 */
+    --cf-bg-page: #0B0F16;
+    --cf-background: #0B0F16;
     --cf-surface: #161B26;
     --cf-bg-card: #161B26;
     --cf-bg-card-hover: #1E2433;
@@ -35,7 +35,16 @@
     --cf-bg-input: #111622;
     --cf-footer-bg: #070A0F;
 
-    /* Typography: Sắc nét, tương phản cao, dịu mắt */
+    /* Light Card & Form Specific Tokens */
+    --cf-card-white: #ffffff;
+    --cf-text-dark: #111827;
+    --cf-text-muted-dark: #64748B;
+    --cf-input-bg-light: #F1F5F9;
+    --cf-input-text-dark: #1E293B;
+    --cf-input-placeholder: #64748B;
+    --cf-input-border-light: #CBD5E1;
+
+    /* Typography: Sắc nét, tương phản cao */
     --cf-ink: #F8FAFC;
     --cf-ink-soft: #E2E8F0;
     --cf-ink-hover: #FFFFFF;

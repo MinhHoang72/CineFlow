@@ -183,7 +183,7 @@
                                         <td><%= b.getCity() == null || b.getCity().isBlank() ? "—" : b.getCity() %></td>
                                         <td><%= String.format("%,d", b.getBookings()) %> đơn</td>
                                         <td><span class="cf-badge cf-badge-info"><%= String.format("%,d", b.getTickets()) %> vé</span></td>
-                                        <td style="text-align: right; font-weight: 700; color: #0f172a;"><%= money(b.getRevenue()) %></td>
+                                        <td style="text-align: right; font-weight: 700; color: #F8FAFC;"><%= money(b.getRevenue()) %></td>
                                     </tr>
                                 <% }} %>
                             </tbody>
@@ -230,7 +230,7 @@
                                         <td><strong><%= m.getName() %></strong></td>
                                         <td><%= String.format("%,d", m.getBookings()) %> đơn</td>
                                         <td><span class="cf-badge cf-badge-info"><%= String.format("%,d", m.getTickets()) %> vé</span></td>
-                                        <td style="text-align: right; font-weight: 700; color: #0f172a;"><%= money(m.getRevenue()) %></td>
+                                        <td style="text-align: right; font-weight: 700; color: #F8FAFC;"><%= money(m.getRevenue()) %></td>
                                     </tr>
                                 <% rank++; }} %>
                             </tbody>

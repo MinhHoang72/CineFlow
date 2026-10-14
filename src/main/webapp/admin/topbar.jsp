@@ -17,11 +17,11 @@
             <% if (tbCrumb != null && !tbCrumb.isBlank()) { %>
                 / <span><%= tbCrumb %></span>
             <% } %>
-            / <strong style="color: var(--cf-text);"><%= tbTitle %></strong>
+            / <strong style="color: #111827;"><%= tbTitle %></strong>
         </span>
     </div>
     <div class="cf-topbar-user">
-        <a href="<%= tbCtx %>/account" style="display: flex; align-items: center; gap: 9px; text-decoration: none; color: inherit;" title="Hồ sơ quản trị viên">
+        <a href="<%= tbCtx %>/account" style="display: flex; align-items: center; gap: 9px; text-decoration: none; color: #111827;" title="Hồ sơ quản trị viên">
             <span class="avatar" style="overflow: hidden;">
                 <% if (tbAvatar != null && !tbAvatar.isBlank()) { %>
                     <img src="<%= tbAvatar %>" alt="<%= tbName %>" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
@@ -29,7 +29,7 @@
                     <%= tbInitial %>
                 <% } %>
             </span>
-            <span><%= tbName %></span>
+            <span style="color: #111827; font-weight: 600;"><%= tbName %></span>
             <span class="cf-badge cf-badge-danger" style="font-size: 10px; margin-left: 2px; padding: 2px 7px;">ADMIN</span>
         </a>
     </div>

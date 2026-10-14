@@ -87,19 +87,19 @@
                 </div>
 
                 <div class="cf-kpi-card">
-                    <span class="cf-kpi-label" style="color: var(--cf-success);">Đang chiếu</span>
+                    <span class="cf-kpi-label" style="color: #059669;">Đang chiếu</span>
                     <div class="cf-kpi-value"><%= nowShowingCount %></div>
                     <span class="cf-kpi-sub">Đang mở bán vé tại rạp</span>
                 </div>
 
                 <div class="cf-kpi-card">
-                    <span class="cf-kpi-label" style="color: var(--cf-info);">Sắp khởi chiếu</span>
+                    <span class="cf-kpi-label" style="color: #0284c7;">Sắp khởi chiếu</span>
                     <div class="cf-kpi-value"><%= comingSoonCount %></div>
                     <span class="cf-kpi-sub">Kế hoạch truyền thông & mở bán</span>
                 </div>
 
                 <div class="cf-kpi-card">
-                    <span class="cf-kpi-label" style="color: var(--cf-warning);">Đã kết thúc / Lưu trữ</span>
+                    <span class="cf-kpi-label" style="color: #d97706;">Đã kết thúc / Lưu trữ</span>
                     <div class="cf-kpi-value"><%= endedCount + archivedCount %></div>
                     <span class="cf-kpi-sub">Đã ngừng lịch chiếu</span>
                 </div>
@@ -198,7 +198,7 @@
                                 </td>
                                 <td><%= genre %></td>
                                 <td>
-                                    <span class="cf-badge" style="background: #edf1f4; color: var(--cf-text); font-weight: 700;"><%= age %></span>
+                                    <span class="cf-badge cf-badge-muted"><%= age %></span>
                                 </td>
                                 <td><strong><%= m.getDuration() %></strong> phút</td>
                                 <td><%= m.getReleaseDate() != null ? m.getReleaseDate() : "—" %></td>

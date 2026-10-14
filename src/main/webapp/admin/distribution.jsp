@@ -121,7 +121,7 @@
                                 String age = (movie.getAgeRating() != null && !movie.getAgeRating().isBlank()) ? movie.getAgeRating() : "P";
                             %>
                             <span class="cf-badge <%= badgeClass %>"><%= stText %></span>
-                            <span class="cf-badge" style="background: #edf1f4; color: var(--cf-text); font-weight: 700;"><%= age %></span>
+                            <span class="cf-badge cf-badge-muted"><%= age %></span>
                         </div>
                         
                         <div class="cf-dist-movie-code">

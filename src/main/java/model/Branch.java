@@ -63,4 +63,17 @@ public class Branch {
 
     public int getSeatCount() { return seatCount; }
     public void setSeatCount(int seatCount) { this.seatCount = seatCount; }
+
+    private Integer managerId;
+    private String managerName;
+    private String managerEmail;
+
+    public Integer getManagerId() { return managerId; }
+    public void setManagerId(Integer managerId) { this.managerId = managerId; }
+
+    public String getManagerName() { return managerName; }
+    public void setManagerName(String managerName) { this.managerName = managerName; }
+
+    public String getManagerEmail() { return managerEmail; }
+    public void setManagerEmail(String managerEmail) { this.managerEmail = managerEmail; }
 }

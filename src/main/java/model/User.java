@@ -35,6 +35,17 @@ public class User {
         this.userId = userId;
     }
 
+    public String getEmployeeCode() {
+        if ("MANAGER".equalsIgnoreCase(role)) {
+            return String.format("QL%05d", userId);
+        } else if ("STAFF".equalsIgnoreCase(role)) {
+            return String.format("NV%05d", userId);
+        } else if ("ADMIN".equalsIgnoreCase(role)) {
+            return String.format("AD%05d", userId);
+        }
+        return String.format("EMP%05d", userId);
+    }
+
     public String getFullName() {
         return fullName;
     }
@@ -157,5 +168,15 @@ public class User {
 
     public void setResetTokenExpiry(Timestamp resetTokenExpiry) {
         this.resetTokenExpiry = resetTokenExpiry;
+    }
+
+    private String branchName;
+
+    public String getBranchName() {
+        return branchName;
+    }
+
+    public void setBranchName(String branchName) {
+        this.branchName = branchName;
     }
 }
