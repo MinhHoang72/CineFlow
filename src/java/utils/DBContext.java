@@ -8,13 +8,23 @@ public class DBContext {
 
     private static final String URL =
             "jdbc:sqlserver://localhost:1433;"
-            + "databaseName=CineFlowDB;"
+            + "databaseName=CineFlowDemoDB;"
             + "encrypt=true;"
             + "trustServerCertificate=true;";
 
     private static final String USER = "sa";
 
     private static final String PASSWORD = "123";
+
+    protected Connection connection;
+
+    public DBContext() {
+        try {
+            this.connection = getConnection();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
 
     public static Connection getConnection() throws SQLException {
         try {
