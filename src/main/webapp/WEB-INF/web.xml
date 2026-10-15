@@ -127,6 +127,16 @@
         <url-pattern>/admin/managers</url-pattern>
     </servlet-mapping>
 
+    <servlet>
+        <servlet-name>CustomerManagementServlet</servlet-name>
+        <servlet-class>controller.CustomerManagementServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>CustomerManagementServlet</servlet-name>
+        <url-pattern>/admin/customers</url-pattern>
+    </servlet-mapping>
+
 
     <!-- ===================================================== -->
     <!-- REGISTER -->

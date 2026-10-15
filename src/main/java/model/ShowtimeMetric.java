@@ -1,15 +1,15 @@
 package model;
 
 public class ShowtimeMetric {
-    private String movieTitle, branchName, hallName;
+    private String movieTitle, centreName, hallName;
     private java.sql.Timestamp startTime;
     private int soldSeats, capacity;
     private double occupancy;
 
     public String getMovieTitle() { return movieTitle; }
     public void setMovieTitle(String value) { movieTitle = value; }
-    public String getBranchName() { return branchName; }
-    public void setBranchName(String value) { branchName = value; }
+    public String getCentreName() { return centreName; }
+    public void setCentreName(String value) { centreName = value; }
     public String getHallName() { return hallName; }
     public void setHallName(String value) { hallName = value; }
     public java.sql.Timestamp getStartTime() { return startTime; }

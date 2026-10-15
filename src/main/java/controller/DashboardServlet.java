@@ -31,9 +31,9 @@ public class DashboardServlet extends HttpServlet {
         if ("ADMIN".equalsIgnoreCase(role)) {
             request.setAttribute("reportSummary", reportDAO.getSummary());
             request.setAttribute("topMovies", reportDAO.revenueByMovie());
-            request.setAttribute("branchRevenue", reportDAO.revenueByBranch());
+            request.setAttribute("centreRevenue", reportDAO.revenueByCentre());
             request.setAttribute("movies", cinemaDAO.getAllMovies());
-            request.setAttribute("branches", cinemaDAO.getActiveBranches());
+            request.setAttribute("centres", cinemaDAO.getActiveCentres());
             request.getRequestDispatcher("/admin/dashboard.jsp").forward(request, response);
             return;
         }

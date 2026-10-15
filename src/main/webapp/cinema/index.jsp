@@ -1,5 +1,5 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ page import="dao.CinemaDAO,model.Branch,model.User" %>
+<%@ page import="dao.CinemaDAO,model.Centre,model.User" %>
 <%@ page import="java.util.List,java.util.ArrayList,java.util.Map,java.util.LinkedHashMap,java.net.URLEncoder" %>
 <%!
     private User sessionUser(Object value) {
@@ -27,24 +27,23 @@
                 .replace("\"", "&quot;").replace("'", "&#39;");
     }
 
-    private String getCinemaImageUrl(int branchId) {
+    private String getCinemaImageUrl(int centreId) {
         String[] images = {
             "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=600&h=380&q=80",
             "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&w=600&h=380&q=80",
             "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=600&h=380&q=80",
             "https://images.unsplash.com/photo-1595769816263-9b910be24d5f?auto=format&fit=crop&w=600&h=380&q=80"
         };
-        int index = Math.abs(branchId) % images.length;
+        int index = Math.abs(centreId) % images.length;
         return images[index];
     }
 %>
 <%
     String contextPath = request.getContextPath();
 
-    // Backward-compatibility: if branchId is supplied to index.jsp, redirect to details.jsp
-    String branchIdParam = request.getParameter("branchId");
-    if (branchIdParam != null && !branchIdParam.trim().isEmpty()) {
-        response.sendRedirect(contextPath + "/cinema/details.jsp?branchId=" + URLEncoder.encode(branchIdParam.trim(), "UTF-8"));
+    String centreIdParam = request.getParameter("centreId");
+    if (centreIdParam != null && !centreIdParam.trim().isEmpty()) {
+        response.sendRedirect(contextPath + "/cinema/details.jsp?centreId=" + URLEncoder.encode(centreIdParam.trim(), "UTF-8"));
         return;
     }
 
@@ -56,18 +55,18 @@
 
     CinemaDAO cinemaDAO = new CinemaDAO();
     Map<String, Integer> activeCities = cinemaDAO.getActiveCitiesWithCount();
-    List<Branch> activeBranches = cinemaDAO.getActiveBranches();
+    List<Centre> activeCentres = cinemaDAO.getActiveCentres();
 
-    // Group branches by City from DB
-    Map<String, List<Branch>> branchesByCity = new LinkedHashMap<>();
+    // Group centres by City from DB
+    Map<String, List<Centre>> centresByCity = new LinkedHashMap<>();
     for (String cityName : activeCities.keySet()) {
-        branchesByCity.put(cityName, new ArrayList<>());
+        centresByCity.put(cityName, new ArrayList<>());
     }
-    for (Branch branch : activeBranches) {
-        String city = branch.getCity() != null ? branch.getCity().trim() : "";
+    for (Centre centre : activeCentres) {
+        String city = centre.getCity() != null ? centre.getCity().trim() : "";
         for (String cityName : activeCities.keySet()) {
             if (cityName.equalsIgnoreCase(city)) {
-                branchesByCity.get(cityName).add(branch);
+                centresByCity.get(cityName).add(centre);
                 break;
             }
         }
@@ -98,7 +97,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#252525">
-    <title>Hệ thống rạp chiếu phim | CineFlow</title>
+    <title>Hệ thống trung tâm chiếu phim | CineFlow</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -119,14 +118,14 @@
         <nav class="cf-breadcrumb-nav" aria-label="Breadcrumb">
             <a href="<%= contextPath %>/home/index.jsp">Trang chủ</a>
             <span class="cf-breadcrumb-sep">›</span>
-            <span class="cf-breadcrumb-current">Hệ thống rạp chiếu phim</span>
+            <span class="cf-breadcrumb-current">Hệ thống trung tâm chiếu phim</span>
         </nav>
 
         <div class="cinema-main-wrap">
 
             <!-- Tiêu đề trang bên ngoài khung (phong cách phẳng, hiện đại) -->
             <div class="cf-page-header">
-                <h1 class="cf-page-title">HỆ THỐNG RẠP CHIẾU PHIM</h1>
+                <h1 class="cf-page-title">HỆ THỐNG TRUNG TÂM CHIẾU PHIM</h1>
             </div>
 
             <!-- Khung nội dung chính -->
@@ -135,7 +134,7 @@
             <!-- Bộ chọn thành phố (Nút pill) -->
             <% if (activeCities.isEmpty()) { %>
                 <div class="cf-empty-state">
-                    Hiện chưa có rạp chiếu phim nào hoạt động trên hệ thống.
+                    Hiện chưa có trung tâm chiếu phim nào hoạt động trên hệ thống.
                 </div>
             <% } else { %>
                 <div class="cf-city-selector" role="tablist" aria-label="Chọn thành phố">
@@ -161,50 +160,50 @@
 
                 <!-- Tiêu đề động theo thành phố đang chọn -->
                 <h2 class="cf-city-heading" id="dynamicCityTitle">
-                    RẠP CHIẾU PHIM TẠI <%= escapeHtml(defaultCity.toUpperCase()) %>
+                    TRUNG TÂM CHIẾU PHIM TẠI <%= escapeHtml(defaultCity.toUpperCase()) %>
                 </h2>
 
-                <!-- Danh sách rạp theo từng thành phố -->
-                <% for (Map.Entry<String, List<Branch>> entry : branchesByCity.entrySet()) { 
+                <!-- Danh sách trung tâm theo từng thành phố -->
+                <% for (Map.Entry<String, List<Centre>> entry : centresByCity.entrySet()) { 
                     String cityName = entry.getKey();
-                    List<Branch> cityBranches = entry.getValue();
+                    List<Centre> cityCentres = entry.getValue();
                     boolean isDefaultGroup = cityName.equals(defaultCity);
                 %>
                     <div class="cf-cinema-group" 
                          id="group-<%= escapeHtml(cityName) %>" 
                          style="<%= isDefaultGroup ? "" : "display: none;" %>">
                         
-                        <% if (cityBranches.isEmpty()) { %>
+                        <% if (cityCentres.isEmpty()) { %>
                             <div class="cf-empty-state">
-                                Chưa có rạp chiếu phim đang hoạt động tại <%= escapeHtml(cityName) %>.
+                                Chưa có trung tâm chiếu phim đang hoạt động tại <%= escapeHtml(cityName) %>.
                             </div>
                         <% } else { %>
                             <div class="cf-cinema-list">
-                                <% for (Branch branch : cityBranches) { 
-                                    String phone = (branch.getPhone() != null && !branch.getPhone().trim().isEmpty()) 
-                                                    ? branch.getPhone().trim() 
+                                <% for (Centre centre : cityCentres) { 
+                                    String phone = (centre.getPhone() != null && !centre.getPhone().trim().isEmpty()) 
+                                                    ? centre.getPhone().trim() 
                                                     : "1900 2099";
                                 %>
                                     <article class="cf-cinema-card">
                                         <div class="cf-cinema-img-wrap">
                                             <img class="cf-cinema-img" 
-                                                 src="<%= getCinemaImageUrl(branch.getBranchId()) %>" 
-                                                 alt="<%= escapeHtml(branch.getBranchName()) %>" 
+                                                 src="<%= getCinemaImageUrl(centre.getCentreId()) %>" 
+                                                 alt="<%= escapeHtml(centre.getCentreName()) %>" 
                                                  loading="lazy">
                                         </div>
                                         <div class="cf-cinema-body">
                                             <h3 class="cf-cinema-name">
-                                                <a href="<%= contextPath %>/cinema/details.jsp?branchId=<%= branch.getBranchId() %>">
-                                                    <%= escapeHtml(branch.getBranchName()) %>
+                                                <a href="<%= contextPath %>/cinema/details.jsp?centreId=<%= centre.getCentreId() %>">
+                                                    <%= escapeHtml(centre.getCentreName()) %>
                                                 </a>
                                             </h3>
-                                            <p class="cf-cinema-address">Địa chỉ: <%= escapeHtml(branch.getAddress()) %></p>
+                                            <p class="cf-cinema-address">Địa chỉ: <%= escapeHtml(centre.getAddress()) %></p>
                                             <p class="cf-cinema-phone">Số điện thoại: <strong><%= escapeHtml(phone) %></strong></p>
                                         </div>
                                         <div class="cf-cinema-action">
-                                            <a href="<%= contextPath %>/cinema/details.jsp?branchId=<%= branch.getBranchId() %>" 
+                                            <a href="<%= contextPath %>/cinema/details.jsp?centreId=<%= centre.getCentreId() %>" 
                                                class="cf-btn-detail">
-                                                Chi tiết rạp
+                                                Chi tiết trung tâm
                                             </a>
                                         </div>
                                     </article>
@@ -247,7 +246,7 @@
         // 2. Cập nhật tiêu đề động
         var dynamicTitle = document.getElementById('dynamicCityTitle');
         if (dynamicTitle) {
-            dynamicTitle.textContent = 'RẠP CHIẾU PHIM TẠI ' + cityName.toUpperCase();
+            dynamicTitle.textContent = 'TRUNG TÂM CHIẾU PHIM TẠI ' + cityName.toUpperCase();
         }
 
         // 3. Hiển thị danh sách rạp của thành phố được chọn, ẩn các thành phố khác

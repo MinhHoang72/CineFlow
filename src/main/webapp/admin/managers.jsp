@@ -252,7 +252,7 @@
                                     <th>Quản lý</th>
                                     <th>Tên đăng nhập</th>
                                     <th>Số điện thoại</th>
-                                    <th>Chi nhánh phụ trách</th>
+                                    <th>Trung tâm phụ trách</th>
                                     <th>Trạng thái tài khoản</th>
                                     <th>Thao tác</th>
                                 </tr>
@@ -263,9 +263,9 @@
                                 <% } else for (User m : managers) {
                                     String st = m.getStatus();
                                     boolean isActive = "ACTIVE".equalsIgnoreCase(st);
-                                    String branchName = m.getBranchName();
-                                    boolean hasBranch = branchName != null && !branchName.trim().isEmpty();
-                                    String searchData = (m.getEmployeeCode() + " " + m.getUserId() + " ql" + m.getUserId() + " " + m.getFullName() + " " + m.getAccount() + " " + m.getEmail() + " " + (hasBranch ? branchName : "")).toLowerCase();
+                                    String centreName = m.getCentreName();
+                                    boolean hasCentre = centreName != null && !centreName.trim().isEmpty();
+                                    String searchData = (m.getEmployeeCode() + " " + m.getUserId() + " ql" + m.getUserId() + " " + m.getFullName() + " " + m.getAccount() + " " + m.getEmail() + " " + (hasCentre ? centreName : "")).toLowerCase();
                                     String statusClass = isActive ? "st-active" : "st-inactive";
                                 %>
                                     <tr class="manager-row <%= statusClass %>" data-search="<%= searchData %>">
@@ -277,8 +277,8 @@
                                         <td><code><%= m.getAccount() %></code></td>
                                         <td><%= m.getPhone() != null && !m.getPhone().isEmpty() ? m.getPhone() : "—" %></td>
                                         <td>
-                                            <% if (hasBranch) { %>
-                                                <span style="font-weight: 500; color: #a5b4fc;">🏛 <%= branchName %></span>
+                                            <% if (hasCentre) { %>
+                                                <span style="font-weight: 500; color: #a5b4fc;">🏛 <%= centreName %></span>
                                             <% } else { %>
                                                 <span style="color: #64748b;">Chưa phân công</span>
                                             <% } %>

@@ -5,8 +5,9 @@
     if (authRole == null && session.getAttribute("user") instanceof model.User) {
         authRole = ((model.User) session.getAttribute("user")).getRole();
     }
-    if (!"ADMIN".equalsIgnoreCase(authRole)) {
-        response.sendError(HttpServletResponse.SC_FORBIDDEN, "Chỉ Quản trị viên (ADMIN) mới có quyền truy cập trang này.");
+    boolean isAdmin = "ADMIN".equalsIgnoreCase(authRole);
+    if (!isAdmin && !"MANAGER".equalsIgnoreCase(authRole)) {
+        response.sendError(HttpServletResponse.SC_FORBIDDEN, "Bạn không có quyền truy cập trang này.");
         return;
     }
 %>
@@ -27,8 +28,9 @@
     }
     String error = request.getParameter("error");
     String updated = request.getParameter("updated");
-    String fullName = user != null && user.getFullName() != null ? user.getFullName() : "Admin";
-    String initial = fullName.isBlank() ? "A" : fullName.substring(0, 1).toUpperCase();
+    String defaultName = isAdmin ? "Admin" : "Manager";
+    String fullName = user != null && user.getFullName() != null && !user.getFullName().isBlank() ? user.getFullName() : defaultName;
+    String initial = fullName.isBlank() ? (isAdmin ? "A" : "M") : fullName.substring(0, 1).toUpperCase();
     String avatar = user != null ? user.getAvatar() : null;
 %>
 <!DOCTYPE html>
@@ -36,7 +38,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Hồ sơ Admin | CineFlow</title>
+    <title><%= isAdmin ? "Hồ sơ Admin | CineFlow" : "Hồ sơ Manager | CineFlow" %></title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/reset.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/variables.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/buttons.css">
@@ -49,21 +51,21 @@
 </head>
 <body>
 <div class="cf-manager-shell">
-    <jsp:include page="/admin/sidebar.jsp" />
+    <jsp:include page='<%= isAdmin ? "/admin/sidebar.jsp" : "/manager/sidebar.jsp" %>' />
     <div class="cf-manager-main">
         <jsp:include page="/admin/topbar.jsp" />
         <main class="cf-content">
             <div class="cf-page-header">
                 <div>
                     <p class="cf-breadcrumb">Tài khoản / Hồ sơ của tôi</p>
-                    <h1>Hồ sơ Quản trị viên (Admin)</h1>
-                    <p>Cập nhật thông tin định danh và quản lý tài khoản quản trị hệ thống CineFlow.</p>
+                    <h1><%= isAdmin ? "Hồ sơ Quản trị viên (Admin)" : "Hồ sơ Quản lý (Manager)" %></h1>
+                    <p><%= isAdmin ? "Cập nhật thông tin định danh và quản lý tài khoản quản trị hệ thống CineFlow." : "Cập nhật thông tin định danh và tài khoản quản lý cụm rạp CineFlow." %></p>
                 </div>
                 <a class="cf-btn cf-btn-secondary" href="${pageContext.request.contextPath}/dashboard">← Về Dashboard</a>
             </div>
 
             <% if ("true".equals(updated)) { %>
-                <div class="cf-alert cf-alert-success">✓ Thông tin hồ sơ quản trị đã được cập nhật thành công.</div>
+                <div class="cf-alert cf-alert-success">✓ Thông tin hồ sơ đã được cập nhật thành công.</div>
             <% } %>
             <% if ("email".equals(error)) { %>
                 <div class="cf-alert cf-alert-error">⚠️ Địa chỉ email này đã được sử dụng bởi tài khoản khác trong hệ thống.</div>
@@ -78,7 +80,7 @@
                     <div class="cf-card-header">
                         <div>
                             <h2>Thông tin cá nhân</h2>
-                            <p>Thông tin hiển thị khi thao tác trong hệ thống quản trị CineFlow.</p>
+                            <p>Thông tin hiển thị khi thao tác trong hệ thống quản lý CineFlow.</p>
                         </div>
                     </div>
                     <div class="cf-card-body">
@@ -94,13 +96,13 @@
                             </div>
 
                             <div class="cf-field">
-                                <label for="role">Vai trò quản trị</label>
-                                <input id="role" value="ADMIN (Toàn quyền hệ thống)" disabled style="font-weight: 700; color: var(--cf-primary);">
+                                <label for="role">Vai trò tài khoản</label>
+                                <input id="role" value="<%= isAdmin ? "ADMIN (Toàn quyền hệ thống)" : "MANAGER (Quản lý cụm rạp)" %>" disabled style="font-weight: 700; color: var(--cf-primary);">
                             </div>
 
                             <div class="cf-field">
                                 <label for="email">Địa chỉ Email <span style="color: var(--cf-primary);">*</span></label>
-                                <input id="email" type="email" name="email" value="<%= user != null ? esc(user.getEmail()) : "" %>" required placeholder="admin@cineflow.com">
+                                <input id="email" type="email" name="email" value="<%= user != null ? esc(user.getEmail()) : "" %>" required placeholder="<%= isAdmin ? "admin@cineflow.com" : "manager@cineflow.com" %>">
                             </div>
 
                             <div class="cf-field">
@@ -130,12 +132,12 @@
                         <% } %>
                     </div>
                     <h2><%= esc(fullName) %></h2>
-                    <p class="profile-role" style="letter-spacing: .08em;">SUPER ADMINISTRATOR</p>
+                    <p class="profile-role" style="letter-spacing: .08em;"><%= isAdmin ? "SUPER ADMINISTRATOR" : "CINEMA MANAGER" %></p>
 
                     <div class="profile-facts">
                         <div>
                             <span>Tên đăng nhập</span>
-                            <strong><%= user != null ? esc(user.getAccount()) : "admin" %></strong>
+                            <strong><%= user != null ? esc(user.getAccount()) : "user" %></strong>
                         </div>
                         <div>
                             <span>Trạng thái</span>

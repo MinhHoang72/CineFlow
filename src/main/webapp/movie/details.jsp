@@ -1,7 +1,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ page import="model.Movie" %>
 <%@ page import="model.User" %>
-<%@ page import="model.Branch" %>
+<%@ page import="model.Centre" %>
 <%@ page import="model.ShowtimeView" %>
 <%@ page import="dao.CinemaDAO" %>
 <%@ page import="dao.RatingDAO" %>
@@ -388,12 +388,12 @@
                     <span class="logo-mark">C</span>
                     <span class="logo-word">Cine<span>Flow</span></span>
                 </a>
-                <p>Hệ thống rạp chiếu phim CineFlow — Trải nghiệm điện ảnh đỉnh cao.</p>
+                <p>Hệ thống trung tâm chiếu phim CineFlow — Trải nghiệm điện ảnh đỉnh cao.</p>
             </div>
             <div>
                 <h4>CINEFLOW</h4>
                 <a href="${pageContext.request.contextPath}/home/index.jsp#promotions">Tin mới &amp; ưu đãi</a>
-                <a href="${pageContext.request.contextPath}/cinema/index.jsp">Rạp chiếu phim</a>
+                <a href="${pageContext.request.contextPath}/cinema/index.jsp">Trung tâm chiếu phim</a>
                 <a href="${pageContext.request.contextPath}/home/index.jsp#movies">Phim đang chiếu</a>
                 <a href="${pageContext.request.contextPath}/booking/booking.jsp?view=schedule">Lịch chiếu</a>
             </div>

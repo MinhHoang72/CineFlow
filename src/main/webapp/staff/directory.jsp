@@ -1,5 +1,5 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ page import="model.User,model.Branch,java.util.List" %>
+<%@ page import="model.User,model.Centre,java.util.List" %>
 <%
     String authRole = (String) session.getAttribute("role");
     if (authRole == null && session.getAttribute("user") instanceof model.User) {
@@ -15,12 +15,12 @@
     }
 
     List<User> staff = (List<User>) request.getAttribute("staff");
-    List<Branch> branches = (List<Branch>) request.getAttribute("branches");
-    Branch assignedBranch = (Branch) request.getAttribute("assignedBranch");
-    Integer selectedBranchId = (Integer) request.getAttribute("selectedBranchId");
+    List<Centre> centres = (List<Centre>) request.getAttribute("centres");
+    Centre assignedCentre = (Centre) request.getAttribute("assignedCentre");
+    Integer selectedCentreId = (Integer) request.getAttribute("selectedCentreId");
     boolean isAdminRole = Boolean.TRUE.equals(request.getAttribute("isAdmin"));
 
-    String currentBranchName = assignedBranch != null ? assignedBranch.getBranchName() : (selectedBranchId == null ? "Chưa bổ nhiệm chi nhánh" : "Toàn hệ thống");
+    String currentCentreName = assignedCentre != null ? assignedCentre.getCentreName() : (selectedCentreId == null ? "Chưa bổ nhiệm trung tâm" : "Toàn hệ thống");
 
     String successParam = request.getParameter("success");
     String errorParam = request.getParameter("error");
@@ -178,14 +178,14 @@
                 <div class="cf-page-header">
                     <div>
                         <p class="cf-breadcrumb">Nhân sự / Danh sách nhân viên</p>
-                        <h1>Nhân sự <%= currentBranchName %></h1>
-                        <p>Quản lý tài khoản, tạo nhân viên, cập nhật thông tin và kiểm soát trạng thái hoạt động tại cụm rạp.</p>
+                        <h1>Nhân sự <%= currentCentreName %></h1>
+                        <p>Quản lý tài khoản, tạo nhân viên, cập nhật thông tin và kiểm soát trạng thái hoạt động tại trung tâm.</p>
                     </div>
                 </div>
 
                 <% if ("created".equals(successParam)) { %>
                     <div class="cf-alert cf-alert-success">
-                        <span>✓</span> <strong>Thành công!</strong> Đã tạo mới tài khoản nhân viên cho chi nhánh.
+                        <span>✓</span> <strong>Thành công!</strong> Đã tạo mới tài khoản nhân viên cho trung tâm.
                     </div>
                 <% } else if ("updated".equals(successParam)) { %>
                     <div class="cf-alert cf-alert-success">
@@ -209,7 +209,7 @@
                     </div>
                 <% } else if ("unassigned_manager".equals(errorParam)) { %>
                     <div class="cf-alert cf-alert-danger">
-                        <span>⚠</span> <strong>Lỗi:</strong> Tài khoản Quản lý chưa được bổ nhiệm vào chi nhánh nên không thể tạo nhân viên.
+                        <span>⚠</span> <strong>Lỗi:</strong> Tài khoản Quản lý chưa được bổ nhiệm vào trung tâm nên không thể tạo nhân viên.
                     </div>
                 <% } else if (errorParam != null) { %>
                     <div class="cf-alert cf-alert-danger">
@@ -217,15 +217,15 @@
                     </div>
                 <% } %>
 
-                <% if (selectedBranchId == null && !isAdminRole) { %>
+                <% if (selectedCentreId == null && !isAdminRole) { %>
                     <section class="cf-card" style="padding: 40px 24px; text-align: center; margin-top: 20px;">
                         <div style="font-size: 44px; margin-bottom: 14px;">🏛</div>
-                        <h2 style="color: #f59e0b; margin-bottom: 8px;">Tài khoản chưa được bổ nhiệm chi nhánh</h2>
+                        <h2 style="color: #f59e0b; margin-bottom: 8px;">Tài khoản chưa được bổ nhiệm trung tâm</h2>
                         <p style="color: #94a3b8; max-width: 540px; margin: 0 auto 16px; font-size: 14px; line-height: 1.6;">
-                            Tài khoản Quản lý của bạn hiện chưa được phân công phụ trách cụm rạp nào trong hệ thống CineFlow.
-                            Theo quy định bảo mật, Quản lý chỉ được tạo và quản lý nhân viên khi đã được bổ nhiệm chính thức vào một cụm rạp.
+                            Tài khoản Quản lý của bạn hiện chưa được phân công phụ trách trung tâm chiếu phim nào trong hệ thống CineFlow.
+                            Theo quy định bảo mật, Quản lý chỉ được tạo và quản lý nhân viên khi đã được bổ nhiệm chính thức vào một trung tâm.
                         </p>
-                        <p style="font-size: 13px; color: #cbd5e1;">Vui lòng liên hệ Quản trị viên hệ thống (Admin HQ) để được phân công cụm rạp.</p>
+                        <p style="font-size: 13px; color: #cbd5e1;">Vui lòng liên hệ Quản trị viên hệ thống (Admin HQ) để được phân công trung tâm.</p>
                     </section>
                 <% } else { %>
 
@@ -237,8 +237,11 @@
                         </div>
                         <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                             <form method="get" action="${pageContext.request.contextPath}/staff" style="display: flex; gap: 8px; align-items: center;">
-                                <% if (request.getParameter("branchId") != null) { %>
-                                    <input type="hidden" name="branchId" value="<%= request.getParameter("branchId") %>">
+                                <% 
+                                    String cFilterVal = request.getParameter("centreId");
+                                    if (cFilterVal != null) { 
+                                %>
+                                    <input type="hidden" name="centreId" value="<%= cFilterVal %>">
                                 <% } %>
                                 <input type="text" name="search" id="staffFilterInput" 
                                        value="<%= request.getParameter("search") != null ? request.getParameter("search") : "" %>"
@@ -246,7 +249,7 @@
                                        style="padding: 8px 14px; border: 1px solid #334155; border-radius: 6px; font-size: 13px; min-width: 280px; background: #1e293b; color: #f8fafc;">
                                 <button type="submit" class="cf-btn cf-btn-secondary cf-btn-sm">Tìm</button>
                                 <% if (request.getParameter("search") != null && !request.getParameter("search").trim().isEmpty()) { %>
-                                    <a href="${pageContext.request.contextPath}/staff<%= request.getParameter("branchId") != null ? "?branchId=" + request.getParameter("branchId") : "" %>" class="cf-btn cf-btn-secondary cf-btn-sm" style="color: #94a3b8;">Xóa lọc</a>
+                                    <a href="${pageContext.request.contextPath}/staff<%= cFilterVal != null ? "?centreId=" + cFilterVal : "" %>" class="cf-btn cf-btn-secondary cf-btn-sm" style="color: #94a3b8;">Xóa lọc</a>
                                 <% } %>
                             </form>
                             
@@ -271,7 +274,7 @@
                                         <th>Nhân viên</th>
                                         <th>Tên đăng nhập</th>
                                         <th>Số điện thoại</th>
-                                        <th>Cụm rạp</th>
+                                        <th>Trung tâm</th>
                                         <th>Trạng thái</th>
                                         <th>Thao tác</th>
                                     </tr>
@@ -287,7 +290,7 @@
                                         String staffPhone = item.getPhone() != null ? item.getPhone() : "";
                                         String searchVal = (item.getEmployeeCode() + " " + item.getUserId() + " nv" + item.getUserId() + " " + staffName + " " + staffEmail + " " + staffAccount + " " + staffPhone).toLowerCase();
                                         String stClass = "ACTIVE".equalsIgnoreCase(st) ? "st-active" : ("INACTIVE".equalsIgnoreCase(st) ? "st-inactive" : "st-locked");
-                                        String itemBranchName = item.getBranchName() != null ? item.getBranchName() : currentBranchName;
+                                        String itemCentreName = item.getCentreName() != null ? item.getCentreName() : currentCentreName;
                                     %>
                                         <tr class="staff-row <%= stClass %>" data-search="<%= searchVal %>">
                                             <td><code class="cf-badge cf-badge-info" style="font-size: 12px; font-weight: 700; letter-spacing: 0.5px;"><%= item.getEmployeeCode() %></code></td>
@@ -297,7 +300,7 @@
                                             </td>
                                             <td><code><%= staffAccount %></code></td>
                                             <td><%= !staffPhone.isEmpty() ? staffPhone : "—" %></td>
-                                            <td>🏛 <%= itemBranchName %></td>
+                                            <td>🏛 <%= itemCentreName %></td>
                                             <td>
                                                 <span class="cf-badge <%= "ACTIVE".equalsIgnoreCase(st) ? "cf-badge-success" : ("LOCKED".equalsIgnoreCase(st) ? "cf-badge-danger" : "cf-badge-warning") %>">
                                                     <%= "ACTIVE".equalsIgnoreCase(st) ? "Đang hoạt động" : ("LOCKED".equalsIgnoreCase(st) ? "Đã khóa" : "Tạm ngưng") %>
@@ -317,9 +320,9 @@
                                                         <input type="hidden" name="action" value="status">
                                                         <input type="hidden" name="userId" value="<%= item.getUserId() %>">
                                                         <select name="status" style="background: rgba(255,255,255,0.08); color: #fff; border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; padding: 4px 8px; font-size: 13px;">
-                                                            <option value="ACTIVE" <%= "ACTIVE".equalsIgnoreCase(st) ? "selected" : "" %>>Hoạt động</option>
-                                                            <option value="INACTIVE" <%= "INACTIVE".equalsIgnoreCase(st) ? "selected" : "" %>>Tạm ngưng</option>
-                                                            <option value="LOCKED" <%= "LOCKED".equalsIgnoreCase(st) ? "selected" : "" %>>Khóa</option>
+                                                             <option value="ACTIVE" <%= "ACTIVE".equalsIgnoreCase(st) ? "selected" : "" %>>Hoạt động</option>
+                                                             <option value="INACTIVE" <%= "INACTIVE".equalsIgnoreCase(st) ? "selected" : "" %>>Tạm ngưng</option>
+                                                             <option value="LOCKED" <%= "LOCKED".equalsIgnoreCase(st) ? "selected" : "" %>>Khóa</option>
                                                         </select>
                                                         <button class="cf-btn cf-btn-primary cf-btn-sm" type="submit">Lưu</button>
                                                     </form>
@@ -341,14 +344,14 @@
     <div class="cf-modal-backdrop" id="createStaffModal">
         <div class="cf-modal">
             <div class="cf-modal-header">
-                <h3>Thêm nhân viên mới tại <%= currentBranchName %></h3>
+                <h3>Thêm nhân viên mới tại <%= currentCentreName %></h3>
                 <button type="button" class="cf-modal-close" onclick="closeCreateStaffModal()">&times;</button>
             </div>
             <form method="post" action="${pageContext.request.contextPath}/staff">
                 <input type="hidden" name="action" value="create">
                 <div class="cf-modal-body">
                     <p style="font-size: 13px; color: #94a3b8; margin: 0 0 8px;">
-                        Tài khoản được tạo sẽ tự động được gán vai trò <strong>STAFF</strong> và trực thuộc cụm rạp <strong><%= currentBranchName %></strong>.
+                        Tài khoản được tạo sẽ tự động được gán vai trò <strong>STAFF</strong> và trực thuộc trung tâm <strong><%= currentCentreName %></strong>.
                     </p>
                     <div class="cf-form-group">
                         <label>Họ và tên nhân viên *</label>

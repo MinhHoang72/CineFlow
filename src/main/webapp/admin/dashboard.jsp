@@ -1,5 +1,5 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ page import="model.ReportSummary,model.RevenueReport,model.Movie,model.Branch,model.User,java.util.List,java.math.BigDecimal" %>
+<%@ page import="model.ReportSummary,model.RevenueReport,model.Movie,model.Centre,model.User,java.util.List,java.math.BigDecimal" %>
 <%
     String authRole = (String) session.getAttribute("role");
     if (authRole == null && session.getAttribute("user") instanceof model.User) {
@@ -21,7 +21,7 @@
     request.setAttribute("pageBreadcrumb", "Dashboard");
     List<RevenueReport> topMovies = (List<RevenueReport>) request.getAttribute("topMovies");
     List<Movie> movies = (List<Movie>) request.getAttribute("movies");
-    List<Branch> branches = (List<Branch>) request.getAttribute("branches");
+    List<Centre> centres = (List<Centre>) request.getAttribute("centres");
     User currentUser = (User) session.getAttribute("user");
     String adminName = currentUser != null && currentUser.getFullName() != null ? currentUser.getFullName() : "Admin";
 
@@ -29,7 +29,7 @@
     int bookingsCount = s != null ? s.getBookings() : 0;
     int ticketsCount = s != null ? s.getTickets() : 0;
     int activeMoviesCount = s != null ? s.getActiveMovies() : (movies != null ? movies.size() : 0);
-    int activeBranchesCount = s != null ? s.getActiveBranches() : (branches != null ? branches.size() : 0);
+    int activeCentresCount = s != null ? s.getActiveCentres() : (centres != null ? centres.size() : 0);
     int activeUsersCount = s != null ? s.getActiveUsers() : 0;
     double occupancyRate = s != null ? s.getOccupancy() : 0.0;
 %>
@@ -262,8 +262,9 @@
                     <p>Hệ thống đang hoạt động tối ưu. Toàn bộ thông tin suất chiếu, doanh thu các cụm rạp và nhân sự được đồng bộ tự động theo thời gian thực.</p>
                     <div class="banner-actions">
                         <a href="${pageContext.request.contextPath}/admin/movies" class="cf-btn cf-btn-primary">Quản lý phim</a>
+                        <a href="${pageContext.request.contextPath}/admin/customers" class="cf-btn cf-btn-ghost">Khách hàng</a>
                         <a href="${pageContext.request.contextPath}/reports" class="cf-btn cf-btn-ghost">Báo cáo doanh thu</a>
-                        <a href="${pageContext.request.contextPath}/staff" class="cf-btn cf-btn-ghost">Quản lý nhân sự</a>
+                        <a href="${pageContext.request.contextPath}/admin/managers" class="cf-btn cf-btn-ghost">Quản lý nhân sự</a>
                     </div>
                 </div>
                 <div class="banner-stat-bubble">
@@ -309,10 +310,10 @@
 
                 <div class="kpi-card amber">
                     <div class="kpi-card-header">
-                        <span class="kpi-title">Cụm rạp hoạt động</span>
+                        <span class="kpi-title">Trung tâm hoạt động</span>
                         <span class="kpi-icon">🏢</span>
                     </div>
-                    <div class="kpi-value"><%= activeBranchesCount %></div>
+                    <div class="kpi-value"><%= activeCentresCount %></div>
                     <div class="kpi-subtext">
                         Trung tâm chiếu phim CineFlow
                     </div>
@@ -424,7 +425,9 @@
 
                         <div class="metric-progress-item">
                             <div class="metric-progress-header">
-                                <span>Thành viên hoạt động</span>
+                                <a href="${pageContext.request.contextPath}/admin/customers" style="color: inherit; text-decoration: none;" onmouseover="this.style.color='var(--cf-primary)'" onmouseout="this.style.color='inherit'">
+                                    <span>Thành viên hoạt động →</span>
+                                </a>
                                 <strong><%= activeUsersCount %> tài khoản</strong>
                             </div>
                             <div class="progress-bar-bg">
@@ -434,8 +437,8 @@
 
                         <div class="metric-progress-item">
                             <div class="metric-progress-header">
-                                <span>Rạp sẵn sàng phục vụ</span>
-                                <strong><%= activeBranchesCount %> cụm rạp (100%)</strong>
+                                <span>Trung tâm sẵn sàng phục vụ</span>
+                                <strong><%= activeCentresCount %> trung tâm (100%)</strong>
                             </div>
                             <div class="progress-bar-bg">
                                 <div class="progress-bar-fill" style="width: 100%; background: #10b981;"></div>

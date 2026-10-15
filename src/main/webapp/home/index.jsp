@@ -1,7 +1,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ page import="model.User" %>
 <%@ page import="model.Movie" %>
-<%@ page import="model.Branch" %>
+<%@ page import="model.Centre" %>
 <%@ page import="dao.CinemaDAO" %>
 <%@ page import="java.text.SimpleDateFormat" %>
 <%@ page import="java.util.List" %>
@@ -65,7 +65,7 @@
     CinemaDAO cinemaDAO = new CinemaDAO();
     List<Movie> movies = cinemaDAO.getNowShowingMovies();
     List<Movie> comingSoonMovies = cinemaDAO.getComingSoonMovies();
-    List<Branch> branches = cinemaDAO.getActiveBranches();
+    List<Centre> centres = cinemaDAO.getActiveCentres();
 %>
 <!DOCTYPE html>
 <html lang="vi">
@@ -249,7 +249,7 @@
         const pageSize = 4;
         let searchTerm = "";
         let selectedGenre = "";
-        let selectedBranchId = "";
+        let selectedCentreId = "";
 
         function normalize(value) {
             return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\u0111/g, "d").replace(/\u0110/g, "D").toLowerCase();

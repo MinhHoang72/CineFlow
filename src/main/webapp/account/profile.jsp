@@ -75,7 +75,7 @@
                 <div class="overview-info">
                     <div class="overview-name-row">
                         <h2><%= esc(user.getFullName()) %></h2>
-                        <span class="role-badge"><%= "CUSTOMER".equalsIgnoreCase(user.getRole()) ? "Thành viên CineFlow" : esc(user.getRole()) %></span>
+                        <span class="role-badge"><%= "CUSTOMER".equalsIgnoreCase(user.getRole()) ? "Khách hàng" : esc(user.getRole()) %></span>
                         <% if (user.isEmailVerified()) { %>
                             <span class="verified-badge">✓ Đã xác thực email</span>
                         <% } else { %>
@@ -103,8 +103,8 @@
                     <span class="stat-label">Vé đã đặt</span>
                 </div>
                 <div class="stat-card">
-                    <span class="stat-badge"><%= (history != null && history.size() >= 5) ? "VIP MEMBER" : "STANDARD" %></span>
-                    <span class="stat-label">Hạng thành viên</span>
+                    <span class="stat-badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3);">● <%= esc(user.getStatus()) %></span>
+                    <span class="stat-label">Trạng thái</span>
                 </div>
             </div>
         </section>
@@ -230,7 +230,7 @@
 
                     <div class="security-tip-box">
                         <span class="tip-icon">💡</span>
-                        <p>Không chia sẻ mật khẩu và mã OTP cho bất kỳ ai để bảo vệ quyền lợi thành viên CineFlow của bạn.</p>
+                        <p>Không chia sẻ mật khẩu và mã OTP cho bất kỳ ai để bảo vệ tài khoản CineFlow của bạn.</p>
                     </div>
                 </article>
             </div>
@@ -271,7 +271,7 @@
                                     <strong><%= esc(item.getMovieTitle()) %></strong>
                                     <span class="booking-code">Mã vé: <code><%= esc(item.getBookingCode()) %></code></span>
                                     <span class="booking-meta">
-                                        <%= esc(item.getBranchName()) %> · <%= item.getStartTime() == null ? "Chưa có lịch" : dateTime.format(item.getStartTime()) %>
+                                        <%= esc(item.getCentreName()) %> · <%= item.getStartTime() == null ? "Chưa có lịch" : dateTime.format(item.getStartTime()) %>
                                     </span>
                                 </div>
                             </div>

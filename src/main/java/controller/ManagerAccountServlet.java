@@ -99,7 +99,7 @@ public class ManagerAccountServlet extends HttpServlet {
             newManager.setEmail(email);
             newManager.setPassword(PasswordUtils.hashPassword(password.trim()));
             newManager.setPhone(phone != null ? phone.trim() : "");
-            newManager.setBranchId(null); // Manager mới tạo chưa phân công rạp
+            newManager.setCentreId(null); // Manager mới tạo chưa phân công trung tâm
 
             int createdId = userDAO.createManager(newManager);
             if (createdId > 0) {
