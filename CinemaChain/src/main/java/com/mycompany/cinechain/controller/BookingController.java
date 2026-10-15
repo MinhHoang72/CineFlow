@@ -1,0 +1,223 @@
+package com.mycompany.cinechain.controller;
+
+import com.mycompany.cinechain.dao.BookingDAO;
+import com.mycompany.cinechain.dao.BookingDAO.SeatUnavailableException;
+import com.mycompany.cinechain.dao.BranchDAO;
+import com.mycompany.cinechain.dao.MovieDAO;
+import com.mycompany.cinechain.dao.SeatDAO;
+import com.mycompany.cinechain.dao.ShowtimeDAO;
+import com.mycompany.cinechain.model.Booking;
+import com.mycompany.cinechain.model.Seat;
+import com.mycompany.cinechain.model.Showtime;
+import com.mycompany.cinechain.model.User;
+import com.mycompany.cinechain.utils.WebUtil;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+
+/**
+ * FE-05 Dat ve:
+ *   GET  /booking                          chon chi nhanh, phim, ngay, suat chieu
+ *   GET  /booking?action=select-seats      chon ghe (can dang nhap)
+ *   POST /booking?action=hold              giu ghe 5 phut, tao booking PENDING
+ *   GET  /booking?action=checkout          xem lai don + dem nguoc giu ghe
+ *   POST /booking?action=cancel            huy booking dang cho thanh toan
+ */
+@WebServlet(name = "BookingController", urlPatterns = {"/booking"})
+public class BookingController extends HttpServlet {
+
+    private static final String VIEW_DIR = "/WEB-INF/views/";
+    private static final String[] WEEKDAYS = {"T2", "T3", "T4", "T5", "T6", "T7", "CN"};
+
+    private final BranchDAO branchDAO = new BranchDAO();
+    private final MovieDAO movieDAO = new MovieDAO();
+    private final ShowtimeDAO showtimeDAO = new ShowtimeDAO();
+    private final SeatDAO seatDAO = new SeatDAO();
+    private final BookingDAO bookingDAO = new BookingDAO();
+
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String action = req.getParameter("action");
+        try {
+            if (action == null || action.isEmpty() || "select-showtime".equals(action)) {
+                selectShowtime(req, resp);
+            } else if ("select-seats".equals(action)) {
+                selectSeats(req, resp);
+            } else if ("checkout".equals(action)) {
+                checkout(req, resp);
+            } else {
+                resp.sendError(HttpServletResponse.SC_NOT_FOUND);
+            }
+        } catch (SQLException e) {
+            throw new ServletException(e);
+        }
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String action = req.getParameter("action");
+        try {
+            if ("hold".equals(action)) {
+                hold(req, resp);
+            } else if ("cancel".equals(action)) {
+                cancel(req, resp);
+            } else {
+                resp.sendError(HttpServletResponse.SC_NOT_FOUND);
+            }
+        } catch (SQLException e) {
+            throw new ServletException(e);
+        }
+    }
+
+    private void selectShowtime(HttpServletRequest req, HttpServletResponse resp)
+            throws SQLException, ServletException, IOException {
+        Integer branchId = WebUtil.parseInt(req.getParameter("branchId"));
+        Integer movieId = WebUtil.parseInt(req.getParameter("movieId"));
+
+        req.setAttribute("branches", branchDAO.getActiveBranches());
+        req.setAttribute("selectedBranchId", branchId);
+        req.setAttribute("selectedMovieId", movieId);
+
+        if (branchId != null) {
+            req.setAttribute("movies", movieDAO.getMoviesShowingAt(branchId));
+        }
+        if (branchId != null && movieId != null) {
+            List<LocalDate> dates = showtimeDAO.getShowDates(branchId, movieId);
+            LocalDate date = parseDate(req.getParameter("date"));
+            if ((date == null || !dates.contains(date)) && !dates.isEmpty()) date = dates.get(0);
+
+            req.setAttribute("dateOptions", toDateOptions(dates));
+            if (date != null) {
+                req.setAttribute("selectedDate", date.toString());
+                req.setAttribute("showtimes", showtimeDAO.getShowtimes(branchId, movieId, date));
+            }
+        }
+        req.getRequestDispatcher(VIEW_DIR + "booking-select-showtime.jsp").forward(req, resp);
+    }
+
+    private void selectSeats(HttpServletRequest req, HttpServletResponse resp)
+            throws SQLException, ServletException, IOException {
+        if (WebUtil.requireUser(req, resp) == null) return;
+
+        Integer showtimeId = WebUtil.parseInt(req.getParameter("showtimeId"));
+        Showtime showtime = showtimeId == null ? null : showtimeDAO.getBookableById(showtimeId);
+        if (showtime == null) {
+            WebUtil.flash(req, "warning", "Suất chiếu không tồn tại hoặc đã ngừng bán vé.");
+            resp.sendRedirect(req.getContextPath() + "/booking");
+            return;
+        }
+
+        Map<String, List<Seat>> seatRows = new LinkedHashMap<>();
+        Map<String, BigDecimal> priceByType = new TreeMap<>();
+        for (Seat seat : seatDAO.getSeatMap(showtime)) {
+            seatRows.computeIfAbsent(seat.getRow(), k -> new ArrayList<>()).add(seat);
+            priceByType.putIfAbsent(seat.getType(), seat.getPrice());
+        }
+
+        req.setAttribute("showtime", showtime);
+        req.setAttribute("seatRows", seatRows);
+        req.setAttribute("priceByType", priceByType);
+        req.setAttribute("maxSeats", BookingDAO.MAX_SEATS_PER_BOOKING);
+        req.setAttribute("holdMinutes", BookingDAO.HOLD_MINUTES);
+        req.getRequestDispatcher(VIEW_DIR + "booking-select-seats.jsp").forward(req, resp);
+    }
+
+    private void hold(HttpServletRequest req, HttpServletResponse resp) throws SQLException, IOException {
+        User user = WebUtil.requireUser(req, resp);
+        if (user == null) return;
+
+        Integer showtimeId = WebUtil.parseInt(req.getParameter("showtimeId"));
+        if (showtimeId == null) {
+            resp.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            return;
+        }
+        List<Integer> seatIds = new ArrayList<>();
+        String[] values = req.getParameterValues("seatId");
+        if (values != null) {
+            for (String v : values) {
+                Integer id = WebUtil.parseInt(v);
+                if (id != null) seatIds.add(id);
+            }
+        }
+
+        try {
+            int bookingId = bookingDAO.holdSeats(user.getId(), showtimeId, seatIds);
+            resp.sendRedirect(req.getContextPath() + "/booking?action=checkout&bookingId=" + bookingId);
+        } catch (SeatUnavailableException e) {
+            WebUtil.flash(req, "warning", e.getMessage());
+            resp.sendRedirect(req.getContextPath() + "/booking?action=select-seats&showtimeId=" + showtimeId);
+        }
+    }
+
+    private void checkout(HttpServletRequest req, HttpServletResponse resp)
+            throws SQLException, ServletException, IOException {
+        User user = WebUtil.requireUser(req, resp);
+        if (user == null) return;
+
+        Booking booking = loadOwnBooking(req, user);
+        if (booking == null) {
+            resp.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+        req.setAttribute("booking", booking);
+        req.getRequestDispatcher(VIEW_DIR + "booking-checkout.jsp").forward(req, resp);
+    }
+
+    private void cancel(HttpServletRequest req, HttpServletResponse resp) throws SQLException, IOException {
+        User user = WebUtil.requireUser(req, resp);
+        if (user == null) return;
+
+        Booking booking = loadOwnBooking(req, user);
+        if (booking == null) {
+            resp.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+        if (bookingDAO.cancelPending(booking.getId(), user.getId())) {
+            WebUtil.flash(req, "info", "Đã huỷ đơn " + booking.getCode() + ", ghế đã được nhả.");
+        }
+        resp.sendRedirect(req.getContextPath() + "/booking?action=select-seats&showtimeId="
+                + booking.getShowtime().getId());
+    }
+
+    private Booking loadOwnBooking(HttpServletRequest req, User user) throws SQLException {
+        Integer bookingId = WebUtil.parseInt(req.getParameter("bookingId"));
+        if (bookingId == null) return null;
+        Booking booking = bookingDAO.getBooking(bookingId);
+        if (booking == null || booking.getUserId() == null || booking.getUserId() != user.getId()) return null;
+        return booking;
+    }
+
+    private static LocalDate parseDate(String value) {
+        if (value == null || value.isEmpty()) return null;
+        try {
+            return LocalDate.parse(value);
+        } catch (DateTimeParseException e) {
+            return null;
+        }
+    }
+
+    /** yyyy-MM-dd -> "T3 13/10" */
+    private static Map<String, String> toDateOptions(List<LocalDate> dates) {
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM");
+        Map<String, String> options = new LinkedHashMap<>();
+        LocalDate today = LocalDate.now();
+        for (LocalDate d : dates) {
+            String day = d.equals(today) ? "Hôm nay" : WEEKDAYS[d.getDayOfWeek().getValue() - 1];
+            options.put(d.toString(), day + " " + d.format(fmt));
+        }
+        return options;
+    }
+}
