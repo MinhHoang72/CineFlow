@@ -2,6 +2,9 @@ package model;
 
 import java.sql.Timestamp;
 
+/**
+ * Đại diện cho tài khoản người dùng trong hệ thống CineFlow (Admin, Manager, Staff, Customer).
+ */
 public class User {
 
     private int userId;

@@ -84,7 +84,7 @@
         <jsp:include page='<%= isAdmin ? "/admin/topbar.jsp" : "/manager/topbar.jsp" %>' />
 
         <main class="admin-content">
-            <!-- HERO -->
+            <!-- TIÊU ĐỀ TRANG VÀ NÚT TÁC VỤ -->
             <div class="page-hero">
                 <div class="page-hero-text">
                     <p class="eyebrow"><%= isAdmin ? "PHÂN TÍCH TOÀN HỆ THỐNG" : "BÁO CÁO HOẠT ĐỘNG" %></p>
@@ -99,7 +99,7 @@
                 </div>
             </div>
 
-            <!-- 4 SUMMARY KPIS -->
+            <!-- 4 THẺ CHỈ SỐ KPI TỔNG HỢP -->
             <div class="kpi-grid">
                 <div class="kpi-card ruby">
                     <div class="kpi-card-header">
@@ -138,7 +138,7 @@
                 </div>
             </div>
 
-            <!-- TABS -->
+            <!-- THANH CHUYỂN TAB BÁO CÁO -->
             <div class="report-tabs">
                 <button type="button" class="report-tab-btn active" onclick="switchReportTab('tabCentres', this)">
                     <span>🏢</span> Doanh thu theo trung tâm (<%= centres != null ? centres.size() : 0 %>)
@@ -151,7 +151,7 @@
                 </button>
             </div>
 
-            <!-- TAB 1: REVENUE BY CENTRE -->
+            <!-- TAB 1: DOANH THU THEO TRUNG TÂM -->
             <div id="tabCentres" class="report-tab-pane active">
                 <div class="admin-card">
                     <div class="admin-card-header">
@@ -193,7 +193,7 @@
                 </div>
             </div>
 
-            <!-- TAB 2: REVENUE BY MOVIE -->
+            <!-- TAB 2: XẾP HẠNG DOANH THU THEO PHIM -->
             <div id="tabMovies" class="report-tab-pane">
                 <div class="admin-card">
                     <div class="admin-card-header">
@@ -240,7 +240,7 @@
                 </div>
             </div>
 
-            <!-- TAB 3: SHOWTIME METRICS -->
+            <!-- TAB 3: HIỆU SUẤT VÀ TỶ LỆ LẤP ĐẦY SUẤT CHIẾU -->
             <div id="tabShowtimes" class="report-tab-pane">
                 <div class="admin-card">
                     <div class="admin-card-header">

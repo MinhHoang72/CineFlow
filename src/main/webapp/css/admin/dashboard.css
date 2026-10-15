@@ -10,10 +10,10 @@
 @import url("../manager/profile.css");
 
 /* ==========================================================================
-   CINEFLOW UNIFIED ADMIN & MANAGER DESIGN SYSTEM
+   HỆ THỐNG GIAO DIỆN QUẢN TRỊ VÀ QUẢN LÝ CINEFLOW THỐNG NHẤT
    ========================================================================== */
 
-/* Universal Layout Aliases: both .cf-manager-shell and .admin-layout work identically */
+/* Định danh bố cục dùng chung cho cả Admin và Manager */
 .admin-layout, .cf-manager-shell {
     min-height: 100vh;
     background: var(--cf-background);
@@ -30,7 +30,7 @@
     padding: 32px 0 60px;
 }
 
-/* Page Hero */
+/* Tiêu đề trang */
 .page-hero {
     display: flex;
     align-items: flex-end;
@@ -58,7 +58,7 @@
     font-size: 13px;
 }
 
-/* Unified Card */
+/* Thẻ giao diện thống nhất */
 .admin-card, .cf-card {
     border: 1px solid var(--cf-border);
     border-radius: var(--cf-radius-lg);
@@ -89,7 +89,7 @@
     padding: 22px;
 }
 
-/* KPI STATS STRIP */
+/* Dải thẻ chỉ số KPI thống kê */
 .kpi-grid, .cf-kpi-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -163,7 +163,7 @@
     color: #64748B;
 }
 
-/* CARD TOOLBAR */
+/* THANH CÔNG CỤ TRÊN THẺ */
 .cf-card-toolbar, .cf-toolbar {
     display: flex;
     align-items: center;
@@ -281,7 +281,7 @@
     color: #1E293B;
 }
 
-/* THUMBNAIL CONTAINER IN MOVIE TABLE (STRICT CONTAINMENT) */
+/* KHUNG CHỨA ẢNH THU NHỎ POSTER TRONG BẢNG PHIM */
 .movie-thumb, .movie-poster-thumb {
     width: 40px !important;
     max-width: 40px !important;
@@ -305,7 +305,7 @@
     display: block !important;
 }
 
-/* PAGINATION BAR */
+/* THANH PHÂN TRANG */
 .cf-pagination-bar {
     display: flex;
     align-items: center;
@@ -367,7 +367,7 @@
     background: rgba(255, 255, 255, 0.03);
 }
 
-/* RESPONSIVENESS */
+/* THIẾT KẾ TƯƠNG THÍCH THIẾT BỊ DI ĐỘNG (RESPONSIVE) */
 @media (max-width: 900px) {
     .kpi-grid, .cf-kpi-grid { grid-template-columns: repeat(2, 1fr); }
 }

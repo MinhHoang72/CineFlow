@@ -6,23 +6,30 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import model.User;
+import utils.PasswordUtils;
+
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import model.User;
-import utils.PasswordUtils;
 
 /**
- * Màn hình Quản lý Tài khoản Quản lý (Manager).
- * Trách nhiệm DUY NHẤT: Quản lý thông tin tài khoản Manager (tạo, sửa thông tin, kích hoạt/tạm ngưng).
+ * Điều khiển màn hình Quản lý Tài khoản Quản lý (Manager).
+ * Trách nhiệm: Quản lý thông tin tài khoản Manager (tạo, cập nhật thông tin, kích hoạt hoặc tạm ngưng).
  * Nghiệp vụ Bổ nhiệm vào rạp và Điều chuyển nhân sự được quản lý riêng biệt tại StaffTransferServlet (/admin/transfers).
  */
 public class ManagerAccountServlet extends HttpServlet {
+
     private final UserDAO userDAO = new UserDAO();
 
+    /**
+     * Kiểm tra phiên hiện tại có vai trò Quản trị viên (Admin) hay không.
+     */
     private boolean isAdmin(HttpSession session) {
-        if (session == null) return false;
+        if (session == null) {
+            return false;
+        }
         Object role = session.getAttribute("role");
         if (role == null && session.getAttribute("user") instanceof User) {
             role = ((User) session.getAttribute("user")).getRole();
@@ -35,7 +42,8 @@ public class ManagerAccountServlet extends HttpServlet {
             throws ServletException, IOException {
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("userId") == null) {
-            String loginUrl = request.getContextPath() + "/auth/login.jsp?redirect=" + URLEncoder.encode("/admin/managers", StandardCharsets.UTF_8);
+            String loginUrl = request.getContextPath() + "/auth/login.jsp?redirect="
+                    + URLEncoder.encode("/admin/managers", StandardCharsets.UTF_8);
             response.sendRedirect(loginUrl);
             return;
         }
@@ -151,7 +159,7 @@ public class ManagerAccountServlet extends HttpServlet {
             }
         }
 
-        // 3. KÍCH HOẠT / TẠM NGƯNG TÀI KHOẢN MANAGER
+        // 3. KÍCH HOẠT HOẶC TẠM NGƯNG TÀI KHOẢN MANAGER
         if ("toggle_status".equalsIgnoreCase(action)) {
             try {
                 int userId = Integer.parseInt(request.getParameter("userId"));

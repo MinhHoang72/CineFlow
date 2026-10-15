@@ -1,9 +1,9 @@
 /* ==========================================================================
-   CINEFLOW MOVIE DISTRIBUTION - STREAMLINED CINEMA WORKSPACE
-   Unified with Movie Catalog & Form tokens
+   Giao diện phân phối phim CineFlow - Quản lý rạp chiếu
+   Đồng bộ với các biến thiết kế của danh mục và biểu mẫu phim
    ========================================================================== */
 
-/* 1. MOVIE INFO HEADER CARD */
+/* 1. Thẻ thông tin phim trên đầu trang */
 .cf-dist-movie-info {
     display: flex;
     align-items: flex-start;
@@ -99,7 +99,7 @@
     text-overflow: ellipsis;
 }
 
-/* 2. TOOLBAR FOR CITIES, SEARCH & QUICK ACTIONS */
+/* 2. Thanh công cụ lọc thành phố, tìm kiếm và thao tác nhanh */
 .cf-dist-toolbar {
     display: flex;
     align-items: center;
@@ -126,7 +126,7 @@
     margin-left: auto;
 }
 
-/* Filter pills (Tabs thành phố) */
+/* Bộ lọc thẻ (Tabs theo thành phố) */
 .cf-filter-pills {
     display: inline-flex;
     align-items: center;
@@ -180,7 +180,7 @@
     color: #ffffff;
 }
 
-/* Search Box */
+/* Ô tìm kiếm */
 .cf-search-box {
     position: relative;
     width: 250px;
@@ -223,7 +223,7 @@
     pointer-events: none;
 }
 
-/* Action Button Group */
+/* Nhóm nút thao tác */
 .cf-dist-btn-group {
     display: inline-flex;
     align-items: center;
@@ -266,7 +266,7 @@
     background: rgba(255, 40, 85, 0.1);
 }
 
-/* 3. STREAMLINED CINEMA CENTRE LIST VIEW (NỀN TRẮNG RÕ NÉT) */
+/* 3. Danh sách cụm rạp chiếu (Giao diện nền trắng rõ nét) */
 .cf-centre-list-header {
     display: flex;
     align-items: center;
@@ -302,7 +302,7 @@
     background: #F1F5F9;
 }
 
-/* Three distinct columns */
+/* Ba cột phân tách rõ ràng */
 .cf-col-header.col-left,
 .cf-centre-left {
     flex: 1;
@@ -323,7 +323,7 @@
     text-align: right;
 }
 
-/* Left side: Checkbox + Name + Sub */
+/* Cột trái: Hộp chọn + Tên trung tâm + Thông tin phụ */
 .cf-centre-label {
     display: flex;
     align-items: flex-start;
@@ -361,7 +361,7 @@
     line-height: 1.3;
 }
 
-/* Center: Operational Status */
+/* Cột giữa: Trạng thái hoạt động */
 .cf-op-status {
     display: inline-flex;
     align-items: center;
@@ -393,7 +393,7 @@
     background: #94A3B8;
 }
 
-/* Right: Subtle Distribution State Text */
+/* Cột phải: Trạng thái phân phối phim */
 .cf-dist-state {
     font-size: 12.5px;
     font-weight: 600;
@@ -414,7 +414,7 @@
     font-weight: 500;
 }
 
-/* 4. STICKY ACTION FOOTER BAR */
+/* 4. Thanh tác vụ dính cố định dưới đáy trang */
 .cf-dist-sticky-bar {
     position: sticky;
     bottom: 0;
@@ -450,7 +450,7 @@
     pointer-events: none;
 }
 
-/* 5. RESPONSIVE ADJUSTMENTS */
+/* 5. Tương thích thiết bị di động và tablet */
 @media (max-width: 900px) {
     .cf-dist-toolbar {
         flex-direction: column;

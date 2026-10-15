@@ -137,11 +137,14 @@
     String statusText = "Đang chiếu";
     String statusClass = "now-showing";
     if (isComingSoon) {
-        statusText = "Sắp chiếu";
+        statusText = "Sắp khởi chiếu";
         statusClass = "coming-soon";
-    } else if ("ENDED".equalsIgnoreCase(movie.getStatus()) || "ARCHIVED".equalsIgnoreCase(movie.getStatus())) {
+    } else if ("ENDED".equalsIgnoreCase(movie.getStatus())) {
         statusText = "Đã kết thúc";
         statusClass = "ended";
+    } else if ("ARCHIVED".equalsIgnoreCase(movie.getStatus())) {
+        statusText = "Lưu trữ";
+        statusClass = "archived";
     }
 
     String ageRating = movie.getAgeRating() == null || movie.getAgeRating().trim().isEmpty() ? "P" : movie.getAgeRating().trim().toUpperCase();
@@ -161,12 +164,12 @@
 </head>
 <body id="top">
 <div class="page-shell">
-    <!-- Common Header & Navigation -->
+    <!-- Thanh điều hướng và đầu trang chung -->
     <jsp:include page="/common/header.jsp">
         <jsp:param name="activeNav" value="home"/>
     </jsp:include>
 
-    <!-- Main Page Content -->
+    <!-- Nội dung trang chi tiết phim -->
     <main class="movie-detail-container">
 
         <!-- Breadcrumb: Trang chủ → Phim đang chiếu → Chi tiết phim -->
@@ -179,7 +182,7 @@
         </nav>
 
         <!-- ================================================================= -->
-        <!-- 1. TRAILER SECTION (LOTTE Cinema style: Big 16:9 player on top) -->
+        <!-- 1. Phân mục trình phát Trailer phim                              -->
         <!-- ================================================================= -->
         <section class="trailer-section" id="trailer-section" aria-label="Trailer phim">
             <div class="section-header">
@@ -190,7 +193,7 @@
             </div>
 
             <div class="trailer-wrapper">
-                <!-- Main Trailer Player (16:9) -->
+                <!-- Trình phát Trailer chính (tỷ lệ 16:9) -->
                 <div class="trailer-main-player" id="mainPlayer">
                     <% if (hasTrailer) { %>
                         <div class="trailer-cover" id="trailerCover" onclick="startTrailerPlayer()">
@@ -225,11 +228,11 @@
         </section>
 
         <!-- ================================================================= -->
-        <!-- 2. MOVIE POSTER & DETAILS CARD (LOTTE Cinema Style)              -->
+        <!-- 2. Thẻ Poster và Thông tin chi tiết phim                        -->
         <!-- ================================================================= -->
         <article class="movie-info-card">
             <div class="movie-info-grid">
-                <!-- Left Poster Column (2:3) -->
+                <!-- Cột áp phích bên trái (tỷ lệ 2:3) -->
                 <div class="movie-poster-wrap">
                     <% if (hasPoster) { %>
                         <img src="<%= escapeHtml(posterUrl) %>" alt="Poster <%= escapeHtml(movie.getTitle()) %>" onerror="this.style.display='none'; document.getElementById('mainPosterFallback').style.display='grid';">
@@ -239,18 +242,18 @@
                     <% } %>
                 </div>
 
-                <!-- Right Information Column -->
+                <!-- Cột thông tin chi tiết bên phải -->
                 <div class="movie-details-col">
-                    <!-- Status pill -->
+                    <!-- Huy hiệu trạng thái -->
                     <div class="status-pill <%= statusClass %>">
                         <span class="status-dot"></span>
                         <span><%= statusText %></span>
                     </div>
 
-                    <!-- Title -->
+                    <!-- Tên phim -->
                     <h1 class="movie-title"><%= escapeHtml(movie.getTitle()) %></h1>
 
-                    <!-- Movie Specifications (LOTTE Cinema Style) -->
+                    <!-- Thông số chi tiết của phim -->
                     <div class="movie-specs-list">
                         <% if (movie.getDirector() != null && !movie.getDirector().trim().isEmpty()) { %>
                             <div class="spec-row">
@@ -294,7 +297,7 @@
                         </div>
                     </div>
 
-                    <!-- Action buttons -->
+                    <!-- Nút thao tác đặt vé -->
                     <div class="movie-action-buttons">
                         <a class="btn-book-now" href="${pageContext.request.contextPath}/booking/booking.jsp?movieId=<%= movie.getMovieId() %>">
                             <svg viewBox="0 0 24 24"><path d="M22 10V6c0-1.11-.9-2-2-2H4c-1.1 0-1.99.89-1.99 2v4c1.1 0 1.99.9 1.99 2s-.89 2-2 2v4c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2v-4c-1.1 0-2-.9-2-2s.9-2 2-2zm-9 7.5h-2v-2h2v2zm0-4.5h-2v-2h2v2zm0-4.5h-2v-2h2v2z"/></svg>
@@ -302,9 +305,9 @@
                         </a>
                     </div>
 
-                    <!-- 3. Rating & Voting Section (LOTTE Cinema Style) -->
+                    <!-- 3. Phân mục điểm đánh giá và bình chọn -->
                     <div class="rating-section-bar">
-                        <!-- Left: Overall Rating -->
+                        <!-- Bên trái: Điểm số trung bình -->
                         <div class="rating-left">
                             <div class="rating-number-score">
                                 <span id="avgScoreDisplay"><%= !isComingSoon && totalVotes > 0 ? String.format(java.util.Locale.US, "%.1f", avgScore10) : "--" %></span> <span>/10</span>
@@ -328,7 +331,7 @@
                             </div>
                         </div>
 
-                        <!-- Right: Interactive Voting -->
+                        <!-- Bên phải: Tương tác đánh giá -->
                         <div class="rating-right">
                             <% if (isComingSoon) { %>
                                 <div class="rating-coming-soon-notice">
@@ -360,7 +363,7 @@
         </article>
 
         <!-- ================================================================= -->
-        <!-- 4. TÓM TẮT (LOTTE Cinema Style)                                  -->
+        <!-- 4. Tóm tắt nội dung kịch bản phim                                -->
         <!-- ================================================================= -->
         <section class="movie-synopsis-card" aria-label="Tóm tắt nội dung phim">
             <div class="section-header">
@@ -380,7 +383,7 @@
 
     </main>
 
-    <!-- Footer (CineFlow Standard) -->
+    <!-- Chân trang CineFlow -->
     <footer class="footer">
         <div class="footer-inner">
             <div class="footer-brand">
@@ -417,7 +420,7 @@
         <div class="copyright">© 2026 CineFlow. All rights reserved.</div>
     </footer>
 
-    <!-- Quick Utilities Rail -->
+    <!-- Thanh tiện ích nhanh -->
     <nav class="quick-rail" aria-label="Tiện ích nhanh">
         <a href="${pageContext.request.contextPath}/booking/booking.jsp?movieId=<%= movie.getMovieId() %>" title="Đặt vé ngay">
             <span class="quick-icon">🎟</span>
@@ -433,9 +436,9 @@
         </a>
     </nav>
 
-    <!-- Client-side Scripts -->
+    <!-- Kịch bản phía máy khách (Client-side Scripts) -->
     <script>
-        // State variables
+        // Khai báo biến trạng thái
         const defaultMovieTitle = "<%= escapeHtml(movie.getTitle()).replace("\"", "\\\"") %>";
         const defaultTrailerUrl = "<%= escapeHtml(trailerUrl == null ? "" : trailerUrl).replace("\"", "\\\"") %>";
         const defaultYtId = "<%= ytVideoId == null ? "" : ytVideoId %>";
@@ -444,7 +447,7 @@
         const currentMovieId = <%= movie.getMovieId() %>;
         let selectedStarValue = <%= userScore %>;
 
-        // Trailer Player Control
+        // Điều khiển trình phát trailer
         function startTrailerPlayer(scrollFirst) {
             if (scrollFirst) {
                 const section = document.getElementById("trailer-section");
@@ -486,7 +489,7 @@
         }
 
 
-        // Interactive Rating Star Handler
+        // Xử lý chọn số sao đánh giá
         function selectRating(val) {
             selectedStarValue = val;
             const stars = document.querySelectorAll(".star-btn");
@@ -499,7 +502,7 @@
             }
         }
 
-        // Hover effect on stars
+        // Hiệu ứng rê chuột trên các ngôi sao
         document.querySelectorAll(".star-btn").forEach((star, idx) => {
             star.addEventListener("mouseenter", () => {
                 document.querySelectorAll(".star-btn").forEach((s, i) => {
@@ -513,7 +516,7 @@
 
         const isMovieComingSoon = <%= isComingSoon %>;
 
-        // Submit Rating Action (Real DB AJAX Integration)
+        // Gửi đánh giá qua AJAX cập nhật cơ sở dữ liệu
         function submitRating() {
             if (isMovieComingSoon) {
                 const feedback = document.getElementById("ratingFeedbackBox");
@@ -580,7 +583,7 @@
                 const promptEl = document.getElementById("ratingVotePrompt");
                 if (promptEl) promptEl.textContent = "Đánh giá của bạn:";
 
-                // Update UI score
+                // Cập nhật điểm số hiển thị trên giao diện
                 const avgEl = document.getElementById("avgScoreDisplay");
                 if (avgEl && data.averageScore10 !== undefined) {
                     avgEl.textContent = data.averageScore10 > 0 ? Number(data.averageScore10).toFixed(1) : "--";
@@ -590,7 +593,7 @@
                     countEl.textContent = data.totalVotes;
                 }
 
-                // Update visual star icons
+                // Cập nhật biểu tượng sao hiển thị
                 const starsWrap = document.getElementById("visualStarsDisplay");
                 if (starsWrap && data.averageStars5 !== undefined) {
                     const rounded = Math.round(Number(data.averageStars5));
@@ -617,7 +620,7 @@
         }
     </script>
 
-    <!-- Common Footer -->
+    <!-- Chân trang chung -->
     <jsp:include page="/common/footer.jsp"/>
 </div>
 </body>

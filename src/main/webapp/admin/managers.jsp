@@ -217,7 +217,7 @@
                 </div>
             </div>
 
-            <!-- TABLE CARD -->
+            <!-- BẢNG DANH SÁCH QUẢN LÝ -->
             <section class="cf-card" style="margin-top: 24px;">
                 <div class="cf-card-header" style="display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
                     <div>

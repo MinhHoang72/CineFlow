@@ -8,17 +8,18 @@ import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
 
+/**
+ * Xử lý đăng xuất tài khoản người dùng, hủy phiên làm việc hiện tại và chuyển hướng về trang chủ.
+ */
 public class LogoutServlet extends HttpServlet {
 
     @Override
-    protected void doPost(HttpServletRequest request,
-                           HttpServletResponse response)
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-
-        // Lấy session hiện tại
+        // Lấy phiên làm việc hiện tại nếu có
         HttpSession session = request.getSession(false);
 
-        // Nếu có session thì hủy session
+        // Hủy bỏ phiên làm việc
         if (session != null) {
             session.invalidate();
         }
@@ -27,12 +28,8 @@ public class LogoutServlet extends HttpServlet {
     }
 
     @Override
-    protected void doGet(HttpServletRequest request,
-                          HttpServletResponse response)
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-
         doPost(request, response);
     }
 }
-
-

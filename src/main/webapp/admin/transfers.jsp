@@ -242,7 +242,7 @@
                 </div>
             <% } %>
 
-            <!-- TAB CONTROLS -->
+            <!-- THANH ĐIỀU HƯỚNG TAB CHÍNH -->
             <div class="tab-nav">
                 <button type="button" class="tab-btn <%= "manager".equals(activeTabParam) ? "active" : "" %>" onclick="switchMainTab('tab-manager-assignment')">
                     🏛 Bổ nhiệm Quản lý Trung tâm
@@ -343,7 +343,7 @@
                             <table class="cf-table">
                                 <thead>
                                     <tr>
-                                        <th>Mã #</th>
+                                        <th>Mã</th>
                                         <th>Trung tâm</th>
                                         <th>Mã nhân sự</th>
                                         <th>Quản lý (Manager)</th>
@@ -359,7 +359,7 @@
                                         <tr><td colspan="9" class="cf-empty">Chưa có lịch sử bổ nhiệm nào được ghi nhận.</td></tr>
                                     <% } else for (ManagerAssignment ma : managerAssignments) { %>
                                         <tr>
-                                            <td><strong>#<%= ma.getAssignmentId() %></strong></td>
+                                            <td><strong><%= ma.getAssignmentId() %></strong></td>
                                             <td><strong><%= ma.getCentreName() %></strong> <small style="color: #94a3b8;">(<%= ma.getCentreCity() %>)</small></td>
                                             <td><code class="cf-badge cf-badge-primary" style="font-size: 11px; font-weight: 700;"><%= ma.getManagerCode() %></code></td>
                                             <td>
@@ -487,7 +487,7 @@
                             <table class="cf-table">
                                 <thead>
                                     <tr>
-                                        <th>Mã #</th>
+                                        <th>Mã</th>
                                         <th>Thời gian</th>
                                         <th>Mã nhân sự</th>
                                         <th>Nhân viên</th>
@@ -503,7 +503,7 @@
                                         <tr><td colspan="9" class="cf-empty">Chưa có lịch sử điều chuyển nào được ghi nhận.</td></tr>
                                     <% } else for (StaffTransfer t : transferHistory) { %>
                                         <tr>
-                                            <td><strong>#<%= t.getTransferId() %></strong></td>
+                                            <td><strong><%= t.getTransferId() %></strong></td>
                                             <td><%= t.getTransferDate() != null ? sdf.format(t.getTransferDate()) : "—" %></td>
                                             <td><code class="cf-badge cf-badge-info" style="font-size: 11px; font-weight: 700;"><%= t.getEmployeeCode() %></code></td>
                                             <td>
@@ -547,11 +547,6 @@
                         <span>Quản lý hiện tại:</span>
                         <strong id="assignCurrentManagerName" style="color: #d97706;">—</strong>
                     </div>
-                </div>
-
-                <div class="cf-form-group">
-                    <label>Tìm nhanh Quản lý (theo Mã QL hoặc Tên)</label>
-                    <input type="text" id="assignManagerFilterInput" placeholder="🔍 Nhập Mã QL (VD: QL00003, 3) hoặc Tên Manager..." oninput="filterManagerDropdown(this.value)">
                 </div>
 
                 <div class="cf-form-group">
@@ -730,7 +725,7 @@
         document.getElementById('unassignManagerModal').classList.remove('active');
     }
 
-    // Modal Staff Transfer
+    // Modal điều chuyển nhân viên
     function openStaffTransferModal(userId, empCode, name, account, role, currentCentreId, currentCentreName) {
         document.getElementById('transferStaffUserId').value = userId;
         document.getElementById('transferStaffEmployeeCode').textContent = empCode;
@@ -754,14 +749,14 @@
         document.getElementById('staffTransferModal').classList.remove('active');
     }
 
-    // Backdrop click close
+    // Đóng modal khi bấm vào vùng nền mờ
     document.querySelectorAll('.cf-modal-backdrop').forEach(function(backdrop) {
         backdrop.addEventListener('click', function(e) {
             if (e.target === this) this.classList.remove('active');
         });
     });
 
-    // Staff filter search (Instant client-side filter for rendered rows)
+    // Bộ lọc tìm kiếm nhân viên tức thì phía client
     document.addEventListener('DOMContentLoaded', function() {
         var input = document.getElementById('staffFilterInput');
         var rows = document.querySelectorAll('.staff-row');

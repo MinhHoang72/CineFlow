@@ -7,21 +7,31 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import model.Centre;
+import model.User;
+import utils.PasswordUtils;
+
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import model.Centre;
-import model.User;
-import utils.PasswordUtils;
 
+/**
+ * Điều khiển trang quản lý nhân sự cấp cơ sở (STAFF) dành cho Quản lý trung tâm (Manager) và Quản trị viên (Admin).
+ */
 public class StaffServlet extends HttpServlet {
+
     private final UserDAO userDAO = new UserDAO();
     private final CinemaDAO cinemaDAO = new CinemaDAO();
 
+    /**
+     * Kiểm tra người dùng có quyền quản lý nhân sự (MANAGER hoặc ADMIN) hay không.
+     */
     private boolean canManage(HttpSession session) {
-        if (session == null) return false;
+        if (session == null) {
+            return false;
+        }
         Object role = session.getAttribute("role");
         if (role == null && session.getAttribute("user") instanceof User) {
             role = ((User) session.getAttribute("user")).getRole();
@@ -29,8 +39,13 @@ public class StaffServlet extends HttpServlet {
         return "MANAGER".equalsIgnoreCase((String) role) || "ADMIN".equalsIgnoreCase((String) role);
     }
 
+    /**
+     * Kiểm tra người dùng có phải Quản trị viên cấp cao (ADMIN) hay không.
+     */
     private boolean isAdmin(HttpSession session) {
-        if (session == null) return false;
+        if (session == null) {
+            return false;
+        }
         Object role = session.getAttribute("role");
         if (role == null && session.getAttribute("user") instanceof User) {
             role = ((User) session.getAttribute("user")).getRole();
@@ -38,12 +53,25 @@ public class StaffServlet extends HttpServlet {
         return "ADMIN".equalsIgnoreCase((String) role);
     }
 
+    /**
+     * Kiểm tra yêu cầu gửi đến có phải là AJAX hay không.
+     */
+    private boolean isAjax(HttpServletRequest request) {
+        String xrw = request.getHeader("X-Requested-With");
+        String accept = request.getHeader("Accept");
+        String ajaxParam = request.getParameter("ajax");
+        return "XMLHttpRequest".equalsIgnoreCase(xrw)
+                || (accept != null && accept.contains("application/json"))
+                || "1".equals(ajaxParam) || "true".equalsIgnoreCase(ajaxParam);
+    }
+
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("userId") == null) {
-            String loginUrl = request.getContextPath() + "/auth/login.jsp?redirect=" + URLEncoder.encode("/staff", StandardCharsets.UTF_8);
+            String loginUrl = request.getContextPath() + "/auth/login.jsp?redirect="
+                    + URLEncoder.encode("/staff", StandardCharsets.UTF_8);
             response.sendRedirect(loginUrl);
             return;
         }
@@ -67,12 +95,13 @@ public class StaffServlet extends HttpServlet {
             // Manager: Chỉ xem nhân viên rạp mình phụ trách
             centreId = currentUser.getCentreId();
         } else {
-            // Admin: Xem theo filter hoặc toàn bộ
+            // Admin: Xem theo bộ lọc trung tâm hoặc toàn bộ hệ thống
             String cp = request.getParameter("centreId");
             if (cp != null && !cp.trim().isEmpty()) {
                 try {
                     centreId = Integer.parseInt(cp.trim());
-                } catch (NumberFormatException ignored) {}
+                } catch (NumberFormatException ignored) {
+                }
             }
         }
 
@@ -133,7 +162,8 @@ public class StaffServlet extends HttpServlet {
                 if (cp != null && !cp.trim().isEmpty()) {
                     try {
                         targetCentreId = Integer.parseInt(cp.trim());
-                    } catch (NumberFormatException ignored) {}
+                    } catch (NumberFormatException ignored) {
+                    }
                 }
             }
 
@@ -206,9 +236,10 @@ public class StaffServlet extends HttpServlet {
                     return;
                 }
 
-                // BẢO MẬT: Manager KHÔNG ĐƯỢC quản lý Staff thuộc rạp khác
+                // Manager không được quản lý Staff thuộc rạp khác
                 if (!adminRole) {
-                    if (currentUser.getCentreId() == null || targetUser.getCentreId() == null || !currentUser.getCentreId().equals(targetUser.getCentreId())) {
+                    if (currentUser.getCentreId() == null || targetUser.getCentreId() == null
+                            || !currentUser.getCentreId().equals(targetUser.getCentreId())) {
                         response.sendError(HttpServletResponse.SC_FORBIDDEN, "Bạn không có quyền quản lý nhân viên của rạp khác.");
                         return;
                     }
@@ -236,7 +267,7 @@ public class StaffServlet extends HttpServlet {
             }
         }
 
-        // 3. KÍCH HOẠT / NGỪNG HOẠT ĐỘNG (STATUS) NHÂN VIÊN
+        // 3. KÍCH HOẠT HOẶC NGỪNG HOẠT ĐỘNG (STATUS) NHÂN VIÊN
         if ("status".equalsIgnoreCase(action) || request.getParameter("status") != null) {
             try {
                 int userId = Integer.parseInt(request.getParameter("userId"));
@@ -247,28 +278,58 @@ public class StaffServlet extends HttpServlet {
 
                 User targetUser = userDAO.getUserById(userId);
                 if (targetUser == null) {
+                    if (isAjax(request)) {
+                        response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                        response.setContentType("application/json;charset=UTF-8");
+                        response.getWriter().write("{\"success\":false,\"message\":\"Không tìm thấy tài khoản nhân viên.\"}");
+                        return;
+                    }
                     response.sendError(HttpServletResponse.SC_NOT_FOUND, "Không tìm thấy tài khoản nhân viên.");
                     return;
                 }
 
                 // Manager chỉ được đổi trạng thái tài khoản STAFF
                 if (!"STAFF".equalsIgnoreCase(targetUser.getRole())) {
+                    if (isAjax(request)) {
+                        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                        response.setContentType("application/json;charset=UTF-8");
+                        response.getWriter().write("{\"success\":false,\"message\":\"Chỉ được cập nhật trạng thái nhân viên cấp STAFF.\"}");
+                        return;
+                    }
                     response.sendError(HttpServletResponse.SC_FORBIDDEN, "Chỉ được cập nhật trạng thái nhân viên cấp STAFF.");
                     return;
                 }
 
-                // BẢO MẬT: Manager KHÔNG ĐƯỢC quản lý Staff thuộc rạp khác
+                // Manager không được quản lý Staff thuộc rạp khác
                 if (!adminRole) {
-                    if (currentUser.getCentreId() == null || targetUser.getCentreId() == null || !currentUser.getCentreId().equals(targetUser.getCentreId())) {
+                    if (currentUser.getCentreId() == null || targetUser.getCentreId() == null
+                            || !currentUser.getCentreId().equals(targetUser.getCentreId())) {
+                        if (isAjax(request)) {
+                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                            response.setContentType("application/json;charset=UTF-8");
+                            response.getWriter().write("{\"success\":false,\"message\":\"Bạn không có quyền quản lý nhân viên của rạp khác.\"}");
+                            return;
+                        }
                         response.sendError(HttpServletResponse.SC_FORBIDDEN, "Bạn không có quyền quản lý nhân viên của rạp khác.");
                         return;
                     }
                 }
 
                 userDAO.updateUserStatus(userId, status);
+                if (isAjax(request)) {
+                    response.setContentType("application/json;charset=UTF-8");
+                    response.getWriter().write("{\"success\":true,\"userId\":" + userId + ",\"status\":\"" + status + "\",\"message\":\"Đã cập nhật trạng thái thành công.\"}");
+                    return;
+                }
                 response.sendRedirect(request.getContextPath() + "/staff?success=status_updated");
                 return;
             } catch (Exception e) {
+                if (isAjax(request)) {
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    response.setContentType("application/json;charset=UTF-8");
+                    response.getWriter().write("{\"success\":false,\"message\":\"Dữ liệu không hợp lệ hoặc lỗi xử lý.\"}");
+                    return;
+                }
                 response.sendRedirect(request.getContextPath() + "/staff?error=status_failed");
                 return;
             }

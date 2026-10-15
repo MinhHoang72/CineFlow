@@ -6,10 +6,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-/** Resolves persistent user media outside the generated build/web directory. */
+/**
+ * Quản lý thư mục lưu trữ tệp tin đa phương tiện (avatar, poster phim) bên ngoài thư mục build tạm thời.
+ */
 public final class MediaStorage {
-    private MediaStorage() { }
+    private MediaStorage() {
+    }
 
+    /**
+     * Xác định và tạo thư mục tải lên theo danh mục tương ứng (avatars, movies).
+     */
     public static Path uploadDirectory(ServletContext context, String category) throws IOException {
         if (!"avatars".equals(category) && !"movies".equals(category)) {
             throw new IllegalArgumentException("Unsupported media category.");

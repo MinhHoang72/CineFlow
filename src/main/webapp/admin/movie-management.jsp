@@ -52,7 +52,7 @@
         <jsp:include page="/admin/topbar.jsp" />
 
         <main class="cf-content">
-            <!-- PAGE HEADER -->
+            <!-- TIÊU ĐỀ TRANG -->
             <div class="cf-page-header">
                 <div>
                     <p class="cf-breadcrumb">Quản trị nội dung / <%= editing ? "Chỉnh sửa phim" : "Thêm mới" %></p>
@@ -71,7 +71,7 @@
                 </div>
             </div>
 
-            <!-- MAIN FORM -->
+            <!-- FORM THÔNG TIN PHIM -->
             <form id="movieForm" method="post" action="${pageContext.request.contextPath}/admin/movie" enctype="multipart/form-data">
                 <input type="hidden" name="action" value="save">
                 <% if (editing) { %>
@@ -127,13 +127,17 @@
                             <div class="cf-form-group cf-field-span-2">
                                 <label class="cf-form-label">Trạng thái phát hành <span class="req">*</span></label>
                                 <select class="cf-form-control" name="status">
-                                    <option value="COMING_SOON" <%= "COMING_SOON".equals(status) ? "selected" : "" %>>Sắp chiếu (COMING_SOON)</option>
+                                    <option value="COMING_SOON" <%= "COMING_SOON".equals(status) ? "selected" : "" %>>Sắp khởi chiếu (COMING_SOON)</option>
                                     <option value="NOW_SHOWING" <%= "NOW_SHOWING".equals(status) ? "selected" : "" %>>Đang chiếu (NOW_SHOWING)</option>
-                                    <option value="ENDED" <%= "ENDED".equals(status) ? "selected" : "" %>>Đã ngừng chiếu (ENDED)</option>
-                                    <option value="ARCHIVED" <%= "ARCHIVED".equals(status) ? "selected" : "" %>>Lưu trữ kho phim (ARCHIVED)</option>
+                                    <option value="ENDED" <%= "ENDED".equals(status) ? "selected" : "" %>>Đã kết thúc (ENDED)</option>
+                                    <option value="ARCHIVED" <%= "ARCHIVED".equals(status) ? "selected" : "" %>>Lưu trữ (ARCHIVED)</option>
                                 </select>
                                 <p style="margin: 6px 0 0; font-size: 12px; color: #64748B; line-height: 1.4;">
-                                    💡 <strong>Vòng đời phim:</strong> Chọn "Đã ngừng chiếu" khi phim hết đợt chiếu hoặc "Lưu trữ" để ẩn khỏi hệ thống bán vé mà vẫn bảo toàn đầy đủ dữ liệu lịch sử đặt vé và báo cáo doanh thu.
+                                    💡 <strong>Vòng đời phim:</strong> 
+                                    <strong>Sắp khởi chiếu</strong> (chờ phát hành) → 
+                                    <strong>Đang chiếu</strong> (mở bán vé) → 
+                                    <strong>Đã kết thúc</strong> (dừng chiếu, không tạo suất chiếu mới) → 
+                                    <strong>Lưu trữ</strong> (giữ hồ sơ quản lý bản quyền/lịch sử và cân nhắc tái phát hành).
                                 </p>
                             </div>
                         </div>
@@ -296,7 +300,7 @@
     </div>
 </div>
 
-<!-- CLIENT JAVASCRIPT CONTROLLER -->
+<!-- MÃ JAVASCRIPT ĐIỀU KHIỂN PHÍA CLIENT -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const urlInput = document.getElementById('posterUrlInput');

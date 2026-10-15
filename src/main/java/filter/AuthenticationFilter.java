@@ -11,36 +11,29 @@ import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
 
+/**
+ * Bộ lọc xác thực người dùng cho các khu vực yêu cầu đăng nhập.
+ */
 public class AuthenticationFilter implements Filter {
 
     @Override
-    public void doFilter(ServletRequest request,
-                          ServletResponse response,
-                          FilterChain chain)
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
 
-        HttpServletRequest httpRequest =
-                (HttpServletRequest) request;
+        HttpServletRequest httpRequest = (HttpServletRequest) request;
+        HttpServletResponse httpResponse = (HttpServletResponse) response;
 
-        HttpServletResponse httpResponse =
-                (HttpServletResponse) response;
+        // Lấy phiên làm việc hiện tại, không tự ý tạo phiên mới nếu chưa tồn tại
+        HttpSession session = httpRequest.getSession(false);
 
-        // Lấy session hiện tại, không tạo session mới
-        HttpSession session =
-                httpRequest.getSession(false);
-
-        // Kiểm tra user đã đăng nhập chưa
-        boolean loggedIn =
-                session != null
-                && session.getAttribute("userId") != null;
+        // Kiểm tra xem người dùng đã hoàn tất đăng nhập hay chưa
+        boolean loggedIn = session != null && session.getAttribute("userId") != null;
 
         if (loggedIn) {
-
-            // Đã đăng nhập → cho phép tiếp tục
+            // Đã đăng nhập hợp lệ -> tiếp tục chuỗi xử lý
             chain.doFilter(request, response);
-
         } else {
-            // Session không còn hợp lệ: đưa người dùng về màn đăng nhập và lưu lại URL đang truy cập
+            // Phiên không tồn tại hoặc hết hạn: lưu đường dẫn hiện tại và chuyển hướng về trang đăng nhập
             String uri = httpRequest.getRequestURI();
             String qs = httpRequest.getQueryString();
             String fullPath = uri + (qs != null && !qs.isEmpty() ? "?" + qs : "");

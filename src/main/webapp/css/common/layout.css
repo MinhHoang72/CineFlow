@@ -2,7 +2,7 @@
 @import url("https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Barlow+Condensed:wght@600;700&display=swap");
 
 /* ==========================================================================
-   CineFlow Cinema Modern Dark Universal Layout & Header
+   Bố cục chung và thanh điều hướng chính hệ thống CineFlow
    ========================================================================== */
 * {
     box-sizing: border-box;
@@ -43,7 +43,7 @@ button, input, select, textarea {
 }
 
 /* --------------------------------------------------------------------------
-   Unified Cinema Sticky Header (Single Modern Header)
+   Thanh điều hướng dính cố định đỉnh trang (Sticky Header)
    -------------------------------------------------------------------------- */
 .cf-main-header {
     position: sticky;
@@ -69,7 +69,7 @@ button, input, select, textarea {
     gap: 16px;
 }
 
-/* Brand Logo */
+/* Logo thương hiệu */
 .cf-brand {
     display: flex;
     align-items: center;
@@ -111,7 +111,7 @@ button, input, select, textarea {
     text-shadow: 0 0 14px rgba(255, 42, 84, 0.5);
 }
 
-/* Navigation Menu */
+/* Menu điều hướng chính */
 .cf-navbar {
     display: flex;
     align-items: center;
@@ -142,7 +142,7 @@ button, input, select, textarea {
     box-shadow: 0 0 14px rgba(255, 42, 84, 0.22);
 }
 
-/* Header Right / Auth Actions */
+/* Khu vực nút chức năng xác thực góc phải */
 .cf-header-right {
     display: flex;
     align-items: center;
@@ -182,7 +182,7 @@ button, input, select, textarea {
 }
 
 /* ============================================================
-   Logged-in User Action Buttons (Tài khoản & Đăng xuất)
+   Nút tác vụ cho người dùng đã đăng nhập (Tài khoản & Đăng xuất)
    ============================================================ */
 .cf-account-btn {
     display: inline-flex;
@@ -275,14 +275,14 @@ button, input, select, textarea {
 }
 
 /* --------------------------------------------------------------------------
-   Backwards Compatibility for Older Layout Classes
+   Tương thích ngược với các class bố cục cũ
    -------------------------------------------------------------------------- */
 .top-bar, .brand-header, .main-nav {
     display: none !important;
 }
 
 /* --------------------------------------------------------------------------
-   Common Breadcrumbs
+   Đường dẫn điều hướng phân cấp (Breadcrumbs)
    -------------------------------------------------------------------------- */
 .cf-breadcrumb-nav {
     width: min(var(--cf-container, 1240px), calc(100% - 40px));
@@ -314,7 +314,7 @@ button, input, select, textarea {
 }
 
 /* --------------------------------------------------------------------------
-   Footer (Cinema Modern Dark)
+   Chân trang (Footer)
    -------------------------------------------------------------------------- */
 .footer {
     margin-top: auto;
@@ -394,7 +394,7 @@ button, input, select, textarea {
 }
 
 /* --------------------------------------------------------------------------
-   Responsive Media Queries
+   Quy tắc tương thích đa thiết bị (Responsive)
    -------------------------------------------------------------------------- */
 @media (max-width: 900px) {
     .cf-header-container {

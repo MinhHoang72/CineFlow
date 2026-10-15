@@ -25,7 +25,7 @@
 }
 
 /* ==========================================================================
-   PAGE CONTAINER & BREADCRUMB
+   Khung chứa trang và đường dẫn điều hướng
    ========================================================================== */
 .movie-detail-container {
     width: min(1200px, calc(100% - 40px));
@@ -63,7 +63,7 @@
 }
 
 /* ==========================================================================
-   SECTION HEADING WITH RED ACCENT BAR
+   Tiêu đề phân mục kèm vạch nhấn đỏ
    ========================================================================== */
 .section-header {
     display: flex;
@@ -97,7 +97,7 @@
 }
 
 /* ==========================================================================
-   1. TRAILER SECTION (LOTTE Cinema Style: 16:9 large player & playlist)
+   1. Phân mục trình phát Trailer (Tỷ lệ khung hình 16:9)
    ========================================================================== */
 .trailer-section {
     margin-bottom: 32px;
@@ -289,7 +289,7 @@
 }
 
 /* ==========================================================================
-   2. MOVIE DETAILS CARD (LOTTE Cinema Style: Left Poster, Right Info & Rating)
+   2. Thẻ chi tiết phim (Poster bên trái, thông tin & đánh giá bên phải)
    ========================================================================== */
 .movie-info-card {
     background: var(--bg-card);
@@ -340,7 +340,7 @@
     flex-direction: column;
 }
 
-/* Status Pill */
+/* Huy hiệu trạng thái phát hành */
 .status-pill {
     display: inline-flex;
     align-items: center;
@@ -367,9 +367,15 @@
 }
 
 .status-pill.ended {
-    background: #f3f4f6;
-    color: #4b5563;
-    border: 1px solid #e5e7eb;
+    background: #fef2f2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+}
+
+.status-pill.archived {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
 }
 
 .status-dot {
@@ -379,7 +385,7 @@
     background: currentColor;
 }
 
-/* Title */
+/* Tên phim */
 .movie-title {
     margin: 0 0 6px;
     font-size: 32px;
@@ -395,7 +401,7 @@
     font-weight: 500;
 }
 
-/* Age Rating Badge */
+/* Huy hiệu phân loại độ tuổi */
 .age-rating-box {
     display: inline-block;
     padding: 2px 7px;
@@ -413,7 +419,7 @@
     color: #2563eb;
 }
 
-/* Movie Specifications (LOTTE Cinema Style) */
+/* Thông số chi tiết của phim */
 .movie-specs-list {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -441,7 +447,7 @@
     line-height: 1.4;
 }
 
-/* Action buttons */
+/* Nút thao tác đặt vé và xem trailer */
 .movie-action-buttons {
     display: flex;
     flex-wrap: wrap;
@@ -506,7 +512,7 @@
 }
 
 /* ==========================================================================
-   3. RATING & VOTING BAR (LOTTE Style)
+   3. Thanh điểm đánh giá và chấm điểm trực tiếp
    ========================================================================== */
 .rating-section-bar {
     border-top: 1px solid var(--border-color);
@@ -634,7 +640,7 @@
 }
 
 /* ==========================================================================
-   4. TÓM TẮT NỘI DUNG PHIM (LOTTE Cinema Style)
+   4. Tóm tắt nội dung kịch bản phim
    ========================================================================== */
 .movie-synopsis-card {
     background: var(--bg-card);
@@ -658,7 +664,7 @@
 
 
 
-/* Quick utility rail */
+/* Thanh tiện ích nhanh */
 .quick-rail {
     position: fixed;
     right: 18px;
@@ -698,7 +704,7 @@
 }
 
 /* ==========================================================================
-   RESPONSIVE DESIGN (Desktop, Tablet, Mobile)
+   Tương thích đa thiết bị (Máy tính, Máy tính bảng, Di động)
    ========================================================================== */
 @media (max-width: 992px) {
     .movie-info-grid {

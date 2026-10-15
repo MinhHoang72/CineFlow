@@ -1,14 +1,14 @@
 /* ==========================================================================
-   CINEFLOW MOVIE FORM - BALANCED TWO-COLUMN RESPONSIVE LAYOUT
-   Streamlined cinema administration form styling
+   Biểu mẫu phim CineFlow - Bố cục 2 cột cân đối tương thích đa thiết bị
+   Định dạng biểu mẫu quản trị phim
    ========================================================================== */
 
-/* 1. CONTAINER BREATHING ROOM (PREVENT STICKY FOOTER OVERLAP) */
+/* 1. Khoảng đệm đáy trang tránh che khuất thanh tác vụ cố định */
 .cf-content {
     padding-bottom: 90px !important;
 }
 
-/* 2. TWO-COLUMN BALANCED GRID */
+/* 2. Lưới biểu mẫu 2 cột cân đối */
 .cf-movie-form-layout {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 340px;
@@ -25,7 +25,7 @@
     }
 }
 
-/* 3. MAIN FORM CARD (LEFT COLUMN - CARD NỀN TRẮNG) */
+/* 3. Thẻ biểu mẫu chính (Cột bên trái - Thẻ nền trắng) */
 .cf-form-main-card {
     background: #ffffff;
     border: 1px solid #E2E8F0;
@@ -62,7 +62,7 @@
     margin: 22px 0 20px;
 }
 
-/* 4. FIELD GRIDS */
+/* 4. Lưới các trường nhập liệu */
 .cf-fields-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -80,7 +80,7 @@
     }
 }
 
-/* 5. FORM FIELD CONTROLS */
+/* 5. Nhãn và ô điều khiển trường nhập */
 .cf-form-group {
     display: flex;
     flex-direction: column;
@@ -154,7 +154,7 @@
     transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
 
-/* 6. SIDE CARDS (RIGHT COLUMN - MEDIA) */
+/* 6. Thẻ phụ bên phải (Tệp đa phương tiện & thông tin phụ) */
 .cf-side-card {
     background: #ffffff;
     border: 1px solid #E2E8F0;
@@ -192,7 +192,7 @@
     color: #111827;
 }
 
-/* COMPACT POSTER PREVIEW & CONTROLS */
+/* XEM TRƯỚC VÀ ĐIỀU KHIỂN TẢI POSTER */
 .cf-poster-compact-wrap {
     display: flex;
     align-items: flex-start;
@@ -306,7 +306,7 @@
     box-sizing: border-box;
 }
 
-/* COMPACT TRAILER ROW */
+/* KHUNG TẢI VÀ NHẬP LIÊN KẾT TRAILER */
 .cf-trailer-compact-wrap {
     display: flex;
     flex-direction: column;
@@ -319,7 +319,7 @@
     gap: 4px;
 }
 
-/* 7. DANGER ZONE */
+/* 7. Khu vực thao tác rủi ro cao */
 .cf-danger-banner {
     display: flex;
     align-items: center;
@@ -359,7 +359,7 @@
     flex-shrink: 0;
 }
 
-/* 8. STICKY ACTION FOOTER BAR */
+/* 8. Thanh tác vụ dính cố định dưới đáy trang */
 .cf-form-sticky-bar {
     position: fixed;
     bottom: 0;

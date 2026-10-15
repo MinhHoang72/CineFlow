@@ -1,12 +1,19 @@
 package dao;
 
 import utils.DBContext;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
+/**
+ * Xử lý truy vấn và lưu trữ điểm đánh giá phim của người dùng.
+ */
 public class RatingDAO {
 
+    /**
+     * Lớp đóng gói dữ liệu tổng hợp đánh giá phim.
+     */
     public static class MovieRatingSummary {
         private final double averageScore10;
         private final double averageStars5;
@@ -38,17 +45,27 @@ public class RatingDAO {
     }
 
     /**
-     * Save or update user rating for a movie.
-     * Score is constrained to [1..5].
+     * Lưu hoặc cập nhật số sao đánh giá của người dùng cho một phim.
+     * Điểm đánh giá nằm trong thang điểm từ 1 đến 5 sao.
+     *
+     * @param movieId mã định danh phim
+     * @param userId  mã người dùng
+     * @param score   số sao người dùng chấm (1 - 5)
+     * @return true nếu lưu thành công, ngược lại false
      */
     public boolean saveOrUpdateRating(int movieId, int userId, int score) {
-        if (score < 1) score = 1;
-        if (score > 5) score = 5;
+        if (score < 1) {
+            score = 1;
+        }
+        if (score > 5) {
+            score = 5;
+        }
 
         String updateSql = "UPDATE MovieRatings SET Score = ?, UpdatedAt = GETDATE() WHERE MovieID = ? AND UserID = ?";
         String insertSql = "INSERT INTO MovieRatings (MovieID, UserID, Score, CreatedAt) VALUES (?, ?, ?, GETDATE())";
 
         try (Connection con = DBContext.getConnection()) {
+            // Thử cập nhật đánh giá đã tồn tại trước đó
             try (PreparedStatement updatePs = con.prepareStatement(updateSql)) {
                 updatePs.setInt(1, score);
                 updatePs.setInt(2, movieId);
@@ -59,6 +76,7 @@ public class RatingDAO {
                 }
             }
 
+            // Nếu người dùng chưa từng đánh giá thì tạo mới bản ghi
             try (PreparedStatement insertPs = con.prepareStatement(insertSql)) {
                 insertPs.setInt(1, movieId);
                 insertPs.setInt(2, userId);
@@ -72,11 +90,15 @@ public class RatingDAO {
     }
 
     /**
-     * Get aggregate rating info for a movie and the user's vote if logged in.
+     * Lấy dữ liệu tổng hợp đánh giá trung bình và điểm số của người dùng hiện tại (nếu đã đăng nhập).
+     *
+     * @param movieId       mã phim
+     * @param currentUserId mã người dùng hiện tại hoặc null
+     * @return đối tượng tổng hợp đánh giá
      */
     public MovieRatingSummary getRatingSummary(int movieId, Integer currentUserId) {
         String sql = "SELECT AVG(CAST(Score AS FLOAT)) AS AvgStar, COUNT(RatingID) AS TotalCount "
-                   + "FROM MovieRatings WHERE MovieID = ?";
+                + "FROM MovieRatings WHERE MovieID = ?";
         double avgStars = 0.0;
         int count = 0;
 
@@ -112,6 +134,7 @@ public class RatingDAO {
             }
         }
 
+        // Quy đổi sao sang thang điểm 10 và làm tròn đến 1 chữ số thập phân
         double avgScore10 = Math.round(avgStars * 2.0 * 10.0) / 10.0;
         double roundedAvgStars5 = Math.round(avgStars * 10.0) / 10.0;
         return new MovieRatingSummary(avgScore10, roundedAvgStars5, count, userScore);

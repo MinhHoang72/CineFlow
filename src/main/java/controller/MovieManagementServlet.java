@@ -3,25 +3,36 @@ package controller;
 import dao.CinemaDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.MultipartConfig;
-import jakarta.servlet.http.Part;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.Part;
 import model.Movie;
 import model.User;
 import utils.MediaStorage;
+
 import java.io.IOException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Date;
 import java.util.UUID;
 
+/**
+ * Điều khiển trang quản lý danh mục phim dành cho Quản trị viên (Admin): xem danh sách, tạo mới, chỉnh sửa thông tin phim.
+ */
 @MultipartConfig(maxFileSize = 50 * 1024 * 1024, maxRequestSize = 60 * 1024 * 1024)
 public class MovieManagementServlet extends HttpServlet {
+
     private final CinemaDAO dao = new CinemaDAO();
 
+    /**
+     * Kiểm tra quyền Quản trị viên (Admin).
+     */
     private boolean allowed(HttpSession session) {
-        if (session == null) return false;
+        if (session == null) {
+            return false;
+        }
         Object roleObj = session.getAttribute("role");
         if (roleObj instanceof String && "ADMIN".equalsIgnoreCase((String) roleObj)) {
             return true;
@@ -77,19 +88,53 @@ public class MovieManagementServlet extends HttpServlet {
                 Movie movie = readMovie(request);
                 String posterUrl = saveUpload(request, "posterFile", "poster");
                 String trailerUrl = saveUpload(request, "trailerFile", "trailer");
-                if (posterUrl != null) movie.setPosterUrl(posterUrl);
-                if (trailerUrl != null) movie.setTrailerUrl(trailerUrl);
-                if (movie.getMovieId() == 0) dao.createMovie(movie);
-                else dao.updateMovie(movie);
-            } catch (Exception ignored) { }
+                if (posterUrl != null) {
+                    movie.setPosterUrl(posterUrl);
+                }
+                if (trailerUrl != null) {
+                    movie.setTrailerUrl(trailerUrl);
+                }
+                if (movie.getMovieId() == 0) {
+                    dao.createMovie(movie);
+                } else {
+                    dao.updateMovie(movie);
+                }
+            } catch (Exception ignored) {
+            }
+            response.sendRedirect(request.getContextPath() + "/admin/movies");
+            return;
         }
+
+        if ("changeStatus".equals(action)) {
+            String movieIdParam = request.getParameter("movieId");
+            String newStatus = request.getParameter("newStatus");
+            if (movieIdParam != null && newStatus != null) {
+                try {
+                    int movieId = Integer.parseInt(movieIdParam.trim());
+                    String targetStatus = newStatus.trim().toUpperCase();
+                    if ("NOW_SHOWING".equals(targetStatus) || "COMING_SOON".equals(targetStatus)
+                            || "ENDED".equals(targetStatus) || "ARCHIVED".equals(targetStatus)) {
+                        dao.updateMovieStatus(movieId, targetStatus);
+                    }
+                } catch (NumberFormatException ignored) {
+                }
+            }
+            response.sendRedirect(request.getContextPath() + "/admin/movies?success=statusUpdated");
+            return;
+        }
+
         response.sendRedirect(request.getContextPath() + "/admin/movies");
     }
 
+    /**
+     * Đọc và gán dữ liệu phim từ các tham số trong HttpServletRequest.
+     */
     private Movie readMovie(HttpServletRequest request) {
         Movie movie = new Movie();
         String id = request.getParameter("movieId");
-        if (id != null && !id.isBlank()) movie.setMovieId(Integer.parseInt(id));
+        if (id != null && !id.isBlank()) {
+            movie.setMovieId(Integer.parseInt(id));
+        }
         movie.setTitle(request.getParameter("title"));
         movie.setDescription(request.getParameter("description"));
         movie.setDuration(Integer.parseInt(request.getParameter("duration")));
@@ -110,17 +155,28 @@ public class MovieManagementServlet extends HttpServlet {
         return value == null || value.isBlank() ? null : Date.valueOf(value);
     }
 
+    /**
+     * Lưu trữ tệp tin tải lên (poster hoặc trailer) vào thư mục uploads/movies.
+     */
     private String saveUpload(HttpServletRequest request, String partName, String prefix) throws Exception {
         Part part = request.getPart(partName);
-        if (part == null || part.getSize() == 0) return null;
+        if (part == null || part.getSize() == 0) {
+            return null;
+        }
         String submitted = part.getSubmittedFileName();
-        if (submitted == null || submitted.isBlank()) return null;
+        if (submitted == null || submitted.isBlank()) {
+            return null;
+        }
         String original = Paths.get(submitted).getFileName().toString();
         String extension = "";
         int dot = original.lastIndexOf('.');
-        if (dot >= 0) extension = original.substring(dot).toLowerCase();
-        if (!extension.matches("\\.(jpg|jpeg|png|webp|mp4|webm|ogg)")) return null;
-        java.nio.file.Path directory = MediaStorage.uploadDirectory(getServletContext(), "movies");
+        if (dot >= 0) {
+            extension = original.substring(dot).toLowerCase();
+        }
+        if (!extension.matches("\\.(jpg|jpeg|png|webp|mp4|webm|ogg)")) {
+            return null;
+        }
+        Path directory = MediaStorage.uploadDirectory(getServletContext(), "movies");
         String fileName = prefix + "-" + UUID.randomUUID() + extension;
         part.write(directory.resolve(fileName).toString());
         return request.getContextPath() + "/uploads/movies/" + fileName;

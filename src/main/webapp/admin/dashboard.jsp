@@ -254,7 +254,7 @@
         <jsp:include page="/admin/topbar.jsp" />
 
         <main class="admin-content">
-            <!-- WELCOME BANNER -->
+            <!-- BANNER CHÀO MỪNG QUẢN TRỊ VIÊN -->
             <div class="dashboard-welcome-banner">
                 <div class="banner-content">
                     <div class="banner-badge">TRUNG TÂM ĐIỀU HÀNH TOÀN CHUỖI</div>
@@ -273,7 +273,7 @@
                 </div>
             </div>
 
-            <!-- KPI METRIC CARDS -->
+            <!-- CÁC THẺ CHỈ SỐ DOANH THU VÀ HIỆU SUẤT KPI -->
             <div class="kpi-grid">
                 <div class="kpi-card ruby">
                     <div class="kpi-card-header">
@@ -320,7 +320,7 @@
                 </div>
             </div>
 
-            <!-- QUICK SHORTCUT TILES -->
+            <!-- PHÍM TẮT ĐIỀU HƯỚNG NHANH -->
             <div class="quick-nav-grid">
                 <a href="${pageContext.request.contextPath}/admin/movies" class="quick-nav-card">
                     <div class="quick-nav-icon" style="background: #FEE2E2; color: #FF2855;">▣</div>
@@ -355,9 +355,9 @@
                 </a>
             </div>
 
-            <!-- 2-COLUMN SPLIT: TOP MOVIES & SYSTEM STATUS -->
+            <!-- BẢNG PHÂN CHIA 2 CỘT: TOP PHIM & TRẠNG THÁI HỆ THỐNG -->
             <div class="dashboard-split-grid">
-                <!-- TOP MOVIES REVENUE TABLE -->
+                <!-- BẢNG XẾP HẠNG DOANH THU THEO PHIM -->
                 <div class="admin-card" style="margin-bottom: 0;">
                     <div class="admin-card-header">
                         <div>

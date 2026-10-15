@@ -7,10 +7,14 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import java.io.IOException;
 import model.Movie;
 import model.User;
 
+import java.io.IOException;
+
+/**
+ * Hiển thị thông tin chi tiết của một bộ phim, điểm đánh giá tổng hợp và danh sách suất chiếu của phim.
+ */
 public class MovieDetailsServlet extends HttpServlet {
 
     private final CinemaDAO cinemaDAO = new CinemaDAO();
@@ -43,7 +47,8 @@ public class MovieDetailsServlet extends HttpServlet {
             } else {
                 try {
                     currentUserId = (Integer) uObj.getClass().getMethod("getUserId").invoke(uObj);
-                } catch (Exception ignored) {}
+                } catch (Exception ignored) {
+                }
             }
         }
 

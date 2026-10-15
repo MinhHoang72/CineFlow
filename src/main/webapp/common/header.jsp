@@ -65,13 +65,13 @@
 %>
 <header class="cf-main-header" id="cfMainHeader">
     <div class="cf-header-container">
-        <!-- Logo Brand -->
+        <!-- Logo thương hiệu -->
         <a class="cf-brand" href="<%= ctx %>/home/index.jsp" aria-label="CineFlow Cinema Home">
             <span class="cf-brand-icon">C</span>
             <span class="cf-brand-name">Cine<span class="cf-brand-glow">Flow</span></span>
         </a>
 
-        <!-- Main Nav Menu -->
+        <!-- Menu điều hướng chính -->
         <nav class="cf-navbar" aria-label="Điều hướng chính">
             <a class="cf-nav-item <%= "home".equalsIgnoreCase(activeNav) ? "active" : "" %>" href="<%= ctx %>/home/index.jsp">TRANG CHỦ</a>
             <a class="cf-nav-item <%= "booking".equalsIgnoreCase(activeNav) ? "active" : "" %>" href="<%= ctx %>/booking/booking.jsp">MUA VÉ</a>
@@ -80,7 +80,7 @@
             <a class="cf-nav-item <%= "support".equalsIgnoreCase(activeNav) ? "active" : "" %>" href="<%= ctx %>/home/index.jsp#support">HỖ TRỢ</a>
         </nav>
 
-        <!-- Right Side / Account & Auth Actions -->
+        <!-- Khu vực tài khoản và xác thực bên phải -->
         <div class="cf-header-right">
             <% if (headerUser == null) { %>
                 <a class="cf-auth-link" href="<%= ctx %>/auth/login.jsp">Đăng nhập</a>

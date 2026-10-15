@@ -4,6 +4,9 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
+/**
+ * Cung cấp kết nối JDBC tới cơ sở dữ liệu Microsoft SQL Server của hệ thống CineFlow.
+ */
 public class DBContext {
 
     private static final String URL =
@@ -13,9 +16,14 @@ public class DBContext {
             + "trustServerCertificate=true;";
 
     private static final String USER = "sa";
-
     private static final String PASSWORD = "123";
 
+    /**
+     * Mở và trả về một kết nối mới tới cơ sở dữ liệu.
+     *
+     * @return đối tượng Connection
+     * @throws SQLException nếu kết nối thất bại
+     */
     public static Connection getConnection() throws SQLException {
         try {
             Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
@@ -26,7 +34,7 @@ public class DBContext {
         return DriverManager.getConnection(URL, USER, PASSWORD);
     }
 
-    // Test connection
+    // Phương thức kiểm tra kết nối trực tiếp khi chạy độc lập
     public static void main(String[] args) {
 
         try (Connection connection = getConnection()) {

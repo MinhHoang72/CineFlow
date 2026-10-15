@@ -2,6 +2,9 @@ package model;
 
 import java.sql.Date;
 
+/**
+ * Đại diện cho thông tin một bộ phim trong danh mục phim của CineFlow.
+ */
 public class Movie {
 
     private int movieId;

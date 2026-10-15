@@ -15,20 +15,25 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 /**
- * Controller Quản lý Khách hàng & Thành viên (/admin/customers) dành cho Quản trị viên (Admin).
+ * Điều khiển khu vực Quản lý Khách hàng & Thành viên (/admin/customers) dành cho Quản trị viên (Admin).
  * Nghiệp vụ:
  * - Tra cứu danh sách thành viên toàn hệ thống
  * - Tìm kiếm theo tên, username, email, số điện thoại
- * - Lọc theo trạng thái tài khoản (ACTIVE, SUSPENDED)
- * - Khóa / Kích hoạt lại tài khoản khách hàng
+ * - Lọc theo trạng thái tài khoản (ACTIVE, SUSPENDED...)
+ * - Khóa hoặc mở khóa tài khoản khách hàng
  * - Tra cứu chi tiết lịch sử đặt vé của khách hàng
  */
 public class CustomerManagementServlet extends HttpServlet {
 
     private final UserDAO userDAO = new UserDAO();
 
+    /**
+     * Kiểm tra phiên hiện tại có vai trò Quản trị viên (Admin) hay không.
+     */
     private boolean isAdmin(HttpSession session) {
-        if (session == null) return false;
+        if (session == null) {
+            return false;
+        }
         Object role = session.getAttribute("role");
         if (role == null && session.getAttribute("user") instanceof User) {
             role = ((User) session.getAttribute("user")).getRole();
@@ -41,7 +46,7 @@ public class CustomerManagementServlet extends HttpServlet {
             throws ServletException, IOException {
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("userId") == null) {
-            String loginUrl = request.getContextPath() + "/auth/login.jsp?redirect=" 
+            String loginUrl = request.getContextPath() + "/auth/login.jsp?redirect="
                     + URLEncoder.encode("/admin/customers", StandardCharsets.UTF_8);
             response.sendRedirect(loginUrl);
             return;
@@ -58,7 +63,7 @@ public class CustomerManagementServlet extends HttpServlet {
             status = "ALL";
         }
 
-        // Kiểm tra xem có yêu cầu xem chi tiết khách hàng & lịch sử vé không
+        // Kiểm tra xem có yêu cầu xem chi tiết khách hàng và lịch sử đặt vé hay không
         String viewIdParam = request.getParameter("viewUserId");
         if (viewIdParam != null && !viewIdParam.isBlank()) {
             try {
@@ -69,18 +74,20 @@ public class CustomerManagementServlet extends HttpServlet {
                     request.setAttribute("customerDetail", customerDetail);
                     request.setAttribute("bookingHistory", history);
                 }
-            } catch (NumberFormatException ignored) {}
+            } catch (NumberFormatException ignored) {
+            }
         }
 
         List<User> customers = userDAO.getCustomers(search, status);
         int totalCustomers = userDAO.countCustomersByStatus("ALL");
         int activeCustomers = userDAO.countCustomersByStatus("ACTIVE");
-        int suspendedCustomers = userDAO.countCustomersByStatus("SUSPENDED");
+        int suspendedCustomers = userDAO.countCustomersByStatus("LOCKED");
 
         request.setAttribute("customers", customers);
         request.setAttribute("totalCustomers", totalCustomers);
         request.setAttribute("activeCustomers", activeCustomers);
         request.setAttribute("suspendedCustomers", suspendedCustomers);
+        request.setAttribute("lockedCustomers", suspendedCustomers);
         request.setAttribute("currentSearch", search != null ? search.trim() : "");
         request.setAttribute("currentStatus", status);
 
@@ -119,7 +126,11 @@ public class CustomerManagementServlet extends HttpServlet {
                     User targetUser = userDAO.getUserById(userId);
                     // Chỉ cho phép thao tác trên tài khoản khách hàng CUSTOMER
                     if (targetUser != null && "CUSTOMER".equalsIgnoreCase(targetUser.getRole())) {
-                        boolean ok = userDAO.updateUserStatus(userId, newStatus.trim().toUpperCase());
+                        String normalizedStatus = newStatus.trim().toUpperCase();
+                        if ("SUSPENDED".equals(normalizedStatus)) {
+                            normalizedStatus = "LOCKED";
+                        }
+                        boolean ok = userDAO.updateUserStatus(userId, normalizedStatus);
                         redirectUrl.append(ok ? "success=statusUpdated" : "error=statusFailed");
                     } else {
                         redirectUrl.append("error=invalidUser");

@@ -7,21 +7,31 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import java.io.IOException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
 import model.Centre;
 import model.ManagerAssignment;
 import model.StaffTransfer;
 import model.User;
 
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+
+/**
+ * Điều khiển nghiệp vụ điều chuyển nhân viên và bổ nhiệm, miễn nhiệm Quản lý trung tâm dành cho Quản trị viên (Admin).
+ */
 public class StaffTransferServlet extends HttpServlet {
+
     private final UserDAO userDAO = new UserDAO();
     private final CinemaDAO cinemaDAO = new CinemaDAO();
 
+    /**
+     * Kiểm tra phiên người dùng có vai trò Quản trị viên (Admin) hay không.
+     */
     private boolean isAdmin(HttpSession session) {
-        if (session == null) return false;
+        if (session == null) {
+            return false;
+        }
         Object role = session.getAttribute("role");
         if (role == null && session.getAttribute("user") instanceof User) {
             role = ((User) session.getAttribute("user")).getRole();
@@ -34,7 +44,8 @@ public class StaffTransferServlet extends HttpServlet {
             throws ServletException, IOException {
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("userId") == null) {
-            String loginUrl = request.getContextPath() + "/auth/login.jsp?redirect=" + URLEncoder.encode("/admin/transfers", StandardCharsets.UTF_8);
+            String loginUrl = request.getContextPath() + "/auth/login.jsp?redirect="
+                    + URLEncoder.encode("/admin/transfers", StandardCharsets.UTF_8);
             response.sendRedirect(loginUrl);
             return;
         }
@@ -48,7 +59,8 @@ public class StaffTransferServlet extends HttpServlet {
         if (centreParam != null && !centreParam.trim().isEmpty()) {
             try {
                 centreFilter = Integer.parseInt(centreParam.trim());
-            } catch (NumberFormatException ignored) {}
+            } catch (NumberFormatException ignored) {
+            }
         }
 
         String searchParam = request.getParameter("search");
@@ -87,7 +99,7 @@ public class StaffTransferServlet extends HttpServlet {
         int adminId = adminUser != null ? adminUser.getUserId() : (int) session.getAttribute("userId");
         String action = request.getParameter("action");
 
-        // 1. NGHIỆP VỤ: BỔ NHIỆM / THAY THẾ MANAGER TRUNG TÂM (CENTRE)
+        // 1. NGHIỆP VỤ: BỔ NHIỆM HOẶC THAY THẾ MANAGER TRUNG TÂM (CENTRE)
         if ("assign_manager".equalsIgnoreCase(action)) {
             try {
                 String cParam = request.getParameter("centreId");

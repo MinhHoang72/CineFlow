@@ -252,7 +252,7 @@
         <jsp:include page="/admin/topbar.jsp" />
 
         <main class="cf-content">
-            <!-- PAGE HEADER -->
+            <!-- TIÊU ĐỀ TRANG -->
             <div class="cf-page-header">
                 <div>
                     <p class="cf-breadcrumb">Quản lý người dùng / Khách hàng</p>
@@ -268,7 +268,7 @@
                 <div class="cf-alert cf-alert-danger">✕ Cập nhật trạng thái thất bại. Vui lòng thử lại.</div>
             <% } %>
 
-            <!-- 3 STAT CARDS -->
+            <!-- THẺ THỐNG KÊ TỔNG QUAN -->
             <div class="cf-stats-row">
                 <div class="cf-stat-card">
                     <div>
@@ -295,7 +295,7 @@
                 </div>
             </div>
 
-            <!-- FILTER & SEARCH BAR -->
+            <!-- THANH TÌM KIẾM VÀ LỌC TRẠNG THÁI -->
             <div class="customer-filter-bar">
                 <div class="filter-tabs">
                     <a href="${pageContext.request.contextPath}/admin/customers?status=ALL<%= currentSearch != null && !currentSearch.isBlank() ? "&search=" + esc(currentSearch) : "" %>"
@@ -306,8 +306,8 @@
                        class="filter-tab <%= "ACTIVE".equalsIgnoreCase(currentStatus) ? "active" : "" %>">
                         Đang hoạt động (<%= activeCustomers != null ? activeCustomers : 0 %>)
                     </a>
-                    <a href="${pageContext.request.contextPath}/admin/customers?status=SUSPENDED<%= currentSearch != null && !currentSearch.isBlank() ? "&search=" + esc(currentSearch) : "" %>"
-                       class="filter-tab <%= "SUSPENDED".equalsIgnoreCase(currentStatus) ? "active" : "" %>">
+                    <a href="${pageContext.request.contextPath}/admin/customers?status=LOCKED<%= currentSearch != null && !currentSearch.isBlank() ? "&search=" + esc(currentSearch) : "" %>"
+                       class="filter-tab <%= "LOCKED".equalsIgnoreCase(currentStatus) || "SUSPENDED".equalsIgnoreCase(currentStatus) ? "active" : "" %>">
                         Bị tạm khóa (<%= suspendedCustomers != null ? suspendedCustomers : 0 %>)
                     </a>
                 </div>
@@ -322,7 +322,7 @@
                 </form>
             </div>
 
-            <!-- TABLE WRAPPER -->
+            <!-- BẢNG DANH SÁCH KHÁCH HÀNG -->
             <div class="cf-card">
                 <div class="cf-table-wrap" style="margin: 0; border: none;">
                     <table class="cf-table">
@@ -403,8 +403,10 @@
                                     <td>
                                         <% if (isActive) { %>
                                             <span class="cf-badge cf-badge-success">Đang hoạt động</span>
-                                        <% } else { %>
+                                        <% } else if ("LOCKED".equalsIgnoreCase(c.getStatus()) || "SUSPENDED".equalsIgnoreCase(c.getStatus())) { %>
                                             <span class="cf-badge cf-badge-danger">Bị tạm khóa</span>
+                                        <% } else { %>
+                                            <span class="cf-badge cf-badge-muted"><%= esc(c.getStatus()) %></span>
                                         <% } %>
                                     </td>
 
@@ -422,7 +424,7 @@
                                                   onsubmit="return confirm('<%= isActive ? "Bạn có chắc chắn muốn TẠM KHÓA tài khoản của khách hàng " + esc(c.getFullName()) + "?" : "Mở khóa tài khoản cho khách hàng " + esc(c.getFullName()) + "?" %>');">
                                                 <input type="hidden" name="action" value="toggleStatus">
                                                 <input type="hidden" name="userId" value="<%= c.getUserId() %>">
-                                                <input type="hidden" name="newStatus" value="<%= isActive ? "SUSPENDED" : "ACTIVE" %>">
+                                                <input type="hidden" name="newStatus" value="<%= isActive ? "LOCKED" : "ACTIVE" %>">
                                                 <input type="hidden" name="status" value="<%= esc(currentStatus) %>">
                                                 <input type="hidden" name="search" value="<%= esc(currentSearch) %>">
 
@@ -513,5 +515,20 @@
 </div>
 <% } %>
 
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.cf-alert-success, .cf-alert-danger').forEach(function(alert) {
+            setTimeout(function() {
+                alert.style.transition = 'opacity .4s ease, transform .4s ease';
+                alert.style.opacity = '0';
+                alert.style.transform = 'translateY(-8px)';
+
+                setTimeout(function() {
+                    if (alert.parentNode) alert.parentNode.removeChild(alert);
+                }, 400);
+            }, 3000);
+        });
+    });
+</script>
 </body>
 </html>

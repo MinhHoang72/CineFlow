@@ -34,7 +34,7 @@
 </head>
 <body>
 <div class="page-shell">
-    <!-- Common Header & Navigation -->
+    <!-- Thanh điều hướng và header chung -->
     <jsp:include page="/common/header.jsp"/>
 
     <main class="account-page">
@@ -52,7 +52,7 @@
         <% } %>
 
         <!-- ===================================================================
-             1. PROFILE OVERVIEW BANNER (HERO CARD)
+             1. KHÁI QUÁT THÔNG TIN CÁ NHÂN (HERO CARD)
              =================================================================== -->
         <section class="profile-overview">
             <div class="overview-left">
@@ -110,7 +110,7 @@
         </section>
 
         <!-- ===================================================================
-             2. MAIN ACCOUNT GRID (FORM + SECURITY + SUMMARY)
+             2. LƯỚI THÔNG TIN TÀI KHOẢN (BIỂU MẪU + BẢO MẬT + TỔNG KẾT)
              =================================================================== -->
         <section class="account-grid">
             <!-- CỘT TRÁI: FORM CẬP NHẬT THÔNG TIN -->
@@ -237,7 +237,7 @@
         </section>
 
         <!-- ===================================================================
-             3. BOOKING HISTORY PANEL
+             3. BẢNG LỊCH SỬ ĐẶT VÉ
              =================================================================== -->
         <section class="panel history-panel">
             <div class="panel-heading history-heading">
@@ -288,7 +288,7 @@
         </section>
     </main>
 
-    <!-- Common Footer -->
+    <!-- Footer chung -->
     <jsp:include page="/common/footer.jsp"/>
 </div>
 </body>

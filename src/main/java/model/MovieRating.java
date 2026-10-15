@@ -2,6 +2,9 @@ package model;
 
 import java.sql.Timestamp;
 
+/**
+ * Lưu trữ thông tin đánh giá (rating) của người dùng cho một bộ phim.
+ */
 public class MovieRating {
     private int ratingId;
     private int movieId;

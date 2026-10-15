@@ -44,6 +44,12 @@
         }
     }
 %>
+<%!
+    private String esc(String s) {
+        if (s == null) return "";
+        return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;").replace("'", "&#39;");
+    }
+%>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -56,8 +62,32 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/badges.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/forms.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/tables.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/alerts.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/manager/shell.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin/dashboard.css">
+    <style>
+        .cf-kpi-grid-5 {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        @media (max-width: 1280px) {
+            .cf-kpi-grid-5 {
+                grid-template-columns: repeat(3, 1fr) !important;
+            }
+        }
+        @media (max-width: 768px) {
+            .cf-kpi-grid-5 {
+                grid-template-columns: repeat(2, 1fr) !important;
+            }
+        }
+        @media (max-width: 480px) {
+            .cf-kpi-grid-5 {
+                grid-template-columns: 1fr !important;
+            }
+        }
+    </style>
 </head>
 <body>
 <div class="cf-manager-shell">
@@ -67,7 +97,7 @@
         <jsp:include page="/admin/topbar.jsp" />
 
         <main class="cf-content">
-            <!-- PAGE HEADER WITH ADD MOVIE ACTION -->
+            <!-- TIÊU ĐỀ TRANG VÀ NÚT THÊM PHIM MỚI -->
             <div class="cf-page-header">
                 <div>
                     <h1>Quản lý phim</h1>
@@ -78,36 +108,49 @@
                 </a>
             </div>
 
-            <!-- KPI METRICS STRIP -->
-            <div class="cf-kpi-grid">
+            <!-- THÔNG BÁO ALERT -->
+            <% if ("statusUpdated".equals(request.getParameter("success"))) { %>
+                <div class="cf-alert cf-alert-success" style="margin-bottom: 20px;">
+                    ✓ Cập nhật trạng thái phim thành công.
+                </div>
+            <% } %>
+
+            <!-- CÁC THẺ CHỈ SỐ KPI THỐNG KÊ PHIM -->
+            <div class="cf-kpi-grid cf-kpi-grid-5">
                 <div class="cf-kpi-card">
                     <span class="cf-kpi-label">Tổng số phim</span>
                     <div class="cf-kpi-value"><%= totalMovies %></div>
-                    <span class="cf-kpi-sub">Kho phim lưu trữ hệ thống</span>
+                    <span class="cf-kpi-sub">Tất cả phim trong hệ thống</span>
                 </div>
 
                 <div class="cf-kpi-card">
                     <span class="cf-kpi-label" style="color: #059669;">Đang chiếu</span>
                     <div class="cf-kpi-value"><%= nowShowingCount %></div>
-                    <span class="cf-kpi-sub">Đang mở bán vé tại rạp</span>
+                    <span class="cf-kpi-sub">Phim có trạng thái đang chiếu</span>
                 </div>
 
                 <div class="cf-kpi-card">
                     <span class="cf-kpi-label" style="color: #0284c7;">Sắp khởi chiếu</span>
                     <div class="cf-kpi-value"><%= comingSoonCount %></div>
-                    <span class="cf-kpi-sub">Kế hoạch truyền thông & mở bán</span>
+                    <span class="cf-kpi-sub">Phim đang chờ phát hành</span>
                 </div>
 
                 <div class="cf-kpi-card">
-                    <span class="cf-kpi-label" style="color: #d97706;">Đã kết thúc / Lưu trữ</span>
-                    <div class="cf-kpi-value"><%= endedCount + archivedCount %></div>
-                    <span class="cf-kpi-sub">Đã ngừng lịch chiếu</span>
+                    <span class="cf-kpi-label" style="color: #d97706;">Đã kết thúc</span>
+                    <div class="cf-kpi-value"><%= endedCount %></div>
+                    <span class="cf-kpi-sub">Phim đã dừng chiếu nhưng chưa lưu trữ</span>
+                </div>
+
+                <div class="cf-kpi-card">
+                    <span class="cf-kpi-label" style="color: #64748b;">Lưu trữ</span>
+                    <div class="cf-kpi-value"><%= archivedCount %></div>
+                    <span class="cf-kpi-sub">Phim đã được Admin đưa vào kho lưu trữ</span>
                 </div>
             </div>
 
-            <!-- MAIN DATA PANEL (VERTICAL TABLE ONLY) -->
+            <!-- BẢNG DANH MỤC PHIM VÀ BỘ LỌC -->
             <section class="cf-card">
-                <!-- TOOLBAR: SEARCH & FILTERS -->
+                <!-- THANH CÔNG CỤ: TÌM KIẾM VÀ BỘ LỌC -->
                 <div class="cf-card-toolbar">
                     <div class="cf-toolbar-left">
                         <div class="cf-search-box">
@@ -115,9 +158,9 @@
                         </div>
 
                         <div class="cf-filter-pills">
-                            <button type="button" class="cf-pill active" data-status="ALL">Tất cả (<%= totalMovies %>)</button>
+                            <button type="button" class="cf-pill active" data-status="ALL">Tất cả phim (<%= totalMovies %>)</button>
                             <button type="button" class="cf-pill" data-status="NOW_SHOWING">Đang chiếu (<%= nowShowingCount %>)</button>
-                            <button type="button" class="cf-pill" data-status="COMING_SOON">Sắp chiếu (<%= comingSoonCount %>)</button>
+                            <button type="button" class="cf-pill" data-status="COMING_SOON">Sắp khởi chiếu (<%= comingSoonCount %>)</button>
                             <button type="button" class="cf-pill" data-status="ENDED">Đã kết thúc (<%= endedCount %>)</button>
                             <button type="button" class="cf-pill" data-status="ARCHIVED">Lưu trữ (<%= archivedCount %>)</button>
                         </div>
@@ -163,7 +206,7 @@
                                 for (Movie m : movies) {
                                     String st = m.getStatus();
                                     String stText = "NOW_SHOWING".equals(st) ? "Đang chiếu" :
-                                                    "COMING_SOON".equals(st) ? "Sắp chiếu" :
+                                                    "COMING_SOON".equals(st) ? "Sắp khởi chiếu" :
                                                     "ENDED".equals(st) ? "Đã kết thúc" : "Lưu trữ";
                                     String badgeClass = "NOW_SHOWING".equals(st) ? "cf-badge-success" :
                                                         "COMING_SOON".equals(st) ? "cf-badge-info" :
@@ -223,20 +266,20 @@
                     </table>
                 </div>
 
-                <!-- EMPTY STATE -->
+                <!-- TRẠNG THÁI KHÔNG TÌM THẤY DỮ LIỆU -->
                 <div id="movieEmptyState" style="display: none; padding: 48px 24px; text-align: center; color: var(--cf-muted);">
                     <div style="font-size: 32px; margin-bottom: 8px;">🔍</div>
                     <h3 style="margin: 0 0 6px; color: var(--cf-text); font-size: 16px;">Không tìm thấy phim phù hợp</h3>
                     <p style="margin: 0; font-size: 13px;">Thử tìm kiếm với từ khóa khác hoặc bấm "Tất cả" trên bộ lọc trạng thái.</p>
                 </div>
 
-                <!-- PAGINATION BAR -->
+                <!-- THANH PHÂN TRANG -->
                 <div class="cf-pagination-bar">
                     <div class="cf-pagination-info" id="moviePaginationInfo">
                         Đang nạp danh mục phim...
                     </div>
                     <div class="cf-pagination-controls" id="moviePaginationControls">
-                        <!-- Dynamic page buttons -->
+                        <!-- Các nút phân trang được sinh động bởi JS -->
                     </div>
                 </div>
             </section>
@@ -257,6 +300,18 @@
             infoDisplayId: 'moviePaginationInfo',
             tableWrapperId: 'movieTableWrapper',
             emptyStateId: 'movieEmptyState'
+        });
+
+        document.querySelectorAll('.cf-alert-success, .cf-alert-danger').forEach(function(alert) {
+            setTimeout(function() {
+                alert.style.transition = 'opacity .4s ease, transform .4s ease';
+                alert.style.opacity = '0';
+                alert.style.transform = 'translateY(-8px)';
+
+                setTimeout(function() {
+                    if (alert.parentNode) alert.parentNode.removeChild(alert);
+                }, 400);
+            }, 3000);
         });
     });
 </script>

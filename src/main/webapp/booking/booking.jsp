@@ -96,7 +96,7 @@
         requestedMovieId = -1;
     }
 
-    // Ensure requested movie is present in movies list
+    // Đảm bảo phim được yêu cầu có mặt trong danh sách phim
     if (requestedMovieId > 0) {
         boolean reqFound = false;
         for (Movie m : movies) {
@@ -178,7 +178,7 @@
 </head>
 <body>
 <div class="page-shell">
-    <!-- Common Header & Navigation -->
+    <!-- Thanh điều hướng và đầu trang chung -->
     <jsp:include page="/common/header.jsp">
         <jsp:param name="activeNav" value="booking"/>
     </jsp:include>
@@ -335,7 +335,7 @@
                 return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
             }
 
-            // If initial movie is COMING_SOON, default filter to all
+            // Nếu phim ban đầu là sắp chiếu, mặc định đặt bộ lọc về tất cả
             const initialMovie = movieButtons.find((m) => m.dataset.movieId === selectedMovieId);
             if (initialMovie && initialMovie.dataset.status === "COMING_SOON") {
                 currentMovieFilter = "all";
@@ -353,7 +353,7 @@
             }
 
             function render() {
-                // 1. Date Buttons
+                // 1. Các nút chọn ngày
                 dateButtons.forEach((button) => {
                     button.classList.toggle("active", button.dataset.date === selectedDate);
                     if (selectedMovieId) {
@@ -371,7 +371,7 @@
                     bookingMonth.textContent = activeDate.dataset.month;
                 }
 
-                // 2. City Tabs
+                // 2. Các tab thành phố
                 cityButtons.forEach((button) => {
                     const btnCity = button.dataset.city || "";
                     button.classList.toggle("active", normalize(btnCity) === normalize(selectedCity));
@@ -387,7 +387,7 @@
                     }
                 });
 
-                // 3. Cinema / Centre Buttons
+                // 3. Các nút chọn cụm rạp
                 centreButtons.forEach((button) => {
                     const matchCity = !selectedCity || normalize(button.dataset.city || "") !== normalize(selectedCity) ? false : true;
                     button.hidden = !matchCity;
@@ -406,7 +406,7 @@
                     }
                 });
 
-                // Auto-select rạp tối ưu:
+                // Tự động chọn rạp tối ưu:
                 // Nếu rạp hiện tại bị ẩn hoặc không có suất chiếu cho phim và ngày này,
                 // ưu tiên tự động chọn rạp đầu tiên CÓ suất chiếu trong thành phố đã chọn!
                 let activeCentre = centreButtons.find((button) => button.dataset.centreId === selectedCentreId && !button.hidden);
@@ -437,10 +437,10 @@
                 }
                 centreButtons.forEach((button) => button.classList.toggle("active", button === activeCentre));
 
-                // 4. Movie Filter Tabs
+                // 4. Tab lọc phim theo trạng thái
                 movieFilterButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.filter === currentMovieFilter));
 
-                // 5. Movie Items - NEVER auto-overwrite selectedMovieId to another movie!
+                // 5. Danh sách phim
                 let visibleCount = 0;
                 movieButtons.forEach((movie) => {
                     const matchFilter = (currentMovieFilter === "all" || movie.dataset.status === currentMovieFilter);
@@ -450,7 +450,7 @@
                 });
                 if (movieEmpty) movieEmpty.hidden = visibleCount > 0;
 
-                // 6. Showtimes Buttons
+                // 6. Các nút suất chiếu
                 const matchingShowtimes = showtimeButtons.filter((showtime) =>
                     showtime.dataset.date === selectedDate &&
                     showtime.dataset.centreId === selectedCentreId &&
@@ -467,7 +467,7 @@
                     button.classList.toggle("active", button.dataset.showtimeId === selectedShowtimeId);
                 });
 
-                // 7. Showtimes Empty State & Selection Info
+                // 7. Trạng thái rỗng và thông tin tóm tắt đã chọn
                 const activeMovie = movieButtons.find((button) => button.dataset.movieId === selectedMovieId);
                 const activeMovieTitle = activeMovie ? activeMovie.dataset.title : "";
                 const isComingSoon = activeMovie && activeMovie.dataset.status === "COMING_SOON";
@@ -508,14 +508,14 @@
                 }
             }
 
-            // Event Listeners:
-            // Movie selection (Lotte Cinema behavior)
+            // Lắng nghe sự kiện người dùng:
+            // Xử lý chọn phim
             movieButtons.forEach((button) => {
                 button.addEventListener("click", () => {
                     selectedMovieId = button.dataset.movieId;
                     selectedShowtimeId = "";
 
-                    // Auto-align: Does this movie have showtimes on currently selected date & centre?
+                    // Tự động căn chỉnh: Phim này có suất chiếu vào ngày và rạp đang chọn không?
                     const hasCurrentSlot = showtimeButtons.some((s) =>
                         s.dataset.movieId === selectedMovieId &&
                         s.dataset.centreId === selectedCentreId &&
@@ -566,7 +566,7 @@
                 });
             });
 
-            // Date selection
+            // Xử lý chọn ngày
             dateButtons.forEach((button) => {
                 button.addEventListener("click", () => {
                     selectedDate = button.dataset.date;
@@ -575,14 +575,14 @@
                 });
             });
 
-            // Cinema / Centre selection
+            // Xử lý chọn cụm rạp
             centreButtons.forEach((button) => {
                 button.addEventListener("click", () => {
                     selectedCentreId = button.dataset.centreId;
                     selectedCity = button.dataset.city;
                     selectedShowtimeId = "";
 
-                    // If selected movie has showtimes at this centre on another date, switch date
+                    // Nếu phim đang chọn có suất chiếu tại rạp này vào ngày khác, chuyển sang ngày đó
                     if (selectedMovieId) {
                         const hasDateSlot = showtimeButtons.some((s) =>
                             s.dataset.movieId === selectedMovieId &&
@@ -604,14 +604,14 @@
                 });
             });
 
-            // City tab selection
+            // Xử lý chọn tab thành phố
             cityButtons.forEach((button) => {
                 button.addEventListener("click", () => {
                     selectedCity = button.dataset.city;
                     selectedShowtimeId = "";
                     const currentCentreBtn = centreButtons.find((c) => c.dataset.centreId === selectedCentreId);
                     if (!currentCentreBtn || (selectedCity && normalize(currentCentreBtn.dataset.city || "") !== normalize(selectedCity))) {
-                        // If selected movie has a showtime in this city, pick that centre & date!
+                        // Nếu phim đang chọn có suất chiếu tại thành phố này, chọn rạp và ngày tương ứng
                         const movieSlotInCity = showtimeButtons.find((s) =>
                             s.dataset.movieId === selectedMovieId &&
                             (!selectedCity || normalize(s.dataset.city || "") === normalize(selectedCity))
@@ -633,7 +633,7 @@
                 });
             });
 
-            // Movie category filter tabs
+            // Tab lọc phân loại phim
             movieFilterButtons.forEach((btn) => {
                 btn.addEventListener("click", () => {
                     currentMovieFilter = btn.dataset.filter;
@@ -641,7 +641,7 @@
                 });
             });
 
-            // Showtime selection
+            // Chọn suất chiếu
             showtimeButtons.forEach((button) => {
                 button.addEventListener("click", () => {
                     selectedShowtimeId = button.dataset.showtimeId;
@@ -649,14 +649,14 @@
                 });
             });
 
-            // Date arrow scroll
+            // Cuộn ngang thanh chọn ngày
             document.querySelectorAll("[data-date-scroll]").forEach((button) => {
                 button.addEventListener("click", () => {
                     dates.scrollBy({ left: button.dataset.dateScroll === "right" ? 240 : -240, behavior: "smooth" });
                 });
             });
 
-            // Initial render and scroll to active items
+            // Khởi tạo hiển thị và cuộn tới mục đang chọn
             render();
             setTimeout(scrollActiveIntoView, 100);
 
@@ -666,7 +666,7 @@
         }());
     </script>
 
-    <!-- Common Footer -->
+    <!-- Chân trang chung -->
     <jsp:include page="/common/footer.jsp"/>
 </div>
 </body>

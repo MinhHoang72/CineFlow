@@ -12,6 +12,9 @@ import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
 
+/**
+ * Xử lý yêu cầu thay đổi mật khẩu từ người dùng đã đăng nhập.
+ */
 public class ChangePasswordServlet extends HttpServlet {
 
     private UserDAO userDAO;
@@ -22,186 +25,87 @@ public class ChangePasswordServlet extends HttpServlet {
     }
 
     @Override
-    protected void doPost(HttpServletRequest request,
-                           HttpServletResponse response)
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-
         request.setCharacterEncoding("UTF-8");
 
-        // =========================================
-        // 1. CHECK LOGIN SESSION
-        // =========================================
+        // 1. Kiểm tra phiên đăng nhập
         HttpSession session = request.getSession(false);
-
         if (session == null) {
-            response.sendError(
-                    HttpServletResponse.SC_UNAUTHORIZED,
-                    "You are not logged in."
-            );
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "You are not logged in.");
             return;
         }
 
-        // =========================================
-        // 2. GET USER ID FROM SESSION
-        // =========================================
-        Integer userIdObj =
-                (Integer) session.getAttribute("userId");
-
+        Integer userIdObj = (Integer) session.getAttribute("userId");
         if (userIdObj == null) {
-            response.sendError(
-                    HttpServletResponse.SC_UNAUTHORIZED,
-                    "You are not logged in."
-            );
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "You are not logged in.");
             return;
         }
 
         int userId = userIdObj;
 
-        // =========================================
-        // 3. GET PASSWORD DATA
-        // =========================================
-        String currentPassword =
-                request.getParameter("currentPassword");
+        // 2. Lấy dữ liệu mật khẩu từ biểu mẫu
+        String currentPassword = request.getParameter("currentPassword");
+        String newPassword = request.getParameter("newPassword");
+        String confirmPassword = request.getParameter("confirmPassword");
 
-        String newPassword =
-                request.getParameter("newPassword");
-
-        String confirmPassword =
-                request.getParameter("confirmPassword");
-
-        // =========================================
-        // 4. CHECK EMPTY FIELDS
-        // =========================================
-        if (currentPassword == null
-                || currentPassword.isEmpty()
-                || newPassword == null
-                || newPassword.isEmpty()
-                || confirmPassword == null
-                || confirmPassword.isEmpty()) {
-
-            response.sendError(
-                    HttpServletResponse.SC_BAD_REQUEST,
-                    "All password fields are required."
-            );
+        // 3. Kiểm tra các trường dữ liệu bắt buộc
+        if (currentPassword == null || currentPassword.isEmpty()
+                || newPassword == null || newPassword.isEmpty()
+                || confirmPassword == null || confirmPassword.isEmpty()) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "All password fields are required.");
             return;
         }
 
-        // =========================================
-        // 5. CHECK NEW PASSWORD = CONFIRM PASSWORD
-        // =========================================
+        // 4. Kiểm tra xác nhận mật khẩu mới trùng khớp
         if (!newPassword.equals(confirmPassword)) {
-
-            response.sendError(
-                    HttpServletResponse.SC_BAD_REQUEST,
-                    "New password and Confirm Password do not match."
-            );
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "New password and Confirm Password do not match.");
             return;
         }
 
-        // =========================================
-        // 6. GET USER FROM DATABASE
-        // =========================================
+        // 5. Kiểm tra người dùng tồn tại trong cơ sở dữ liệu
         User user = userDAO.getUserById(userId);
-
         if (user == null) {
-
-            response.sendError(
-                    HttpServletResponse.SC_NOT_FOUND,
-                    "User not found."
-            );
+            response.sendError(HttpServletResponse.SC_NOT_FOUND, "User not found.");
             return;
         }
 
-        // =========================================
-        // 7. CHECK CURRENT PASSWORD
-        // =========================================
+        // 6. Kiểm tra mật khẩu hiện tại
         String storedPassword = user.getPassword();
-
-        if (storedPassword == null
-                || !storedPassword.startsWith("$2")) {
-
-            response.sendError(
-                    HttpServletResponse.SC_UNAUTHORIZED,
-                    "Current password is not using BCrypt."
-            );
+        if (storedPassword == null || !storedPassword.startsWith("$2")) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Current password is not using BCrypt.");
             return;
         }
 
-        boolean currentPasswordCorrect =
-                PasswordUtils.checkPassword(
-                        currentPassword,
-                        storedPassword
-                );
-
+        boolean currentPasswordCorrect = PasswordUtils.checkPassword(currentPassword, storedPassword);
         if (!currentPasswordCorrect) {
-
-            response.sendError(
-                    HttpServletResponse.SC_UNAUTHORIZED,
-                    "Current password is incorrect."
-            );
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Current password is incorrect.");
             return;
         }
 
-        // =========================================
-        // 8. NEW PASSWORD MUST BE DIFFERENT
-        // =========================================
-        if (PasswordUtils.checkPassword(
-                newPassword,
-                storedPassword)) {
-
-            response.sendError(
-                    HttpServletResponse.SC_BAD_REQUEST,
-                    "New password must be different from current password."
-            );
+        // 7. Mật khẩu mới không được trùng với mật khẩu cũ
+        if (PasswordUtils.checkPassword(newPassword, storedPassword)) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "New password must be different from current password.");
             return;
         }
 
-        // =========================================
-        // 9. HASH NEW PASSWORD
-        // =========================================
-        String hashedPassword =
-                PasswordUtils.hashPassword(newPassword);
-
-        // =========================================
-        // 10. UPDATE DATABASE
-        // =========================================
-        boolean success =
-                userDAO.changePassword(
-                        userId,
-                        hashedPassword
-                );
+        // 8. Băm mật khẩu mới bằng BCrypt và lưu vào cơ sở dữ liệu
+        String hashedPassword = PasswordUtils.hashPassword(newPassword);
+        boolean success = userDAO.changePassword(userId, hashedPassword);
 
         if (!success) {
-
-            response.sendError(
-                    HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                    "Failed to change password."
-            );
+            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to change password.");
             return;
         }
 
-        // =========================================
-        // 11. SUCCESS
-        // =========================================
-        response.setStatus(
-                HttpServletResponse.SC_OK
-        );
-
-        response.getWriter().println(
-                "Password changed successfully."
-        );
+        // 9. Đổi mật khẩu thành công
+        response.setStatus(HttpServletResponse.SC_OK);
+        response.getWriter().println("Password changed successfully.");
     }
 
     @Override
-    protected void doGet(HttpServletRequest request,
-                          HttpServletResponse response)
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-
-        response.sendError(
-                HttpServletResponse.SC_METHOD_NOT_ALLOWED,
-                "GET method is not allowed."
-        );
+        response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, "GET method is not allowed.");
     }
 }
-
-

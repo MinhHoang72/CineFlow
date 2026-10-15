@@ -7,16 +7,23 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import java.io.IOException;
-import java.util.Locale;
 import model.Movie;
 import model.User;
 
+import java.io.IOException;
+import java.util.Locale;
+
+/**
+ * Điều khiển API chấm điểm và lấy dữ liệu thống kê đánh giá phim của người dùng dưới định dạng JSON.
+ */
 public class MovieRatingServlet extends HttpServlet {
 
     private final CinemaDAO cinemaDAO = new CinemaDAO();
     private final RatingDAO ratingDAO = new RatingDAO();
 
+    /**
+     * Trích xuất mã ID người dùng từ phiên đăng nhập hiện tại nếu có.
+     */
     private int extractUserId(HttpServletRequest request) {
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("user") == null) {
@@ -41,7 +48,8 @@ public class MovieRatingServlet extends HttpServlet {
         int movieId = 0;
         try {
             movieId = Integer.parseInt(request.getParameter("movieId"));
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
 
         if (movieId <= 0) {
             response.getWriter().write("{\"success\":false,\"message\":\"ID phim không hợp lệ.\"}");
@@ -59,8 +67,8 @@ public class MovieRatingServlet extends HttpServlet {
         RatingDAO.MovieRatingSummary summary = ratingDAO.getRatingSummary(movieId, userId > 0 ? userId : null);
 
         String json = String.format(Locale.US,
-            "{\"success\":true,\"isRateable\":%b,\"isComingSoon\":%b,\"averageScore10\":%.1f,\"averageStars5\":%.1f,\"totalVotes\":%d,\"userScore\":%d}",
-            !comingSoon, comingSoon, summary.getAverageScore10(), summary.getAverageStars5(), summary.getTotalVotes(), summary.getUserScore()
+                "{\"success\":true,\"isRateable\":%b,\"isComingSoon\":%b,\"averageScore10\":%.1f,\"averageStars5\":%.1f,\"totalVotes\":%d,\"userScore\":%d}",
+                !comingSoon, comingSoon, summary.getAverageScore10(), summary.getAverageStars5(), summary.getTotalVotes(), summary.getUserScore()
         );
         response.getWriter().write(json);
     }
@@ -82,7 +90,8 @@ public class MovieRatingServlet extends HttpServlet {
         try {
             movieId = Integer.parseInt(request.getParameter("movieId"));
             score = Integer.parseInt(request.getParameter("score"));
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
 
         if (movieId <= 0 || score < 1 || score > 5) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
@@ -112,8 +121,8 @@ public class MovieRatingServlet extends HttpServlet {
 
         RatingDAO.MovieRatingSummary summary = ratingDAO.getRatingSummary(movieId, userId);
         String json = String.format(Locale.US,
-            "{\"success\":true,\"message\":\"Cảm ơn bạn đã bình chọn %d/5 sao! Đánh giá đã được lưu vào hệ thống.\",\"averageScore10\":%.1f,\"averageStars5\":%.1f,\"totalVotes\":%d,\"userScore\":%d}",
-            score, summary.getAverageScore10(), summary.getAverageStars5(), summary.getTotalVotes(), summary.getUserScore()
+                "{\"success\":true,\"message\":\"Cảm ơn bạn đã bình chọn %d/5 sao! Đánh giá đã được lưu vào hệ thống.\",\"averageScore10\":%.1f,\"averageStars5\":%.1f,\"totalVotes\":%d,\"userScore\":%d}",
+                score, summary.getAverageScore10(), summary.getAverageStars5(), summary.getTotalVotes(), summary.getUserScore()
         );
         response.getWriter().write(json);
     }

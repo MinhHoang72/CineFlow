@@ -2,6 +2,9 @@ package model;
 
 import java.sql.Timestamp;
 
+/**
+ * Đại diện cho lịch sử điều chuyển công tác của nhân viên giữa các trung tâm.
+ */
 public class StaffTransfer {
     private int transferId;
     private int userId;

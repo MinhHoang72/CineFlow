@@ -1,4 +1,8 @@
 package model;
+
+/**
+ * Đại diện cho một trung tâm chiếu phim trong hệ thống CineFlow.
+ */
 public class Centre {
 
     private int centreId;

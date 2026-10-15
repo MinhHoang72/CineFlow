@@ -10,8 +10,7 @@
         if (value instanceof User) {
             return (User) value;
         }
-        // Compatibility with sessions created by an older deployment that used
-        // model.user.User. Do not let a stale session cause a ClassCastException.
+        // Tương thích với các phiên làm việc cũ lưu model.user.User, tránh ngoại lệ ClassCastException.
         if (value == null) {
             return null;
         }
@@ -82,7 +81,7 @@
 </head>
 <body id="top">
 <div class="page-shell">
-    <!-- Common Header & Navigation -->
+    <!-- Thanh điều hướng và đầu trang chung -->
     <jsp:include page="/common/header.jsp">
         <jsp:param name="activeNav" value="home"/>
     </jsp:include>
@@ -205,7 +204,7 @@
 
     </main>
 
-    <!-- Common Footer -->
+    <!-- Chân trang chung -->
     <jsp:include page="/common/footer.jsp"/>
 </div>
 

@@ -2,7 +2,7 @@
 @import url("../common/variables.css");
 
 /* ==========================================================================
-   CineFlow Cinema Modern Dark - Account & Profile Styling
+   GIAO DIỆN TRANG CÁ NHÂN VÀ THÔNG TIN TÀI KHOẢN CINEFLOW
    ========================================================================== */
 
 :root {
@@ -21,7 +21,7 @@
 }
 
 /* ==========================================================================
-   Notice Alerts
+   Thông báo hệ thống
    ========================================================================== */
 .notice {
     margin: 0 0 20px;
@@ -47,7 +47,7 @@
 }
 
 /* ==========================================================================
-   Profile Overview Banner (Header)
+   Khung banner tổng quan hồ sơ người dùng
    ========================================================================== */
 .profile-overview {
     display: flex;
@@ -216,7 +216,7 @@
     font-size: 12px;
 }
 
-/* Quick Stat Cards on Right Side of Header */
+/* Thẻ chỉ số thống kê nhanh ở góc phải tiêu đề */
 .overview-stats {
     display: flex;
     align-items: center;
@@ -262,7 +262,7 @@
 }
 
 /* ==========================================================================
-   Account Grid Layout
+   Bố cục lưới thông tin tài khoản
    ========================================================================== */
 .account-grid {
     display: grid;
@@ -313,7 +313,7 @@
     line-height: 1.5;
 }
 
-/* Profile Form */
+/* Biểu mẫu cập nhật hồ sơ */
 .profile-form {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -397,14 +397,14 @@
     box-shadow: 0 6px 22px rgba(255, 42, 84, 0.6);
 }
 
-/* Account Side (Right Column) */
+/* Cột thông tin phụ bên phải */
 .account-side {
     display: flex;
     flex-direction: column;
     gap: 20px;
 }
 
-/* Summary Panel */
+/* Bảng tóm tắt thông tin tài khoản */
 .summary-list {
     display: flex;
     flex-direction: column;
@@ -475,7 +475,7 @@
     margin-left: 4px;
 }
 
-/* Security Panel */
+/* Bảng bảo mật tài khoản */
 .security-action-link {
     display: flex;
     align-items: center;
@@ -551,7 +551,7 @@
 }
 
 /* ==========================================================================
-   Booking History Panel
+   Bảng lịch sử đặt vé
    ========================================================================== */
 .history-panel {
     margin-top: 24px;
@@ -708,7 +708,7 @@
 }
 
 /* ==========================================================================
-   Responsive Design
+   Thiết kế tương thích thiết bị di động (Responsive)
    ========================================================================== */
 @media (max-width: 900px) {
     .profile-overview {

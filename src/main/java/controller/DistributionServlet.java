@@ -9,17 +9,26 @@ import jakarta.servlet.http.HttpSession;
 import model.Centre;
 import model.Movie;
 import model.User;
+
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/** Admin distributes movies to cinema centres across the system. */
+/**
+ * Điều khiển chức năng phân phối phim tới các trung tâm chiếu phim dành cho Quản trị viên (Admin).
+ */
 public class DistributionServlet extends HttpServlet {
+
     private final CinemaDAO dao = new CinemaDAO();
 
+    /**
+     * Kiểm tra quyền truy cập của Quản trị viên (Admin).
+     */
     private boolean allowed(HttpSession session) {
-        if (session == null) return false;
+        if (session == null) {
+            return false;
+        }
         Object roleObj = session.getAttribute("role");
         if (roleObj instanceof String && "ADMIN".equalsIgnoreCase((String) roleObj)) {
             return true;
