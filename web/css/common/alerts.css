@@ -1,6 +1,0 @@
-@import url("variables.css");
-
-.cf-alert { margin-bottom: 18px; padding: 12px 14px; border: 1px solid var(--cf-border); border-radius: var(--cf-radius-sm); font-size: 13px; }
-.cf-alert-success { border-color: #b8e3c7; color: var(--cf-success); background: #edf9f1; }
-.cf-alert-error { border-color: #f2c1bd; color: var(--cf-danger); background: #fff1f0; }
-.cf-alert-info { border-color: #bcd7ef; color: var(--cf-info); background: #eff7ff; }

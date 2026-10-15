@@ -1,2 +1,28 @@
+# Maven build output
+/target/
+
+# Ant / legacy build outputs
+/build/
 /dist/
 /_refactor-archive/
+
+# Compiled class files
+*.class
+
+# NetBeans user private files
+/nbproject/private/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# VS Code
+.vscode/
+
+# OS generated files
+Thumbs.db
+Desktop.ini
+.DS_Store

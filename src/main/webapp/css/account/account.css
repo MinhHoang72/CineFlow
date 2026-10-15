@@ -1,0 +1,759 @@
+@import url("../common/layout.css");
+@import url("../common/variables.css");
+
+/* ==========================================================================
+   CineFlow Cinema Modern Dark - Account & Profile Styling
+   ========================================================================== */
+
+:root {
+    --cf-account-bg: #0B0F17;
+    --cf-account-surface: #161B26;
+    --cf-account-border: rgba(255, 255, 255, 0.08);
+    --cf-account-hover: rgba(255, 255, 255, 0.04);
+}
+
+.account-page {
+    width: min(1140px, calc(100% - 36px));
+    margin: 0 auto;
+    padding: 32px 0 80px;
+    font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #F8FAFC;
+}
+
+/* ==========================================================================
+   Notice Alerts
+   ========================================================================== */
+.notice {
+    margin: 0 0 20px;
+    padding: 14px 18px;
+    font-size: 13.5px;
+    border-radius: var(--cf-radius-sm, 8px);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: fadeIn .3s ease;
+}
+
+.notice.success {
+    border: 1px solid rgba(52, 211, 153, 0.35);
+    color: #34D399;
+    background: rgba(52, 211, 153, 0.12);
+}
+
+.notice.error {
+    border: 1px solid rgba(248, 113, 113, 0.35);
+    color: #F87171;
+    background: rgba(248, 113, 113, 0.12);
+}
+
+/* ==========================================================================
+   Profile Overview Banner (Header)
+   ========================================================================== */
+.profile-overview {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 32px;
+    margin-bottom: 24px;
+    padding: 28px 36px;
+    border: 1px solid var(--cf-account-border);
+    border-radius: var(--cf-radius-lg, 16px);
+    background: radial-gradient(circle at 85% 20%, rgba(255, 42, 84, 0.10), transparent 45%),
+                radial-gradient(circle at 15% 90%, rgba(99, 102, 241, 0.08), transparent 40%),
+                rgba(22, 27, 38, 0.90);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+}
+
+.overview-left {
+    display: flex;
+    align-items: center;
+    gap: 26px;
+    flex: 1;
+    min-width: 0;
+}
+
+.profile-avatar-wrap {
+    position: relative;
+    flex: 0 0 96px;
+    width: 96px;
+    height: 96px;
+}
+
+.profile-avatar {
+    width: 96px;
+    height: 96px;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    border-radius: 50%;
+    border: 2.5px solid rgba(255, 42, 84, 0.4);
+    background: linear-gradient(135deg, #1E2536 0%, #111622 100%);
+    box-shadow: 0 0 20px rgba(255, 42, 84, 0.25);
+}
+
+.profile-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.profile-avatar span {
+    color: #FF2A54;
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 38px;
+    font-weight: 800;
+    text-shadow: 0 0 14px rgba(255, 42, 84, 0.5);
+}
+
+.avatar-camera {
+    position: absolute;
+    right: 0;
+    bottom: 2px;
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    border: 2.5px solid #161B26;
+    border-radius: 50%;
+    background: var(--cf-primary-gradient, linear-gradient(135deg, #FF2A54, #E11D48));
+    color: #ffffff;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(255, 42, 84, 0.5);
+    transition: transform .2s ease, box-shadow .2s ease;
+}
+
+.avatar-camera:hover {
+    transform: scale(1.12);
+    box-shadow: 0 6px 16px rgba(255, 42, 84, 0.7);
+}
+
+.overview-info {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+
+.overview-name-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.overview-name-row h2 {
+    margin: 0;
+    color: #ffffff;
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+    line-height: 1.2;
+}
+
+.role-badge {
+    padding: 3px 10px;
+    border-radius: 20px;
+    background: rgba(99, 102, 241, 0.15);
+    border: 1px solid rgba(99, 102, 241, 0.35);
+    color: #818CF8;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+}
+
+.verified-badge {
+    padding: 3px 10px;
+    border-radius: 20px;
+    background: rgba(52, 211, 153, 0.12);
+    border: 1px solid rgba(52, 211, 153, 0.35);
+    color: #34D399;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.unverified-badge {
+    padding: 3px 10px;
+    border-radius: 20px;
+    background: rgba(245, 158, 11, 0.12);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    color: #F59E0B;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.overview-details {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    color: #94A3B8;
+    font-size: 13.5px;
+}
+
+.detail-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.detail-item strong {
+    color: #CBD5E1;
+}
+
+.detail-dot {
+    color: rgba(255, 255, 255, 0.2);
+}
+
+.overview-dates {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    color: #64748B;
+    font-size: 12px;
+}
+
+/* Quick Stat Cards on Right Side of Header */
+.overview-stats {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.stat-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-width: 120px;
+    padding: 14px 18px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--cf-radius-md, 12px);
+    background: rgba(17, 22, 34, 0.7);
+    text-align: center;
+}
+
+.stat-number {
+    font-size: 24px;
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1;
+}
+
+.stat-badge {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    color: var(--cf-primary, #FF2A54);
+    background: rgba(255, 42, 84, 0.12);
+    padding: 3px 8px;
+    border-radius: 6px;
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 11.5px;
+    color: #94A3B8;
+    font-weight: 500;
+}
+
+/* ==========================================================================
+   Account Grid Layout
+   ========================================================================== */
+.account-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(320px, 0.9fr);
+    gap: 24px;
+    align-items: start;
+}
+
+.panel {
+    border: 1px solid var(--cf-account-border);
+    background: var(--cf-account-surface);
+    border-radius: var(--cf-radius-lg, 14px);
+    padding: 26px 28px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+.panel-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 22px;
+}
+
+.heading-title-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.heading-icon {
+    font-size: 20px;
+    line-height: 1;
+}
+
+.panel h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: -0.2px;
+}
+
+.panel-desc {
+    margin: 4px 0 0;
+    color: #94A3B8;
+    font-size: 12.5px;
+    line-height: 1.5;
+}
+
+/* Profile Form */
+.profile-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px 16px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.form-group.full-width {
+    grid-column: 1 / -1;
+}
+
+.form-group label {
+    color: #CBD5E1;
+    font-size: 12.5px;
+    font-weight: 600;
+}
+
+.form-group label .required {
+    color: var(--cf-primary, #FF2A54);
+}
+
+.form-group input {
+    width: 100%;
+    height: 46px;
+    padding: 0 14px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--cf-radius-sm, 6px);
+    background: #111622;
+    color: #F8FAFC;
+    outline: none;
+    font: inherit;
+    font-size: 13.5px;
+    transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.form-group input:focus {
+    border-color: var(--cf-primary, #FF2A54);
+    box-shadow: 0 0 0 3px rgba(255, 42, 84, 0.22);
+}
+
+.form-group input:disabled {
+    color: #64748B;
+    background: #0E131E;
+    border-color: rgba(255, 255, 255, 0.06);
+    cursor: not-allowed;
+}
+
+.form-group input::placeholder {
+    color: #64748B;
+}
+
+.save-btn {
+    grid-column: 1 / -1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 46px;
+    padding: 0 24px;
+    margin-top: 6px;
+    border: 0;
+    border-radius: var(--cf-radius-sm, 6px);
+    background: var(--cf-primary-gradient, linear-gradient(135deg, #FF2A54 0%, #E11D48 100%));
+    color: #ffffff;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(255, 42, 84, 0.4);
+    transition: transform .2s ease, box-shadow .2s ease;
+}
+
+.save-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 22px rgba(255, 42, 84, 0.6);
+}
+
+/* Account Side (Right Column) */
+.account-side {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Summary Panel */
+.summary-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.summary-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 13px 0;
+    border-bottom: 1px solid var(--cf-account-border);
+    font-size: 13px;
+}
+
+.summary-row:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+}
+
+.row-label {
+    color: #94A3B8;
+}
+
+.row-value {
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.row-value.highlight {
+    color: var(--cf-primary, #FF2A54);
+    font-weight: 700;
+}
+
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 11.5px;
+    font-weight: 600;
+}
+
+.status-pill.active {
+    background: rgba(52, 211, 153, 0.12);
+    border: 1px solid rgba(52, 211, 153, 0.35);
+    color: #34D399;
+}
+
+.status-pill.verified {
+    background: rgba(52, 211, 153, 0.12);
+    border: 1px solid rgba(52, 211, 153, 0.35);
+    color: #34D399;
+}
+
+.status-pill.unverified {
+    background: rgba(245, 158, 11, 0.12);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    color: #F59E0B;
+}
+
+.verify-action-link {
+    color: var(--cf-primary, #FF2A54);
+    text-decoration: underline;
+    font-weight: 700;
+    margin-left: 4px;
+}
+
+/* Security Panel */
+.security-action-link {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    border-radius: var(--cf-radius-sm, 8px);
+    background: rgba(17, 22, 34, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    text-decoration: none;
+    transition: background .2s ease, border-color .2s ease;
+}
+
+.security-action-link:hover {
+    background: rgba(255, 42, 84, 0.08);
+    border-color: rgba(255, 42, 84, 0.3);
+}
+
+.action-icon {
+    width: 38px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    border-radius: 8px;
+    background: rgba(255, 42, 84, 0.12);
+    color: var(--cf-primary, #FF2A54);
+    font-size: 16px;
+}
+
+.action-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.action-text strong {
+    color: #ffffff;
+    font-size: 13.5px;
+}
+
+.action-text small {
+    color: #94A3B8;
+    font-size: 11px;
+}
+
+.action-arrow {
+    color: #94A3B8;
+    font-size: 20px;
+    font-weight: 400;
+}
+
+.security-tip-box {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-top: 14px;
+    padding: 12px 14px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: var(--cf-radius-sm, 8px);
+}
+
+.tip-icon {
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.security-tip-box p {
+    margin: 0;
+    color: #94A3B8;
+    font-size: 11.5px;
+    line-height: 1.5;
+}
+
+/* ==========================================================================
+   Booking History Panel
+   ========================================================================== */
+.history-panel {
+    margin-top: 24px;
+}
+
+.history-heading {
+    align-items: center;
+}
+
+.new-booking-btn {
+    padding: 8px 16px;
+    border-radius: var(--cf-radius-sm, 6px);
+    background: rgba(255, 42, 84, 0.12);
+    border: 1px solid rgba(255, 42, 84, 0.35);
+    color: var(--cf-primary, #FF2A54);
+    text-decoration: none;
+    font-size: 12.5px;
+    font-weight: 700;
+    transition: background .2s ease, color .2s ease;
+}
+
+.new-booking-btn:hover {
+    background: var(--cf-primary, #FF2A54);
+    color: #ffffff;
+}
+
+.empty-history {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 48px 0;
+    text-align: center;
+}
+
+.empty-icon {
+    font-size: 40px;
+    opacity: 0.5;
+}
+
+.empty-history p {
+    margin: 0;
+    color: #94A3B8;
+    font-size: 14px;
+}
+
+.browse-movies-btn {
+    margin-top: 6px;
+    padding: 8px 18px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+    text-decoration: none;
+    font-size: 12.5px;
+    font-weight: 600;
+    transition: background .2s ease;
+}
+
+.browse-movies-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.history-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 18px 0;
+    border-bottom: 1px solid var(--cf-account-border);
+}
+
+.history-item:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+}
+
+.history-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    min-width: 0;
+}
+
+.movie-ticket-icon {
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    border-radius: 10px;
+    background: rgba(255, 42, 84, 0.12);
+    border: 1px solid rgba(255, 42, 84, 0.25);
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.history-details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.history-details strong {
+    color: #ffffff;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.booking-code {
+    color: #94A3B8;
+    font-size: 12px;
+}
+
+.booking-code code {
+    color: #FF5A7A;
+    font-family: monospace;
+    font-weight: 700;
+}
+
+.booking-meta {
+    color: #64748B;
+    font-size: 12px;
+}
+
+.history-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.total-price {
+    font-size: 15px;
+    font-weight: 800;
+    color: #ffffff;
+}
+
+.booking-status-tag {
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    background: rgba(52, 211, 153, 0.12);
+    border: 1px solid rgba(52, 211, 153, 0.3);
+    color: #34D399;
+}
+
+/* ==========================================================================
+   Responsive Design
+   ========================================================================== */
+@media (max-width: 900px) {
+    .profile-overview {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 24px;
+        gap: 22px;
+    }
+
+    .overview-stats {
+        width: 100%;
+        justify-content: stretch;
+    }
+
+    .stat-card {
+        flex: 1;
+    }
+
+    .account-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+    .overview-left {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    .profile-form {
+        grid-template-columns: 1fr;
+    }
+
+    .profile-form .form-group {
+        grid-column: 1 / -1;
+    }
+
+    .history-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .history-right {
+        align-items: flex-start;
+    }
+}

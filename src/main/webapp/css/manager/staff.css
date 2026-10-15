@@ -1,0 +1,5 @@
+@import url("../common/variables.css");
+.cf-table td strong, .staff-email { display: block; }
+.staff-select { min-height: 32px; padding: 5px 8px; border: 1px solid var(--cf-border, rgba(255, 255, 255, 0.12)); border-radius: 4px; background: var(--cf-bg-input, #111622); color: var(--cf-text, #F8FAFC); font-size: 12px; }
+.staff-select option { background: #161B26; color: #F8FAFC; }
+.cf-table td form { display: flex; align-items: center; gap: 6px; }

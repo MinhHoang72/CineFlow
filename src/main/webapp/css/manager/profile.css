@@ -1,0 +1,27 @@
+@import url("../common/variables.css");
+.manager-profile-grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 18px; align-items: start; }
+.manager-profile-grid .cf-card {
+    background: #ffffff !important;
+    border: 1px solid #E2E8F0 !important;
+    color: #111827 !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05) !important;
+}
+.manager-profile-grid .cf-card-header {
+    border-bottom: 1px solid #E2E8F0 !important;
+}
+.manager-profile-grid .cf-card-header h2 {
+    color: #111827 !important;
+}
+.manager-profile-grid .cf-card-header p {
+    color: #64748B !important;
+}
+.manager-profile-summary { padding: 28px 23px; text-align: center; }
+.profile-mark { display: grid; width: 68px; height: 68px; margin: 0 auto 15px; place-items: center; border-radius: 50%; background: #FEE2E2; border: 1px solid #FECACA; color: #FF2855; font-size: 26px; font-weight: 700; }
+.manager-profile-summary h2 { margin: 0 0 7px; font-size: 18px; color: #111827; }
+.profile-role { margin: 0 0 24px; color: #FF2855; font-size: 11px; font-weight: 700; letter-spacing: .12em; }
+.profile-facts { border-top: 1px solid #E2E8F0; text-align: left; }
+.profile-facts div { display: flex; justify-content: space-between; gap: 12px; padding: 14px 0; border-bottom: 1px solid #E2E8F0; }
+.profile-facts span { color: #64748B; font-size: 12px; }
+.profile-facts strong { font-size: 12px; text-align: right; color: #111827; }
+.profile-password { width: 100%; margin-top: 22px; }
+@media (max-width: 800px) { .manager-profile-grid { grid-template-columns: 1fr; } .manager-profile-summary { order: -1; } }

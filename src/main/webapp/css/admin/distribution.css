@@ -1,0 +1,487 @@
+/* ==========================================================================
+   CINEFLOW MOVIE DISTRIBUTION - STREAMLINED CINEMA WORKSPACE
+   Unified with Movie Catalog & Form tokens
+   ========================================================================== */
+
+/* 1. MOVIE INFO HEADER CARD */
+.cf-dist-movie-info {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    padding: 20px 24px;
+    background: #ffffff;
+    color: #111827;
+    border-radius: var(--cf-radius-lg, 12px);
+}
+
+.cf-dist-movie-poster {
+    width: 82px;
+    min-width: 82px;
+    max-width: 82px;
+    height: 120px;
+    border-radius: var(--cf-radius-sm);
+    overflow: hidden;
+    background: #F1F5F9;
+    border: 1px solid #CBD5E1;
+    display: grid;
+    place-items: center;
+    font-size: 28px;
+    flex-shrink: 0;
+}
+
+.cf-dist-movie-poster img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.cf-dist-movie-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.cf-dist-movie-title-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.cf-dist-movie-title-row h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: #111827;
+}
+
+.cf-dist-movie-code {
+    margin-top: 4px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #64748B;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.cf-dist-movie-divider {
+    height: 1px;
+    background: #E2E8F0;
+    margin: 14px 0 12px;
+}
+
+.cf-dist-movie-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 20px;
+}
+
+.cf-dist-meta-col {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.cf-dist-meta-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #64748B;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+
+.cf-dist-meta-value {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #111827;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 2. TOOLBAR FOR CITIES, SEARCH & QUICK ACTIONS */
+.cf-dist-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px 20px;
+    background: #F8FAFC;
+    border-bottom: 1px solid #E2E8F0;
+    flex-wrap: wrap;
+}
+
+.cf-dist-toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.cf-dist-toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-left: auto;
+}
+
+/* Filter pills (Tabs thành phố) */
+.cf-filter-pills {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #E2E8F0;
+    border: 1px solid #CBD5E1;
+    padding: 3px;
+    border-radius: 6px;
+    flex-wrap: wrap;
+}
+
+.cf-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border: none;
+    background: transparent;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748B;
+    cursor: pointer;
+    transition: all .15s ease;
+    white-space: nowrap;
+    text-decoration: none;
+}
+
+.cf-pill:hover {
+    color: #111827;
+}
+
+.cf-pill.active {
+    background: #FF2855;
+    color: #ffffff;
+    font-weight: 700;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .15);
+}
+
+.cf-pill .cf-pill-count {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.1);
+    color: inherit;
+}
+
+.cf-pill.active .cf-pill-count {
+    background: rgba(255, 255, 255, 0.25);
+    color: #ffffff;
+}
+
+/* Search Box */
+.cf-search-box {
+    position: relative;
+    width: 250px;
+}
+
+.cf-search-box input {
+    width: 100%;
+    min-height: 38px;
+    height: 38px;
+    padding: 0 12px 0 32px;
+    border: 1px solid #CBD5E1;
+    border-radius: var(--cf-radius-sm, 6px);
+    background: #F1F5F9;
+    font-size: 13px;
+    color: #1E293B;
+    outline: none;
+    box-sizing: border-box;
+    transition: all .15s ease;
+}
+
+.cf-search-box input::placeholder {
+    color: #64748B;
+    opacity: 1;
+}
+
+.cf-search-box input:focus {
+    border-color: #FF2855;
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(255, 40, 85, .15);
+}
+
+.cf-search-box::before {
+    content: '🔍';
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 12px;
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+/* Action Button Group */
+.cf-dist-btn-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.cf-dist-btn-group .cf-btn-sm {
+    height: 36px;
+    min-height: 36px;
+    padding: 0 12px;
+    font-size: 12.5px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: var(--cf-radius-sm, 6px);
+    cursor: pointer;
+    transition: all .15s ease;
+}
+
+.cf-dist-btn-group .cf-btn-secondary {
+    border: 1px solid #CBD5E1;
+    background: #ffffff;
+    color: #1E293B !important;
+}
+
+.cf-dist-btn-group .cf-btn-secondary:hover {
+    background: #F1F5F9;
+    border-color: #94A3B8;
+}
+
+.cf-dist-btn-group .cf-btn-ghost {
+    border: 1px solid transparent;
+    background: transparent;
+    color: #64748B;
+}
+
+.cf-dist-btn-group .cf-btn-ghost:hover {
+    color: #FF2855;
+    background: rgba(255, 40, 85, 0.1);
+}
+
+/* 3. STREAMLINED CINEMA BRANCH LIST VIEW (NỀN TRẮNG RÕ NÉT) */
+.cf-branch-list-header {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    background: #F8FAFC;
+    border-bottom: 1px solid #E2E8F0;
+    font-size: 11px;
+    font-weight: 700;
+    color: #64748B;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+
+.cf-branch-item {
+    display: flex;
+    align-items: center;
+    padding: 14px 20px;
+    border-bottom: 1px solid #E2E8F0;
+    background: #ffffff;
+    transition: background 0.15s ease;
+}
+
+.cf-branch-item:hover {
+    background: #F8FAFC;
+}
+
+.cf-branch-item:last-child {
+    border-bottom: none;
+}
+
+.cf-branch-item.is-disabled {
+    opacity: 0.6;
+    background: #F1F5F9;
+}
+
+/* Three distinct columns */
+.cf-col-header.col-left,
+.cf-branch-left {
+    flex: 1;
+    min-width: 0;
+}
+
+.cf-col-header.col-center,
+.cf-branch-center {
+    width: 140px;
+    flex-shrink: 0;
+    text-align: left;
+}
+
+.cf-col-header.col-right,
+.cf-branch-right {
+    width: 130px;
+    flex-shrink: 0;
+    text-align: right;
+}
+
+/* Left side: Checkbox + Name + Sub */
+.cf-branch-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.cf-branch-checkbox {
+    width: 17px;
+    height: 17px;
+    margin-top: 2px;
+    cursor: pointer;
+    accent-color: #FF2855;
+    flex-shrink: 0;
+}
+
+.cf-branch-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.cf-branch-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #111827;
+    line-height: 1.3;
+}
+
+.cf-branch-sub {
+    font-size: 12px;
+    color: #64748B;
+    line-height: 1.3;
+}
+
+/* Center: Operational Status */
+.cf-op-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.cf-op-status.active {
+    color: #059669;
+}
+
+.cf-op-status.inactive {
+    color: #64748B;
+}
+
+.cf-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.cf-op-status.active .cf-dot {
+    background: #10B981;
+}
+
+.cf-op-status.inactive .cf-dot {
+    background: #94A3B8;
+}
+
+/* Right: Subtle Distribution State Text */
+.cf-dist-state {
+    font-size: 12.5px;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.cf-dist-state.state-showing {
+    color: #059669;
+}
+
+.cf-dist-state.state-none {
+    color: #64748B;
+    font-weight: 500;
+}
+
+.cf-dist-state.state-disabled {
+    color: #94A3B8;
+    font-weight: 500;
+}
+
+/* 4. STICKY ACTION FOOTER BAR */
+.cf-dist-sticky-bar {
+    position: sticky;
+    bottom: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 24px;
+    background: #ffffff;
+    border-top: 1px solid #E2E8F0;
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.cf-dist-summary-line {
+    font-size: 13.5px;
+    color: #64748B;
+}
+
+.cf-dist-summary-line strong {
+    color: #111827;
+}
+
+.cf-dist-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cf-btn.is-submitting {
+    opacity: 0.7;
+    cursor: wait;
+    pointer-events: none;
+}
+
+/* 5. RESPONSIVE ADJUSTMENTS */
+@media (max-width: 900px) {
+    .cf-dist-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .cf-dist-toolbar-right {
+        margin-left: 0;
+        justify-content: space-between;
+    }
+    .cf-search-box {
+        flex: 1;
+        width: auto;
+    }
+    .cf-dist-movie-info {
+        flex-direction: column;
+    }
+    .cf-dist-movie-meta-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+    .cf-branch-center {
+        display: none;
+    }
+    .cf-col-header.col-center {
+        display: none;
+    }
+    .cf-dist-sticky-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .cf-dist-actions {
+        justify-content: flex-end;
+    }
+}

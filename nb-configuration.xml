@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project-shared-configuration>
+    <properties xmlns="http://www.netbeans.org/ns/maven-properties-data/1">
+        <netbeans.hint.deploy.server>tomcat101:home=C:\Program Files\Apache Software Foundation\Tomcat 10.1</netbeans.hint.deploy.server>
+    </properties>
+</project-shared-configuration>
