@@ -309,8 +309,8 @@ public class UserDAO {
         user.setAvatar(rs.getString("Avatar"));
         user.setRole(rs.getString("Role"));
         user.setStatus(rs.getString("Status"));
-        int branchId = rs.getInt("BranchID");
-        user.setBranchId(rs.wasNull() ? null : branchId);
+        int CentreID = rs.getInt("CentreID");
+        user.setCentreId(rs.wasNull() ? null : CentreID);
 
         user.setCreatedAt(rs.getTimestamp("CreatedAt"));
         user.setUpdatedAt(rs.getTimestamp("UpdatedAt"));
@@ -324,7 +324,7 @@ public class UserDAO {
         user.setResetTokenExpiry(rs.getTimestamp("ResetTokenExpiry"));
 
         try {
-            user.setBranchName(rs.getString("BranchName"));
+            user.setCentreName(rs.getString("CentreName"));
         } catch (SQLException ignored) {
         }
 
@@ -422,12 +422,12 @@ public class UserDAO {
     }
 
     public List<BookingHistory> getBookingHistory(int userId) {
-        String sql = "SELECT b.BookingCode, m.Title, br.BranchName, s.StartTime, "
+        String sql = "SELECT b.BookingCode, m.Title, br.CentreName, s.StartTime, "
                 + "b.BookingStatus, b.TotalAmount, b.CreatedAt "
                 + "FROM Bookings b JOIN Showtimes s ON s.ShowtimeID = b.ShowtimeID "
                 + "JOIN Movies m ON m.MovieID = s.MovieID "
                 + "JOIN Halls h ON h.HallID = s.HallID "
-                + "JOIN Branches br ON br.BranchID = h.BranchID "
+                + "JOIN Centres br ON br.CentreID = h.CentreID "
                 + "WHERE b.UserID = ? ORDER BY b.CreatedAt DESC";
         List<BookingHistory> history = new ArrayList<>();
         try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -437,7 +437,7 @@ public class UserDAO {
                     BookingHistory item = new BookingHistory();
                     item.setBookingCode(rs.getString("BookingCode"));
                     item.setMovieTitle(rs.getString("Title"));
-                    item.setBranchName(rs.getString("BranchName"));
+                    item.setCentreName(rs.getString("CentreName"));
                     item.setStartTime(rs.getTimestamp("StartTime"));
                     item.setBookingStatus(rs.getString("BookingStatus"));
                     item.setTotalAmount(rs.getBigDecimal("TotalAmount"));
@@ -451,16 +451,16 @@ public class UserDAO {
         return history;
     }
 
-    public List<User> getStaffDirectory(Integer branchId) {
-        return getStaffDirectory(branchId, null);
+    public List<User> getStaffDirectory(Integer CentreID) {
+        return getStaffDirectory(CentreID, null);
     }
 
-    public List<User> getStaffDirectory(Integer branchId, String search) {
-        StringBuilder sql = new StringBuilder("SELECT u.*, b.BranchName FROM Users u "
-                + "LEFT JOIN Branches b ON b.BranchID = u.BranchID "
+    public List<User> getStaffDirectory(Integer CentreID, String search) {
+        StringBuilder sql = new StringBuilder("SELECT u.*, b.CentreName FROM Users u "
+                + "LEFT JOIN Centres b ON b.CentreID = u.CentreID "
                 + "WHERE u.Role = 'STAFF' ");
-        if (branchId != null) {
-            sql.append("AND u.BranchID = ? ");
+        if (CentreID != null) {
+            sql.append("AND u.CentreID = ? ");
         }
 
         Integer searchId = null;
@@ -484,8 +484,8 @@ public class UserDAO {
         List<User> staff = new ArrayList<>();
         try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql.toString())) {
             int pIdx = 1;
-            if (branchId != null) {
-                ps.setInt(pIdx++, branchId);
+            if (CentreID != null) {
+                ps.setInt(pIdx++, CentreID);
             }
             if (keyword != null) {
                 String likePattern = "%" + keyword + "%";
@@ -509,11 +509,11 @@ public class UserDAO {
         return staff;
     }
 
-    public boolean updateStaffAssignment(int userId, Integer branchId, String status) {
-        String sql = "UPDATE Users SET BranchID = ?, Status = ?, UpdatedAt = GETDATE() "
+    public boolean updateStaffAssignment(int userId, Integer CentreID, String status) {
+        String sql = "UPDATE Users SET CentreID = ?, Status = ?, UpdatedAt = GETDATE() "
                 + "WHERE UserID = ? AND Role IN ('STAFF','MANAGER')";
         try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
-            if (branchId == null) ps.setNull(1, java.sql.Types.INTEGER); else ps.setInt(1, branchId);
+            if (CentreID == null) ps.setNull(1, java.sql.Types.INTEGER); else ps.setInt(1, CentreID);
             ps.setString(2, status);
             ps.setInt(3, userId);
             return ps.executeUpdate() > 0;
@@ -524,7 +524,7 @@ public class UserDAO {
     }
 
     public boolean createStaff(User user) {
-        String sql = "INSERT INTO Users (FullName, Account, Email, Password, Phone, Role, Status, BranchID, EmailVerified, CreatedAt) "
+        String sql = "INSERT INTO Users (FullName, Account, Email, Password, Phone, Role, Status, CentreID, EmailVerified, CreatedAt) "
                 + "VALUES (?, ?, ?, ?, ?, 'STAFF', 'ACTIVE', ?, 1, GETDATE())";
         try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, user.getFullName());
@@ -532,8 +532,8 @@ public class UserDAO {
             ps.setString(3, user.getEmail());
             ps.setString(4, user.getPassword());
             ps.setString(5, user.getPhone());
-            if (user.getBranchId() != null) {
-                ps.setInt(6, user.getBranchId());
+            if (user.getCentreId() != null) {
+                ps.setInt(6, user.getCentreId());
             } else {
                 ps.setNull(6, java.sql.Types.INTEGER);
             }
@@ -545,7 +545,7 @@ public class UserDAO {
     }
 
     public int createManager(User user) {
-        String sql = "INSERT INTO Users (FullName, Account, Email, Password, Phone, Role, Status, BranchID, EmailVerified, CreatedAt) "
+        String sql = "INSERT INTO Users (FullName, Account, Email, Password, Phone, Role, Status, CentreID, EmailVerified, CreatedAt) "
                 + "VALUES (?, ?, ?, ?, ?, 'MANAGER', 'ACTIVE', ?, 1, GETDATE())";
         try (Connection connection = DBContext.getConnection();
              PreparedStatement ps = connection.prepareStatement(sql, java.sql.Statement.RETURN_GENERATED_KEYS)) {
@@ -554,8 +554,8 @@ public class UserDAO {
             ps.setString(3, user.getEmail());
             ps.setString(4, user.getPassword());
             ps.setString(5, user.getPhone());
-            if (user.getBranchId() != null) {
-                ps.setInt(6, user.getBranchId());
+            if (user.getCentreId() != null) {
+                ps.setInt(6, user.getCentreId());
             } else {
                 ps.setNull(6, java.sql.Types.INTEGER);
             }
@@ -573,14 +573,14 @@ public class UserDAO {
         return -1;
     }
 
-    public boolean assignManagerToBranch(int managerUserId, int branchId) {
-        String sql = "UPDATE Users SET BranchID = ?, UpdatedAt = GETDATE() WHERE UserID = ? AND Role = 'MANAGER'";
+    public boolean assignManagerToCentre(int managerUserId, int centreId) {
+        String sql = "UPDATE Users SET CentreID = ?, UpdatedAt = GETDATE() WHERE UserID = ? AND Role = 'MANAGER'";
         try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setInt(1, branchId);
+            ps.setInt(1, centreId);
             ps.setInt(2, managerUserId);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Could not assign manager to branch", e);
+            LOGGER.log(Level.SEVERE, "Could not assign manager to centre", e);
             return false;
         }
     }
@@ -590,8 +590,8 @@ public class UserDAO {
     }
 
     public List<User> getManagers(String search) {
-        StringBuilder sql = new StringBuilder("SELECT u.*, b.BranchName FROM Users u "
-                + "LEFT JOIN Branches b ON b.BranchID = u.BranchID "
+        StringBuilder sql = new StringBuilder("SELECT u.*, b.CentreName FROM Users u "
+                + "LEFT JOIN Centres b ON b.CentreID = u.CentreID "
                 + "WHERE u.Role = 'MANAGER' ");
 
         Integer searchId = null;
@@ -605,9 +605,9 @@ public class UserDAO {
                 } catch (NumberFormatException ignored) {}
             }
             if (searchId != null) {
-                sql.append("AND (u.UserID = ? OR u.Account LIKE ? OR u.FullName LIKE ? OR u.Email LIKE ? OR u.Phone LIKE ? OR b.BranchName LIKE ?) ");
+                sql.append("AND (u.UserID = ? OR u.Account LIKE ? OR u.FullName LIKE ? OR u.Email LIKE ? OR u.Phone LIKE ? OR b.CentreName LIKE ?) ");
             } else {
-                sql.append("AND (u.Account LIKE ? OR u.FullName LIKE ? OR u.Email LIKE ? OR u.Phone LIKE ? OR b.BranchName LIKE ?) ");
+                sql.append("AND (u.Account LIKE ? OR u.FullName LIKE ? OR u.Email LIKE ? OR u.Phone LIKE ? OR b.CentreName LIKE ?) ");
             }
         }
         sql.append("ORDER BY u.FullName");
@@ -638,16 +638,16 @@ public class UserDAO {
         return list;
     }
 
-    public List<User> getAllStaffAndManagers(Integer branchId) {
-        String sql = "SELECT u.*, b.BranchName FROM Users u "
-                + "LEFT JOIN Branches b ON b.BranchID = u.BranchID "
+    public List<User> getAllStaffAndManagers(Integer CentreID) {
+        String sql = "SELECT u.*, b.CentreName FROM Users u "
+                + "LEFT JOIN Centres b ON b.CentreID = u.CentreID "
                 + "WHERE u.Role IN ('STAFF', 'MANAGER') "
-                + (branchId != null ? "AND u.BranchID = ? " : "")
-                + "ORDER BY u.Role DESC, b.BranchName, u.FullName";
+                + (CentreID != null ? "AND u.CentreID = ? " : "")
+                + "ORDER BY u.Role DESC, b.CentreName, u.FullName";
         List<User> list = new ArrayList<>();
         try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
-            if (branchId != null) {
-                ps.setInt(1, branchId);
+            if (CentreID != null) {
+                ps.setInt(1, CentreID);
             }
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
@@ -660,9 +660,9 @@ public class UserDAO {
         return list;
     }
 
-    public boolean transferStaff(int userId, Integer fromBranchId, int toBranchId, int adminId, String reason, String notes) {
-        String updateSql = "UPDATE Users SET BranchID = ?, UpdatedAt = GETDATE() WHERE UserID = ? AND Role = 'STAFF'";
-        String insertSql = "INSERT INTO StaffTransferHistory (UserID, FromBranchID, ToBranchID, TransferredBy, TransferDate, Reason, Notes) "
+    public boolean transferStaff(int userId, Integer FromCentreID, int ToCentreID, int adminId, String reason, String notes) {
+        String updateSql = "UPDATE Users SET CentreID = ?, UpdatedAt = GETDATE() WHERE UserID = ? AND Role = 'STAFF'";
+        String insertSql = "INSERT INTO StaffTransferHistory (UserID, FromCentreID, ToCentreID, TransferredBy, TransferDate, Reason, Notes) "
                 + "VALUES (?, ?, ?, ?, GETDATE(), ?, ?)";
 
         Connection connection = null;
@@ -671,19 +671,19 @@ public class UserDAO {
             connection.setAutoCommit(false);
 
             try (PreparedStatement updatePs = connection.prepareStatement(updateSql)) {
-                updatePs.setInt(1, toBranchId);
+                updatePs.setInt(1, ToCentreID);
                 updatePs.setInt(2, userId);
                 updatePs.executeUpdate();
             }
 
             try (PreparedStatement insertPs = connection.prepareStatement(insertSql)) {
                 insertPs.setInt(1, userId);
-                if (fromBranchId != null) {
-                    insertPs.setInt(2, fromBranchId);
+                if (FromCentreID != null) {
+                    insertPs.setInt(2, FromCentreID);
                 } else {
                     insertPs.setNull(2, java.sql.Types.INTEGER);
                 }
-                insertPs.setInt(3, toBranchId);
+                insertPs.setInt(3, ToCentreID);
                 insertPs.setInt(4, adminId);
                 insertPs.setString(5, reason);
                 insertPs.setString(6, notes);
@@ -714,23 +714,23 @@ public class UserDAO {
         }
     }
 
-    public List<StaffTransfer> getTransferHistory(Integer branchId, Integer userId) {
+    public List<StaffTransfer> getTransferHistory(Integer CentreID, Integer userId) {
         StringBuilder sql = new StringBuilder(
-                "SELECT t.TransferID, t.UserID, t.FromBranchID, t.ToBranchID, t.TransferredBy, "
+                "SELECT t.TransferID, t.UserID, t.FromCentreID, t.ToCentreID, t.TransferredBy, "
                 + "t.TransferDate, t.Reason, t.Notes, "
                 + "u.FullName AS UserName, u.Account AS UserAccount, u.Email AS UserEmail, u.Role AS UserRole, "
-                + "fb.BranchName AS FromBranchName, tb.BranchName AS ToBranchName, "
+                + "fb.CentreName AS FromCentreName, tb.CentreName AS ToCentreName, "
                 + "adm.FullName AS TransferredByName "
                 + "FROM StaffTransferHistory t "
                 + "JOIN Users u ON u.UserID = t.UserID "
-                + "LEFT JOIN Branches fb ON fb.BranchID = t.FromBranchID "
-                + "JOIN Branches tb ON tb.BranchID = t.ToBranchID "
+                + "LEFT JOIN Centres fb ON fb.CentreID = t.FromCentreID "
+                + "JOIN Centres tb ON tb.CentreID = t.ToCentreID "
                 + "JOIN Users adm ON adm.UserID = t.TransferredBy "
                 + "WHERE 1=1 "
         );
 
-        if (branchId != null) {
-            sql.append("AND (t.FromBranchID = ? OR t.ToBranchID = ?) ");
+        if (CentreID != null) {
+            sql.append("AND (t.FromCentreID = ? OR t.ToCentreID = ?) ");
         }
         if (userId != null) {
             sql.append("AND t.UserID = ? ");
@@ -741,9 +741,9 @@ public class UserDAO {
         try (Connection connection = DBContext.getConnection();
              PreparedStatement ps = connection.prepareStatement(sql.toString())) {
             int paramIndex = 1;
-            if (branchId != null) {
-                ps.setInt(paramIndex++, branchId);
-                ps.setInt(paramIndex++, branchId);
+            if (CentreID != null) {
+                ps.setInt(paramIndex++, CentreID);
+                ps.setInt(paramIndex++, CentreID);
             }
             if (userId != null) {
                 ps.setInt(paramIndex++, userId);
@@ -759,12 +759,12 @@ public class UserDAO {
                     item.setUserEmail(rs.getString("UserEmail"));
                     item.setUserRole(rs.getString("UserRole"));
 
-                    int fromB = rs.getInt("FromBranchID");
-                    item.setFromBranchId(rs.wasNull() ? null : fromB);
-                    item.setFromBranchName(rs.getString("FromBranchName"));
+                    int fromB = rs.getInt("FromCentreID");
+                    item.setFromCentreId(rs.wasNull() ? null : fromB);
+                    item.setFromCentreName(rs.getString("FromCentreName"));
 
-                    item.setToBranchId(rs.getInt("ToBranchID"));
-                    item.setToBranchName(rs.getString("ToBranchName"));
+                    item.setToCentreId(rs.getInt("ToCentreID"));
+                    item.setToCentreName(rs.getString("ToCentreName"));
 
                     item.setTransferredBy(rs.getInt("TransferredBy"));
                     item.setTransferredByName(rs.getString("TransferredByName"));
@@ -822,50 +822,50 @@ public class UserDAO {
         }
     }
 
-    public boolean assignManagerToBranchWithHistory(int branchId, int managerId, int adminId, String notes) {
-        String endCurrentBranchAssignment = "UPDATE BranchManagerAssignments SET EndDate = GETDATE(), Status = 'REPLACED' WHERE BranchID = ? AND EndDate IS NULL";
-        String endCurrentManagerAssignment = "UPDATE BranchManagerAssignments SET EndDate = GETDATE(), Status = 'REPLACED' WHERE ManagerID = ? AND EndDate IS NULL";
-        String insertNewAssignment = "INSERT INTO BranchManagerAssignments (BranchID, ManagerID, AssignedBy, StartDate, EndDate, Status, Notes, CreatedAt) "
+    public boolean assignManagerToCentreWithHistory(int centreId, int managerId, int adminId, String notes) {
+        String endCurrentCentreAssignment = "UPDATE CentreManagerAssignments SET EndDate = GETDATE(), Status = 'REPLACED' WHERE CentreID = ? AND EndDate IS NULL";
+        String endCurrentManagerAssignment = "UPDATE CentreManagerAssignments SET EndDate = GETDATE(), Status = 'REPLACED' WHERE ManagerID = ? AND EndDate IS NULL";
+        String insertNewAssignment = "INSERT INTO CentreManagerAssignments (CentreID, ManagerID, AssignedBy, StartDate, EndDate, Status, Notes, CreatedAt) "
                 + "VALUES (?, ?, ?, GETDATE(), NULL, 'ACTIVE', ?, GETDATE())";
-        String clearOldManagerBranch = "UPDATE Users SET BranchID = NULL, UpdatedAt = GETDATE() WHERE BranchID = ? AND Role = 'MANAGER' AND UserID <> ?";
-        String updateNewManagerBranch = "UPDATE Users SET BranchID = ?, UpdatedAt = GETDATE() WHERE UserID = ? AND Role = 'MANAGER'";
+        String clearOldManagerCentre = "UPDATE Users SET CentreID = NULL, UpdatedAt = GETDATE() WHERE CentreID = ? AND Role = 'MANAGER' AND UserID <> ?";
+        String updateNewManagerCentre = "UPDATE Users SET CentreID = ?, UpdatedAt = GETDATE() WHERE UserID = ? AND Role = 'MANAGER'";
 
         Connection connection = null;
         try {
             connection = DBContext.getConnection();
             connection.setAutoCommit(false);
 
-            // 1. Kết thúc nhiệm kỳ Manager cũ tại rạp này (nếu có)
-            try (PreparedStatement ps1 = connection.prepareStatement(endCurrentBranchAssignment)) {
-                ps1.setInt(1, branchId);
+            // 1. Ket thuc nhiem ky Manager cu tai trung tam nay (neu co)
+            try (PreparedStatement ps1 = connection.prepareStatement(endCurrentCentreAssignment)) {
+                ps1.setInt(1, centreId);
                 ps1.executeUpdate();
             }
 
-            // 2. Kết thúc nhiệm kỳ hiện tại của Manager này ở rạp khác (nếu có)
+            // 2. Ket thuc nhiem ky hien tai cua Manager nay o trung tam khac (neu co)
             try (PreparedStatement ps2 = connection.prepareStatement(endCurrentManagerAssignment)) {
                 ps2.setInt(1, managerId);
                 ps2.executeUpdate();
             }
 
-            // 3. Tạo bản ghi bổ nhiệm mới
+            // 3. Tao ban ghi bo nhiem moi
             try (PreparedStatement ps3 = connection.prepareStatement(insertNewAssignment)) {
-                ps3.setInt(1, branchId);
+                ps3.setInt(1, centreId);
                 ps3.setInt(2, managerId);
                 ps3.setInt(3, adminId);
-                ps3.setString(4, notes != null ? notes : "Bổ nhiệm quản lý chi nhánh");
+                ps3.setString(4, notes != null ? notes : "Bo nhiem quan ly trung tam");
                 ps3.executeUpdate();
             }
 
-            // 4. Đồng bộ Users.BranchID: Xóa branchId ở các manager khác của rạp này
-            try (PreparedStatement ps4 = connection.prepareStatement(clearOldManagerBranch)) {
-                ps4.setInt(1, branchId);
+            // 4. Dong bo Users.CentreID: Xoa CentreID o cac manager khac cua trung tam nay
+            try (PreparedStatement ps4 = connection.prepareStatement(clearOldManagerCentre)) {
+                ps4.setInt(1, centreId);
                 ps4.setInt(2, managerId);
                 ps4.executeUpdate();
             }
 
-            // 5. Cập nhật branchId mới cho Manager
-            try (PreparedStatement ps5 = connection.prepareStatement(updateNewManagerBranch)) {
-                ps5.setInt(1, branchId);
+            // 5. Cap nhat CentreID moi cho Manager
+            try (PreparedStatement ps5 = connection.prepareStatement(updateNewManagerCentre)) {
+                ps5.setInt(1, centreId);
                 ps5.setInt(2, managerId);
                 ps5.executeUpdate();
             }
@@ -894,9 +894,9 @@ public class UserDAO {
         }
     }
 
-    public boolean unassignManager(int branchId, int managerId, int adminId, String reason) {
-        String endAssignment = "UPDATE BranchManagerAssignments SET EndDate = GETDATE(), Status = 'ENDED', Notes = ? WHERE BranchID = ? AND ManagerID = ? AND EndDate IS NULL";
-        String clearBranch = "UPDATE Users SET BranchID = NULL, UpdatedAt = GETDATE() WHERE UserID = ? AND Role = 'MANAGER'";
+    public boolean unassignManager(int centreId, int managerId, int adminId, String reason) {
+        String endAssignment = "UPDATE CentreManagerAssignments SET EndDate = GETDATE(), Status = 'ENDED', Notes = ? WHERE CentreID = ? AND ManagerID = ? AND EndDate IS NULL";
+        String clearCentre = "UPDATE Users SET CentreID = NULL, UpdatedAt = GETDATE() WHERE UserID = ? AND Role = 'MANAGER'";
 
         Connection connection = null;
         try {
@@ -904,13 +904,13 @@ public class UserDAO {
             connection.setAutoCommit(false);
 
             try (PreparedStatement ps1 = connection.prepareStatement(endAssignment)) {
-                ps1.setString(1, reason != null ? reason : "Miễn nhiệm quản lý chi nhánh");
-                ps1.setInt(2, branchId);
+                ps1.setString(1, reason != null ? reason : "Mien nhiem quan ly trung tam");
+                ps1.setInt(2, centreId);
                 ps1.setInt(3, managerId);
                 ps1.executeUpdate();
             }
 
-            try (PreparedStatement ps2 = connection.prepareStatement(clearBranch)) {
+            try (PreparedStatement ps2 = connection.prepareStatement(clearCentre)) {
                 ps2.setInt(1, managerId);
                 ps2.executeUpdate();
             }
@@ -930,22 +930,22 @@ public class UserDAO {
         }
     }
 
-    public List<ManagerAssignment> getManagerAssignmentHistory(Integer branchId, Integer managerId) {
+    public List<ManagerAssignment> getManagerAssignmentHistory(Integer CentreID, Integer managerId) {
         StringBuilder sql = new StringBuilder(
-                "SELECT bma.AssignmentID, bma.BranchID, bma.ManagerID, bma.AssignedBy, "
+                "SELECT bma.AssignmentID, bma.CentreID, bma.ManagerID, bma.AssignedBy, "
                 + "bma.StartDate, bma.EndDate, bma.Status, bma.Notes, bma.CreatedAt, "
-                + "b.BranchName, b.City AS BranchCity, "
+                + "b.CentreName, b.City AS CentreCity, "
                 + "u.FullName AS ManagerName, u.Account AS ManagerAccount, u.Email AS ManagerEmail, "
                 + "adm.FullName AS AssignedByName "
-                + "FROM BranchManagerAssignments bma "
-                + "JOIN Branches b ON b.BranchID = bma.BranchID "
+                + "FROM CentreManagerAssignments bma "
+                + "JOIN Centres b ON b.CentreID = bma.CentreID "
                 + "JOIN Users u ON u.UserID = bma.ManagerID "
                 + "JOIN Users adm ON adm.UserID = bma.AssignedBy "
                 + "WHERE 1=1 "
         );
 
-        if (branchId != null) {
-            sql.append("AND bma.BranchID = ? ");
+        if (CentreID != null) {
+            sql.append("AND bma.CentreID = ? ");
         }
         if (managerId != null) {
             sql.append("AND bma.ManagerID = ? ");
@@ -956,8 +956,8 @@ public class UserDAO {
         try (Connection connection = DBContext.getConnection();
              PreparedStatement ps = connection.prepareStatement(sql.toString())) {
             int paramIndex = 1;
-            if (branchId != null) {
-                ps.setInt(paramIndex++, branchId);
+            if (CentreID != null) {
+                ps.setInt(paramIndex++, CentreID);
             }
             if (managerId != null) {
                 ps.setInt(paramIndex++, managerId);
@@ -967,9 +967,9 @@ public class UserDAO {
                 while (rs.next()) {
                     ManagerAssignment item = new ManagerAssignment();
                     item.setAssignmentId(rs.getInt("AssignmentID"));
-                    item.setBranchId(rs.getInt("BranchID"));
-                    item.setBranchName(rs.getString("BranchName"));
-                    item.setBranchCity(rs.getString("BranchCity"));
+                    item.setCentreId(rs.getInt("CentreID"));
+                    item.setCentreName(rs.getString("CentreName"));
+                    item.setCentreCity(rs.getString("CentreCity"));
                     item.setManagerId(rs.getInt("ManagerID"));
                     item.setManagerName(rs.getString("ManagerName"));
                     item.setManagerAccount(rs.getString("ManagerAccount"));
@@ -988,5 +988,76 @@ public class UserDAO {
             LOGGER.log(Level.SEVERE, "Could not load manager assignments", e);
         }
         return list;
+    }
+
+    // =========================================================
+    // CUSTOMER MANAGEMENT (ADMIN)
+    // =========================================================
+
+    public List<User> getCustomers(String search, String status) {
+        StringBuilder sql = new StringBuilder();
+        sql.append("SELECT u.*, ")
+           .append("  (SELECT COUNT(*) FROM Bookings b WHERE b.UserID = u.UserID) AS BookingCount, ")
+           .append("  (SELECT ISNULL(SUM(b.TotalAmount), 0) FROM Bookings b WHERE b.UserID = u.UserID AND b.BookingStatus <> 'CANCELLED') AS TotalSpent ")
+           .append("FROM Users u ")
+           .append("WHERE u.Role = 'CUSTOMER' ");
+
+        List<Object> params = new ArrayList<>();
+
+        if (status != null && !status.isBlank() && !"ALL".equalsIgnoreCase(status)) {
+            sql.append("AND u.Status = ? ");
+            params.add(status.trim());
+        }
+
+        if (search != null && !search.isBlank()) {
+            sql.append("AND (u.FullName LIKE ? OR u.Account LIKE ? OR u.Email LIKE ? OR u.Phone LIKE ?) ");
+            String keyword = "%" + search.trim() + "%";
+            params.add(keyword);
+            params.add(keyword);
+            params.add(keyword);
+            params.add(keyword);
+        }
+
+        sql.append("ORDER BY u.CreatedAt DESC, u.UserID DESC");
+
+        List<User> list = new ArrayList<>();
+        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    User u = mapUser(rs);
+                    u.setBookingCount(rs.getInt("BookingCount"));
+                    u.setTotalSpent(rs.getBigDecimal("TotalSpent"));
+                    list.add(u);
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Could not load customers list", e);
+        }
+        return list;
+    }
+
+    public int countCustomersByStatus(String status) {
+        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM Users WHERE Role = 'CUSTOMER' ");
+        List<Object> params = new ArrayList<>();
+        if (status != null && !status.isBlank() && !"ALL".equalsIgnoreCase(status)) {
+            sql.append("AND Status = ? ");
+            params.add(status.trim());
+        }
+        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Could not count customers", e);
+        }
+        return 0;
     }
 }

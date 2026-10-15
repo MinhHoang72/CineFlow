@@ -1,4 +1,4 @@
-USE CineFlowDB;
+﻿USE CineFlowDB;
 GO
 
 /* =========================================================================
@@ -9,41 +9,41 @@ GO
    ========================================================================= */
 
 -- 1. THÊM CHI NHÁNH / CỤM RẠP NẾU CHƯA CÓ
-IF NOT EXISTS (SELECT 1 FROM Branches WHERE BranchName = N'CineFlow Hoàn Kiếm')
-    INSERT INTO Branches (BranchName, Address, City, Phone, Status) VALUES (N'CineFlow Hoàn Kiếm', N'88 Hàng Bài, Hoàn Kiếm', N'Hà Nội', '02433333333', 'ACTIVE');
+IF NOT EXISTS (SELECT 1 FROM Centres WHERE CentreName = N'CineFlow Hoàn Kiếm')
+    INSERT INTO Centres (CentreName, Address, City, Phone, Status) VALUES (N'CineFlow Hoàn Kiếm', N'88 Hàng Bài, Hoàn Kiếm', N'Hà Nội', '02433333333', 'ACTIVE');
 
-IF NOT EXISTS (SELECT 1 FROM Branches WHERE BranchName = N'CineFlow Hai Bà Trưng')
-    INSERT INTO Branches (BranchName, Address, City, Phone, Status) VALUES (N'CineFlow Hai Bà Trưng', N'191 Bà Triệu, Hai Bà Trưng', N'Hà Nội', '02437777777', 'ACTIVE');
+IF NOT EXISTS (SELECT 1 FROM Centres WHERE CentreName = N'CineFlow Hai Bà Trưng')
+    INSERT INTO Centres (CentreName, Address, City, Phone, Status) VALUES (N'CineFlow Hai Bà Trưng', N'191 Bà Triệu, Hai Bà Trưng', N'Hà Nội', '02437777777', 'ACTIVE');
 
-IF NOT EXISTS (SELECT 1 FROM Branches WHERE BranchName = N'CineFlow Tây Hồ')
-    INSERT INTO Branches (BranchName, Address, City, Phone, Status) VALUES (N'CineFlow Tây Hồ', N'272 Võ Chí Công, Tây Hồ', N'Hà Nội', '02438888888', 'ACTIVE');
+IF NOT EXISTS (SELECT 1 FROM Centres WHERE CentreName = N'CineFlow Tây Hồ')
+    INSERT INTO Centres (CentreName, Address, City, Phone, Status) VALUES (N'CineFlow Tây Hồ', N'272 Võ Chí Công, Tây Hồ', N'Hà Nội', '02438888888', 'ACTIVE');
 
-IF NOT EXISTS (SELECT 1 FROM Branches WHERE BranchName = N'CineFlow Quận 1')
-    INSERT INTO Branches (BranchName, Address, City, Phone, Status) VALUES (N'CineFlow Quận 1', N'120 Nguyễn Huệ, Quận 1', N'TP. Hồ Chí Minh', '02844444444', 'ACTIVE');
+IF NOT EXISTS (SELECT 1 FROM Centres WHERE CentreName = N'CineFlow Quận 1')
+    INSERT INTO Centres (CentreName, Address, City, Phone, Status) VALUES (N'CineFlow Quận 1', N'120 Nguyễn Huệ, Quận 1', N'TP. Hồ Chí Minh', '02844444444', 'ACTIVE');
 
-IF NOT EXISTS (SELECT 1 FROM Branches WHERE BranchName = N'CineFlow Landmark 81')
-    INSERT INTO Branches (BranchName, Address, City, Phone, Status) VALUES (N'CineFlow Landmark 81', N'Vinhomes Central Park, Bình Thạnh', N'TP. Hồ Chí Minh', '02855555555', 'ACTIVE');
+IF NOT EXISTS (SELECT 1 FROM Centres WHERE CentreName = N'CineFlow Landmark 81')
+    INSERT INTO Centres (CentreName, Address, City, Phone, Status) VALUES (N'CineFlow Landmark 81', N'Vinhomes Central Park, Bình Thạnh', N'TP. Hồ Chí Minh', '02855555555', 'ACTIVE');
 
-IF NOT EXISTS (SELECT 1 FROM Branches WHERE BranchName = N'CineFlow Gò Vấp')
-    INSERT INTO Branches (BranchName, Address, City, Phone, Status) VALUES (N'CineFlow Gò Vấp', N'304 Quang Trung, Gò Vấp', N'TP. Hồ Chí Minh', '02866666666', 'ACTIVE');
+IF NOT EXISTS (SELECT 1 FROM Centres WHERE CentreName = N'CineFlow Gò Vấp')
+    INSERT INTO Centres (CentreName, Address, City, Phone, Status) VALUES (N'CineFlow Gò Vấp', N'304 Quang Trung, Gò Vấp', N'TP. Hồ Chí Minh', '02866666666', 'ACTIVE');
 
-IF NOT EXISTS (SELECT 1 FROM Branches WHERE BranchName = N'CineFlow Thủ Đức')
-    INSERT INTO Branches (BranchName, Address, City, Phone, Status) VALUES (N'CineFlow Thủ Đức', N'216 Võ Văn Ngân, TP. Thủ Đức', N'TP. Hồ Chí Minh', '02877777777', 'ACTIVE');
+IF NOT EXISTS (SELECT 1 FROM Centres WHERE CentreName = N'CineFlow Thủ Đức')
+    INSERT INTO Centres (CentreName, Address, City, Phone, Status) VALUES (N'CineFlow Thủ Đức', N'216 Võ Văn Ngân, TP. Thủ Đức', N'TP. Hồ Chí Minh', '02877777777', 'ACTIVE');
 
-IF NOT EXISTS (SELECT 1 FROM Branches WHERE BranchName = N'CineFlow Hải Châu')
-    INSERT INTO Branches (BranchName, Address, City, Phone, Status) VALUES (N'CineFlow Hải Châu', N'50 Bạch Đằng, Hải Châu', N'Đà Nẵng', '02365555555', 'ACTIVE');
+IF NOT EXISTS (SELECT 1 FROM Centres WHERE CentreName = N'CineFlow Hải Châu')
+    INSERT INTO Centres (CentreName, Address, City, Phone, Status) VALUES (N'CineFlow Hải Châu', N'50 Bạch Đằng, Hải Châu', N'Đà Nẵng', '02365555555', 'ACTIVE');
 
-IF NOT EXISTS (SELECT 1 FROM Branches WHERE BranchName = N'CineFlow Cẩm Lệ')
-    INSERT INTO Branches (BranchName, Address, City, Phone, Status) VALUES (N'CineFlow Cẩm Lệ', N'100 Cách Mạng Tháng 8, Cẩm Lệ', N'Đà Nẵng', '02366666666', 'ACTIVE');
+IF NOT EXISTS (SELECT 1 FROM Centres WHERE CentreName = N'CineFlow Cẩm Lệ')
+    INSERT INTO Centres (CentreName, Address, City, Phone, Status) VALUES (N'CineFlow Cẩm Lệ', N'100 Cách Mạng Tháng 8, Cẩm Lệ', N'Đà Nẵng', '02366666666', 'ACTIVE');
 
-IF NOT EXISTS (SELECT 1 FROM Branches WHERE BranchName = N'CineFlow Ngô Quyền')
-    INSERT INTO Branches (BranchName, Address, City, Phone, Status) VALUES (N'CineFlow Ngô Quyền', N'20 Lạch Tray, Ngô Quyền', N'Hải Phòng', '02256666666', 'ACTIVE');
+IF NOT EXISTS (SELECT 1 FROM Centres WHERE CentreName = N'CineFlow Ngô Quyền')
+    INSERT INTO Centres (CentreName, Address, City, Phone, Status) VALUES (N'CineFlow Ngô Quyền', N'20 Lạch Tray, Ngô Quyền', N'Hải Phòng', '02256666666', 'ACTIVE');
 GO
 
 -- 2. TẠO PHÒNG CHIẾU CHO TẤT CẢ CÁC RẠP
-INSERT INTO Halls (BranchID, HallName, HallType, Capacity, Status)
-SELECT b.BranchID, h.HallName, h.HallType, h.Capacity, 'AVAILABLE'
-FROM Branches b
+INSERT INTO Halls (CentreID, HallName, HallType, Capacity, Status)
+SELECT b.CentreID, h.HallName, h.HallType, h.Capacity, 'AVAILABLE'
+FROM Centres b
 CROSS JOIN (
     VALUES
     (N'Phòng 2D 01', '2D', 60),
@@ -52,7 +52,7 @@ CROSS JOIN (
 ) h(HallName, HallType, Capacity)
 WHERE NOT EXISTS (
     SELECT 1 FROM Halls existing
-    WHERE existing.BranchID = b.BranchID AND existing.HallName = h.HallName
+    WHERE existing.CentreID = b.CentreID AND existing.HallName = h.HallName
 );
 GO
 
@@ -77,9 +77,9 @@ DECLARE @Today DATE = CAST(GETDATE() AS DATE);
 DECLARE @AdminId INT = (SELECT TOP 1 UserID FROM Users WHERE Role IN ('ADMIN','MANAGER') ORDER BY UserID);
 
 -- Bảng ánh xạ: Phim nào chiếu ở rạp nào với các khung giờ (đảm bảo có rạp có phim, có rạp không có phim để test hiệu ứng mờ/sáng)
-;WITH MovieBranchSchedule AS (
+;WITH MovieCentreSchedule AS (
     -- Phim 1 (Avatar 2): Chiếu tại Cầu Giấy, Hoàn Kiếm, Tây Hồ, Landmark 81, Quận 1, Hải Châu
-    SELECT 1 AS MovieID, N'CineFlow Cầu Giấy' AS BranchName, 0 AS DayOffset, '10:00:00' AS ShowTime, 85000 AS Price UNION ALL
+    SELECT 1 AS MovieID, N'CineFlow Cầu Giấy' AS CentreName, 0 AS DayOffset, '10:00:00' AS ShowTime, 85000 AS Price UNION ALL
     SELECT 1, N'CineFlow Cầu Giấy', 0, '14:30:00', 95000 UNION ALL
     SELECT 1, N'CineFlow Cầu Giấy', 0, '19:15:00', 110000 UNION ALL
     SELECT 1, N'CineFlow Cầu Giấy', 1, '11:00:00', 85000 UNION ALL
@@ -157,11 +157,11 @@ SELECT
     s.Price,
     'SCHEDULED',
     ISNULL(@AdminId, 1)
-FROM MovieBranchSchedule s
+FROM MovieCentreSchedule s
 JOIN Movies m ON m.MovieID = s.MovieID
-JOIN Branches b ON b.BranchName = s.BranchName
+JOIN Centres b ON b.CentreName = s.CentreName
 CROSS APPLY (
-    SELECT TOP 1 HallID FROM Halls WHERE BranchID = b.BranchID ORDER BY HallID
+    SELECT TOP 1 HallID FROM Halls WHERE CentreID = b.CentreID ORDER BY HallID
 ) h
 WHERE NOT EXISTS (
     SELECT 1 FROM Showtimes existing
@@ -174,7 +174,7 @@ GO
 
 SELECT 
     b.City,
-    b.BranchName,
+    b.CentreName,
     m.Title,
     CONVERT(VARCHAR(10), s.StartTime, 120) AS ShowDate,
     CONVERT(VARCHAR(5), s.StartTime, 108) AS ShowTime,
@@ -182,7 +182,7 @@ SELECT
 FROM Showtimes s
 JOIN Movies m ON m.MovieID = s.MovieID
 JOIN Halls h ON h.HallID = s.HallID
-JOIN Branches b ON b.BranchID = h.BranchID
+JOIN Centres b ON b.CentreID = h.CentreID
 WHERE s.StartTime >= CAST(GETDATE() AS DATE)
-ORDER BY b.City, b.BranchName, s.StartTime;
+ORDER BY b.City, b.CentreName, s.StartTime;
 GO

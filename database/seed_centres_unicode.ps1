@@ -1,4 +1,4 @@
-﻿$server = "localhost"
+$server = "localhost"
 $user   = "sa"
 $pass   = "123"
 $db     = "CineFlowDB"
@@ -20,7 +20,7 @@ function ExecScalar($sql) {
 }
 
 # --- Danh sach rạp can them ---
-$branches = @(
+$centres = @(
     @{ Name="CineFlow Hoàn Kiếm";  Address="88 Hàng Bài, Hoàn Kiếm";             City="Hà Nội";           Phone="02433333333" },
     @{ Name="CineFlow Hai Bà Trưng"; Address="191 Bà Triệu, Hai Bà Trưng";        City="Hà Nội";           Phone="02437777777" },
     @{ Name="CineFlow Tây Hồ";     Address="272 Võ Chí Công, Tây Hồ";             City="Hà Nội";           Phone="02438888888" },
@@ -30,13 +30,13 @@ $branches = @(
     @{ Name="CineFlow Cẩm Lệ";    Address="100 Cách Mạng Tháng 8, Cẩm Lệ";       City="Đà Nẵng";          Phone="02366666666" }
 )
 
-foreach ($b in $branches) {
-    $exists = ExecScalar "SELECT COUNT(1) FROM Branches WHERE BranchName = N'$($b.Name)'"
+foreach ($c in $centres) {
+    $exists = ExecScalar "SELECT COUNT(1) FROM Centres WHERE CentreName = N'$($c.Name)'"
     if ($exists -eq 0) {
-        Exec "INSERT INTO Branches (BranchName, Address, City, Phone, Status) VALUES (N'$($b.Name)', N'$($b.Address)', N'$($b.City)', '$($b.Phone)', 'ACTIVE')"
-        Write-Host "Inserted branch: $($b.Name)"
+        Exec "INSERT INTO Centres (CentreName, Address, City, Phone, Status) VALUES (N'$($c.Name)', N'$($c.Address)', N'$($c.City)', '$($c.Phone)', 'ACTIVE')"
+        Write-Host "Inserted centre: $($c.Name)"
     } else {
-        Write-Host "Already exists: $($b.Name)"
+        Write-Host "Already exists: $($c.Name)"
     }
 }
 
@@ -47,18 +47,18 @@ $halls = @(
     @{ Name="Phòng 3D 01"; Type="3D"; Cap=80 }
 )
 
-$branchIds = @()
+$centreIds = @()
 $cmd2 = $conn.CreateCommand()
-$cmd2.CommandText = "SELECT BranchID FROM Branches WHERE Status='ACTIVE'"
+$cmd2.CommandText = "SELECT CentreID FROM Centres WHERE Status='ACTIVE'"
 $reader = $cmd2.ExecuteReader()
-while ($reader.Read()) { $branchIds += $reader.GetInt32(0) }
+while ($reader.Read()) { $centreIds += $reader.GetInt32(0) }
 $reader.Close()
 
-foreach ($bid in $branchIds) {
+foreach ($cid in $centreIds) {
     foreach ($h in $halls) {
-        $hexists = ExecScalar "SELECT COUNT(1) FROM Halls WHERE BranchID=$bid AND HallName=N'$($h.Name)'"
+        $hexists = ExecScalar "SELECT COUNT(1) FROM Halls WHERE CentreID=$cid AND HallName=N'$($h.Name)'"
         if ($hexists -eq 0) {
-            Exec "INSERT INTO Halls (BranchID, HallName, HallType, Capacity, Status) VALUES ($bid, N'$($h.Name)', '$($h.Type)', $($h.Cap), 'AVAILABLE')"
+            Exec "INSERT INTO Halls (CentreID, HallName, HallType, Capacity, Status) VALUES ($cid, N'$($h.Name)', '$($h.Type)', $($h.Cap), 'AVAILABLE')"
         }
     }
 }
@@ -90,7 +90,7 @@ $today   = (Get-Date).ToString("yyyy-MM-dd")
 $tomorrow = (Get-Date).AddDays(1).ToString("yyyy-MM-dd")
 
 $showtimes = @(
-    # MovieID, BranchName, Date, Time, Price
+    # MovieID, CentreName, Date, Time, Price
     @{ M=1;  B="CineFlow Cầu Giấy";    D=$today;    T="10:00"; P=85000 },
     @{ M=1;  B="CineFlow Cầu Giấy";    D=$today;    T="14:30"; P=95000 },
     @{ M=1;  B="CineFlow Cầu Giấy";    D=$today;    T="19:15"; P=110000 },
@@ -150,8 +150,8 @@ $showtimes = @(
 $insertCount = 0
 foreach ($s in $showtimes) {
     $startDT = "$($s.D) $($s.T):00"
-    $hallId = ExecScalar "SELECT TOP 1 h.HallID FROM Halls h JOIN Branches b ON b.BranchID=h.BranchID WHERE b.BranchName=N'$($s.B)' ORDER BY h.HallID"
-    if (-not $hallId) { Write-Host "No hall for branch: $($s.B)"; continue }
+    $hallId = ExecScalar "SELECT TOP 1 h.HallID FROM Halls h JOIN Centres c ON c.CentreID=h.CentreID WHERE c.CentreName=N'$($s.B)' ORDER BY h.HallID"
+    if (-not $hallId) { Write-Host "No hall for centre: $($s.B)"; continue }
     $duration = ExecScalar "SELECT Duration FROM Movies WHERE MovieID=$($s.M)"
     $exists = ExecScalar "SELECT COUNT(1) FROM CineFlowDB.dbo.Showtimes WHERE MovieID=$($s.M) AND HallID=$hallId AND StartTime='$startDT'"
     if ($exists -eq 0) {

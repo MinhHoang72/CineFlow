@@ -1,10 +1,8 @@
 package model;
-
 import java.math.BigDecimal;
-
 public class ReportSummary {
     private BigDecimal revenue = BigDecimal.ZERO;
-    private int bookings, tickets, activeMovies, activeBranches, activeUsers;
+    private int bookings, tickets, activeMovies, activeCentres, activeUsers;
     private double occupancy;
     public BigDecimal getRevenue() { return revenue; }
     public void setRevenue(BigDecimal v) { revenue = v == null ? BigDecimal.ZERO : v; }
@@ -14,8 +12,8 @@ public class ReportSummary {
     public void setTickets(int v) { tickets = v; }
     public int getActiveMovies() { return activeMovies; }
     public void setActiveMovies(int v) { activeMovies = v; }
-    public int getActiveBranches() { return activeBranches; }
-    public void setActiveBranches(int v) { activeBranches = v; }
+    public int getActiveCentres() { return activeCentres; }
+    public void setActiveCentres(int v) { activeCentres = v; }
     public int getActiveUsers() { return activeUsers; }
     public void setActiveUsers(int v) { activeUsers = v; }
     public double getOccupancy() { return occupancy; }

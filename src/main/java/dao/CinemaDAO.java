@@ -1,10 +1,9 @@
 package dao;
 
-import model.Branch;
+import model.Centre;
 import model.Movie;
 import model.ShowtimeView;
 import utils.DBContext;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -80,42 +79,42 @@ public class CinemaDAO {
         return null;
     }
 
-    public List<Branch> getActiveBranches() {
-        String sql = "SELECT b.BranchID, b.BranchName, b.Address, b.City, b.Phone, "
+    public List<Centre> getActiveCentres() {
+        String sql = "SELECT b.CentreID, b.CentreName, b.Address, b.City, b.Phone, "
                 + "COUNT(DISTINCT h.HallID) AS HallCount, "
                 + "COALESCE(SUM(h.Capacity), 0) AS SeatCount "
-                + "FROM Branches b "
-                + "LEFT JOIN Halls h ON h.BranchID = b.BranchID "
+                + "FROM Centres b "
+                + "LEFT JOIN Halls h ON h.CentreID = b.CentreID "
                 + "WHERE b.Status = 'ACTIVE' "
-                + "GROUP BY b.BranchID, b.BranchName, b.Address, b.City, b.Phone "
-                + "ORDER BY b.City, b.BranchName";
-        List<Branch> branches = new ArrayList<>();
+                + "GROUP BY b.CentreID, b.CentreName, b.Address, b.City, b.Phone "
+                + "ORDER BY b.City, b.CentreName";
+        List<Centre> centres = new ArrayList<>();
 
         try (Connection connection = DBContext.getConnection();
                 PreparedStatement statement = connection.prepareStatement(sql);
                 ResultSet resultSet = statement.executeQuery()) {
             while (resultSet.next()) {
-                Branch branch = new Branch();
-                branch.setBranchId(resultSet.getInt("BranchID"));
-                branch.setBranchName(resultSet.getString("BranchName"));
-                branch.setAddress(resultSet.getString("Address"));
-                branch.setCity(resultSet.getString("City"));
-                branch.setPhone(resultSet.getString("Phone"));
-                branch.setStatus("ACTIVE");
-                branch.setHallCount(resultSet.getInt("HallCount"));
-                branch.setSeatCount(resultSet.getInt("SeatCount"));
-                branches.add(branch);
+                Centre centre = new Centre();
+                centre.setCentreId(resultSet.getInt("CentreID"));
+                centre.setCentreName(resultSet.getString("CentreName"));
+                centre.setAddress(resultSet.getString("Address"));
+                centre.setCity(resultSet.getString("City"));
+                centre.setPhone(resultSet.getString("Phone"));
+                centre.setStatus("ACTIVE");
+                centre.setHallCount(resultSet.getInt("HallCount"));
+                centre.setSeatCount(resultSet.getInt("SeatCount"));
+                centres.add(centre);
             }
         } catch (Exception exception) {
             exception.printStackTrace();
         }
 
-        return branches;
+        return centres;
     }
 
     public Map<String, Integer> getActiveCitiesWithCount() {
-        String sql = "SELECT City, COUNT(BranchID) AS CinemaCount "
-                + "FROM Branches WHERE Status = 'ACTIVE' AND City IS NOT NULL AND LTRIM(RTRIM(City)) <> '' "
+        String sql = "SELECT City, COUNT(CentreID) AS CinemaCount "
+                + "FROM Centres WHERE Status = 'ACTIVE' AND City IS NOT NULL AND LTRIM(RTRIM(City)) <> '' "
                 + "GROUP BY City ORDER BY City";
         Map<String, Integer> cities = new LinkedHashMap<>();
         try (Connection connection = DBContext.getConnection();
@@ -133,71 +132,71 @@ public class CinemaDAO {
         return cities;
     }
 
-    public List<Branch> getActiveBranchesByCity(String city) {
-        String sql = "SELECT b.BranchID, b.BranchName, b.Address, b.City, b.Phone, "
+    public List<Centre> getActiveCentresByCity(String city) {
+        String sql = "SELECT b.CentreID, b.CentreName, b.Address, b.City, b.Phone, "
                 + "COUNT(DISTINCT h.HallID) AS HallCount, "
                 + "COALESCE(SUM(h.Capacity), 0) AS SeatCount "
-                + "FROM Branches b "
-                + "LEFT JOIN Halls h ON h.BranchID = b.BranchID "
+                + "FROM Centres b "
+                + "LEFT JOIN Halls h ON h.CentreID = b.CentreID "
                 + "WHERE b.Status = 'ACTIVE' AND LTRIM(RTRIM(b.City)) = LTRIM(RTRIM(?)) "
-                + "GROUP BY b.BranchID, b.BranchName, b.Address, b.City, b.Phone "
-                + "ORDER BY b.BranchName";
-        List<Branch> branches = new ArrayList<>();
+                + "GROUP BY b.CentreID, b.CentreName, b.Address, b.City, b.Phone "
+                + "ORDER BY b.CentreName";
+        List<Centre> centres = new ArrayList<>();
         try (Connection connection = DBContext.getConnection();
                 PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, city != null ? city.trim() : "");
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
-                    Branch branch = new Branch();
-                    branch.setBranchId(resultSet.getInt("BranchID"));
-                    branch.setBranchName(resultSet.getString("BranchName"));
-                    branch.setAddress(resultSet.getString("Address"));
-                    branch.setCity(resultSet.getString("City"));
-                    branch.setPhone(resultSet.getString("Phone"));
-                    branch.setStatus("ACTIVE");
-                    branch.setHallCount(resultSet.getInt("HallCount"));
-                    branch.setSeatCount(resultSet.getInt("SeatCount"));
-                    branches.add(branch);
+                    Centre centre = new Centre();
+                    centre.setCentreId(resultSet.getInt("CentreID"));
+                    centre.setCentreName(resultSet.getString("CentreName"));
+                    centre.setAddress(resultSet.getString("Address"));
+                    centre.setCity(resultSet.getString("City"));
+                    centre.setPhone(resultSet.getString("Phone"));
+                    centre.setStatus("ACTIVE");
+                    centre.setHallCount(resultSet.getInt("HallCount"));
+                    centre.setSeatCount(resultSet.getInt("SeatCount"));
+                    centres.add(centre);
                 }
             }
         } catch (Exception exception) {
             exception.printStackTrace();
         }
-        return branches;
+        return centres;
     }
 
-    public Branch getBranchById(int branchId) {
-        String sql = "SELECT b.BranchID, b.BranchName, b.Address, b.City, b.Phone, b.Status, "
+    public Centre getCentreById(int centreId) {
+        String sql = "SELECT b.CentreID, b.CentreName, b.Address, b.City, b.Phone, b.Status, "
                 + "COUNT(DISTINCT h.HallID) AS HallCount, "
                 + "COALESCE(SUM(h.Capacity), 0) AS SeatCount, "
                 + "u.UserID AS ManagerID, u.FullName AS ManagerName, u.Email AS ManagerEmail "
-                + "FROM Branches b "
-                + "LEFT JOIN Halls h ON h.BranchID = b.BranchID "
-                + "LEFT JOIN Users u ON u.BranchID = b.BranchID AND u.Role = 'MANAGER' AND u.Status = 'ACTIVE' "
-                + "WHERE b.BranchID = ? "
-                + "GROUP BY b.BranchID, b.BranchName, b.Address, b.City, b.Phone, b.Status, u.UserID, u.FullName, u.Email";
+                + "FROM Centres b "
+                + "LEFT JOIN Halls h ON h.CentreID = b.CentreID "
+                + "LEFT JOIN Users u ON u.CentreID = b.CentreID AND u.Role = 'MANAGER' AND u.Status = 'ACTIVE' "
+                + "WHERE b.CentreID = ? "
+                + "GROUP BY b.CentreID, b.CentreName, b.Address, b.City, b.Phone, b.Status, u.UserID, u.FullName, u.Email";
 
         try (Connection connection = DBContext.getConnection();
                 PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setInt(1, branchId);
+            statement.setInt(1, centreId);
             try (ResultSet resultSet = statement.executeQuery()) {
                 if (resultSet.next()) {
-                    Branch branch = new Branch();
-                    branch.setBranchId(resultSet.getInt("BranchID"));
-                    branch.setBranchName(resultSet.getString("BranchName"));
-                    branch.setAddress(resultSet.getString("Address"));
-                    branch.setCity(resultSet.getString("City"));
-                    branch.setPhone(resultSet.getString("Phone"));
-                    branch.setStatus(resultSet.getString("Status"));
-                    branch.setHallCount(resultSet.getInt("HallCount"));
-                    branch.setSeatCount(resultSet.getInt("SeatCount"));
+                    Centre centre = new Centre();
+                    centre.setCentreId(resultSet.getInt("CentreID"));
+                    centre.setCentreName(resultSet.getString("CentreName"));
+                    centre.setAddress(resultSet.getString("Address"));
+                    centre.setCity(resultSet.getString("City"));
+                    centre.setPhone(resultSet.getString("Phone"));
+                    centre.setStatus(resultSet.getString("Status"));
+                    centre.setHallCount(resultSet.getInt("HallCount"));
+                    centre.setSeatCount(resultSet.getInt("SeatCount"));
                     int mgrId = resultSet.getInt("ManagerID");
                     if (!resultSet.wasNull()) {
-                        branch.setManagerId(mgrId);
-                        branch.setManagerName(resultSet.getString("ManagerName"));
-                        branch.setManagerEmail(resultSet.getString("ManagerEmail"));
+                        centre.setManagerId(mgrId);
+                        centre.setManagerName(resultSet.getString("ManagerName"));
+                        centre.setManagerEmail(resultSet.getString("ManagerEmail"));
                     }
-                    return branch;
+                    return centre;
                 }
             }
         } catch (Exception exception) {
@@ -207,29 +206,29 @@ public class CinemaDAO {
         return null;
     }
 
-    public List<Branch> getDistributionBranches(int movieId) {
-        String sql = "SELECT b.BranchID, b.BranchName, b.Address, b.City, b.Phone, b.Status, "
+    public List<Centre> getDistributionCentres(int movieId) {
+        String sql = "SELECT b.CentreID, b.CentreName, b.Address, b.City, b.Phone, b.Status, "
                 + "CAST(CASE WHEN UPPER(b.Status) = 'ACTIVE' AND bm.IsActive = 1 THEN 1 ELSE 0 END AS bit) AS [Distributed] "
-                + "FROM Branches b LEFT JOIN BranchMovies bm ON bm.BranchID = b.BranchID AND bm.MovieID = ? "
-                + "ORDER BY b.City, b.BranchName";
-        List<Branch> branches = new ArrayList<>();
+                + "FROM Centres b LEFT JOIN CentreMovies bm ON bm.CentreID = b.CentreID AND bm.MovieID = ? "
+                + "ORDER BY b.City, b.CentreName";
+        List<Centre> centres = new ArrayList<>();
         try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, movieId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    Branch branch = new Branch();
-                    branch.setBranchId(rs.getInt("BranchID"));
-                    branch.setBranchName(rs.getString("BranchName"));
-                    branch.setAddress(rs.getString("Address"));
-                    branch.setCity(rs.getString("City"));
-                    branch.setPhone(rs.getString("Phone"));
-                    branch.setStatus(rs.getString("Status"));
-                    branch.setDistributed(rs.getBoolean("Distributed"));
-                    branches.add(branch);
+                    Centre centre = new Centre();
+                    centre.setCentreId(rs.getInt("CentreID"));
+                    centre.setCentreName(rs.getString("CentreName"));
+                    centre.setAddress(rs.getString("Address"));
+                    centre.setCity(rs.getString("City"));
+                    centre.setPhone(rs.getString("Phone"));
+                    centre.setStatus(rs.getString("Status"));
+                    centre.setDistributed(rs.getBoolean("Distributed"));
+                    centres.add(centre);
                 }
             }
         } catch (Exception exception) { exception.printStackTrace(); }
-        return branches;
+        return centres;
     }
 
     public String getMovieDistributionScope(int movieId) {
@@ -255,50 +254,50 @@ public class CinemaDAO {
     }
 
     public Set<Integer> getMovieDistributionExceptions(int movieId) {
-        String sql = "SELECT BranchID FROM MovieDistributionExceptions WHERE MovieID = ?";
-        Set<Integer> branchIds = new HashSet<>();
+        String sql = "SELECT CentreID FROM MovieDistributionExceptions WHERE MovieID = ?";
+        Set<Integer> CentreIDs = new HashSet<>();
         try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, movieId);
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) branchIds.add(rs.getInt("BranchID"));
+                while (rs.next()) CentreIDs.add(rs.getInt("CentreID"));
             }
         } catch (Exception exception) { exception.printStackTrace(); }
-        return branchIds;
+        return CentreIDs;
     }
 
-    public List<Branch> getDistributionBranches(int movieId, int branchId) {
-        List<Branch> branches = new ArrayList<>();
-        String sql = "SELECT b.BranchID, b.BranchName, b.Address, b.City, b.Phone, b.Status, "
+    public List<Centre> getDistributionCentres(int movieId, int centreId) {
+        List<Centre> centres = new ArrayList<>();
+        String sql = "SELECT b.CentreID, b.CentreName, b.Address, b.City, b.Phone, b.Status, "
                 + "CAST(CASE WHEN UPPER(b.Status) = 'ACTIVE' AND bm.IsActive = 1 THEN 1 ELSE 0 END AS bit) AS [Distributed] "
-                + "FROM Branches b LEFT JOIN BranchMovies bm ON bm.BranchID = b.BranchID AND bm.MovieID = ? "
-                + "WHERE b.BranchID = ?";
+                + "FROM Centres b LEFT JOIN CentreMovies bm ON bm.CentreID = b.CentreID AND bm.MovieID = ? "
+                + "WHERE b.CentreID = ?";
         try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, movieId);
-            ps.setInt(2, branchId);
+            ps.setInt(2, centreId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    Branch branch = new Branch();
-                    branch.setBranchId(rs.getInt("BranchID"));
-                    branch.setBranchName(rs.getString("BranchName"));
-                    branch.setAddress(rs.getString("Address"));
-                    branch.setCity(rs.getString("City"));
-                    branch.setPhone(rs.getString("Phone"));
-                    branch.setStatus(rs.getString("Status"));
-                    branch.setDistributed(rs.getBoolean("Distributed"));
-                    branches.add(branch);
+                    Centre centre = new Centre();
+                    centre.setCentreId(rs.getInt("CentreID"));
+                    centre.setCentreName(rs.getString("CentreName"));
+                    centre.setAddress(rs.getString("Address"));
+                    centre.setCity(rs.getString("City"));
+                    centre.setPhone(rs.getString("Phone"));
+                    centre.setStatus(rs.getString("Status"));
+                    centre.setDistributed(rs.getBoolean("Distributed"));
+                    centres.add(centre);
                 }
             }
         } catch (Exception exception) { exception.printStackTrace(); }
-        return branches;
+        return centres;
     }
 
-    public boolean saveMovieDistributionForBranch(int movieId, int branchId, boolean enabled) {
-        String sql = "MERGE BranchMovies AS target USING (SELECT ? AS BranchID, ? AS MovieID) AS source "
-                + "ON target.BranchID = source.BranchID AND target.MovieID = source.MovieID "
+    public boolean saveMovieDistributionForCentre(int movieId, int centreId, boolean enabled) {
+        String sql = "MERGE CentreMovies AS target USING (SELECT ? AS CentreID, ? AS MovieID) AS source "
+                + "ON target.CentreID = source.CentreID AND target.MovieID = source.MovieID "
                 + "WHEN MATCHED THEN UPDATE SET IsActive = ?, UpdatedAt = GETDATE() "
-                + "WHEN NOT MATCHED THEN INSERT (BranchID, MovieID, IsActive) VALUES (source.BranchID, source.MovieID, ?);";
+                + "WHEN NOT MATCHED THEN INSERT (CentreID, MovieID, IsActive) VALUES (source.CentreID, source.MovieID, ?);";
         try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setInt(1, branchId);
+            ps.setInt(1, centreId);
             ps.setInt(2, movieId);
             ps.setBoolean(3, enabled);
             ps.setBoolean(4, enabled);
@@ -307,17 +306,17 @@ public class CinemaDAO {
         } catch (Exception exception) { exception.printStackTrace(); return false; }
     }
 
-    public boolean saveMovieDistribution(int movieId, Set<Integer> selectedBranchIds) {
+    public boolean saveMovieDistribution(int movieId, Set<Integer> selectedCentreIDs) {
         String disableInactiveSql = "UPDATE bm SET bm.IsActive = 0, bm.UpdatedAt = GETDATE() "
-                + "FROM BranchMovies bm JOIN Branches b ON b.BranchID = bm.BranchID "
+                + "FROM CentreMovies bm JOIN Centres b ON b.CentreID = bm.CentreID "
                 + "WHERE bm.MovieID = ? AND (b.Status IS NULL OR UPPER(b.Status) <> 'ACTIVE')";
-        String disableAllSql = "UPDATE BranchMovies SET IsActive = 0, UpdatedAt = GETDATE() WHERE MovieID = ?";
-        String mergeSql = "MERGE BranchMovies AS target "
-                + "USING (SELECT ? AS BranchID, ? AS MovieID WHERE EXISTS ("
-                + "SELECT 1 FROM Branches b WHERE b.BranchID = ? AND UPPER(b.Status) = 'ACTIVE')) AS source "
-                + "ON target.BranchID = source.BranchID AND target.MovieID = source.MovieID "
+        String disableAllSql = "UPDATE CentreMovies SET IsActive = 0, UpdatedAt = GETDATE() WHERE MovieID = ?";
+        String mergeSql = "MERGE CentreMovies AS target "
+                + "USING (SELECT ? AS CentreID, ? AS MovieID WHERE EXISTS ("
+                + "SELECT 1 FROM Centres b WHERE b.CentreID = ? AND UPPER(b.Status) = 'ACTIVE')) AS source "
+                + "ON target.CentreID = source.CentreID AND target.MovieID = source.MovieID "
                 + "WHEN MATCHED THEN UPDATE SET IsActive = 1, UpdatedAt = GETDATE() "
-                + "WHEN NOT MATCHED THEN INSERT (BranchID, MovieID, IsActive) VALUES (source.BranchID, source.MovieID, 1);";
+                + "WHEN NOT MATCHED THEN INSERT (CentreID, MovieID, IsActive) VALUES (source.CentreID, source.MovieID, 1);";
 
         try (Connection connection = DBContext.getConnection()) {
             connection.setAutoCommit(false);
@@ -330,12 +329,12 @@ public class CinemaDAO {
                     disable.setInt(1, movieId);
                     disable.executeUpdate();
                 }
-                if (selectedBranchIds != null && !selectedBranchIds.isEmpty()) {
+                if (selectedCentreIDs != null && !selectedCentreIDs.isEmpty()) {
                     try (PreparedStatement merge = connection.prepareStatement(mergeSql)) {
-                        for (Integer branchId : selectedBranchIds) {
-                            merge.setInt(1, branchId);
+                        for (Integer CentreID : selectedCentreIDs) {
+                            merge.setInt(1, CentreID);
                             merge.setInt(2, movieId);
-                            merge.setInt(3, branchId);
+                            merge.setInt(3, CentreID);
                             merge.addBatch();
                         }
                         merge.executeBatch();
@@ -354,18 +353,18 @@ public class CinemaDAO {
     }
 
     public boolean saveMovieDistribution(int movieId, String scope, String city,
-            Set<Integer> selectedBranchIds, Set<Integer> exceptionBranchIds) {
-        return saveMovieDistribution(movieId, selectedBranchIds);
+            Set<Integer> selectedCentreIDs, Set<Integer> exceptionCentreIDs) {
+        return saveMovieDistribution(movieId, selectedCentreIDs);
     }
 
     public List<ShowtimeView> getScheduledShowtimes() {
-        String sql = "SELECT s.ShowtimeID, m.MovieID, b.BranchID, m.Title, "
-            + "b.BranchName, b.City, h.HallName, "
+        String sql = "SELECT s.ShowtimeID, m.MovieID, b.CentreID, m.Title, "
+            + "b.CentreName, b.City, h.HallName, "
                 + "s.StartTime, s.BaseTicketPrice "
                 + "FROM Showtimes s "
                 + "JOIN Movies m ON m.MovieID = s.MovieID "
                 + "JOIN Halls h ON h.HallID = s.HallID "
-                + "JOIN Branches b ON b.BranchID = h.BranchID "
+                + "JOIN Centres b ON b.CentreID = h.CentreID "
                 + "WHERE s.Status = 'SCHEDULED' AND m.Status IN ('NOW_SHOWING', 'COMING_SOON') "
                 + "ORDER BY s.StartTime";
         List<ShowtimeView> showtimes = new ArrayList<>();
@@ -377,9 +376,9 @@ public class CinemaDAO {
                 ShowtimeView showtime = new ShowtimeView();
                 showtime.setShowtimeId(resultSet.getInt("ShowtimeID"));
                 showtime.setMovieId(resultSet.getInt("MovieID"));
-                showtime.setBranchId(resultSet.getInt("BranchID"));
+                showtime.setCentreID(resultSet.getInt("CentreID"));
                 showtime.setMovieTitle(resultSet.getString("Title"));
-                showtime.setBranchName(resultSet.getString("BranchName"));
+                showtime.setCentreName(resultSet.getString("CentreName"));
                 showtime.setCity(resultSet.getString("City"));
                 showtime.setHallName(resultSet.getString("HallName"));
                 showtime.setStartTime(resultSet.getTimestamp("StartTime"));
@@ -394,13 +393,13 @@ public class CinemaDAO {
     }
 
     public List<ShowtimeView> getScheduledShowtimesByMovieId(int movieId) {
-        String sql = "SELECT s.ShowtimeID, m.MovieID, b.BranchID, m.Title, "
-                + "b.BranchName, b.City, h.HallName, "
+        String sql = "SELECT s.ShowtimeID, m.MovieID, b.CentreID, m.Title, "
+                + "b.CentreName, b.City, h.HallName, "
                 + "s.StartTime, s.BaseTicketPrice "
                 + "FROM Showtimes s "
                 + "JOIN Movies m ON m.MovieID = s.MovieID "
                 + "JOIN Halls h ON h.HallID = s.HallID "
-                + "JOIN Branches b ON b.BranchID = h.BranchID "
+                + "JOIN Centres b ON b.CentreID = h.CentreID "
                 + "WHERE s.Status = 'SCHEDULED' AND s.MovieID = ? "
                 + "ORDER BY s.StartTime";
         List<ShowtimeView> showtimes = new ArrayList<>();
@@ -413,9 +412,9 @@ public class CinemaDAO {
                     ShowtimeView showtime = new ShowtimeView();
                     showtime.setShowtimeId(resultSet.getInt("ShowtimeID"));
                     showtime.setMovieId(resultSet.getInt("MovieID"));
-                    showtime.setBranchId(resultSet.getInt("BranchID"));
+                    showtime.setCentreID(resultSet.getInt("CentreID"));
                     showtime.setMovieTitle(resultSet.getString("Title"));
-                    showtime.setBranchName(resultSet.getString("BranchName"));
+                    showtime.setCentreName(resultSet.getString("CentreName"));
                     showtime.setCity(resultSet.getString("City"));
                     showtime.setHallName(resultSet.getString("HallName"));
                     showtime.setStartTime(resultSet.getTimestamp("StartTime"));
@@ -430,33 +429,33 @@ public class CinemaDAO {
         return showtimes;
     }
 
-    public List<ShowtimeView> getScheduledShowtimesByBranchId(int branchId) {
-        String sql = "SELECT s.ShowtimeID, m.MovieID, b.BranchID, m.Title, m.PosterURL, m.AgeRating, m.Duration, m.Genre, "
-                + "b.BranchName, b.City, h.HallName, "
+    public List<ShowtimeView> getScheduledShowtimesByCentreId(int centreId) {
+        String sql = "SELECT s.ShowtimeID, m.MovieID, b.CentreID, m.Title, m.PosterURL, m.AgeRating, m.Duration, m.Genre, "
+                + "b.CentreName, b.City, h.HallName, "
                 + "s.StartTime, s.BaseTicketPrice "
                 + "FROM Showtimes s "
                 + "JOIN Movies m ON m.MovieID = s.MovieID "
                 + "JOIN Halls h ON h.HallID = s.HallID "
-                + "JOIN Branches b ON b.BranchID = h.BranchID "
-                + "WHERE s.Status = 'SCHEDULED' AND b.BranchID = ? "
+                + "JOIN Centres b ON b.CentreID = h.CentreID "
+                + "WHERE s.Status = 'SCHEDULED' AND b.CentreID = ? "
                 + "ORDER BY s.StartTime";
         List<ShowtimeView> showtimes = new ArrayList<>();
 
         try (Connection connection = DBContext.getConnection();
                 PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setInt(1, branchId);
+            statement.setInt(1, centreId);
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
                     ShowtimeView showtime = new ShowtimeView();
                     showtime.setShowtimeId(resultSet.getInt("ShowtimeID"));
                     showtime.setMovieId(resultSet.getInt("MovieID"));
-                    showtime.setBranchId(resultSet.getInt("BranchID"));
+                    showtime.setCentreId(resultSet.getInt("CentreID"));
                     showtime.setMovieTitle(resultSet.getString("Title"));
                     showtime.setPosterUrl(resultSet.getString("PosterURL"));
                     showtime.setAgeRating(resultSet.getString("AgeRating"));
                     showtime.setDuration(resultSet.getInt("Duration"));
                     showtime.setGenre(resultSet.getString("Genre"));
-                    showtime.setBranchName(resultSet.getString("BranchName"));
+                    showtime.setCentreName(resultSet.getString("CentreName"));
                     showtime.setCity(resultSet.getString("City"));
                     showtime.setHallName(resultSet.getString("HallName"));
                     showtime.setStartTime(resultSet.getTimestamp("StartTime"));
@@ -518,44 +517,43 @@ public class CinemaDAO {
         ps.setString(1, movie.getTitle()); ps.setString(2, movie.getDescription()); ps.setInt(3, movie.getDuration()); ps.setString(4, movie.getGenre()); ps.setString(5, movie.getDirector()); ps.setString(6, movie.getCast()); ps.setString(7, movie.getLanguage()); ps.setDate(8, movie.getReleaseDate()); ps.setDate(9, movie.getEndDate()); ps.setString(10, movie.getPosterUrl()); ps.setString(11, movie.getTrailerUrl()); ps.setString(12, movie.getAgeRating()); ps.setString(13, movie.getStatus()); if (update) ps.setInt(14, movie.getMovieId());
     }
 
-    public List<Branch> getAllBranchesWithManager() {
-        String sql = "SELECT b.BranchID, b.BranchName, b.Address, b.City, b.Phone, b.Status, "
+    public List<Centre> getAllCentresWithManager() {
+        String sql = "SELECT b.CentreID, b.CentreName, b.Address, b.City, b.Phone, b.Status, "
                 + "COUNT(DISTINCT h.HallID) AS HallCount, "
                 + "COALESCE(SUM(h.Capacity), 0) AS SeatCount, "
                 + "u.UserID AS ManagerID, u.FullName AS ManagerName, u.Email AS ManagerEmail "
-                + "FROM Branches b "
-                + "LEFT JOIN Halls h ON h.BranchID = b.BranchID "
-                + "LEFT JOIN Users u ON u.BranchID = b.BranchID AND u.Role = 'MANAGER' AND u.Status = 'ACTIVE' "
-                + "GROUP BY b.BranchID, b.BranchName, b.Address, b.City, b.Phone, b.Status, u.UserID, u.FullName, u.Email "
-                + "ORDER BY b.BranchID DESC";
-        List<Branch> list = new ArrayList<>();
+                + "FROM Centres b "
+                + "LEFT JOIN Halls h ON h.CentreID = b.CentreID "
+                + "LEFT JOIN Users u ON u.CentreID = b.CentreID AND u.Role = 'MANAGER' AND u.Status = 'ACTIVE' "
+                + "GROUP BY b.CentreID, b.CentreName, b.Address, b.City, b.Phone, b.Status, u.UserID, u.FullName, u.Email "
+                + "ORDER BY b.CentreID DESC";
+        List<Centre> list = new ArrayList<>();
         try (Connection connection = DBContext.getConnection();
              PreparedStatement ps = connection.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
-                Branch branch = new Branch();
-                branch.setBranchId(rs.getInt("BranchID"));
-                branch.setBranchName(rs.getString("BranchName"));
-                branch.setAddress(rs.getString("Address"));
-                branch.setCity(rs.getString("City"));
-                branch.setPhone(rs.getString("Phone"));
-                branch.setStatus(rs.getString("Status"));
-                branch.setHallCount(rs.getInt("HallCount"));
-                branch.setSeatCount(rs.getInt("SeatCount"));
+                Centre centre = new Centre();
+                centre.setCentreId(rs.getInt("CentreID"));
+                centre.setCentreName(rs.getString("CentreName"));
+                centre.setAddress(rs.getString("Address"));
+                centre.setCity(rs.getString("City"));
+                centre.setPhone(rs.getString("Phone"));
+                centre.setStatus(rs.getString("Status"));
+                centre.setHallCount(rs.getInt("HallCount"));
+                centre.setSeatCount(rs.getInt("SeatCount"));
 
                 int mgrId = rs.getInt("ManagerID");
                 if (!rs.wasNull()) {
-                    branch.setManagerId(mgrId);
-                    branch.setManagerName(rs.getString("ManagerName"));
-                    branch.setManagerEmail(rs.getString("ManagerEmail"));
+                    centre.setManagerId(mgrId);
+                    centre.setManagerName(rs.getString("ManagerName"));
+                    centre.setManagerEmail(rs.getString("ManagerEmail"));
                 }
-                list.add(branch);
+                list.add(centre);
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
         return list;
     }
-
 }
 

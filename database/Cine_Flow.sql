@@ -1,5 +1,5 @@
-/* =========================================================
-   CINEFLOW - MULTI-BRANCH CINEMA MANAGEMENT SYSTEM
+﻿/* =========================================================
+   CINEFLOW - MULTI-CENTRE CINEMA MANAGEMENT SYSTEM
    DATABASE: SQL SERVER
    VERSION: 2.0 - ALIGNED WITH FEATURE TREE
    ========================================================= */
@@ -35,7 +35,7 @@ CREATE TABLE Users (
     Role VARCHAR(20) NOT NULL
         CONSTRAINT CK_Users_Role CHECK (Role IN ('CUSTOMER','STAFF','MANAGER','ADMIN')),
     Status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
-    BranchID INT NULL,
+    CentreID INT NULL,
     ResetToken VARCHAR(255) NULL,
     ResetTokenExpiry DATETIME2 NULL,
     EmailVerified BIT NOT NULL DEFAULT 0,
@@ -49,23 +49,23 @@ GO
 
 
 /* =========================================================
-   4. BRANCHES - FE-01.1 / FE-03.1
+   4. Centres - FE-01.1 / FE-03.1
    ========================================================= */
-CREATE TABLE Branches (
-    BranchID INT IDENTITY(1,1) PRIMARY KEY,
-    BranchName NVARCHAR(150) NOT NULL,
+CREATE TABLE Centres (
+    CentreID INT IDENTITY(1,1) PRIMARY KEY,
+    CentreName NVARCHAR(150) NOT NULL,
     Address NVARCHAR(300) NOT NULL,
     City NVARCHAR(100) NULL,
     Phone VARCHAR(20) NULL,
     Status VARCHAR(30) NOT NULL DEFAULT 'ACTIVE',
     CreatedAt DATETIME2 NOT NULL DEFAULT GETDATE(),
     UpdatedAt DATETIME2 NULL,
-    CONSTRAINT CK_Branches_Status CHECK (Status IN ('ACTIVE','INACTIVE','TEMPORARILY_CLOSED'))
+    CONSTRAINT CK_Centres_Status CHECK (Status IN ('ACTIVE','INACTIVE','TEMPORARILY_CLOSED'))
 );
 GO
 
 ALTER TABLE Users
-ADD CONSTRAINT FK_Users_Branch FOREIGN KEY (BranchID) REFERENCES Branches(BranchID);
+ADD CONSTRAINT FK_Users_Centre FOREIGN KEY (CentreID) REFERENCES Centres(CentreID);
 GO
 
 
@@ -74,13 +74,13 @@ GO
    ========================================================= */
 CREATE TABLE Halls (
     HallID INT IDENTITY(1,1) PRIMARY KEY,
-    BranchID INT NOT NULL,
+    CentreID INT NOT NULL,
     HallName NVARCHAR(100) NOT NULL,
     HallType VARCHAR(20) NOT NULL DEFAULT '2D',
     Capacity INT NOT NULL,
     Status VARCHAR(20) NOT NULL DEFAULT 'AVAILABLE',
     CreatedAt DATETIME2 NOT NULL DEFAULT GETDATE(),
-    CONSTRAINT FK_Halls_Branches FOREIGN KEY (BranchID) REFERENCES Branches(BranchID),
+    CONSTRAINT FK_Halls_Centres FOREIGN KEY (CentreID) REFERENCES Centres(CentreID),
     CONSTRAINT CK_Halls_Type CHECK (HallType IN ('2D','3D')),
     CONSTRAINT CK_Halls_Capacity CHECK (Capacity > 0),
     CONSTRAINT CK_Halls_Status CHECK (Status IN ('AVAILABLE','MAINTENANCE','INACTIVE'))
@@ -136,18 +136,18 @@ GO
 
 
 /* =========================================================
-   8. BRANCH MOVIES - FE-02.2
+   8. CENTRE MOVIES - FE-02.2
    ========================================================= */
-CREATE TABLE BranchMovies (
-    BranchMovieID INT IDENTITY(1,1) PRIMARY KEY,
-    BranchID INT NOT NULL,
+CREATE TABLE CentreMovies (
+    CentreMovieID INT IDENTITY(1,1) PRIMARY KEY,
+    CentreID INT NOT NULL,
     MovieID INT NOT NULL,
     IsActive BIT NOT NULL DEFAULT 1,
     CreatedAt DATETIME2 NOT NULL DEFAULT GETDATE(),
     UpdatedAt DATETIME2 NULL,
-    CONSTRAINT FK_BranchMovies_Branch FOREIGN KEY (BranchID) REFERENCES Branches(BranchID),
-    CONSTRAINT FK_BranchMovies_Movie FOREIGN KEY (MovieID) REFERENCES Movies(MovieID),
-    CONSTRAINT UQ_Branch_Movie UNIQUE (BranchID,MovieID)
+    CONSTRAINT FK_CentreMovies_Centre FOREIGN KEY (CentreID) REFERENCES Centres(CentreID),
+    CONSTRAINT FK_CentreMovies_Movie FOREIGN KEY (MovieID) REFERENCES Movies(MovieID),
+    CONSTRAINT UQ_Centre_Movie UNIQUE (CentreID,MovieID)
 );
 GO
 
@@ -173,12 +173,12 @@ GO
    ========================================================= */
 CREATE TABLE MovieDistributionExceptions (
     MovieID INT NOT NULL,
-    BranchID INT NOT NULL,
-    CONSTRAINT PK_MovieDistributionExceptions PRIMARY KEY (MovieID, BranchID),
+    CentreID INT NOT NULL,
+    CONSTRAINT PK_MovieDistributionExceptions PRIMARY KEY (MovieID, CentreID),
     CONSTRAINT FK_MovieDistributionExceptions_Settings FOREIGN KEY (MovieID)
         REFERENCES MovieDistributionSettings(MovieID) ON DELETE CASCADE,
-    CONSTRAINT FK_MovieDistributionExceptions_Branches FOREIGN KEY (BranchID)
-        REFERENCES Branches(BranchID) ON DELETE CASCADE
+    CONSTRAINT FK_MovieDistributionExceptions_Centres FOREIGN KEY (CentreID)
+        REFERENCES Centres(CentreID) ON DELETE CASCADE
 );
 GO
 
@@ -360,13 +360,13 @@ GO
 
 
 /* =========================================================
-   17. BRANCH F&B INVENTORY
+   17. CENTRE F&B INVENTORY
    ========================================================= */
 
-CREATE TABLE BranchFnbInventory (
+CREATE TABLE CentreFnbInventory (
     InventoryID INT IDENTITY(1,1) PRIMARY KEY,
 
-    BranchID INT NOT NULL,
+    CentreID INT NOT NULL,
 
     FnbItemID INT NOT NULL,
 
@@ -379,9 +379,9 @@ CREATE TABLE BranchFnbInventory (
     UpdatedAt DATETIME2 NOT NULL
         DEFAULT GETDATE(),
 
-    CONSTRAINT FK_Inventory_Branch
-        FOREIGN KEY (BranchID)
-        REFERENCES Branches(BranchID),
+    CONSTRAINT FK_Inventory_Centre
+        FOREIGN KEY (CentreID)
+        REFERENCES Centres(CentreID),
 
     CONSTRAINT FK_Inventory_Item
         FOREIGN KEY (FnbItemID)
@@ -390,9 +390,9 @@ CREATE TABLE BranchFnbInventory (
     CONSTRAINT CK_Inventory_Stock
         CHECK (StockQuantity >= 0),
 
-    CONSTRAINT UQ_Branch_Fnb
+    CONSTRAINT UQ_Centre_Fnb
         UNIQUE (
-            BranchID,
+            CentreID,
             FnbItemID
         )
 );
@@ -687,7 +687,7 @@ CREATE TABLE FnbOrders (
 
     BookingID INT NULL,
 
-    BranchID INT NOT NULL,
+    CentreID INT NOT NULL,
 
     UserID INT NULL,
 
@@ -711,9 +711,9 @@ CREATE TABLE FnbOrders (
         FOREIGN KEY (BookingID)
         REFERENCES Bookings(BookingID),
 
-    CONSTRAINT FK_FnbOrders_Branch
-        FOREIGN KEY (BranchID)
-        REFERENCES Branches(BranchID),
+    CONSTRAINT FK_FnbOrders_Centre
+        FOREIGN KEY (CentreID)
+        REFERENCES Centres(CentreID),
 
     CONSTRAINT FK_FnbOrders_User
         FOREIGN KEY (UserID)
@@ -956,25 +956,25 @@ GO
 CREATE TABLE StaffTransferHistory (
     TransferID INT IDENTITY(1,1) PRIMARY KEY,
     UserID INT NOT NULL,
-    FromBranchID INT NULL,
-    ToBranchID INT NOT NULL,
+    FromCentreID INT NULL,
+    ToCentreID INT NOT NULL,
     TransferredBy INT NOT NULL,
     TransferDate DATETIME2 NOT NULL DEFAULT GETDATE(),
     Reason NVARCHAR(500) NULL,
     Notes NVARCHAR(500) NULL,
     CONSTRAINT FK_Transfer_User FOREIGN KEY (UserID) REFERENCES Users(UserID),
-    CONSTRAINT FK_Transfer_FromBranch FOREIGN KEY (FromBranchID) REFERENCES Branches(BranchID),
-    CONSTRAINT FK_Transfer_ToBranch FOREIGN KEY (ToBranchID) REFERENCES Branches(BranchID),
+    CONSTRAINT FK_Transfer_FromCentre FOREIGN KEY (FromCentreID) REFERENCES Centres(CentreID),
+    CONSTRAINT FK_Transfer_ToCentre FOREIGN KEY (ToCentreID) REFERENCES Centres(CentreID),
     CONSTRAINT FK_Transfer_Admin FOREIGN KEY (TransferredBy) REFERENCES Users(UserID)
 );
 GO
 
 /* =========================================================
-   33. BRANCH MANAGER ASSIGNMENTS - FE-01.3
+   33. CENTRE MANAGER ASSIGNMENTS - FE-01.3
    ========================================================= */
-CREATE TABLE BranchManagerAssignments (
+CREATE TABLE CentreManagerAssignments (
     AssignmentID INT IDENTITY(1,1) PRIMARY KEY,
-    BranchID INT NOT NULL,
+    CentreID INT NOT NULL,
     ManagerID INT NOT NULL,
     AssignedBy INT NOT NULL,
     StartDate DATETIME2 NOT NULL DEFAULT GETDATE(),
@@ -982,7 +982,7 @@ CREATE TABLE BranchManagerAssignments (
     Status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
     Notes NVARCHAR(500) NULL,
     CreatedAt DATETIME2 NOT NULL DEFAULT GETDATE(),
-    CONSTRAINT FK_BMA_Branch FOREIGN KEY (BranchID) REFERENCES Branches(BranchID),
+    CONSTRAINT FK_CMA_Centre FOREIGN KEY (CentreID) REFERENCES Centres(CentreID),
     CONSTRAINT FK_BMA_Manager FOREIGN KEY (ManagerID) REFERENCES Users(UserID),
     CONSTRAINT FK_BMA_Admin FOREIGN KEY (AssignedBy) REFERENCES Users(UserID),
     CONSTRAINT CK_BMA_Status CHECK (Status IN ('ACTIVE', 'ENDED', 'REPLACED'))
@@ -994,10 +994,10 @@ GO
 
 
 /* =========================================================
-   11. SAMPLE BRANCHES
+   11. SAMPLE Centres
    ========================================================= */
-INSERT INTO Branches
-(BranchName, Address, City, Phone, Status)
+INSERT INTO Centres
+(CentreName, Address, City, Phone, Status)
 VALUES
 (N'CineFlow Cầu Giấy', N'123 Cầu Giấy', N'Hà Nội', '02411111111', 'ACTIVE'),
 (N'CineFlow Hà Đông', N'456 Nguyễn Trãi', N'Hà Nội', '02422222222', 'ACTIVE');
@@ -1008,7 +1008,7 @@ GO
    12. SAMPLE USERS
    ========================================================= */
 INSERT INTO Users
-(FullName, Account, Email, Password, Phone, Role, Status, BranchID, EmailVerified)
+(FullName, Account, Email, Password, Phone, Role, Status, CentreID, EmailVerified)
 VALUES
 (N'Nguyễn Văn Customer', 'customer', 'customer@gmail.com', '123456', '0900000001', 'CUSTOMER', 'ACTIVE', NULL, 1),
 (N'Nguyễn Văn Staff',    'staff',    'staff@gmail.com',    '123456', '0900000002', 'STAFF',    'ACTIVE', 1, 1),
@@ -1021,7 +1021,7 @@ GO
    13. SAMPLE HALLS
    ========================================================= */
 INSERT INTO Halls
-(BranchID, HallName, HallType, Capacity, Status)
+(CentreID, HallName, HallType, Capacity, Status)
 VALUES
 (1, N'Phòng 01', '2D', 60, 'AVAILABLE'),
 (1, N'Phòng 02', '2D', 50, 'AVAILABLE'),
@@ -1295,12 +1295,12 @@ GO
 
 
 /* =========================================================
-   16. BRANCH MOVIES
+   16. CENTRE MOVIES
    ========================================================= */
 
-INSERT INTO BranchMovies
+INSERT INTO CentreMovies
 (
-    BranchID,
+    CentreID,
     MovieID,
     IsActive
 )
@@ -1449,12 +1449,12 @@ GO
 
 
 /* =========================================================
-   46. BRANCH F&B INVENTORY
+   46. CENTRE F&B INVENTORY
    ========================================================= */
 
-INSERT INTO BranchFnbInventory
+INSERT INTO CentreFnbInventory
 (
-    BranchID,
+    CentreID,
     FnbItemID,
     StockQuantity,
     IsAvailable
@@ -1562,9 +1562,9 @@ GO
    25. INDEXES
    ========================================================= */
 CREATE INDEX IX_Users_Role ON Users(Role);
-CREATE INDEX IX_Users_BranchID ON Users(BranchID);
-CREATE INDEX IX_Branches_City ON Branches(City);
-CREATE INDEX IX_Halls_BranchID ON Halls(BranchID);
+CREATE INDEX IX_Users_CentreID ON Users(CentreID);
+CREATE INDEX IX_Centres_City ON Centres(City);
+CREATE INDEX IX_Halls_CentreID ON Halls(CentreID);
 CREATE INDEX IX_Seats_HallID ON Seats(HallID);
 CREATE INDEX IX_Showtimes_MovieID ON Showtimes(MovieID);
 CREATE INDEX IX_Showtimes_HallID ON Showtimes(HallID);
@@ -1582,21 +1582,21 @@ GO
 SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE='BASE TABLE' ORDER BY TABLE_NAME;
 GO
 
-SELECT UserID, FullName, Account, Email, Role, Status, BranchID FROM Users ORDER BY UserID;
+SELECT UserID, FullName, Account, Email, Role, Status, CentreID FROM Users ORDER BY UserID;
 GO
 
-SELECT b.BranchName, h.HallName, h.HallType, h.Capacity
-FROM Branches b
-JOIN Halls h ON b.BranchID = h.BranchID
-ORDER BY b.BranchID, h.HallID;
+SELECT b.CentreName, h.HallName, h.HallType, h.Capacity
+FROM Centres b
+JOIN Halls h ON b.CentreID = h.CentreID
+ORDER BY b.CentreID, h.HallID;
 GO
 
-SELECT s.ShowtimeID, m.Title AS Movie, b.BranchName, h.HallName, h.HallType,
+SELECT s.ShowtimeID, m.Title AS Movie, b.CentreName, h.HallName, h.HallType,
        s.StartTime, s.EndTime, s.BaseTicketPrice, s.Status
 FROM Showtimes s
 JOIN Movies m ON s.MovieID = m.MovieID
 JOIN Halls h ON s.HallID = h.HallID
-JOIN Branches b ON h.BranchID = b.BranchID
+JOIN Centres b ON h.CentreID = b.CentreID
 ORDER BY s.StartTime;
 GO
 USE CineFlowDB;
@@ -1606,9 +1606,9 @@ GO
    1. THÊM CHI NHÁNH
    ===================================================== */
 
-INSERT INTO Branches
-(BranchName, Address, City, Phone, Status)
-SELECT v.BranchName, v.Address, v.City, v.Phone, 'ACTIVE'
+INSERT INTO Centres
+(CentreName, Address, City, Phone, Status)
+SELECT v.CentreName, v.Address, v.City, v.Phone, 'ACTIVE'
 FROM
 (
     VALUES
@@ -1616,12 +1616,12 @@ FROM
     (N'CineFlow Quận 1', N'120 Nguyễn Huệ, Quận 1', N'TP. Hồ Chí Minh', '02844444444'),
     (N'CineFlow Hải Châu', N'50 Bạch Đằng, Hải Châu', N'Đà Nẵng', '02365555555'),
     (N'CineFlow Ngô Quyền', N'20 Lạch Tray, Ngô Quyền', N'Hải Phòng', '02256666666')
-) v(BranchName, Address, City, Phone)
+) v(CentreName, Address, City, Phone)
 WHERE NOT EXISTS
 (
     SELECT 1
-    FROM Branches b
-    WHERE b.BranchName = v.BranchName
+    FROM Centres b
+    WHERE b.CentreName = v.CentreName
 );
 GO
 
@@ -1632,7 +1632,7 @@ GO
    ===================================================== */
 
 INSERT INTO Users
-(FullName, Account, Email, Password, Phone, Role, Status, BranchID, EmailVerified)
+(FullName, Account, Email, Password, Phone, Role, Status, CentreID, EmailVerified)
 SELECT
     v.FullName,
     v.Account,
@@ -1641,7 +1641,7 @@ SELECT
     v.Phone,
     v.Role,
     'ACTIVE',
-    b.BranchID,
+    b.CentreID,
     1
 FROM
 (
@@ -1678,8 +1678,8 @@ FROM
         'STAFF',
         N'CineFlow Quận 1'
     )
-) v(FullName, Account, Email, Phone, Role, BranchName)
-JOIN Branches b ON b.BranchName = v.BranchName
+) v(FullName, Account, Email, Phone, Role, CentreName)
+JOIN Centres b ON b.CentreName = v.CentreName
 WHERE NOT EXISTS
 (
     SELECT 1
@@ -1700,10 +1700,10 @@ GO
    4. PHÂN PHỐI PHIM ĐẾN CÁC TRUNG TÂM
    ===================================================== */
 
-INSERT INTO BranchMovies
-(BranchID, MovieID, IsActive)
-SELECT b.BranchID, m.MovieID, 1
-FROM Branches b
+INSERT INTO CentreMovies
+(CentreID, MovieID, IsActive)
+SELECT b.CentreID, m.MovieID, 1
+FROM Centres b
 CROSS JOIN Movies m
 WHERE m.Title IN
 (
@@ -1715,8 +1715,8 @@ AND b.Status = 'ACTIVE'
 AND NOT EXISTS
 (
     SELECT 1
-    FROM BranchMovies bm
-    WHERE bm.BranchID = b.BranchID
+    FROM CentreMovies bm
+    WHERE bm.CentreID = b.CentreID
       AND bm.MovieID = m.MovieID
 );
 GO
@@ -1727,8 +1727,8 @@ GO
    ===================================================== */
 
 INSERT INTO Halls
-(BranchID, HallName, HallType, Capacity, Status)
-SELECT b.BranchID, v.HallName, v.HallType, v.Capacity, 'AVAILABLE'
+(CentreID, HallName, HallType, Capacity, Status)
+SELECT b.CentreID, v.HallName, v.HallType, v.Capacity, 'AVAILABLE'
 FROM
 (
     VALUES
@@ -1737,13 +1737,13 @@ FROM
     (N'CineFlow Quận 1', N'Phòng Premium 01', '2D', 90),
     (N'CineFlow Hải Châu', N'Phòng 01', '2D', 70),
     (N'CineFlow Ngô Quyền', N'Phòng 01', '2D', 70)
-) v(BranchName, HallName, HallType, Capacity)
-JOIN Branches b ON b.BranchName = v.BranchName
+) v(CentreName, HallName, HallType, Capacity)
+JOIN Centres b ON b.CentreName = v.CentreName
 WHERE NOT EXISTS
 (
     SELECT 1
     FROM Halls h
-    WHERE h.BranchID = b.BranchID
+    WHERE h.CentreID = b.CentreID
       AND h.HallName = v.HallName
 );
 GO
@@ -1804,10 +1804,10 @@ FROM
         CAST('2026-10-07 19:00:00' AS DATETIME2),
         CAST(80000 AS DECIMAL(12,2))
     )
-) v(MovieTitle, BranchName, HallName, StartTime, BaseTicketPrice)
+) v(MovieTitle, CentreName, HallName, StartTime, BaseTicketPrice)
 JOIN Movies m ON m.Title = v.MovieTitle
-JOIN Branches b ON b.BranchName = v.BranchName
-JOIN Halls h ON h.BranchID = b.BranchID
+JOIN Centres b ON b.CentreName = v.CentreName
+JOIN Halls h ON h.CentreID = b.CentreID
            AND h.HallName = v.HallName
 LEFT JOIN Users u ON u.Account = 'manager'
 WHERE NOT EXISTS
@@ -1873,11 +1873,11 @@ GO
    8. KIỂM TRA DỮ LIỆU
    ===================================================== */
 
-SELECT BranchID, BranchName, City, Status
-FROM Branches
-ORDER BY BranchID;
+SELECT CentreID, CentreName, City, Status
+FROM Centres
+ORDER BY CentreID;
 
-SELECT UserID, FullName, Account, Role, BranchID, Status
+SELECT UserID, FullName, Account, Role, CentreID, Status
 FROM Users
 ORDER BY UserID;
 
@@ -1886,17 +1886,17 @@ FROM Movies
 ORDER BY MovieID;
 
 SELECT
-    b.BranchName,
+    b.CentreName,
     m.Title,
     bm.IsActive
-FROM BranchMovies bm
-JOIN Branches b ON b.BranchID = bm.BranchID
+FROM CentreMovies bm
+JOIN Centres b ON b.CentreID = bm.CentreID
 JOIN Movies m ON m.MovieID = bm.MovieID
-ORDER BY b.BranchName, m.Title;
+ORDER BY b.CentreName, m.Title;
 
 SELECT
     m.Title,
-    b.BranchName,
+    b.CentreName,
     h.HallName,
     s.StartTime,
     s.EndTime,
@@ -1904,7 +1904,7 @@ SELECT
 FROM Showtimes s
 JOIN Movies m ON m.MovieID = s.MovieID
 JOIN Halls h ON h.HallID = s.HallID
-JOIN Branches b ON b.BranchID = h.BranchID
+JOIN Centres b ON b.CentreID = h.CentreID
 ORDER BY s.StartTime;
 GO
 USE CineFlowDB;
@@ -1920,10 +1920,10 @@ GO
    2. PHÂN PHỐI CÁC PHIM MỚI ĐẾN TOÀN BỘ CHI NHÁNH
    ===================================================== */
 
-INSERT INTO BranchMovies
-(BranchID, MovieID, IsActive)
-SELECT b.BranchID, m.MovieID, 1
-FROM Branches b
+INSERT INTO CentreMovies
+(CentreID, MovieID, IsActive)
+SELECT b.CentreID, m.MovieID, 1
+FROM Centres b
 CROSS JOIN Movies m
 WHERE m.Title IN
 (
@@ -1938,8 +1938,8 @@ AND b.Status = 'ACTIVE'
 AND NOT EXISTS
 (
     SELECT 1
-    FROM BranchMovies bm
-    WHERE bm.BranchID = b.BranchID
+    FROM CentreMovies bm
+    WHERE bm.CentreID = b.CentreID
       AND bm.MovieID = m.MovieID
 );
 GO
@@ -2007,10 +2007,10 @@ FROM
         CAST('2026-10-20 10:00:00' AS DATETIME2),
         CAST(70000 AS DECIMAL(12,2))
     )
-) v(MovieTitle, BranchName, HallName, StartTime, BaseTicketPrice)
+) v(MovieTitle, CentreName, HallName, StartTime, BaseTicketPrice)
 JOIN Movies m ON m.Title = v.MovieTitle
-JOIN Branches b ON b.BranchName = v.BranchName
-JOIN Halls h ON h.BranchID = b.BranchID
+JOIN Centres b ON b.CentreName = v.CentreName
+JOIN Halls h ON h.CentreID = b.CentreID
            AND h.HallName = v.HallName
 LEFT JOIN Users u ON u.Account = 'manager'
 WHERE NOT EXISTS
@@ -2138,21 +2138,21 @@ GO
    7. CẬP NHẬT TỒN KHO ĐỒ ĂN CHO CÁC CHI NHÁNH
    ===================================================== */
 
-INSERT INTO BranchFnbInventory
-(BranchID, FnbItemID, StockQuantity, IsAvailable)
+INSERT INTO CentreFnbInventory
+(CentreID, FnbItemID, StockQuantity, IsAvailable)
 SELECT
-    b.BranchID,
+    b.CentreID,
     i.FnbItemID,
     150,
     1
-FROM Branches b
+FROM Centres b
 CROSS JOIN FnbItems i
 WHERE b.Status = 'ACTIVE'
 AND NOT EXISTS
 (
     SELECT 1
-    FROM BranchFnbInventory inv
-    WHERE inv.BranchID = b.BranchID
+    FROM CentreFnbInventory inv
+    WHERE inv.CentreID = b.CentreID
       AND inv.FnbItemID = i.FnbItemID
 );
 GO
@@ -2241,13 +2241,13 @@ GO
    9. KIỂM TRA SỐ LƯỢNG DỮ LIỆU
    ===================================================== */
 
-SELECT 'Branches' AS TableName, COUNT(*) AS TotalRows FROM Branches
+SELECT 'Centres' AS TableName, COUNT(*) AS TotalRows FROM Centres
 UNION ALL
 SELECT 'Users', COUNT(*) FROM Users
 UNION ALL
 SELECT 'Movies', COUNT(*) FROM Movies
 UNION ALL
-SELECT 'BranchMovies', COUNT(*) FROM BranchMovies
+SELECT 'CentreMovies', COUNT(*) FROM CentreMovies
 UNION ALL
 SELECT 'MovieDistributionSettings', COUNT(*) FROM MovieDistributionSettings
 UNION ALL

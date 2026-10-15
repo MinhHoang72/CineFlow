@@ -1,6 +1,7 @@
 package controller;
 
 import dao.UserDAO;
+import model.User;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,7 +29,12 @@ public class AccountServlet extends HttpServlet {
         request.setAttribute("accountUser", userDAO.getUserById(userId));
         request.setAttribute("bookingHistory", userDAO.getBookingHistory(userId));
         String role = (String) session.getAttribute("role");
-        String page = "MANAGER".equalsIgnoreCase(role) ? "/manager/profile.jsp" : "ADMIN".equalsIgnoreCase(role) ? "/admin/profile.jsp" : "/account/profile.jsp";
+        if (role == null && session.getAttribute("user") instanceof User) {
+            role = ((User) session.getAttribute("user")).getRole();
+        }
+        String page = ("ADMIN".equalsIgnoreCase(role) || "MANAGER".equalsIgnoreCase(role))
+                ? "/admin/profile.jsp"
+                : "/account/profile.jsp";
         request.getRequestDispatcher(page).forward(request, response);
     }
 

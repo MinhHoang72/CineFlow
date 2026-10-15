@@ -5,8 +5,9 @@
     if (authRole == null && session.getAttribute("user") instanceof model.User) {
         authRole = ((model.User) session.getAttribute("user")).getRole();
     }
-    if (!"ADMIN".equalsIgnoreCase(authRole)) {
-        response.sendError(HttpServletResponse.SC_FORBIDDEN, "Chỉ Quản trị viên (ADMIN) mới có quyền truy cập trang này.");
+    boolean isAdmin = "ADMIN".equalsIgnoreCase(authRole);
+    if (!isAdmin && !"MANAGER".equalsIgnoreCase(authRole)) {
+        response.sendError(HttpServletResponse.SC_FORBIDDEN, "Bạn không có quyền truy cập trang này.");
         return;
     }
 
@@ -17,9 +18,9 @@
     }
 
     request.setAttribute("activeNav", "reports");
-    request.setAttribute("pageTitle", "Báo cáo & Phân tích toàn chuỗi");
-    request.setAttribute("pageBreadcrumb", "Báo cáo toàn hệ thống");
-    List<RevenueReport> branches = (List<RevenueReport>) request.getAttribute("branchRevenue");
+    request.setAttribute("pageTitle", isAdmin ? "Báo cáo & Phân tích toàn chuỗi" : "Báo cáo hoạt động");
+    request.setAttribute("pageBreadcrumb", isAdmin ? "Báo cáo toàn hệ thống" : "Báo cáo");
+    List<RevenueReport> centres = (List<RevenueReport>) request.getAttribute("centreRevenue");
     List<RevenueReport> movies = (List<RevenueReport>) request.getAttribute("movieRevenue");
     List<ShowtimeMetric> showtimes = (List<ShowtimeMetric>) request.getAttribute("showtimeMetrics");
 
@@ -36,7 +37,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Báo cáo toàn hệ thống | CineFlow Admin</title>
+    <title><%= isAdmin ? "Báo cáo toàn hệ thống | CineFlow Admin" : "Báo cáo hoạt động | CineFlow Manager" %></title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin/admin-style.css?v=<%= System.currentTimeMillis() %>">
     <style>
         .report-tabs {
@@ -77,18 +78,18 @@
 </head>
 <body>
 <div class="admin-layout">
-    <jsp:include page="/admin/sidebar.jsp" />
+    <jsp:include page='<%= isAdmin ? "/admin/sidebar.jsp" : "/manager/sidebar.jsp" %>' />
 
     <div class="admin-main">
-        <jsp:include page="/admin/topbar.jsp" />
+        <jsp:include page='<%= isAdmin ? "/admin/topbar.jsp" : "/manager/topbar.jsp" %>' />
 
         <main class="admin-content">
             <!-- HERO -->
             <div class="page-hero">
                 <div class="page-hero-text">
-                    <p class="eyebrow">PHÂN TÍCH TOÀN HỆ THỐNG</p>
-                    <h1>Báo cáo & Phân tích tài chính chuỗi CineFlow</h1>
-                    <p>Theo dõi tổng hợp doanh thu vé, hiệu suất bán vé từng cụm rạp và thống kê phim ăn khách.</p>
+                    <p class="eyebrow"><%= isAdmin ? "PHÂN TÍCH TOÀN HỆ THỐNG" : "BÁO CÁO HOẠT ĐỘNG" %></p>
+                    <h1><%= isAdmin ? "Báo cáo & Phân tích tài chính chuỗi CineFlow" : "Báo cáo & Phân tích hoạt động kinh doanh" %></h1>
+                    <p><%= isAdmin ? "Theo dõi tổng hợp doanh thu vé, hiệu suất bán vé từng cụm rạp và thống kê phim ăn khách." : "Tổng hợp doanh thu, lượng vé bán và hiệu suất suất chiếu." %></p>
                 </div>
                 <div class="page-hero-actions">
                     <button type="button" class="cf-btn cf-btn-secondary" onclick="window.print();">
@@ -102,7 +103,7 @@
             <div class="kpi-grid">
                 <div class="kpi-card ruby">
                     <div class="kpi-card-header">
-                        <span class="kpi-title">DOANH THU TOÀN CHUỖI</span>
+                        <span class="kpi-title"><%= isAdmin ? "DOANH THU TOÀN CHUỖI" : "TỔNG DOANH THU" %></span>
                         <span class="kpi-icon">💰</span>
                     </div>
                     <div class="kpi-value"><%= money(totalRev) %></div>
@@ -120,11 +121,11 @@
 
                 <div class="kpi-card sky">
                     <div class="kpi-card-header">
-                        <span class="kpi-title">CỤM RẠP ĐANG KINH DOANH</span>
+                        <span class="kpi-title">TRUNG TÂM ĐANG KINH DOANH</span>
                         <span class="kpi-icon">🏢</span>
                     </div>
-                    <div class="kpi-value"><%= s != null ? s.getActiveBranches() : 0 %></div>
-                    <div class="kpi-subtext">Chi nhánh hoạt động</div>
+                    <div class="kpi-value"><%= s != null ? s.getActiveCentres() : 0 %></div>
+                    <div class="kpi-subtext">Trung tâm hoạt động</div>
                 </div>
 
                 <div class="kpi-card amber">
@@ -139,8 +140,8 @@
 
             <!-- TABS -->
             <div class="report-tabs">
-                <button type="button" class="report-tab-btn active" onclick="switchReportTab('tabBranches', this)">
-                    <span>🏢</span> Doanh thu theo trung tâm (<%= branches != null ? branches.size() : 0 %>)
+                <button type="button" class="report-tab-btn active" onclick="switchReportTab('tabCentres', this)">
+                    <span>🏢</span> Doanh thu theo trung tâm (<%= centres != null ? centres.size() : 0 %>)
                 </button>
                 <button type="button" class="report-tab-btn" onclick="switchReportTab('tabMovies', this)">
                     <span>🎬</span> Xếp hạng phim (<%= movies != null ? movies.size() : 0 %>)
@@ -150,20 +151,20 @@
                 </button>
             </div>
 
-            <!-- TAB 1: REVENUE BY BRANCH -->
-            <div id="tabBranches" class="report-tab-pane active">
+            <!-- TAB 1: REVENUE BY CENTRE -->
+            <div id="tabCentres" class="report-tab-pane active">
                 <div class="admin-card">
                     <div class="admin-card-header">
                         <div>
-                            <h2>Doanh thu theo trung tâm rạp chiếu</h2>
-                            <p>Thống kê số lượng đơn đặt vé, vé bán ra và tổng tiền thu được tại từng cụm rạp</p>
+                            <h2>Doanh thu theo trung tâm chiếu phim</h2>
+                            <p>Thống kê số lượng đơn đặt vé, vé bán ra và tổng tiền thu được tại từng trung tâm</p>
                         </div>
                     </div>
                     <div class="table-responsive">
                         <table class="cf-table">
                             <thead>
                                 <tr>
-                                    <th>Cụm rạp</th>
+                                    <th>Trung tâm</th>
                                     <th>Thành phố</th>
                                     <th>Số đơn đặt vé</th>
                                     <th>Tổng vé bán</th>
@@ -171,12 +172,12 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <% if (branches == null || branches.isEmpty()) { %>
+                                <% if (centres == null || centres.isEmpty()) { %>
                                     <tr>
-                                        <td colspan="5" class="cf-empty-state">Chưa có dữ liệu giao dịch tại các trung tâm rạp.</td>
+                                        <td colspan="5" class="cf-empty-state">Chưa có dữ liệu giao dịch tại các trung tâm.</td>
                                     </tr>
                                 <% } else {
-                                    for (RevenueReport b : branches) {
+                                    for (RevenueReport b : centres) {
                                 %>
                                     <tr>
                                         <td><strong><%= b.getName() %></strong></td>
@@ -253,7 +254,7 @@
                             <thead>
                                 <tr>
                                     <th>Phim</th>
-                                    <th>Cụm rạp</th>
+                                    <th>Trung tâm</th>
                                     <th>Phòng chiếu</th>
                                     <th>Giờ chiếu</th>
                                     <th>Vé bán / Sức chứa</th>
@@ -272,7 +273,7 @@
                                 %>
                                     <tr>
                                         <td><strong><%= st.getMovieTitle() %></strong></td>
-                                        <td><%= st.getBranchName() %></td>
+                                        <td><%= st.getCentreName() %></td>
                                         <td><%= st.getHallName() %></td>
                                         <td><%= st.getStartTime() != null ? st.getStartTime().toString().substring(0, 16) : "—" %></td>
                                         <td><%= st.getSoldSeats() %> / <%= st.getCapacity() %> ghế</td>

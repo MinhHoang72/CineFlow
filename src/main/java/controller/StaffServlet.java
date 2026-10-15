@@ -12,7 +12,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import model.Branch;
+import model.Centre;
 import model.User;
 import utils.PasswordUtils;
 
@@ -61,42 +61,42 @@ public class StaffServlet extends HttpServlet {
         }
 
         boolean adminRole = isAdmin(session);
-        Integer branchId = null;
+        Integer centreId = null;
 
         if (!adminRole) {
             // Manager: Chỉ xem nhân viên rạp mình phụ trách
-            branchId = currentUser.getBranchId();
+            centreId = currentUser.getCentreId();
         } else {
             // Admin: Xem theo filter hoặc toàn bộ
-            String bp = request.getParameter("branchId");
-            if (bp != null && !bp.trim().isEmpty()) {
+            String cp = request.getParameter("centreId");
+            if (cp != null && !cp.trim().isEmpty()) {
                 try {
-                    branchId = Integer.parseInt(bp.trim());
+                    centreId = Integer.parseInt(cp.trim());
                 } catch (NumberFormatException ignored) {}
             }
         }
 
         String searchParam = request.getParameter("search");
         List<User> staffList = new ArrayList<>();
-        if (adminRole || branchId != null) {
-            staffList = userDAO.getStaffDirectory(branchId, searchParam);
+        if (adminRole || centreId != null) {
+            staffList = userDAO.getStaffDirectory(centreId, searchParam);
         }
 
-        List<Branch> branches = cinemaDAO.getActiveBranches();
-        Branch assignedBranch = null;
-        if (branchId != null) {
-            for (Branch b : branches) {
-                if (b.getBranchId() == branchId) {
-                    assignedBranch = b;
+        List<Centre> centres = cinemaDAO.getActiveCentres();
+        Centre assignedCentre = null;
+        if (centreId != null) {
+            for (Centre c : centres) {
+                if (c.getCentreId() == centreId) {
+                    assignedCentre = c;
                     break;
                 }
             }
         }
 
         request.setAttribute("staff", staffList);
-        request.setAttribute("branches", branches);
-        request.setAttribute("assignedBranch", assignedBranch);
-        request.setAttribute("selectedBranchId", branchId);
+        request.setAttribute("centres", centres);
+        request.setAttribute("assignedCentre", assignedCentre);
+        request.setAttribute("selectedCentreId", centreId);
         request.setAttribute("isAdmin", adminRole);
         request.getRequestDispatcher("/staff/directory.jsp").forward(request, response);
     }
@@ -122,17 +122,17 @@ public class StaffServlet extends HttpServlet {
         // 1. TẠO TÀI KHOẢN NHÂN VIÊN MỚI
         if ("create".equalsIgnoreCase(action)) {
             // Manager chỉ được tạo nhân viên thuộc rạp mình phụ trách
-            if (!adminRole && currentUser.getBranchId() == null) {
+            if (!adminRole && currentUser.getCentreId() == null) {
                 response.sendRedirect(request.getContextPath() + "/staff?error=unassigned_manager");
                 return;
             }
 
-            Integer targetBranchId = currentUser.getBranchId();
+            Integer targetCentreId = currentUser.getCentreId();
             if (adminRole) {
-                String bp = request.getParameter("branchId");
-                if (bp != null && !bp.trim().isEmpty()) {
+                String cp = request.getParameter("centreId");
+                if (cp != null && !cp.trim().isEmpty()) {
                     try {
-                        targetBranchId = Integer.parseInt(bp.trim());
+                        targetCentreId = Integer.parseInt(cp.trim());
                     } catch (NumberFormatException ignored) {}
                 }
             }
@@ -170,7 +170,7 @@ public class StaffServlet extends HttpServlet {
             newStaff.setEmail(email);
             newStaff.setPassword(PasswordUtils.hashPassword(password.trim()));
             newStaff.setPhone(phone != null ? phone.trim() : "");
-            newStaff.setBranchId(targetBranchId);
+            newStaff.setCentreId(targetCentreId);
 
             boolean created = userDAO.createStaff(newStaff);
             if (created) {
@@ -208,7 +208,7 @@ public class StaffServlet extends HttpServlet {
 
                 // BẢO MẬT: Manager KHÔNG ĐƯỢC quản lý Staff thuộc rạp khác
                 if (!adminRole) {
-                    if (currentUser.getBranchId() == null || targetUser.getBranchId() == null || !currentUser.getBranchId().equals(targetUser.getBranchId())) {
+                    if (currentUser.getCentreId() == null || targetUser.getCentreId() == null || !currentUser.getCentreId().equals(targetUser.getCentreId())) {
                         response.sendError(HttpServletResponse.SC_FORBIDDEN, "Bạn không có quyền quản lý nhân viên của rạp khác.");
                         return;
                     }
@@ -259,7 +259,7 @@ public class StaffServlet extends HttpServlet {
 
                 // BẢO MẬT: Manager KHÔNG ĐƯỢC quản lý Staff thuộc rạp khác
                 if (!adminRole) {
-                    if (currentUser.getBranchId() == null || targetUser.getBranchId() == null || !currentUser.getBranchId().equals(targetUser.getBranchId())) {
+                    if (currentUser.getCentreId() == null || targetUser.getCentreId() == null || !currentUser.getCentreId().equals(targetUser.getCentreId())) {
                         response.sendError(HttpServletResponse.SC_FORBIDDEN, "Bạn không có quyền quản lý nhân viên của rạp khác.");
                         return;
                     }

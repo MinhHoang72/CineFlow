@@ -6,7 +6,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import model.Branch;
+import model.Centre;
 import model.Movie;
 import model.User;
 import java.io.IOException;
@@ -14,7 +14,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/** Admin distributes movies to cinema branches across the system. */
+/** Admin distributes movies to cinema centres across the system. */
 public class DistributionServlet extends HttpServlet {
     private final CinemaDAO dao = new CinemaDAO();
 
@@ -53,9 +53,9 @@ public class DistributionServlet extends HttpServlet {
                 response.sendError(HttpServletResponse.SC_NOT_FOUND, "Không tìm thấy phim.");
                 return;
             }
-            List<Branch> branches = dao.getDistributionBranches(movieId);
+            List<Centre> centres = dao.getDistributionCentres(movieId);
             request.setAttribute("movie", movie);
-            request.setAttribute("branches", branches);
+            request.setAttribute("centres", centres);
             request.getRequestDispatcher("/admin/distribution.jsp").forward(request, response);
         } catch (NumberFormatException exception) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Mã phim không hợp lệ.");
@@ -72,17 +72,17 @@ public class DistributionServlet extends HttpServlet {
         try {
             request.setCharacterEncoding("UTF-8");
             int movieId = Integer.parseInt(request.getParameter("movieId"));
-            String[] ids = request.getParameterValues("branchIds");
-            Set<Integer> selectedBranchIds = new HashSet<>();
+            String[] ids = request.getParameterValues("centreIds");
+            Set<Integer> selectedCentreIds = new HashSet<>();
             if (ids != null) {
                 for (String id : ids) {
                     if (id != null && !id.isBlank()) {
-                        selectedBranchIds.add(Integer.parseInt(id.trim()));
+                        selectedCentreIds.add(Integer.parseInt(id.trim()));
                     }
                 }
             }
 
-            if (!dao.saveMovieDistribution(movieId, selectedBranchIds)) {
+            if (!dao.saveMovieDistribution(movieId, selectedCentreIds)) {
                 throw new IllegalStateException("Không lưu được phân phối phim.");
             }
             response.sendRedirect(request.getContextPath() + "/admin/distribution?movieId=" + movieId + "&saved=1");

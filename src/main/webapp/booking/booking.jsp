@@ -1,7 +1,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ page import="model.User" %>
 <%@ page import="model.Movie" %>
-<%@ page import="model.Branch" %>
+<%@ page import="model.Centre" %>
 <%@ page import="model.ShowtimeView" %>
 <%@ page import="dao.CinemaDAO" %>
 <%@ page import="java.text.SimpleDateFormat" %>
@@ -61,28 +61,31 @@
             movies.add(cm);
         }
     }
-    List<Branch> branches = cinemaDAO.getActiveBranches();
+    List<Centre> centres = cinemaDAO.getActiveCentres();
     List<ShowtimeView> showtimes = cinemaDAO.getScheduledShowtimes();
     Set<String> cityNames = new LinkedHashSet<>();
     Set<String> dateKeys = new LinkedHashSet<>();
     List<java.sql.Timestamp> scheduleDates = new ArrayList<>();
-    for (Branch branch : branches) {
-        if (branch.getCity() != null && !branch.getCity().trim().isEmpty()) cityNames.add(branch.getCity());
+    for (Centre centre : centres) {
+        if (centre.getCity() != null && !centre.getCity().trim().isEmpty()) cityNames.add(centre.getCity());
     }
     for (ShowtimeView showtime : showtimes) {
         String dateKey = formatDateKey(showtime.getStartTime());
         if (dateKeys.add(dateKey)) scheduleDates.add(showtime.getStartTime());
     }
-    int requestedBranchId = -1;
+    int requestedCentreId = -1;
     try {
-        requestedBranchId = Integer.parseInt(request.getParameter("branchId"));
+        String cParam = request.getParameter("centreId");
+        if (cParam != null && !cParam.trim().isEmpty()) {
+            requestedCentreId = Integer.parseInt(cParam.trim());
+        }
     } catch (Exception ignored) {
-        requestedBranchId = -1;
+        requestedCentreId = -1;
     }
-    Branch requestedBranch = null;
-    for (Branch branch : branches) {
-        if (branch.getBranchId() == requestedBranchId) {
-            requestedBranch = branch;
+    Centre requestedCentre = null;
+    for (Centre centre : centres) {
+        if (centre.getCentreId() == requestedCentreId) {
+            requestedCentre = centre;
             break;
         }
     }
@@ -119,9 +122,9 @@
 
     ShowtimeView initialShowtime = null;
     if (requestedMovieId > 0) {
-        if (requestedBranchId > 0) {
+        if (requestedCentreId > 0) {
             for (ShowtimeView showtime : showtimes) {
-                if (showtime.getMovieId() == requestedMovieId && showtime.getBranchId() == requestedBranchId) {
+                if (showtime.getMovieId() == requestedMovieId && showtime.getCentreId() == requestedCentreId) {
                     initialShowtime = showtime;
                     break;
                 }
@@ -135,9 +138,9 @@
                 }
             }
         }
-    } else if (requestedBranchId > 0) {
+    } else if (requestedCentreId > 0) {
         for (ShowtimeView showtime : showtimes) {
-            if (showtime.getBranchId() == requestedBranchId) {
+            if (showtime.getCentreId() == requestedCentreId) {
                 initialShowtime = showtime;
                 break;
             }
@@ -149,17 +152,17 @@
     }
 
     int selectedMovieId = requestedMovieId > 0 ? requestedMovieId : (initialShowtime != null ? initialShowtime.getMovieId() : (!movies.isEmpty() ? movies.get(0).getMovieId() : -1));
-    int selectedBranchId = -1;
+    int selectedCentreId = -1;
     String selectedCity = "";
     String selectedDate = "";
 
     if (requestedMovieId > 0 && initialShowtime != null && initialShowtime.getMovieId() == requestedMovieId) {
-        selectedBranchId = requestedBranch != null ? requestedBranch.getBranchId() : initialShowtime.getBranchId();
-        selectedCity = requestedBranch != null ? requestedBranch.getCity() : initialShowtime.getCity();
+        selectedCentreId = requestedCentre != null ? requestedCentre.getCentreId() : initialShowtime.getCentreId();
+        selectedCity = requestedCentre != null ? requestedCentre.getCity() : initialShowtime.getCity();
         selectedDate = formatDateKey(initialShowtime.getStartTime());
     } else {
-        selectedBranchId = requestedBranch != null ? requestedBranch.getBranchId() : (initialShowtime != null ? initialShowtime.getBranchId() : (!branches.isEmpty() ? branches.get(0).getBranchId() : -1));
-        selectedCity = requestedBranch != null ? requestedBranch.getCity() : (initialShowtime != null ? initialShowtime.getCity() : "");
+        selectedCentreId = requestedCentre != null ? requestedCentre.getCentreId() : (initialShowtime != null ? initialShowtime.getCentreId() : (!centres.isEmpty() ? centres.get(0).getCentreId() : -1));
+        selectedCity = requestedCentre != null ? requestedCentre.getCity() : (initialShowtime != null ? initialShowtime.getCity() : "");
         selectedDate = initialShowtime != null ? formatDateKey(initialShowtime.getStartTime()) : (!scheduleDates.isEmpty() ? formatDateKey(scheduleDates.get(0)) : "");
     }
 %>
@@ -203,7 +206,7 @@
              data-customer="<%= isCustomer %>"
              data-initial-date="<%= selectedDate %>"
              data-initial-city="<%= escapeHtml(selectedCity) %>"
-             data-initial-branch="<%= selectedBranchId %>"
+             data-initial-centre="<%= selectedCentreId %>"
              data-initial-movie="<%= selectedMovieId %>">
             <section class="cinema-panel" aria-labelledby="cinema-title">
                 <h1 class="panel-title" id="cinema-title">Rạp</h1>
@@ -223,10 +226,10 @@
                 </div>
                 <div class="centre-area">
                     <div class="centre-grid" id="bookingCentres">
-                        <% for (Branch branch : branches) { %>
-                            <button class="centre<%= branch.getBranchId() == selectedBranchId ? " active" : "" %>" type="button" data-branch-id="<%= branch.getBranchId() %>" data-city="<%= escapeHtml(branch.getCity()) %>" data-name="<%= escapeHtml(branch.getBranchName()) %>"><%= escapeHtml(branch.getBranchName()) %></button>
+                        <% for (Centre centre : centres) { %>
+                            <button class="centre<%= centre.getCentreId() == selectedCentreId ? " active" : "" %>" type="button" data-centre-id="<%= centre.getCentreId() %>" data-city="<%= escapeHtml(centre.getCity()) %>" data-name="<%= escapeHtml(centre.getCentreName()) %>"><%= escapeHtml(centre.getCentreName()) %></button>
                         <% } %>
-                        <% if (branches.isEmpty()) { %><p class="empty-state">Chưa có rạp đang hoạt động.</p><% } %>
+                        <% if (centres.isEmpty()) { %><p class="empty-state">Chưa có trung tâm chiếu phim đang hoạt động.</p><% } %>
                     </div>
                 </div>
             </section>
@@ -282,7 +285,7 @@
                         <button class="showtime" type="button"
                                 data-showtime-id="<%= showtime.getShowtimeId() %>"
                                 data-date="<%= formatDateKey(showtime.getStartTime()) %>"
-                                data-branch-id="<%= showtime.getBranchId() %>"
+                                data-centre-id="<%= showtime.getCentreId() %>"
                                 data-city="<%= escapeHtml(showtime.getCity()) %>"
                                 data-movie-id="<%= showtime.getMovieId() %>"
                                 data-time="<%= formatTime(showtime.getStartTime()) %>"
@@ -302,7 +305,7 @@
             const content = document.getElementById("bookingContent");
             const dateButtons = Array.from(document.querySelectorAll(".date[data-date]"));
             const cityButtons = Array.from(document.querySelectorAll(".city-tab"));
-            const centreButtons = Array.from(document.querySelectorAll(".centre[data-branch-id]"));
+            const centreButtons = Array.from(document.querySelectorAll(".centre[data-centre-id]"));
             const movieButtons = Array.from(document.querySelectorAll(".movie-item[data-movie-id]"));
             const movieFilterButtons = Array.from(document.querySelectorAll(".movie-tab-btn"));
             const showtimeButtons = Array.from(document.querySelectorAll(".showtime[data-showtime-id]"));
@@ -316,7 +319,7 @@
 
             let selectedDate = content.dataset.initialDate || "";
             let selectedCity = content.dataset.initialCity || "";
-            let selectedBranchId = content.dataset.initialBranch || "";
+            let selectedCentreId = content.dataset.initialCentre || "";
             let selectedMovieId = content.dataset.initialMovie || "";
             let selectedShowtimeId = "";
             let currentMovieFilter = "all";
@@ -390,13 +393,13 @@
                     button.hidden = !matchCity;
 
                     if (selectedMovieId) {
-                        const branchHasShows = showtimeButtons.some((s) =>
-                            s.dataset.branchId === button.dataset.branchId &&
+                        const centreHasShows = showtimeButtons.some((s) =>
+                            s.dataset.centreId === button.dataset.centreId &&
                             s.dataset.movieId === selectedMovieId &&
                             s.dataset.date === selectedDate
                         );
-                        button.classList.toggle("has-shows", branchHasShows);
-                        button.classList.toggle("no-shows", !branchHasShows);
+                        button.classList.toggle("has-shows", centreHasShows);
+                        button.classList.toggle("no-shows", !centreHasShows);
                     } else {
                         button.classList.remove("has-shows");
                         button.classList.remove("no-shows");
@@ -406,9 +409,9 @@
                 // Auto-select rạp tối ưu:
                 // Nếu rạp hiện tại bị ẩn hoặc không có suất chiếu cho phim và ngày này,
                 // ưu tiên tự động chọn rạp đầu tiên CÓ suất chiếu trong thành phố đã chọn!
-                let activeCentre = centreButtons.find((button) => button.dataset.branchId === selectedBranchId && !button.hidden);
+                let activeCentre = centreButtons.find((button) => button.dataset.centreId === selectedCentreId && !button.hidden);
                 const activeHasShows = activeCentre && showtimeButtons.some((s) =>
-                    s.dataset.branchId === activeCentre.dataset.branchId &&
+                    s.dataset.centreId === activeCentre.dataset.centreId &&
                     s.dataset.movieId === selectedMovieId &&
                     s.dataset.date === selectedDate
                 );
@@ -417,20 +420,20 @@
                     const firstAvailableInCity = centreButtons.find((button) =>
                         !button.hidden &&
                         showtimeButtons.some((s) =>
-                            s.dataset.branchId === button.dataset.branchId &&
+                            s.dataset.centreId === button.dataset.centreId &&
                             s.dataset.movieId === selectedMovieId &&
                             s.dataset.date === selectedDate
                         )
                     );
                     if (firstAvailableInCity) {
                         activeCentre = firstAvailableInCity;
-                        selectedBranchId = activeCentre.dataset.branchId;
+                        selectedCentreId = activeCentre.dataset.centreId;
                     }
                 }
 
                 if (!activeCentre) {
                     activeCentre = centreButtons.find((button) => !button.hidden);
-                    selectedBranchId = activeCentre ? activeCentre.dataset.branchId : "";
+                    selectedCentreId = activeCentre ? activeCentre.dataset.centreId : "";
                 }
                 centreButtons.forEach((button) => button.classList.toggle("active", button === activeCentre));
 
@@ -450,7 +453,7 @@
                 // 6. Showtimes Buttons
                 const matchingShowtimes = showtimeButtons.filter((showtime) =>
                     showtime.dataset.date === selectedDate &&
-                    showtime.dataset.branchId === selectedBranchId &&
+                    showtime.dataset.centreId === selectedCentreId &&
                     showtime.dataset.movieId === selectedMovieId
                 );
 
@@ -474,12 +477,12 @@
                     if (isComingSoon) {
                         showtimeEmpty.innerHTML = "Phim <strong>" + escapeHtmlText(activeMovieTitle) + "</strong> là phim sắp chiếu và hiện chưa mở bán suất chiếu. Vui lòng quay lại sau.";
                     } else if (activeMovieTitle) {
-                        const altDateSlot = showtimeButtons.find((s) => s.dataset.movieId === selectedMovieId && s.dataset.branchId === selectedBranchId);
-                        const altBranchSlot = showtimeButtons.find((s) => s.dataset.movieId === selectedMovieId && s.dataset.date === selectedDate);
+                        const altDateSlot = showtimeButtons.find((s) => s.dataset.movieId === selectedMovieId && s.dataset.centreId === selectedCentreId);
+                        const altCentreSlot = showtimeButtons.find((s) => s.dataset.movieId === selectedMovieId && s.dataset.date === selectedDate);
                         let hint = "";
                         if (altDateSlot) {
                             hint = " (Phim có suất chiếu vào ngày khác tại rạp này)";
-                        } else if (altBranchSlot) {
+                        } else if (altCentreSlot) {
                             hint = " (Phim có suất chiếu tại cụm rạp khác)";
                         }
                         showtimeEmpty.innerHTML = "Không có suất chiếu cho phim <strong>" + escapeHtmlText(activeMovieTitle) + "</strong> tại rạp và ngày đã chọn." + hint;
@@ -512,10 +515,10 @@
                     selectedMovieId = button.dataset.movieId;
                     selectedShowtimeId = "";
 
-                    // Auto-align: Does this movie have showtimes on currently selected date & branch?
+                    // Auto-align: Does this movie have showtimes on currently selected date & centre?
                     const hasCurrentSlot = showtimeButtons.some((s) =>
                         s.dataset.movieId === selectedMovieId &&
-                        s.dataset.branchId === selectedBranchId &&
+                        s.dataset.centreId === selectedCentreId &&
                         s.dataset.date === selectedDate
                     );
 
@@ -527,15 +530,15 @@
                             (!selectedCity || normalize(s.dataset.city || "") === normalize(selectedCity))
                         );
                         if (sameCitySameDate) {
-                            selectedBranchId = sameCitySameDate.dataset.branchId;
+                            selectedCentreId = sameCitySameDate.dataset.centreId;
                         } else {
                             // 2. Tìm ngày khác tại chính rạp đang chọn
-                            const branchSlot = showtimeButtons.find((s) =>
+                            const centreSlot = showtimeButtons.find((s) =>
                                 s.dataset.movieId === selectedMovieId &&
-                                s.dataset.branchId === selectedBranchId
+                                s.dataset.centreId === selectedCentreId
                             );
-                            if (branchSlot) {
-                                selectedDate = branchSlot.dataset.date;
+                            if (centreSlot) {
+                                selectedDate = centreSlot.dataset.date;
                             } else {
                                 // 3. Tìm bất kỳ rạp/ngày nào trong cùng thành phố
                                 const citySlot = showtimeButtons.find((s) =>
@@ -544,13 +547,13 @@
                                 );
                                 if (citySlot) {
                                     selectedDate = citySlot.dataset.date;
-                                    selectedBranchId = citySlot.dataset.branchId;
+                                    selectedCentreId = citySlot.dataset.centreId;
                                 } else {
                                     // 4. Mở rộng tìm toàn quốc nếu thành phố không có rạp chiếu
                                     const anySlot = showtimeButtons.find((s) => s.dataset.movieId === selectedMovieId);
                                     if (anySlot) {
                                         selectedDate = anySlot.dataset.date;
-                                        selectedBranchId = anySlot.dataset.branchId;
+                                        selectedCentreId = anySlot.dataset.centreId;
                                         selectedCity = anySlot.dataset.city || "";
                                     }
                                 }
@@ -572,24 +575,24 @@
                 });
             });
 
-            // Cinema / Branch selection
+            // Cinema / Centre selection
             centreButtons.forEach((button) => {
                 button.addEventListener("click", () => {
-                    selectedBranchId = button.dataset.branchId;
+                    selectedCentreId = button.dataset.centreId;
                     selectedCity = button.dataset.city;
                     selectedShowtimeId = "";
 
-                    // If selected movie has showtimes at this branch on another date, switch date
+                    // If selected movie has showtimes at this centre on another date, switch date
                     if (selectedMovieId) {
                         const hasDateSlot = showtimeButtons.some((s) =>
                             s.dataset.movieId === selectedMovieId &&
-                            s.dataset.branchId === selectedBranchId &&
+                            s.dataset.centreId === selectedCentreId &&
                             s.dataset.date === selectedDate
                         );
                         if (!hasDateSlot) {
                             const altDateSlot = showtimeButtons.find((s) =>
                                 s.dataset.movieId === selectedMovieId &&
-                                s.dataset.branchId === selectedBranchId
+                                s.dataset.centreId === selectedCentreId
                             );
                             if (altDateSlot) {
                                 selectedDate = altDateSlot.dataset.date;
@@ -606,22 +609,22 @@
                 button.addEventListener("click", () => {
                     selectedCity = button.dataset.city;
                     selectedShowtimeId = "";
-                    const currentBranchBtn = centreButtons.find((c) => c.dataset.branchId === selectedBranchId);
-                    if (!currentBranchBtn || (selectedCity && normalize(currentBranchBtn.dataset.city || "") !== normalize(selectedCity))) {
-                        // If selected movie has a showtime in this city, pick that branch & date!
+                    const currentCentreBtn = centreButtons.find((c) => c.dataset.centreId === selectedCentreId);
+                    if (!currentCentreBtn || (selectedCity && normalize(currentCentreBtn.dataset.city || "") !== normalize(selectedCity))) {
+                        // If selected movie has a showtime in this city, pick that centre & date!
                         const movieSlotInCity = showtimeButtons.find((s) =>
                             s.dataset.movieId === selectedMovieId &&
                             (!selectedCity || normalize(s.dataset.city || "") === normalize(selectedCity))
                         );
                         if (movieSlotInCity) {
-                            selectedBranchId = movieSlotInCity.dataset.branchId;
+                            selectedCentreId = movieSlotInCity.dataset.centreId;
                             selectedDate = movieSlotInCity.dataset.date;
                         } else {
-                            const firstBranchInCity = centreButtons.find((c) =>
+                            const firstCentreInCity = centreButtons.find((c) =>
                                 !selectedCity || normalize(c.dataset.city || "") === normalize(selectedCity)
                             );
-                            if (firstBranchInCity) {
-                                selectedBranchId = firstBranchInCity.dataset.branchId;
+                            if (firstCentreInCity) {
+                                selectedCentreId = firstCentreInCity.dataset.centreId;
                             }
                         }
                     }
