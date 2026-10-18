@@ -14,12 +14,12 @@ import java.util.List;
 public class ShowtimeDAO {
 
     static final String SELECT =
-            "SELECT s.ShowtimeID, s.MovieID, m.Title, b.BranchID, b.BranchName, h.HallID, h.HallName, "
+            "SELECT s.ShowtimeID, s.MovieID, m.Title, b.CentreID, b.CentreName, h.HallID, h.HallName, "
           + "       h.HallType, s.StartTime, s.EndTime, s.BaseTicketPrice "
           + "FROM Showtimes s "
           + "JOIN Movies m ON m.MovieID = s.MovieID "
           + "JOIN Halls h ON h.HallID = s.HallID "
-          + "JOIN Branches b ON b.BranchID = h.BranchID ";
+          + "JOIN Centres b ON b.CentreID = h.CentreID ";
 
     private static final String BOOKABLE =
             "s.Status = 'SCHEDULED' AND s.StartTime > SYSDATETIME() AND m.Status = 'NOW_SHOWING' "
@@ -27,7 +27,7 @@ public class ShowtimeDAO {
 
     static Showtime map(ResultSet rs) throws SQLException {
         return new Showtime(rs.getInt("ShowtimeID"), rs.getInt("MovieID"), rs.getString("Title"),
-                rs.getInt("BranchID"), rs.getString("BranchName"), rs.getInt("HallID"),
+                rs.getInt("CentreID"), rs.getString("CentreName"), rs.getInt("HallID"),
                 rs.getString("HallName"), rs.getString("HallType"), rs.getTimestamp("StartTime"),
                 rs.getTimestamp("EndTime"), rs.getBigDecimal("BaseTicketPrice"));
     }
@@ -36,8 +36,8 @@ public class ShowtimeDAO {
     public List<LocalDate> getShowDates(int branchId, int movieId) throws SQLException {
         String sql = "SELECT DISTINCT CAST(s.StartTime AS DATE) AS ShowDate "
                    + "FROM Showtimes s JOIN Movies m ON m.MovieID = s.MovieID "
-                   + "JOIN Halls h ON h.HallID = s.HallID JOIN Branches b ON b.BranchID = h.BranchID "
-                   + "WHERE " + BOOKABLE + "AND b.BranchID = ? AND s.MovieID = ? ORDER BY ShowDate";
+                   + "JOIN Halls h ON h.HallID = s.HallID JOIN Centres b ON b.CentreID = h.CentreID "
+                   + "WHERE " + BOOKABLE + "AND b.CentreID = ? AND s.MovieID = ? ORDER BY ShowDate";
         List<LocalDate> list = new ArrayList<>();
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -52,7 +52,7 @@ public class ShowtimeDAO {
 
     public List<Showtime> getShowtimes(int branchId, int movieId, LocalDate date) throws SQLException {
         String sql = SELECT + "WHERE " + BOOKABLE
-                   + "AND b.BranchID = ? AND s.MovieID = ? "
+                   + "AND b.CentreID = ? AND s.MovieID = ? "
                    + "AND s.StartTime >= ? AND s.StartTime < ? ORDER BY s.StartTime";
         List<Showtime> list = new ArrayList<>();
         try (Connection conn = DBContext.getConnection();
@@ -72,8 +72,8 @@ public class ShowtimeDAO {
     public List<LocalDate> getShowDatesAtBranch(int branchId) throws SQLException {
         String sql = "SELECT DISTINCT CAST(s.StartTime AS DATE) AS ShowDate "
                    + "FROM Showtimes s JOIN Movies m ON m.MovieID = s.MovieID "
-                   + "JOIN Halls h ON h.HallID = s.HallID JOIN Branches b ON b.BranchID = h.BranchID "
-                   + "WHERE " + BOOKABLE + "AND b.BranchID = ? ORDER BY ShowDate";
+                   + "JOIN Halls h ON h.HallID = s.HallID JOIN Centres b ON b.CentreID = h.CentreID "
+                   + "WHERE " + BOOKABLE + "AND b.CentreID = ? ORDER BY ShowDate";
         List<LocalDate> list = new ArrayList<>();
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -88,7 +88,7 @@ public class ShowtimeDAO {
     /** Tat ca suat con mo ban cua chi nhanh trong ngay, sap theo phim roi gio chieu. */
     public List<Showtime> getShowtimesAtBranch(int branchId, LocalDate date) throws SQLException {
         String sql = SELECT + "WHERE " + BOOKABLE
-                   + "AND b.BranchID = ? AND s.StartTime >= ? AND s.StartTime < ? ORDER BY m.Title, s.StartTime";
+                   + "AND b.CentreID = ? AND s.StartTime >= ? AND s.StartTime < ? ORDER BY m.Title, s.StartTime";
         List<Showtime> list = new ArrayList<>();
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {

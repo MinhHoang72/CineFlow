@@ -23,6 +23,15 @@
         <a class="navbar-brand" href="${pageContext.request.contextPath}/booking">🎬 CineFlow</a>
         <c:if test="${not empty sessionScope.user}">
             <span class="navbar-text text-light">
+                <c:if test="${sessionScope.user.role == 'CUSTOMER'}">
+                    <a class="link-warning me-3" href="${pageContext.request.contextPath}/booking?action=history">Lịch sử đặt vé</a>
+                </c:if>
+                <c:if test="${sessionScope.user.role == 'STAFF' and not empty sessionScope.user.branchId}">
+                    <a class="link-warning me-3" href="${pageContext.request.contextPath}/staff/counter">Bán vé tại quầy</a>
+                </c:if>
+                <c:if test="${sessionScope.user.staff}">
+                    <a class="link-warning me-3" href="${pageContext.request.contextPath}/staff/payments">Xác nhận chuyển khoản</a>
+                </c:if>
                 Xin chào, <c:out value="${sessionScope.user.fullName}"/>
                 · <a class="link-light" href="${pageContext.request.contextPath}/logout">Đăng xuất</a></span>
         </c:if>

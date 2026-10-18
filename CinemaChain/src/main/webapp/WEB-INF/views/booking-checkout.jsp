@@ -34,6 +34,9 @@
 
                 <c:choose>
                     <c:when test="${booking.holdActive}">
+                        <a href="${ctx}/payment/qr?bookingId=${booking.id}" class="btn btn-primary w-100 btn-lg mb-2">
+                            Thanh toán bằng QR chuyển khoản
+                        </a>
                         <form method="post" action="${ctx}/booking"
                               onsubmit="return confirm('Huỷ đơn và nhả ghế?');">
                             <input type="hidden" name="action" value="cancel">

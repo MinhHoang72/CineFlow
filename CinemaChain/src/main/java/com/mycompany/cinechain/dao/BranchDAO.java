@@ -12,14 +12,14 @@ import java.util.List;
 public class BranchDAO {
 
     public List<Branch> getActiveBranches() throws SQLException {
-        String sql = "SELECT BranchID, BranchName, Address, City FROM Branches "
-                   + "WHERE Status = 'ACTIVE' ORDER BY City, BranchName";
+        String sql = "SELECT CentreID, CentreName, Address, City FROM Centres "
+                   + "WHERE Status = 'ACTIVE' ORDER BY City, CentreName";
         List<Branch> list = new ArrayList<>();
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
-                list.add(new Branch(rs.getInt("BranchID"), rs.getString("BranchName"),
+                list.add(new Branch(rs.getInt("CentreID"), rs.getString("CentreName"),
                         rs.getString("Address"), rs.getString("City")));
             }
         }

@@ -15,10 +15,10 @@ public class MovieDAO {
     public List<Movie> getMoviesShowingAt(int branchId) throws SQLException {
         String sql = "SELECT m.MovieID, m.Title, m.Genre, m.Duration, m.AgeRating "
                    + "FROM Movies m "
-                   + "JOIN BranchMovies bm ON bm.MovieID = m.MovieID AND bm.IsActive = 1 "
-                   + "WHERE bm.BranchID = ? AND m.Status = 'NOW_SHOWING' "
+                   + "JOIN CentreMovies bm ON bm.MovieID = m.MovieID AND bm.IsActive = 1 "
+                   + "WHERE bm.CentreID = ? AND m.Status = 'NOW_SHOWING' "
                    + "  AND EXISTS (SELECT 1 FROM Showtimes s JOIN Halls h ON h.HallID = s.HallID "
-                   + "              WHERE s.MovieID = m.MovieID AND h.BranchID = bm.BranchID "
+                   + "              WHERE s.MovieID = m.MovieID AND h.CentreID = bm.CentreID "
                    + "                AND h.Status = 'AVAILABLE' AND s.Status = 'SCHEDULED' "
                    + "                AND s.StartTime > SYSDATETIME()) "
                    + "ORDER BY m.Title";

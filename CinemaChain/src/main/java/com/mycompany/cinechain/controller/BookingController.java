@@ -4,12 +4,15 @@ import com.mycompany.cinechain.dao.BookingDAO;
 import com.mycompany.cinechain.dao.BookingDAO.SeatUnavailableException;
 import com.mycompany.cinechain.dao.BranchDAO;
 import com.mycompany.cinechain.dao.MovieDAO;
+import com.mycompany.cinechain.dao.PaymentDAO;
 import com.mycompany.cinechain.dao.SeatDAO;
 import com.mycompany.cinechain.dao.ShowtimeDAO;
 import com.mycompany.cinechain.model.Booking;
 import com.mycompany.cinechain.model.Seat;
 import com.mycompany.cinechain.model.Showtime;
+import com.mycompany.cinechain.model.Ticket;
 import com.mycompany.cinechain.model.User;
+import com.mycompany.cinechain.utils.QrUtil;
 import com.mycompany.cinechain.utils.WebUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -33,8 +36,10 @@ import java.util.TreeMap;
  *   GET  /booking                          chon chi nhanh, phim, ngay, suat chieu
  *   GET  /booking?action=select-seats      chon ghe (can dang nhap)
  *   POST /booking?action=hold              giu ghe 5 phut, tao booking PENDING
- *   GET  /booking?action=checkout          xem lai don + dem nguoc giu ghe
+ *   GET  /booking?action=checkout          xem lai don + dem nguoc + nut thanh toan
  *   POST /booking?action=cancel            huy booking dang cho thanh toan
+ *   GET  /booking?action=history           lich su dat ve cua khach
+ *   GET  /booking?action=detail            chi tiet don (khach, nhan vien, quan ly, admin)
  */
 @WebServlet(name = "BookingController", urlPatterns = {"/booking"})
 public class BookingController extends HttpServlet {
@@ -47,6 +52,7 @@ public class BookingController extends HttpServlet {
     private final ShowtimeDAO showtimeDAO = new ShowtimeDAO();
     private final SeatDAO seatDAO = new SeatDAO();
     private final BookingDAO bookingDAO = new BookingDAO();
+    private final PaymentDAO paymentDAO = new PaymentDAO();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -58,6 +64,10 @@ public class BookingController extends HttpServlet {
                 selectSeats(req, resp);
             } else if ("checkout".equals(action)) {
                 checkout(req, resp);
+            } else if ("history".equals(action)) {
+                history(req, resp);
+            } else if ("detail".equals(action)) {
+                detail(req, resp);
             } else {
                 resp.sendError(HttpServletResponse.SC_NOT_FOUND);
             }
@@ -172,6 +182,10 @@ public class BookingController extends HttpServlet {
             resp.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;
         }
+        if ("CONFIRMED".equals(booking.getStatus())) {
+            resp.sendRedirect(req.getContextPath() + "/booking?action=detail&bookingId=" + booking.getId());
+            return;
+        }
         req.setAttribute("booking", booking);
         req.getRequestDispatcher(VIEW_DIR + "booking-checkout.jsp").forward(req, resp);
     }
@@ -190,6 +204,50 @@ public class BookingController extends HttpServlet {
         }
         resp.sendRedirect(req.getContextPath() + "/booking?action=select-seats&showtimeId="
                 + booking.getShowtime().getId());
+    }
+
+    /** 5.5 Lich su dat ve cua khach. */
+    private void history(HttpServletRequest req, HttpServletResponse resp)
+            throws SQLException, ServletException, IOException {
+        User user = WebUtil.requireUser(req, resp);
+        if (user == null) return;
+        req.setAttribute("bookings", bookingDAO.getUserBookings(user.getId()));
+        req.getRequestDispatcher(VIEW_DIR + "booking-history.jsp").forward(req, resp);
+    }
+
+    /** 5.4 Chi tiet don: ve, chi tiet gia, cac giao dich thanh toan. */
+    private void detail(HttpServletRequest req, HttpServletResponse resp)
+            throws SQLException, ServletException, IOException {
+        User user = WebUtil.requireUser(req, resp);
+        if (user == null) return;
+        Integer bookingId = WebUtil.parseInt(req.getParameter("bookingId"));
+        Booking booking = bookingId == null ? null : bookingDAO.getBooking(bookingId);
+        if (booking == null || !canView(user, booking)) {
+            resp.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+        List<Ticket> tickets = paymentDAO.getTickets(booking.getId());
+        req.setAttribute("booking", booking);
+        req.setAttribute("tickets", tickets);
+        req.setAttribute("transactions", paymentDAO.getTransactions(booking.getId()));
+        req.setAttribute("isOwner", booking.getUserId() != null && booking.getUserId() == user.getId());
+        if (!tickets.isEmpty()) req.setAttribute("bookingQr", QrUtil.toDataUri(booking.getQrContent()));
+        req.getRequestDispatcher(VIEW_DIR + "booking-detail.jsp").forward(req, resp);
+    }
+
+    /** Khach xem don cua minh; STAFF/MANAGER xem don cua chi nhanh minh (MANAGER chua gan chi nhanh: tat ca); ADMIN tat ca. */
+    private static boolean canView(User user, Booking booking) {
+        if (booking.getUserId() != null && booking.getUserId() == user.getId()) return true;
+        switch (user.getRole()) {
+            case "ADMIN":
+                return true;
+            case "MANAGER":
+                return user.getBranchId() == null || user.getBranchId() == booking.getShowtime().getBranchId();
+            case "STAFF":
+                return user.getBranchId() != null && user.getBranchId() == booking.getShowtime().getBranchId();
+            default:
+                return false;
+        }
     }
 
     private Booking loadOwnBooking(HttpServletRequest req, User user) throws SQLException {
