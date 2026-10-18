@@ -64,13 +64,47 @@ public class StaffTransferServlet extends HttpServlet {
         }
 
         String searchParam = request.getParameter("search");
+        String roleFilter = request.getParameter("role");
+
+        // Đồng bộ và giải phóng trung tâm của các Quản lý có tài khoản bị khóa/tạm ngưng
+        userDAO.syncLockedManagersAssignments();
+
         List<Centre> centresWithManager = cinemaDAO.getAllCentresWithManager();
         List<Centre> activeCentres = cinemaDAO.getActiveCentres();
         List<User> managers = userDAO.getManagers();
         List<ManagerAssignment> managerAssignments = userDAO.getManagerAssignmentHistory(centreFilter, null);
 
-        List<User> staffList = userDAO.getStaffDirectory(centreFilter, searchParam);
+        // Lấy danh sách toàn bộ nhân sự có thể điều chuyển (Staff bán vé & soát vé)
+        List<User> staffList = userDAO.getTransferableUsers(centreFilter, searchParam, roleFilter);
         List<StaffTransfer> transferHistory = userDAO.getTransferHistory(centreFilter, null);
+
+        // Tính toán các chỉ số KPI vận hành nhân sự
+        int totalCentres = centresWithManager != null ? centresWithManager.size() : 0;
+        int assignedCentres = 0;
+        int unassignedCentres = 0;
+        if (centresWithManager != null) {
+            for (Centre c : centresWithManager) {
+                if (c.hasActiveManager()) {
+                    assignedCentres++;
+                } else if ("ACTIVE".equalsIgnoreCase(c.getStatus())) {
+                    unassignedCentres++;
+                }
+            }
+        }
+
+        int unassignedManagers = 0;
+        if (managers != null) {
+            for (User m : managers) {
+                if ("ACTIVE".equalsIgnoreCase(m.getStatus()) && (m.getCentreId() == null || m.getCentreId() <= 0)) {
+                    unassignedManagers++;
+                }
+            }
+        }
+
+        request.setAttribute("kpiTotalCentres", totalCentres);
+        request.setAttribute("kpiAssignedCentres", assignedCentres);
+        request.setAttribute("kpiUnassignedCentres", unassignedCentres);
+        request.setAttribute("kpiUnassignedManagers", unassignedManagers);
 
         request.setAttribute("centresWithManager", centresWithManager);
         request.setAttribute("activeCentres", activeCentres);
@@ -81,6 +115,7 @@ public class StaffTransferServlet extends HttpServlet {
         request.setAttribute("staffList", staffList);
         request.setAttribute("transferHistory", transferHistory);
         request.setAttribute("searchParam", searchParam);
+        request.setAttribute("roleFilter", roleFilter);
         request.setAttribute("activeNav", "transfers");
 
         request.getRequestDispatcher("/admin/transfers.jsp").forward(request, response);
@@ -99,7 +134,7 @@ public class StaffTransferServlet extends HttpServlet {
         int adminId = adminUser != null ? adminUser.getUserId() : (int) session.getAttribute("userId");
         String action = request.getParameter("action");
 
-        // 1. NGHIỆP VỤ: BỔ NHIỆM HOẶC THAY THẾ MANAGER TRUNG TÂM (CENTRE)
+        // 1. NGHIỆP VỤ: BỔ NHIỆM MANAGER TRUNG TÂM (CHỈ DÀNH CHO MANAGER CHƯA CÓ PHÂN CÔNG)
         if ("assign_manager".equalsIgnoreCase(action)) {
             try {
                 String cParam = request.getParameter("centreId");
@@ -107,19 +142,21 @@ public class StaffTransferServlet extends HttpServlet {
                 int managerId = Integer.parseInt(request.getParameter("managerId"));
                 String notes = request.getParameter("notes");
 
-                User targetManager = userDAO.getUserById(managerId);
-                if (targetManager == null || !"MANAGER".equalsIgnoreCase(targetManager.getRole())) {
-                    response.sendRedirect(request.getContextPath() + "/admin/transfers?error=not_manager&tab=manager");
-                    return;
-                }
-                if (!"ACTIVE".equalsIgnoreCase(targetManager.getStatus())) {
-                    response.sendRedirect(request.getContextPath() + "/admin/transfers?error=manager_inactive&tab=manager");
-                    return;
-                }
-
-                boolean ok = userDAO.assignManagerToCentreWithHistory(centreId, managerId, adminId, notes);
-                if (ok) {
+                String result = userDAO.assignManager(centreId, managerId, adminId, notes);
+                if ("SUCCESS".equals(result)) {
                     response.sendRedirect(request.getContextPath() + "/admin/transfers?success=manager_assigned&tab=manager");
+                } else if ("MANAGER_ALREADY_ASSIGNED".equals(result)) {
+                    response.sendRedirect(request.getContextPath() + "/admin/transfers?error=manager_already_assigned&tab=manager");
+                } else if ("CENTRE_ALREADY_HAS_MANAGER".equals(result)) {
+                    response.sendRedirect(request.getContextPath() + "/admin/transfers?error=centre_already_has_manager&tab=manager");
+                } else if ("MANAGER_NOT_ACTIVE".equals(result)) {
+                    response.sendRedirect(request.getContextPath() + "/admin/transfers?error=manager_inactive&tab=manager");
+                } else if ("NOT_A_MANAGER".equals(result)) {
+                    response.sendRedirect(request.getContextPath() + "/admin/transfers?error=not_manager&tab=manager");
+                } else if ("CENTRE_INACTIVE".equals(result)) {
+                    response.sendRedirect(request.getContextPath() + "/admin/transfers?error=centre_inactive&tab=manager");
+                } else if ("CONCURRENCY_CONFLICT".equals(result)) {
+                    response.sendRedirect(request.getContextPath() + "/admin/transfers?error=concurrency_conflict&tab=manager");
                 } else {
                     response.sendRedirect(request.getContextPath() + "/admin/transfers?error=assign_failed&tab=manager");
                 }
@@ -130,41 +167,21 @@ public class StaffTransferServlet extends HttpServlet {
             }
         }
 
-        // 2. NGHIỆP VỤ: MIỄN NHIỆM MANAGER
+        // 2. PHẠM VI KHÔNG THỰC HIỆN: MIỄN NHIỆM MANAGER TRONG ĐỢT 1
         if ("unassign_manager".equalsIgnoreCase(action)) {
-            try {
-                String cParam = request.getParameter("centreId");
-                int centreId = Integer.parseInt(cParam);
-                int managerId = Integer.parseInt(request.getParameter("managerId"));
-                String reason = request.getParameter("reason");
-
-                User targetManager = userDAO.getUserById(managerId);
-                if (targetManager == null || !"MANAGER".equalsIgnoreCase(targetManager.getRole())) {
-                    response.sendRedirect(request.getContextPath() + "/admin/transfers?error=not_manager&tab=manager");
-                    return;
-                }
-
-                boolean ok = userDAO.unassignManager(centreId, managerId, adminId, reason);
-                if (ok) {
-                    response.sendRedirect(request.getContextPath() + "/admin/transfers?success=manager_unassigned&tab=manager");
-                } else {
-                    response.sendRedirect(request.getContextPath() + "/admin/transfers?error=unassign_failed&tab=manager");
-                }
-                return;
-            } catch (Exception e) {
-                response.sendRedirect(request.getContextPath() + "/admin/transfers?error=invalid_data&tab=manager");
-                return;
-            }
+            response.sendRedirect(request.getContextPath() + "/admin/transfers?error=unassign_not_supported&tab=manager");
+            return;
         }
 
-        // 3. NGHIỆP VỤ: ĐIỀU CHUYỂN STAFF GIỮA CÁC TRUNG TÂM (CENTRES)
-        if ("transfer_staff".equalsIgnoreCase(action) || "transfer".equalsIgnoreCase(action)) {
+        // 3. NGHIỆP VỤ: ĐIỀU CHUYỂN NHÂN SỰ / MANAGER GIỮA CÁC TRUNG TÂM
+        if ("transfer_staff".equalsIgnoreCase(action) || "transfer".equalsIgnoreCase(action) || "transfer_manager".equalsIgnoreCase(action)) {
             try {
                 int userId = Integer.parseInt(request.getParameter("userId"));
                 String toParam = request.getParameter("toCentreId");
                 int toCentreId = Integer.parseInt(toParam);
                 String reason = request.getParameter("reason");
                 String notes = request.getParameter("notes");
+                String effectiveDateParam = request.getParameter("effectiveDate");
 
                 if (reason == null || reason.trim().isEmpty()) {
                     response.sendRedirect(request.getContextPath() + "/admin/transfers?error=missing_reason&tab=staff");
@@ -177,19 +194,52 @@ public class StaffTransferServlet extends HttpServlet {
                     return;
                 }
 
-                if (!"STAFF".equalsIgnoreCase(targetUser.getRole())) {
-                    response.sendRedirect(request.getContextPath() + "/admin/transfers?error=not_staff&tab=staff");
+                // Nếu là Manager: Thực hiện nghiệp vụ Điều chuyển Manager với ràng buộc nghiêm ngặt
+                if ("MANAGER".equalsIgnoreCase(targetUser.getRole())) {
+                    String result = userDAO.transferManager(userId, toCentreId, adminId, reason.trim(), notes != null ? notes.trim() : "");
+                    if ("SUCCESS".equals(result)) {
+                        response.sendRedirect(request.getContextPath() + "/admin/transfers?success=transferred&tab=staff");
+                    } else if ("SAME_CENTRE".equals(result)) {
+                        response.sendRedirect(request.getContextPath() + "/admin/transfers?error=same_centre&tab=staff");
+                    } else if ("CENTRE_ALREADY_HAS_MANAGER".equals(result)) {
+                        response.sendRedirect(request.getContextPath() + "/admin/transfers?error=dest_centre_has_manager&tab=staff");
+                    } else if ("MANAGER_NOT_ACTIVE".equals(result)) {
+                        response.sendRedirect(request.getContextPath() + "/admin/transfers?error=user_inactive&tab=staff");
+                    } else if ("MANAGER_NOT_ASSIGNED".equals(result)) {
+                        response.sendRedirect(request.getContextPath() + "/admin/transfers?error=manager_not_assigned&tab=staff");
+                    } else if ("NOT_A_MANAGER".equals(result)) {
+                        response.sendRedirect(request.getContextPath() + "/admin/transfers?error=not_manager&tab=staff");
+                    } else if ("CENTRE_INACTIVE".equals(result)) {
+                        response.sendRedirect(request.getContextPath() + "/admin/transfers?error=centre_inactive&tab=staff");
+                    } else if ("CONCURRENCY_CONFLICT".equals(result)) {
+                        response.sendRedirect(request.getContextPath() + "/admin/transfers?error=concurrency_conflict&tab=staff");
+                    } else {
+                        response.sendRedirect(request.getContextPath() + "/admin/transfers?error=transfer_failed&tab=staff");
+                    }
                     return;
                 }
 
-                if (targetUser.getCentreId() != null && targetUser.getCentreId() == toCentreId) {
-                    response.sendRedirect(request.getContextPath() + "/admin/transfers?error=same_centre&tab=staff");
-                    return;
+                // Nếu là Staff thông thường (Rule 12): Thực hiện điều chuyển Staff thông thường
+                java.sql.Date effectiveDate = null;
+                if (effectiveDateParam != null && !effectiveDateParam.trim().isEmpty()) {
+                    try {
+                        effectiveDate = java.sql.Date.valueOf(effectiveDateParam.trim());
+                    } catch (Exception ignored) {
+                    }
+                }
+                if (effectiveDate == null) {
+                    effectiveDate = new java.sql.Date(System.currentTimeMillis());
                 }
 
-                boolean ok = userDAO.transferStaff(userId, targetUser.getCentreId(), toCentreId, adminId, reason.trim(), notes != null ? notes.trim() : "");
-                if (ok) {
+                String result = userDAO.transferRegularStaff(userId, toCentreId, adminId, reason.trim(), notes != null ? notes.trim() : "", effectiveDate);
+                if ("SUCCESS".equals(result)) {
                     response.sendRedirect(request.getContextPath() + "/admin/transfers?success=transferred&tab=staff");
+                } else if ("SAME_CENTRE".equals(result)) {
+                    response.sendRedirect(request.getContextPath() + "/admin/transfers?error=same_centre&tab=staff");
+                } else if ("USER_NOT_ACTIVE".equals(result)) {
+                    response.sendRedirect(request.getContextPath() + "/admin/transfers?error=user_inactive&tab=staff");
+                } else if ("CENTRE_INACTIVE".equals(result)) {
+                    response.sendRedirect(request.getContextPath() + "/admin/transfers?error=centre_inactive&tab=staff");
                 } else {
                     response.sendRedirect(request.getContextPath() + "/admin/transfers?error=transfer_failed&tab=staff");
                 }

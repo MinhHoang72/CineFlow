@@ -65,29 +65,7 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/alerts.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/manager/shell.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin/dashboard.css">
-    <style>
-        .cf-kpi-grid-5 {
-            display: grid;
-            grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-        @media (max-width: 1280px) {
-            .cf-kpi-grid-5 {
-                grid-template-columns: repeat(3, 1fr) !important;
-            }
-        }
-        @media (max-width: 768px) {
-            .cf-kpi-grid-5 {
-                grid-template-columns: repeat(2, 1fr) !important;
-            }
-        }
-        @media (max-width: 480px) {
-            .cf-kpi-grid-5 {
-                grid-template-columns: 1fr !important;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin/movies.css?v=<%= System.currentTimeMillis() %>">
 </head>
 <body>
 <div class="cf-manager-shell">
@@ -98,13 +76,16 @@
 
         <main class="cf-content">
             <!-- TIÊU ĐỀ TRANG VÀ NÚT THÊM PHIM MỚI -->
-            <div class="cf-page-header">
-                <div>
-                    <h1>Quản lý phim</h1>
-                    <p>Danh sách và quản lý thông tin các bộ phim được phát hành trên toàn hệ thống CineFlow.</p>
+            <div class="cf-page-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;">
+                <div style="display: flex; align-items: center; gap: 14px;">
+                    <div style="width: 44px; height: 44px; background: rgba(255, 40, 85, 0.12); border: 1px solid rgba(255, 40, 85, 0.25); border-radius: 10px; display: grid; place-items: center; font-size: 22px;">🎬</div>
+                    <div>
+                        <h1 style="margin: 0; font-size: 22px; font-weight: 700; color: #ffffff;">Danh mục phim</h1>
+                        <p style="margin: 4px 0 0; color: var(--cf-muted, #94a3b8); font-size: 13px;">Quản lý thông tin phim trong hệ thống. Thêm mới, chỉnh sửa, tìm kiếm và cập nhật trạng thái phim.</p>
+                    </div>
                 </div>
-                <a href="${pageContext.request.contextPath}/admin/movie" class="cf-btn cf-btn-primary">
-                     Thêm phim mới
+                <a href="${pageContext.request.contextPath}/admin/movie" class="cf-btn cf-btn-primary" style="background: var(--cf-primary, #ff2855); font-weight: 600; padding: 10px 20px; border-radius: 8px; border: none; box-shadow: 0 4px 14px rgba(255, 40, 85, 0.3);">
+                    Thêm phim mới
                 </a>
             </div>
 
@@ -112,6 +93,14 @@
             <% if ("statusUpdated".equals(request.getParameter("success"))) { %>
                 <div class="cf-alert cf-alert-success" style="margin-bottom: 20px;">
                     ✓ Cập nhật trạng thái phim thành công.
+                </div>
+            <% } else if ("saved".equals(request.getParameter("success"))) { %>
+                <div class="cf-alert cf-alert-success" style="margin-bottom: 20px;">
+                    ✓ Đã lưu thông tin phim thành công vào hệ thống.
+                </div>
+            <% } else if ("invalid_status".equals(request.getParameter("error"))) { %>
+                <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
+                    ⚠ Trạng thái cập nhật không hợp lệ.
                 </div>
             <% } %>
 
@@ -124,15 +113,15 @@
                 </div>
 
                 <div class="cf-kpi-card">
-                    <span class="cf-kpi-label" style="color: #059669;">Đang chiếu</span>
-                    <div class="cf-kpi-value"><%= nowShowingCount %></div>
-                    <span class="cf-kpi-sub">Phim có trạng thái đang chiếu</span>
-                </div>
-
-                <div class="cf-kpi-card">
                     <span class="cf-kpi-label" style="color: #0284c7;">Sắp khởi chiếu</span>
                     <div class="cf-kpi-value"><%= comingSoonCount %></div>
                     <span class="cf-kpi-sub">Phim đang chờ phát hành</span>
+                </div>
+
+                <div class="cf-kpi-card">
+                    <span class="cf-kpi-label" style="color: #059669;">Đang chiếu</span>
+                    <div class="cf-kpi-value"><%= nowShowingCount %></div>
+                    <span class="cf-kpi-sub">Phim có trạng thái đang chiếu</span>
                 </div>
 
                 <div class="cf-kpi-card">
@@ -144,7 +133,7 @@
                 <div class="cf-kpi-card">
                     <span class="cf-kpi-label" style="color: #64748b;">Lưu trữ</span>
                     <div class="cf-kpi-value"><%= archivedCount %></div>
-                    <span class="cf-kpi-sub">Phim đã được Admin đưa vào kho lưu trữ</span>
+                    <span class="cf-kpi-sub">Phim đã được lưu (Admin)</span>
                 </div>
             </div>
 
@@ -192,13 +181,14 @@
                     <table class="cf-table">
                         <thead>
                             <tr>
-                                <th style="width: 340px;">Phim & Mã số</th>
+                                <th style="width: 320px;">Phim & Mã số</th>
                                 <th>Thể loại</th>
                                 <th>Độ tuổi</th>
                                 <th>Thời lượng</th>
                                 <th>Khởi chiếu</th>
                                 <th>Trạng thái</th>
-                                <th style="text-align: right; min-width: 170px;">Thao tác</th>
+                                <th style="text-align: center; width: 100px;">Phân phối</th>
+                                <th style="text-align: right; width: 140px;">Thao tác</th>
                             </tr>
                         </thead>
                         <tbody id="movieTableBody">
@@ -250,13 +240,20 @@
                                         <%= stText %>
                                     </span>
                                 </td>
+                                <td style="text-align: center; font-weight: 600; color: #edf2f9; font-size: 13px;">
+                                    <%= m.getDistributionRatio() %>
+                                </td>
                                 <td style="text-align: right;">
-                                    <div style="display: flex; align-items: center; justify-content: flex-end; gap: 6px;">
-                                        <a href="${pageContext.request.contextPath}/admin/movie?movieId=<%= m.getMovieId() %>" class="cf-btn cf-btn-secondary cf-btn-sm" title="Chỉnh sửa thông tin phim">
-                                            Sửa
-                                        </a>
-                                        <a href="${pageContext.request.contextPath}/admin/distribution?movieId=<%= m.getMovieId() %>" class="cf-btn cf-btn-primary cf-btn-sm" title="Phân phối rạp chiếu">
-                                            Phân phối
+                                    <div class="cf-table-actions">
+                                        <!-- NÚT SỬA ĐẸP, TRỰC QUAN -->
+                                        <a href="${pageContext.request.contextPath}/admin/movie?movieId=<%= m.getMovieId() %>"
+                                           class="cf-btn-edit"
+                                           title="Chỉnh sửa thông tin phim">
+                                            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                            </svg>
+                                            <span>Sửa</span>
                                         </a>
                                     </div>
                                 </td>
@@ -312,6 +309,26 @@
                     if (alert.parentNode) alert.parentNode.removeChild(alert);
                 }, 400);
             }, 3000);
+        });
+    });
+
+    function toggleMovieMenu(event, movieId) {
+        event.stopPropagation();
+        const currentMenu = document.getElementById('movieMenu-' + movieId);
+        const allMenus = document.querySelectorAll('.cf-action-menu');
+        allMenus.forEach(function(menu) {
+            if (menu !== currentMenu) {
+                menu.classList.remove('show');
+            }
+        });
+        if (currentMenu) {
+            currentMenu.classList.toggle('show');
+        }
+    }
+
+    document.addEventListener('click', function () {
+        document.querySelectorAll('.cf-action-menu').forEach(function(menu) {
+            menu.classList.remove('show');
         });
     });
 </script>

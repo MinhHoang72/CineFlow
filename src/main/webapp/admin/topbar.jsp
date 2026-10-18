@@ -37,7 +37,14 @@
 
     String badgeClass = "ADMIN".equalsIgnoreCase(tbRole)
             ? "cf-badge-danger"
-            : "cf-badge-info";
+            : ("MANAGER".equalsIgnoreCase(tbRole) ? "cf-badge-primary" : "cf-badge-info");
+
+    String roleLabel = tbRole;
+    if ("TICKET_SALES_STAFF".equalsIgnoreCase(tbRole) || "TICKET_SALES".equalsIgnoreCase(tbRole)) {
+        roleLabel = "Bán vé";
+    } else if ("TICKET_CHECKER_STAFF".equalsIgnoreCase(tbRole) || "TICKET_CHECKER".equalsIgnoreCase(tbRole)) {
+        roleLabel = "Soát vé";
+    }
 %>
 
 <header class="cf-topbar">
@@ -71,7 +78,7 @@
             <span class="cf-topbar-name"><%= tbName %></span>
 
             <span class="cf-topbar-role <%= badgeClass %>">
-                <%= tbRole.toUpperCase() %>
+                <%= roleLabel.toUpperCase() %>
             </span>
         </a>
     </div>

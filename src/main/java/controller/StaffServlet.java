@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpSession;
 import model.Centre;
 import model.User;
 import utils.PasswordUtils;
+import utils.ValidationUtils;
 
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -106,9 +107,10 @@ public class StaffServlet extends HttpServlet {
         }
 
         String searchParam = request.getParameter("search");
+        String roleFilter = request.getParameter("role");
         List<User> staffList = new ArrayList<>();
         if (adminRole || centreId != null) {
-            staffList = userDAO.getStaffDirectory(centreId, searchParam);
+            staffList = userDAO.getStaffDirectory(centreId, searchParam, roleFilter);
         }
 
         List<Centre> centres = cinemaDAO.getActiveCentres();
@@ -126,6 +128,7 @@ public class StaffServlet extends HttpServlet {
         request.setAttribute("centres", centres);
         request.setAttribute("assignedCentre", assignedCentre);
         request.setAttribute("selectedCentreId", centreId);
+        request.setAttribute("selectedRole", roleFilter);
         request.setAttribute("isAdmin", adminRole);
         request.getRequestDispatcher("/staff/directory.jsp").forward(request, response);
     }
@@ -150,20 +153,31 @@ public class StaffServlet extends HttpServlet {
 
         // 1. TẠO TÀI KHOẢN NHÂN VIÊN MỚI
         if ("create".equalsIgnoreCase(action)) {
-            // Manager chỉ được tạo nhân viên thuộc rạp mình phụ trách
-            if (!adminRole && currentUser.getCentreId() == null) {
-                response.sendRedirect(request.getContextPath() + "/staff?error=unassigned_manager");
-                return;
-            }
-
-            Integer targetCentreId = currentUser.getCentreId();
-            if (adminRole) {
+            Integer targetCentreId = null;
+            if (!adminRole) {
+                // Manager chỉ được tạo nhân viên thuộc rạp mình phụ trách
+                if (currentUser.getCentreId() == null || currentUser.getCentreId() <= 0) {
+                    response.sendRedirect(request.getContextPath() + "/staff?error=unassigned_manager");
+                    return;
+                }
+                targetCentreId = currentUser.getCentreId();
+            } else {
+                // Admin chọn trung tâm trực thuộc cho nhân viên
                 String cp = request.getParameter("centreId");
-                if (cp != null && !cp.trim().isEmpty()) {
-                    try {
-                        targetCentreId = Integer.parseInt(cp.trim());
-                    } catch (NumberFormatException ignored) {
-                    }
+                if (ValidationUtils.isBlank(cp)) {
+                    response.sendRedirect(request.getContextPath() + "/staff?error=missing_centre");
+                    return;
+                }
+                try {
+                    targetCentreId = Integer.parseInt(cp.trim());
+                } catch (NumberFormatException e) {
+                    response.sendRedirect(request.getContextPath() + "/staff?error=invalid_centre");
+                    return;
+                }
+                Centre targetCentre = cinemaDAO.getCentreById(targetCentreId);
+                if (targetCentre == null) {
+                    response.sendRedirect(request.getContextPath() + "/staff?error=invalid_centre");
+                    return;
                 }
             }
 
@@ -173,16 +187,48 @@ public class StaffServlet extends HttpServlet {
             String password = request.getParameter("password");
             String phone = request.getParameter("phone");
 
-            if (fullName == null || fullName.trim().isEmpty()
-                    || account == null || account.trim().isEmpty()
-                    || email == null || email.trim().isEmpty()
-                    || password == null || password.trim().isEmpty()) {
+            if (ValidationUtils.isBlank(fullName)
+                    || ValidationUtils.isBlank(account)
+                    || ValidationUtils.isBlank(email)
+                    || ValidationUtils.isBlank(password)) {
                 response.sendRedirect(request.getContextPath() + "/staff?error=missing_fields");
                 return;
             }
 
+            fullName = fullName.trim();
             account = account.trim();
             email = email.trim();
+            phone = phone != null ? phone.trim() : "";
+
+            if (!ValidationUtils.isValidFullName(fullName)) {
+                response.sendRedirect(request.getContextPath() + "/staff?error=invalid_name");
+                return;
+            }
+
+            if (!ValidationUtils.isValidAccount(account)) {
+                response.sendRedirect(request.getContextPath() + "/staff?error=invalid_account");
+                return;
+            }
+
+            if (!ValidationUtils.isValidEmail(email)) {
+                response.sendRedirect(request.getContextPath() + "/staff?error=invalid_email");
+                return;
+            }
+
+            if (ValidationUtils.isDisposableEmail(email)) {
+                response.sendRedirect(request.getContextPath() + "/staff?error=disposable_email");
+                return;
+            }
+
+            if (!ValidationUtils.isValidPassword(password)) {
+                response.sendRedirect(request.getContextPath() + "/staff?error=weak_password");
+                return;
+            }
+
+            if (!ValidationUtils.isValidPhone(phone, false)) {
+                response.sendRedirect(request.getContextPath() + "/staff?error=invalid_phone");
+                return;
+            }
 
             if (userDAO.isAccountExists(account)) {
                 response.sendRedirect(request.getContextPath() + "/staff?error=account_exists");
@@ -194,12 +240,20 @@ public class StaffServlet extends HttpServlet {
                 return;
             }
 
+            String role = request.getParameter("role");
+            if (role == null || role.isBlank() || !ValidationUtils.isStaffRole(role)) {
+                role = User.ROLE_TICKET_SALES;
+            } else {
+                role = role.trim().toUpperCase();
+            }
+
             User newStaff = new User();
-            newStaff.setFullName(fullName.trim());
+            newStaff.setFullName(fullName);
             newStaff.setAccount(account);
             newStaff.setEmail(email);
             newStaff.setPassword(PasswordUtils.hashPassword(password.trim()));
-            newStaff.setPhone(phone != null ? phone.trim() : "");
+            newStaff.setPhone(phone);
+            newStaff.setRole(role);
             newStaff.setCentreId(targetCentreId);
 
             boolean created = userDAO.createStaff(newStaff);
@@ -211,16 +265,41 @@ public class StaffServlet extends HttpServlet {
             return;
         }
 
-        // 2. CHỈNH SỬA THÔNG TIN NHÂN VIÊN (FullName, Phone, Email)
+        // 2. CHỈNH SỬA THÔNG TIN NHÂN VIÊN (FullName, Phone, Email, Role)
         if ("update".equalsIgnoreCase(action)) {
             try {
                 int userId = Integer.parseInt(request.getParameter("userId"));
                 String fullName = request.getParameter("fullName");
                 String phone = request.getParameter("phone");
                 String email = request.getParameter("email");
+                String role = request.getParameter("role");
 
-                if (fullName == null || fullName.trim().isEmpty() || email == null || email.trim().isEmpty()) {
+                if (ValidationUtils.isBlank(fullName) || ValidationUtils.isBlank(email)) {
                     response.sendRedirect(request.getContextPath() + "/staff?error=missing_fields");
+                    return;
+                }
+
+                fullName = fullName.trim();
+                email = email.trim();
+                phone = phone != null ? phone.trim() : "";
+
+                if (!ValidationUtils.isValidFullName(fullName)) {
+                    response.sendRedirect(request.getContextPath() + "/staff?error=invalid_name");
+                    return;
+                }
+
+                if (!ValidationUtils.isValidEmail(email)) {
+                    response.sendRedirect(request.getContextPath() + "/staff?error=invalid_email");
+                    return;
+                }
+
+                if (ValidationUtils.isDisposableEmail(email)) {
+                    response.sendRedirect(request.getContextPath() + "/staff?error=disposable_email");
+                    return;
+                }
+
+                if (!ValidationUtils.isValidPhone(phone, false)) {
+                    response.sendRedirect(request.getContextPath() + "/staff?error=invalid_phone");
                     return;
                 }
 
@@ -230,10 +309,16 @@ public class StaffServlet extends HttpServlet {
                     return;
                 }
 
-                // Manager chỉ được sửa nhân viên (STAFF)
-                if (!"STAFF".equalsIgnoreCase(targetUser.getRole())) {
-                    response.sendError(HttpServletResponse.SC_FORBIDDEN, "Chỉ được chỉnh sửa nhân viên cấp STAFF.");
+                // Manager chỉ được sửa nhân viên cấp rạp (STAFF, TICKET_SALES_STAFF, TICKET_CHECKER_STAFF)
+                if (!targetUser.isStaff()) {
+                    response.sendError(HttpServletResponse.SC_FORBIDDEN, "Chỉ được chỉnh sửa nhân viên cấp rạp.");
                     return;
+                }
+
+                if (role == null || role.isBlank() || !ValidationUtils.isStaffRole(role)) {
+                    role = targetUser.getRole();
+                } else {
+                    role = role.trim().toUpperCase();
                 }
 
                 // Manager không được quản lý Staff thuộc rạp khác
@@ -245,16 +330,12 @@ public class StaffServlet extends HttpServlet {
                     }
                 }
 
-                email = email.trim();
-                fullName = fullName.trim();
-                phone = phone != null ? phone.trim() : "";
-
                 if (userDAO.isEmailExistsForOtherUser(email, userId)) {
                     response.sendRedirect(request.getContextPath() + "/staff?error=email_exists");
                     return;
                 }
 
-                boolean updated = userDAO.updateUserBasicInfo(userId, fullName, phone, email);
+                boolean updated = userDAO.updateStaffBasicInfo(userId, fullName, phone, email, role);
                 if (updated) {
                     response.sendRedirect(request.getContextPath() + "/staff?success=updated");
                 } else {
@@ -288,15 +369,15 @@ public class StaffServlet extends HttpServlet {
                     return;
                 }
 
-                // Manager chỉ được đổi trạng thái tài khoản STAFF
-                if (!"STAFF".equalsIgnoreCase(targetUser.getRole())) {
+                // Manager chỉ được đổi trạng thái tài khoản nhân viên cấp rạp
+                if (!targetUser.isStaff()) {
                     if (isAjax(request)) {
                         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                         response.setContentType("application/json;charset=UTF-8");
-                        response.getWriter().write("{\"success\":false,\"message\":\"Chỉ được cập nhật trạng thái nhân viên cấp STAFF.\"}");
+                        response.getWriter().write("{\"success\":false,\"message\":\"Chỉ được cập nhật trạng thái nhân viên cấp rạp.\"}");
                         return;
                     }
-                    response.sendError(HttpServletResponse.SC_FORBIDDEN, "Chỉ được cập nhật trạng thái nhân viên cấp STAFF.");
+                    response.sendError(HttpServletResponse.SC_FORBIDDEN, "Chỉ được cập nhật trạng thái nhân viên cấp rạp.");
                     return;
                 }
 

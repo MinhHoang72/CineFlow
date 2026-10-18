@@ -1,4 +1,10 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%
+    String error = (String) request.getAttribute("error");
+    if (error == null) {
+        error = request.getParameter("error");
+    }
+%>
 
 <!DOCTYPE html>
 <html lang="vi">
@@ -57,6 +63,16 @@
             <div class="subtitle">
                 Nhập mật khẩu mới cho tài khoản của bạn.
             </div>
+
+            <% if ("missing_fields".equals(error)) { %>
+                <p class="form-error" role="alert" style="margin-bottom: 16px;">Vui lòng nhập đầy đủ các trường mật khẩu.</p>
+            <% } else if ("password_mismatch".equals(error)) { %>
+                <p class="form-error" role="alert" style="margin-bottom: 16px;">Mật khẩu xác nhận không khớp.</p>
+            <% } else if ("weak_password".equals(error)) { %>
+                <p class="form-error" role="alert" style="margin-bottom: 16px;">Mật khẩu yếu. Yêu cầu tối thiểu 8 ký tự, gồm ít nhất 1 chữ hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt.</p>
+            <% } else if ("reset_failed".equals(error)) { %>
+                <p class="form-error" role="alert" style="margin-bottom: 16px;">Đặt lại mật khẩu thất bại. Vui lòng thử lại sau.</p>
+            <% } %>
 
             <form action="${pageContext.request.contextPath}/reset-password" method="post">
                 <!-- MẬT KHẨU MỚI -->

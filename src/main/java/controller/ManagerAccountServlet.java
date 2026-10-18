@@ -1,13 +1,16 @@
 package controller;
 
+import dao.CinemaDAO;
 import dao.UserDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import model.Centre;
 import model.User;
 import utils.PasswordUtils;
+import utils.ValidationUtils;
 
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -22,6 +25,7 @@ import java.util.List;
 public class ManagerAccountServlet extends HttpServlet {
 
     private final UserDAO userDAO = new UserDAO();
+    private final CinemaDAO cinemaDAO = new CinemaDAO();
 
     /**
      * Kiểm tra phiên hiện tại có vai trò Quản trị viên (Admin) hay không.
@@ -52,10 +56,14 @@ public class ManagerAccountServlet extends HttpServlet {
             return;
         }
 
+        userDAO.syncLockedManagersAssignments();
+
         String searchParam = request.getParameter("search");
         List<User> managers = userDAO.getManagers(searchParam);
+        List<Centre> centres = cinemaDAO.getCentresWithoutActiveManager();
 
         request.setAttribute("managers", managers);
+        request.setAttribute("centres", centres);
         request.setAttribute("searchParam", searchParam);
         request.setAttribute("activeNav", "managers");
         request.getRequestDispatcher("/admin/managers.jsp").forward(request, response);
@@ -79,17 +87,64 @@ public class ManagerAccountServlet extends HttpServlet {
             String email = request.getParameter("email");
             String password = request.getParameter("password");
             String phone = request.getParameter("phone");
+            String centreIdParam = request.getParameter("centreId");
 
-            if (fullName == null || fullName.trim().isEmpty()
-                    || account == null || account.trim().isEmpty()
-                    || email == null || email.trim().isEmpty()
-                    || password == null || password.trim().isEmpty()) {
+            if (ValidationUtils.isBlank(fullName)
+                    || ValidationUtils.isBlank(account)
+                    || ValidationUtils.isBlank(email)
+                    || ValidationUtils.isBlank(password)
+                    || ValidationUtils.isBlank(centreIdParam)) {
                 response.sendRedirect(request.getContextPath() + "/admin/managers?error=missing_fields");
                 return;
             }
 
+            int centreId;
+            try {
+                centreId = Integer.parseInt(centreIdParam.trim());
+            } catch (NumberFormatException e) {
+                response.sendRedirect(request.getContextPath() + "/admin/managers?error=invalid_centre");
+                return;
+            }
+
+            if (cinemaDAO.hasActiveManager(centreId)) {
+                response.sendRedirect(request.getContextPath() + "/admin/managers?error=centre_has_manager");
+                return;
+            }
+
+            fullName = fullName.trim();
             account = account.trim();
             email = email.trim();
+            phone = phone != null ? phone.trim() : "";
+
+            if (!ValidationUtils.isValidFullName(fullName)) {
+                response.sendRedirect(request.getContextPath() + "/admin/managers?error=invalid_name");
+                return;
+            }
+
+            if (!ValidationUtils.isValidAccount(account)) {
+                response.sendRedirect(request.getContextPath() + "/admin/managers?error=invalid_account");
+                return;
+            }
+
+            if (!ValidationUtils.isValidEmail(email)) {
+                response.sendRedirect(request.getContextPath() + "/admin/managers?error=invalid_email");
+                return;
+            }
+
+            if (ValidationUtils.isDisposableEmail(email)) {
+                response.sendRedirect(request.getContextPath() + "/admin/managers?error=disposable_email");
+                return;
+            }
+
+            if (!ValidationUtils.isValidPassword(password)) {
+                response.sendRedirect(request.getContextPath() + "/admin/managers?error=weak_password");
+                return;
+            }
+
+            if (!ValidationUtils.isValidPhone(phone, false)) {
+                response.sendRedirect(request.getContextPath() + "/admin/managers?error=invalid_phone");
+                return;
+            }
 
             if (userDAO.isAccountExists(account)) {
                 response.sendRedirect(request.getContextPath() + "/admin/managers?error=account_exists");
@@ -101,15 +156,16 @@ public class ManagerAccountServlet extends HttpServlet {
                 return;
             }
 
+            int sessionUserId = (int) session.getAttribute("userId");
             User newManager = new User();
-            newManager.setFullName(fullName.trim());
+            newManager.setFullName(fullName);
             newManager.setAccount(account);
             newManager.setEmail(email);
             newManager.setPassword(PasswordUtils.hashPassword(password.trim()));
-            newManager.setPhone(phone != null ? phone.trim() : "");
-            newManager.setCentreId(null); // Manager mới tạo chưa phân công trung tâm
+            newManager.setPhone(phone);
+            newManager.setCentreId(centreId);
 
-            int createdId = userDAO.createManager(newManager);
+            int createdId = userDAO.createManager(newManager, sessionUserId);
             if (createdId > 0) {
                 response.sendRedirect(request.getContextPath() + "/admin/managers?success=created");
             } else {
@@ -126,8 +182,32 @@ public class ManagerAccountServlet extends HttpServlet {
                 String phone = request.getParameter("phone");
                 String email = request.getParameter("email");
 
-                if (fullName == null || fullName.trim().isEmpty() || email == null || email.trim().isEmpty()) {
+                if (ValidationUtils.isBlank(fullName) || ValidationUtils.isBlank(email)) {
                     response.sendRedirect(request.getContextPath() + "/admin/managers?error=missing_fields");
+                    return;
+                }
+
+                fullName = fullName.trim();
+                email = email.trim();
+                phone = phone != null ? phone.trim() : "";
+
+                if (!ValidationUtils.isValidFullName(fullName)) {
+                    response.sendRedirect(request.getContextPath() + "/admin/managers?error=invalid_name");
+                    return;
+                }
+
+                if (!ValidationUtils.isValidEmail(email)) {
+                    response.sendRedirect(request.getContextPath() + "/admin/managers?error=invalid_email");
+                    return;
+                }
+
+                if (ValidationUtils.isDisposableEmail(email)) {
+                    response.sendRedirect(request.getContextPath() + "/admin/managers?error=disposable_email");
+                    return;
+                }
+
+                if (!ValidationUtils.isValidPhone(phone, false)) {
+                    response.sendRedirect(request.getContextPath() + "/admin/managers?error=invalid_phone");
                     return;
                 }
 
@@ -136,10 +216,6 @@ public class ManagerAccountServlet extends HttpServlet {
                     response.sendRedirect(request.getContextPath() + "/admin/managers?error=not_manager");
                     return;
                 }
-
-                email = email.trim();
-                fullName = fullName.trim();
-                phone = phone != null ? phone.trim() : "";
 
                 if (userDAO.isEmailExistsForOtherUser(email, userId)) {
                     response.sendRedirect(request.getContextPath() + "/admin/managers?error=email_exists");
@@ -164,7 +240,7 @@ public class ManagerAccountServlet extends HttpServlet {
             try {
                 int userId = Integer.parseInt(request.getParameter("userId"));
                 String status = request.getParameter("status");
-                if (!"ACTIVE".equalsIgnoreCase(status) && !"INACTIVE".equalsIgnoreCase(status) && !"LOCKED".equalsIgnoreCase(status)) {
+                if (!ValidationUtils.isValidUserStatus(status)) {
                     status = "ACTIVE";
                 }
 
@@ -175,9 +251,17 @@ public class ManagerAccountServlet extends HttpServlet {
                 }
 
                 // Cập nhật trạng thái tài khoản User.
-                // Lưu ý nghiệp vụ: Nếu Manager đang phụ trách rạp mà tài khoản bị tạm ngưng,
-                // chỉ đổi trạng thái tài khoản người dùng, tuyệt đối không tự động vô hiệu hóa rạp.
-                userDAO.updateUserStatus(userId, status.toUpperCase());
+                String newStatus = status.toUpperCase();
+                userDAO.updateUserStatus(userId, newStatus);
+                if (!"ACTIVE".equalsIgnoreCase(newStatus)) {
+                    // Khi khóa/tạm ngưng tài khoản Manager, giải phóng cụm rạp để rạp không bị vô chủ
+                    int sessionAdminId = session.getAttribute("userId") != null ? (int) session.getAttribute("userId") : 0;
+                    userDAO.unassignManagerByUserId(userId, sessionAdminId, "Tài khoản Quản lý bị khóa/tạm ngưng");
+                }
+
+                // Luôn đồng bộ lại phân công và giải phóng CentreID nếu Quản lý không có rạp hợp lệ
+                userDAO.syncLockedManagersAssignments();
+
                 response.sendRedirect(request.getContextPath() + "/admin/managers?success=status_updated");
                 return;
             } catch (Exception e) {

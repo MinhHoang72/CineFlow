@@ -3,16 +3,24 @@
     String cfPath = request.getContextPath();
     String cfUri = request.getRequestURI();
 %>
+<%
+    String cfRole = (String) session.getAttribute("role");
+    if (cfRole == null && session.getAttribute("user") instanceof model.User) {
+        cfRole = ((model.User) session.getAttribute("user")).getRole();
+    }
+    boolean isManagerOrAdmin = "MANAGER".equalsIgnoreCase(cfRole) || "ADMIN".equalsIgnoreCase(cfRole);
+%>
 <aside class="cf-sidebar">
     <a class="cf-sidebar-brand" href="<%= cfPath %>/dashboard">Cine<span>Flow</span></a>
 
     <div class="cf-sidebar-section">TỔNG QUAN</div>
     <nav class="cf-sidebar-nav">
-        <a class="<%= cfUri.contains("/dashboard.jsp") ? "active" : "" %>" href="<%= cfPath %>/dashboard">
+        <a class="<%= cfUri.contains("/dashboard") ? "active" : "" %>" href="<%= cfPath %>/dashboard">
             <span class="icon">◼</span>Dashboard
         </a>
     </nav>
 
+    <% if (isManagerOrAdmin) { %>
     <div class="cf-sidebar-section">NHÂN SỰ</div>
     <nav class="cf-sidebar-nav">
         <a class="<%= cfUri.contains("/staff") ? "active" : "" %>" href="<%= cfPath %>/staff">
@@ -22,10 +30,11 @@
 
     <div class="cf-sidebar-section">BÁO CÁO</div>
     <nav class="cf-sidebar-nav">
-        <a class="<%= cfUri.contains("/manager/reports") ? "active" : "" %>" href="<%= cfPath %>/reports">
+        <a class="<%= cfUri.contains("/reports") ? "active" : "" %>" href="<%= cfPath %>/reports">
             <span class="icon">▤</span>Phân tích hoạt động
         </a>
     </nav>
+    <% } %>
 
     <div class="cf-sidebar-section">TÀI KHOẢN</div>
     <nav class="cf-sidebar-nav">

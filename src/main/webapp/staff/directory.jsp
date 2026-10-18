@@ -49,622 +49,7 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/manager/shell.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/manager/staff.css">
 
-    <style>
-        :root {
-            --staff-bg: #0c1017;
-            --staff-panel: #151b25;
-            --staff-panel-soft: #111720;
-            --staff-border: #2a3341;
-            --staff-text: #f1f5f9;
-            --staff-muted: #94a3b8;
-            --staff-accent: #ff2855;
-            --staff-radius: 12px;
-        }
-
-        .cf-content { color: var(--staff-text); }
-
-        .cf-page-header { margin-bottom: 26px; }
-
-        .cf-page-header h1 {
-            margin: 8px 0;
-            color: #fff;
-            letter-spacing: -0.6px;
-        }
-
-        .cf-page-header > div > p:last-child {
-            color: #a5b4c8;
-            line-height: 1.7;
-        }
-
-        .cf-card {
-            overflow: hidden;
-            border: 1px solid var(--staff-border);
-            border-radius: 16px;
-            background: var(--staff-panel);
-            box-shadow: 0 12px 32px rgba(0, 0, 0, .12);
-        }
-
-        .staff-card-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 20px;
-            padding: 24px 28px;
-            border-bottom: 1px solid var(--staff-border);
-        }
-
-        .staff-heading h2 {
-            margin: 0 0 7px;
-            color: #fff;
-            font-size: 19px;
-            font-weight: 750;
-        }
-
-        .staff-heading p {
-            margin: 0;
-            color: var(--staff-muted);
-            font-size: 13px;
-        }
-
-        .staff-toolbar {
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        .staff-search-form {
-            display: flex;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin: 0;
-        }
-
-        .staff-search-box {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-
-        .staff-search-icon {
-            position: absolute;
-            left: 13px;
-            color: #8492a6;
-            font-size: 15px;
-            pointer-events: none;
-        }
-
-        #staffFilterInput {
-            box-sizing: border-box;
-            width: 290px;
-            height: 42px;
-            padding: 0 14px 0 38px;
-            border: 1px solid #303b4b;
-            border-radius: 10px;
-            outline: none;
-            background: var(--staff-panel-soft);
-            color: #f8fafc;
-            font-family: inherit;
-            font-size: 13px;
-            transition: border-color .2s, box-shadow .2s, background .2s;
-        }
-
-        #staffFilterInput::placeholder {
-            color: #8492a6;
-            opacity: 1;
-        }
-
-        #staffFilterInput:hover { border-color: #465267; }
-
-        #staffFilterInput:focus {
-            border-color: var(--staff-accent);
-            background: #141b26;
-            box-shadow: 0 0 0 3px rgba(255, 40, 85, .12);
-        }
-
-        .staff-control-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 7px;
-            height: 42px;
-            padding: 0 16px;
-            border: 1px solid #394456;
-            border-radius: 10px;
-            background: #202735;
-            color: #e5edf7;
-            font-family: inherit;
-            font-size: 13px;
-            font-weight: 650;
-            text-decoration: none;
-            white-space: nowrap;
-            cursor: pointer;
-            transition: background .2s, border-color .2s, transform .2s;
-        }
-
-        .staff-control-btn:hover {
-            background: #2a3444;
-            border-color: #59677d;
-        }
-
-        .staff-control-btn:active { transform: translateY(1px); }
-
-        .staff-control-btn-primary {
-            border-color: var(--staff-accent);
-            background: var(--staff-accent);
-            color: #fff;
-            box-shadow: 0 5px 15px rgba(255, 40, 85, .16);
-        }
-
-        .staff-control-btn-primary:hover {
-            border-color: #ff496e;
-            background: #ff496e;
-        }
-
-        .staff-select-wrap {
-            position: relative;
-        }
-
-        .staff-select-wrap::after {
-            position: absolute;
-            top: 50%;
-            right: 13px;
-            width: 7px;
-            height: 7px;
-            border-right: 1.5px solid #a7b3c5;
-            border-bottom: 1.5px solid #a7b3c5;
-            content: "";
-            pointer-events: none;
-            transform: translateY(-70%) rotate(45deg);
-        }
-
-        #staffStatusFilter,
-        .status-select-wrap .cf-status-select {
-            appearance: none;
-            -webkit-appearance: none;
-            box-sizing: border-box;
-            height: 42px;
-            padding: 0 34px 0 13px;
-            border: 1px solid #303b4b;
-            border-radius: 10px;
-            outline: none;
-            background: var(--staff-panel-soft);
-            color: #e2e8f0;
-            font-family: inherit;
-            font-size: 13px;
-            cursor: pointer;
-            transition: border-color .2s, background .2s;
-        }
-
-        #staffStatusFilter { min-width: 166px; }
-
-        #staffStatusFilter:hover,
-        .status-select-wrap .cf-status-select:hover {
-            border-color: #59677d;
-            background-color: #19212d;
-        }
-
-        #staffStatusFilter:focus,
-        .status-select-wrap .cf-status-select:focus {
-            border-color: var(--staff-accent);
-            box-shadow: 0 0 0 3px rgba(255, 40, 85, .10);
-        }
-
-        #staffStatusFilter option,
-        .status-select-wrap .cf-status-select option {
-            background: #151b25;
-            color: #f1f5f9;
-        }
-
-        .staff-table-body { padding: 22px 28px 28px; }
-
-        .cf-table-wrap {
-            overflow-x: auto;
-            border: 1px solid var(--staff-border);
-            border-radius: 12px;
-            background: #151b25;
-        }
-
-        .cf-table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
-        }
-
-        .cf-table thead th {
-            padding: 15px 18px;
-            border-bottom: 1px solid var(--staff-border);
-            background: #10151d;
-            color: #9eacc0;
-            font-size: 11px;
-            font-weight: 750;
-            letter-spacing: .65px;
-            text-align: left;
-            text-transform: uppercase;
-            white-space: nowrap;
-        }
-
-        .cf-table tbody td {
-            padding: 17px 18px;
-            border-bottom: 1px solid rgba(42, 51, 65, .78);
-            color: #e2e8f0;
-            font-size: 13px;
-            vertical-align: middle;
-        }
-
-        .cf-table tbody tr:last-child td { border-bottom: 0; }
-
-        .cf-table tbody tr {
-            transition: background .16s;
-        }
-
-        .cf-table tbody tr:hover { background: #1a222e; }
-
-        .cf-table td strong {
-            display: block;
-            margin-bottom: 4px;
-            color: #f8fafc;
-            font-size: 13px;
-            font-weight: 700;
-        }
-
-        .cf-table td small {
-            color: #94a3b8;
-            font-size: 12px;
-        }
-
-        .cf-table td code:not(.cf-badge) {
-            color: #d6deeb;
-            font-size: 12px;
-        }
-
-        .cf-table .cf-badge {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 26px;
-            padding: 4px 11px;
-            border-radius: 999px;
-            font-size: 11px;
-            font-weight: 750;
-            white-space: nowrap;
-        }
-
-        .cf-table .cf-badge-info {
-            border: 1px solid rgba(125, 211, 252, .2);
-            background: rgba(56, 189, 248, .12);
-            color: #a5e4ff;
-        }
-
-        .cf-table .cf-badge-success {
-            background: rgba(52, 211, 153, .13);
-            color: #6ee7b7;
-        }
-
-        .cf-table .cf-badge-warning {
-            background: rgba(251, 191, 36, .13);
-            color: #fcd675;
-        }
-
-        .cf-table .cf-badge-danger {
-            background: rgba(248, 113, 113, .13);
-            color: #fca5a5;
-        }
-
-        .staff-actions {
-            display: flex;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-
-        .staff-edit-btn {
-            min-height: 35px;
-            padding: 0 13px;
-            border: 1px solid #3b4657;
-            border-radius: 8px;
-            background: #242c39;
-            color: #e5edf7;
-            font-family: inherit;
-            font-size: 12px;
-            font-weight: 650;
-            cursor: pointer;
-            transition: .2s;
-        }
-
-        .staff-edit-btn:hover {
-            border-color: #64748b;
-            background: #303a4a;
-        }
-
-        .status-select-wrap {
-            position: relative;
-            display: inline-flex;
-            align-items: center;
-            gap: 7px;
-        }
-
-        .status-select-wrap::after {
-            position: absolute;
-            top: 50%;
-            right: 11px;
-            width: 6px;
-            height: 6px;
-            border-right: 1.5px solid currentColor;
-            border-bottom: 1.5px solid currentColor;
-            content: "";
-            pointer-events: none;
-            transform: translateY(-70%) rotate(45deg);
-        }
-
-        .status-select-wrap .cf-status-select {
-            height: 35px;
-            min-width: 112px;
-            padding: 0 27px 0 10px;
-            border-radius: 8px;
-            font-size: 12px;
-            font-weight: 650;
-        }
-
-        .status-select-wrap .val-active {
-            border-color: rgba(52, 211, 153, .35);
-            background: rgba(52, 211, 153, .08);
-            color: #6ee7b7;
-        }
-
-        .status-select-wrap .val-inactive {
-            border-color: rgba(251, 191, 36, .35);
-            background: rgba(251, 191, 36, .08);
-            color: #fcd675;
-        }
-
-        .status-select-wrap .val-locked {
-            border-color: rgba(248, 113, 113, .35);
-            background: rgba(248, 113, 113, .08);
-            color: #fca5a5;
-        }
-
-        .status-indicator {
-            color: #6ee7b7;
-            font-size: 14px;
-            font-weight: 800;
-        }
-
-        .cf-empty {
-            padding: 36px 20px !important;
-            color: #94a3b8 !important;
-            text-align: center;
-        }
-
-        .cf-alert {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 20px;
-            padding: 13px 16px;
-            border: 1px solid transparent;
-            border-radius: 10px;
-            font-size: 13px;
-        }
-
-        .cf-alert-success {
-            border-color: rgba(52, 211, 153, .25);
-            background: rgba(52, 211, 153, .09);
-            color: #6ee7b7;
-        }
-
-        .cf-alert-danger {
-            border-color: rgba(248, 113, 113, .25);
-            background: rgba(248, 113, 113, .09);
-            color: #fca5a5;
-        }
-
-        .cf-modal-backdrop {
-            position: fixed;
-            inset: 0;
-            z-index: 9999;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            overflow-y: auto;
-            padding: 20px;
-            background: rgba(2, 6, 12, .78);
-            backdrop-filter: blur(7px);
-        }
-
-        .cf-modal-backdrop.active { display: flex; }
-
-        .cf-modal {
-            width: 100%;
-            max-width: 520px;
-            overflow: hidden;
-            border: 1px solid #303b4b;
-            border-radius: 16px;
-            background: #151b25;
-            box-shadow: 0 24px 70px rgba(0, 0, 0, .45);
-            animation: staffModalIn .2s ease-out;
-        }
-
-        @keyframes staffModalIn {
-            from { opacity: 0; transform: translateY(8px) scale(.99); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-
-        .cf-modal-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 16px;
-            padding: 21px 24px;
-            border-bottom: 1px solid var(--staff-border);
-            background: #151b25;
-        }
-
-        .cf-modal-header h3 {
-            margin: 0;
-            color: #f8fafc;
-            font-size: 17px;
-            font-weight: 750;
-        }
-
-        .cf-modal-close {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 34px;
-            height: 34px;
-            border: 1px solid #303b4b;
-            border-radius: 9px;
-            background: #202735;
-            color: #cbd5e1;
-            font-size: 23px;
-            cursor: pointer;
-        }
-
-        .cf-modal-close:hover {
-            background: #303a4a;
-            color: #fff;
-        }
-
-        .cf-modal-body {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            padding: 24px;
-            background: #151b25;
-            color: #e2e8f0;
-        }
-
-        .cf-form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 7px;
-        }
-
-        .cf-form-group label {
-            color: #dce5f1;
-            font-size: 12px;
-            font-weight: 700;
-        }
-
-        .cf-form-group input,
-        .cf-form-group select {
-            box-sizing: border-box;
-            width: 100%;
-            min-height: 42px;
-            padding: 10px 12px;
-            border: 1px solid #303b4b;
-            border-radius: 9px;
-            outline: none;
-            background: #10151d;
-            color: #f8fafc;
-            font-family: inherit;
-            font-size: 13px;
-            transition: border-color .2s, box-shadow .2s;
-        }
-
-        .cf-form-group input::placeholder {
-            color: #77859a;
-            opacity: 1;
-        }
-
-        .cf-form-group input:focus,
-        .cf-form-group select:focus {
-            border-color: var(--staff-accent);
-            box-shadow: 0 0 0 3px rgba(255, 40, 85, .12);
-        }
-
-        .cf-form-group select option {
-            background: #151b25;
-            color: #f8fafc;
-        }
-
-        .cf-modal-footer {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-            padding: 17px 24px;
-            border-top: 1px solid var(--staff-border);
-            background: #111720;
-        }
-
-        .cf-modal-footer .cf-btn {
-            min-height: 39px;
-            border-radius: 9px;
-        }
-
-        #cf-toast-container {
-            position: fixed;
-            top: 22px;
-            right: 22px;
-            z-index: 10000;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            width: min(370px, calc(100vw - 32px));
-        }
-
-        .cf-toast {
-            padding: 14px 16px;
-            border: 1px solid rgba(52, 211, 153, .28);
-            border-radius: 11px;
-            background: #17251f;
-            color: #a7f3d0;
-            box-shadow: 0 12px 35px rgba(0, 0, 0, .25);
-            font-size: 13px;
-            line-height: 1.5;
-            animation: staffToastIn .2s ease-out;
-        }
-
-        .cf-toast-error {
-            border-color: rgba(248, 113, 113, .3);
-            background: #2b1b20;
-            color: #fca5a5;
-        }
-
-        .cf-toast-fadeout {
-            opacity: 0;
-            transform: translateY(-5px);
-            transition: opacity .4s, transform .4s;
-        }
-
-        @keyframes staffToastIn {
-            from { opacity: 0; transform: translateY(-5px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        @media (max-width: 1100px) {
-            .staff-card-header { align-items: flex-start; }
-            .staff-toolbar { justify-content: flex-start; width: 100%; }
-            #staffFilterInput { width: min(290px, 35vw); }
-            .staff-table-body { padding: 16px; }
-            .cf-table thead th,
-            .cf-table tbody td { padding: 13px 14px; }
-        }
-
-        @media (max-width: 700px) {
-            .staff-card-header { padding: 20px 16px; }
-            .staff-toolbar { align-items: stretch; }
-            .staff-search-form { width: 100%; }
-            .staff-search-box { flex: 1; min-width: 0; }
-            #staffFilterInput { width: 100%; min-width: 0; }
-            #staffStatusFilter { flex: 1; min-width: 0; }
-            .staff-control-btn-primary { flex: 1; }
-            .staff-table-body { padding: 12px; }
-            .cf-modal-body { padding: 20px 16px; }
-            .cf-modal-header { padding: 18px 16px; }
-            .cf-modal-footer { padding: 14px 16px; }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-            .cf-modal,
-            .cf-toast { animation: none; }
-            * { scroll-behavior: auto !important; }
-        }
-    </style>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/staff/directory.css?v=<%= System.currentTimeMillis() %>">
 </head>
 
 <body>
@@ -685,9 +70,7 @@
         <main class="cf-content">
             <div class="cf-page-header">
                 <div>
-                    <p class="cf-breadcrumb">Nhân sự / Danh sách nhân viên</p>
                     <h1>Nhân sự <%= currentCentreName %></h1>
-                    <p>Quản lý tài khoản, tạo nhân viên, cập nhật thông tin và kiểm soát trạng thái hoạt động tại trung tâm.</p>
                 </div>
             </div>
 
@@ -715,9 +98,45 @@
                 <div class="cf-alert cf-alert-danger">
                     <span>⚠</span> Vui lòng điền đầy đủ các thông tin bắt buộc.
                 </div>
+            <% } else if ("invalid_name".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger">
+                    <span>⚠</span> <strong>Lỗi:</strong> Họ và tên phải từ 2 đến 100 ký tự.
+                </div>
+            <% } else if ("invalid_account".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger">
+                    <span>⚠</span> <strong>Lỗi:</strong> Tên tài khoản từ 3-30 ký tự, chỉ gồm chữ cái, số, gạch dưới, gạch ngang hoặc dấu chấm.
+                </div>
+            <% } else if ("invalid_email".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger">
+                    <span>⚠</span> <strong>Lỗi:</strong> Địa chỉ email không đúng định dạng chuẩn.
+                </div>
+            <% } else if ("disposable_email".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger">
+                    <span>⚠</span> <strong>Lỗi:</strong> Vui lòng không sử dụng địa chỉ email rác / email tạm thời.
+                </div>
+            <% } else if ("weak_password".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger">
+                    <span>⚠</span> <strong>Mật khẩu yếu:</strong> Yêu cầu tối thiểu 8 ký tự, gồm ít nhất 1 chữ hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt.
+                </div>
+            <% } else if ("invalid_phone".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger">
+                    <span>⚠</span> <strong>Lỗi:</strong> Số điện thoại không hợp lệ (yêu cầu số điện thoại di động Việt Nam 10 số).
+                </div>
             <% } else if ("unassigned_manager".equals(errorParam)) { %>
                 <div class="cf-alert cf-alert-danger">
                     <span>⚠</span> Quản lý chưa được bổ nhiệm trung tâm nên không thể tạo nhân viên.
+                </div>
+            <% } else if ("missing_centre".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger">
+                    <span>⚠</span> <strong>Lỗi:</strong> Vui lòng chọn trung tâm/rạp chiếu cho nhân viên.
+                </div>
+            <% } else if ("invalid_centre".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger">
+                    <span>⚠</span> <strong>Lỗi:</strong> Trung tâm được chọn không hợp lệ hoặc không tồn tại.
+                </div>
+            <% } else if ("create_failed".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger">
+                    <span>⚠</span> <strong>Lỗi:</strong> Không thể tạo tài khoản nhân viên. Vui lòng kiểm tra lại thông tin.
                 </div>
             <% } else if (errorParam != null) { %>
                 <div class="cf-alert cf-alert-danger">
@@ -770,6 +189,14 @@
                         </form>
 
                         <div class="staff-select-wrap">
+                            <select id="staffRoleFilter" aria-label="Lọc theo vị trí công việc">
+                                <option value="">Tất cả vị trí</option>
+                                <option value="role-sales">🎫 Bán vé (Ticket Sales)</option>
+                                <option value="role-checker">🔍 Soát vé (Ticket Checker)</option>
+                            </select>
+                        </div>
+
+                        <div class="staff-select-wrap">
                             <select id="staffStatusFilter" aria-label="Lọc theo trạng thái">
                                 <option value="">Tất cả trạng thái</option>
                                 <option value="st-active">Đang hoạt động</option>
@@ -794,6 +221,7 @@
                                 <th>Mã nhân sự</th>
                                 <th>Nhân viên</th>
                                 <th>Tên đăng nhập</th>
+                                <th>Vị trí công việc</th>
                                 <th>Số điện thoại</th>
                                 <th>Trung tâm</th>
                                 <th>Trạng thái</th>
@@ -803,7 +231,7 @@
                             <tbody>
                             <% if (staff == null || staff.isEmpty()) { %>
                                 <tr>
-                                    <td colspan="7" class="cf-empty">
+                                    <td colspan="8" class="cf-empty">
                                         Chưa có nhân viên phù hợp với từ khóa tìm kiếm.
                                     </td>
                                 </tr>
@@ -815,14 +243,18 @@
                                     String staffAccount = item.getAccount() != null ? item.getAccount() : "";
                                     String staffPhone = item.getPhone() != null ? item.getPhone() : "";
                                     String employeeCode = item.getEmployeeCode() != null ? item.getEmployeeCode() : "";
+                                    String staffRole = item.getRole() != null ? item.getRole() : "TICKET_SALES_STAFF";
+                                    boolean isSales = item.isTicketSalesStaff();
+                                    boolean isChecker = item.isTicketCheckerStaff();
+                                    String roleClass = isSales ? "role-sales" : (isChecker ? "role-checker" : "");
                                     String searchVal = (employeeCode + " " + item.getUserId() + " nv" + item.getUserId()
-                                        + " " + staffName + " " + staffEmail + " " + staffAccount + " " + staffPhone).toLowerCase();
+                                        + " " + staffName + " " + staffEmail + " " + staffAccount + " " + staffPhone + " " + staffRole).toLowerCase();
                                     String stClass = "ACTIVE".equalsIgnoreCase(st) ? "st-active"
                                         : ("INACTIVE".equalsIgnoreCase(st) ? "st-inactive" : "st-locked");
                                     String itemCentreName = item.getCentreName() != null
                                         ? item.getCentreName() : currentCentreName;
                             %>
-                                <tr class="staff-row <%= stClass %>" data-search="<%= searchVal %>">
+                                <tr class="staff-row <%= stClass %> <%= roleClass %>" data-search="<%= searchVal %>">
                                     <td>
                                         <code class="cf-badge cf-badge-info"><%= employeeCode %></code>
                                     </td>
@@ -831,6 +263,21 @@
                                         <small><%= staffEmail %></small>
                                     </td>
                                     <td><code><%= staffAccount %></code></td>
+                                    <td>
+                                        <% if (isSales) { %>
+                                            <span class="cf-badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35);">
+                                                🎫 Bán vé (Ticket Sales)
+                                            </span>
+                                        <% } else if (isChecker) { %>
+                                            <span class="cf-badge" style="background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.35);">
+                                                🔍 Soát vé (Ticket Checker)
+                                            </span>
+                                        <% } else { %>
+                                            <span class="cf-badge cf-badge-info">
+                                                Nhân viên
+                                            </span>
+                                        <% } %>
+                                    </td>
                                     <td><%= !staffPhone.isEmpty() ? staffPhone : "—" %></td>
                                     <td>🏛 <%= itemCentreName %></td>
                                     <td>
@@ -843,7 +290,7 @@
                                     <td>
                                         <div class="staff-actions">
                                             <button type="button" class="staff-edit-btn"
-                                                    onclick="openEditStaffModal(<%= item.getUserId() %>, '<%= employeeCode.replace("'", "\\'") %>', '<%= staffName.replace("'", "\\'") %>', '<%= staffPhone.replace("'", "\\'") %>', '<%= staffEmail.replace("'", "\\'") %>')"
+                                                    onclick="openEditStaffModal(<%= item.getUserId() %>, '<%= employeeCode.replace("'", "\\'") %>', '<%= staffName.replace("'", "\\'") %>', '<%= staffPhone.replace("'", "\\'") %>', '<%= staffEmail.replace("'", "\\'") %>', '<%= staffRole.replace("'", "\\'") %>')"
                                                     title="Chỉnh sửa thông tin">
                                                 Sửa
                                             </button>
@@ -881,7 +328,7 @@
 <div class="cf-modal-backdrop" id="createStaffModal">
     <div class="cf-modal" role="dialog" aria-modal="true" aria-labelledby="createStaffTitle">
         <div class="cf-modal-header">
-            <h3 id="createStaffTitle">Thêm nhân viên mới tại <%= currentCentreName %></h3>
+            <h3 id="createStaffTitle">Thêm nhân viên mới<%= !isAdminRole ? (" tại " + currentCentreName) : "" %></h3>
             <button type="button" class="cf-modal-close" onclick="closeCreateStaffModal()" aria-label="Đóng">&times;</button>
         </div>
 
@@ -889,10 +336,35 @@
             <input type="hidden" name="action" value="create">
 
             <div class="cf-modal-body">
-                <p style="font-size:13px;color:#94a3b8;margin:0 0 4px;line-height:1.6;">
-                    Tài khoản sẽ được gán vai trò <strong>STAFF</strong> và trực thuộc trung tâm
-                    <strong><%= currentCentreName %></strong>.
-                </p>
+                <% if (isAdminRole) { %>
+                    <div class="cf-form-group">
+                        <label for="createStaffCentre">Trung tâm / Rạp chiếu trực thuộc *</label>
+                        <select id="createStaffCentre" name="centreId" required>
+                            <option value="">-- Chọn trung tâm trực thuộc --</option>
+                            <% if (centres != null) {
+                                for (Centre c : centres) { %>
+                                    <option value="<%= c.getCentreId() %>" <%= (selectedCentreId != null && selectedCentreId == c.getCentreId()) ? "selected" : "" %>>
+                                        <%= c.getCentreName() %> (<%= c.getCity() %>)
+                                    </option>
+                            <%   }
+                               } %>
+                        </select>
+                    </div>
+                <% } else { %>
+                    <input type="hidden" name="centreId" value="<%= assignedCentre != null ? assignedCentre.getCentreId() : "" %>">
+                    <p style="font-size:13px;color:#94a3b8;margin:0 0 12px;line-height:1.6;">
+                        Tài khoản nhân sự sẽ trực thuộc trung tâm:
+                        <strong style="color:#f8fafc;"><%= currentCentreName %></strong>.
+                    </p>
+                <% } %>
+
+                <div class="cf-form-group">
+                    <label for="createStaffRole">Vị trí công việc *</label>
+                    <select id="createStaffRole" name="role" required>
+                        <option value="TICKET_SALES_STAFF">🎫 Nhân viên bán vé & F&B (Ticket Sales Staff)</option>
+                        <option value="TICKET_CHECKER_STAFF">🔍 Nhân viên soát vé tại cửa rạp (Ticket Checker Staff)</option>
+                    </select>
+                </div>
 
                 <div class="cf-form-group">
                     <label for="createStaffFullName">Họ và tên nhân viên *</label>
@@ -921,10 +393,10 @@
 
                 <div class="cf-form-group">
                     <label for="createStaffPassword">Mật khẩu ban đầu *</label>
-                    <input type="password" id="createStaffPassword" name="password"
-                           value="123456" required>
+                    <input type="text" id="createStaffPassword" name="password"
+                           value="Staff@123" required>
                     <small style="color:#94a3b8;font-size:12px;line-height:1.5;">
-                        Mật khẩu khởi tạo mặc định; nên đổi sau lần đăng nhập đầu tiên.
+                        Mật khẩu khởi tạo mặc định: <code>Staff@123</code> (tối thiểu 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt).
                     </small>
                 </div>
             </div>
@@ -953,6 +425,14 @@
                 <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border:1px solid #303b4b;border-radius:10px;background:#10151d;">
                     <span style="font-size:12px;color:#94a3b8;font-weight:600;">Mã nhân viên</span>
                     <code class="cf-badge cf-badge-info" id="editStaffCode">NV00000</code>
+                </div>
+
+                <div class="cf-form-group">
+                    <label for="editStaffRole">Vị trí công việc *</label>
+                    <select name="role" id="editStaffRole" required>
+                        <option value="TICKET_SALES_STAFF">🎫 Nhân viên bán vé & F&B (Ticket Sales Staff)</option>
+                        <option value="TICKET_CHECKER_STAFF">🔍 Nhân viên soát vé tại cửa rạp (Ticket Checker Staff)</option>
+                    </select>
                 </div>
 
                 <div class="cf-form-group">
@@ -990,12 +470,16 @@
         document.getElementById('createStaffModal').classList.remove('active');
     }
 
-    function openEditStaffModal(id, code, fullName, phone, email) {
+    function openEditStaffModal(id, code, fullName, phone, email, role) {
         document.getElementById('editStaffUserId').value = id;
         document.getElementById('editStaffCode').textContent = code;
         document.getElementById('editStaffFullName').value = fullName;
         document.getElementById('editStaffPhone').value = phone;
         document.getElementById('editStaffEmail').value = email;
+        var roleSelect = document.getElementById('editStaffRole');
+        if (roleSelect && role) {
+            roleSelect.value = role;
+        }
         document.getElementById('editStaffModal').classList.add('active');
     }
 
@@ -1020,20 +504,23 @@
 
     document.addEventListener('DOMContentLoaded', function() {
         var searchInput = document.getElementById('staffFilterInput');
+        var roleFilter = document.getElementById('staffRoleFilter');
         var statusFilter = document.getElementById('staffStatusFilter');
         var rows = document.querySelectorAll('.staff-row');
         var countLabel = document.getElementById('staffCountLabel');
 
         function filterRows() {
             var query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+            var roleVal = roleFilter ? roleFilter.value : '';
             var statusVal = statusFilter ? statusFilter.value : '';
             var visible = 0;
 
             rows.forEach(function(row) {
                 var searchVal = row.getAttribute('data-search') || '';
                 var matchText = !query || searchVal.indexOf(query) !== -1;
+                var matchRole = !roleVal || row.classList.contains(roleVal);
                 var matchStatus = !statusVal || row.classList.contains(statusVal);
-                var showRow = matchText && matchStatus;
+                var showRow = matchText && matchRole && matchStatus;
 
                 row.style.display = showRow ? '' : 'none';
                 if (showRow) visible++;
@@ -1045,6 +532,7 @@
         }
 
         if (searchInput) searchInput.addEventListener('input', filterRows);
+        if (roleFilter) roleFilter.addEventListener('change', filterRows);
         if (statusFilter) statusFilter.addEventListener('change', filterRows);
 
         document.querySelectorAll('.cf-alert-success, .cf-alert-danger').forEach(function(alert) {

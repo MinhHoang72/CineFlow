@@ -328,43 +328,20 @@
 
 .cf-page-header {
     display: flex;
-    align-items: flex-end;
+    align-items: center;
     justify-content: space-between;
     gap: 20px;
 
     margin-bottom: 24px;
 }
 
-.cf-breadcrumb {
-    margin: 0 0 8px;
-    color: var(--cf-shell-text-subtle);
-    font-size: 12.5px;
-}
-
-.cf-breadcrumb a {
-    color: var(--cf-shell-text-muted);
-    text-decoration: none;
-}
-
-.cf-breadcrumb a:hover {
-    color: #ff6687;
-}
-
 .cf-page-header h1 {
-    margin: 0 0 7px;
-
-    color: #f8fafc;
-    font-size: 28px;
-    font-weight: 800;
-    line-height: 1.25;
-}
-
-.cf-page-header p:last-child {
     margin: 0;
 
-    color: #a6b3c5;
-    font-size: 13.5px;
-    line-height: 1.7;
+    color: #f8fafc;
+    font-size: 26px;
+    font-weight: 800;
+    line-height: 1.25;
 }
 
 /* =========================================================

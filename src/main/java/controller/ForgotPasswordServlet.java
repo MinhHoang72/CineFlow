@@ -3,6 +3,7 @@ package controller;
 import dao.UserDAO;
 import model.User;
 import utils.EmailUtils;
+import utils.ValidationUtils;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -34,8 +35,9 @@ public class ForgotPasswordServlet extends HttpServlet {
 
         // 1. Lấy địa chỉ email từ biểu mẫu
         String email = request.getParameter("email");
-        if (email == null || email.trim().isEmpty()) {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Email is required.");
+        if (ValidationUtils.isBlank(email) || !ValidationUtils.isValidEmail(email)) {
+            String encodedEmail = email != null ? URLEncoder.encode(email.trim(), StandardCharsets.UTF_8) : "";
+            response.sendRedirect(request.getContextPath() + "/auth/forgot-password.jsp?error=invalid_email&email=" + encodedEmail);
             return;
         }
 
@@ -74,7 +76,7 @@ public class ForgotPasswordServlet extends HttpServlet {
 
         // 7. Chuyển hướng người dùng sang trang nhập mã OTP
         String encodedEmail = URLEncoder.encode(email, StandardCharsets.UTF_8);
-        response.sendRedirect(request.getContextPath() + "/auth/verify-otp.jsp?email=" + encodedEmail);
+        response.sendRedirect(request.getContextPath() + "/auth/verify-otp.jsp?email=" + encodedEmail + "&action=reset");
     }
 
     @Override

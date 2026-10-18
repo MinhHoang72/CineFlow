@@ -6,6 +6,8 @@
 <%@ page import="dao.CinemaDAO" %>
 <%@ page import="java.text.SimpleDateFormat" %>
 <%@ page import="java.util.ArrayList" %>
+<%@ page import="java.util.Calendar" %>
+<%@ page import="java.util.Collections" %>
 <%@ page import="java.util.LinkedHashSet" %>
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.Locale" %>
@@ -25,12 +27,34 @@
         return value == null ? "" : new SimpleDateFormat("yyyy-MM-dd").format(value);
     }
 
-    private String formatDateLabel(java.sql.Timestamp value) {
-        return value == null ? "" : new SimpleDateFormat("EEE", new Locale("vi", "VN")).format(value);
+    private String formatDayOfWeekVi(java.sql.Timestamp value, String todayKey) {
+        if (value == null) return "";
+        String dateKey = formatDateKey(value);
+        if (dateKey.equals(todayKey)) {
+            return "Hôm nay";
+        }
+        Calendar c = Calendar.getInstance();
+        c.setTimeInMillis(value.getTime());
+        int dow = c.get(Calendar.DAY_OF_WEEK);
+        switch (dow) {
+            case Calendar.SUNDAY: return "CN";
+            case Calendar.MONDAY: return "T2";
+            case Calendar.TUESDAY: return "T3";
+            case Calendar.WEDNESDAY: return "T4";
+            case Calendar.THURSDAY: return "T5";
+            case Calendar.FRIDAY: return "T6";
+            case Calendar.SATURDAY: return "T7";
+            default: return "";
+        }
     }
 
-    private String formatMonthYear(java.sql.Timestamp value) {
-        return value == null ? "" : new SimpleDateFormat("MMMM yyyy", new Locale("vi", "VN")).format(value);
+    private String formatDateMonthYearVi(java.sql.Timestamp value) {
+        if (value == null) return "";
+        Calendar c = Calendar.getInstance();
+        c.setTimeInMillis(value.getTime());
+        int m = c.get(Calendar.MONTH) + 1;
+        int y = c.get(Calendar.YEAR);
+        return "Tháng " + m + ", " + y;
     }
 
     private String formatMoney(java.math.BigDecimal value) {
@@ -46,6 +70,7 @@
     boolean isCustomer = signedInUser != null && "CUSTOMER".equalsIgnoreCase(signedInUser.getRole());
     String contextPath = request.getContextPath();
     CinemaDAO cinemaDAO = new CinemaDAO();
+
     List<Movie> nowShowing = cinemaDAO.getNowShowingMovies();
     List<Movie> comingSoon = cinemaDAO.getComingSoonMovies();
     List<Movie> movies = new ArrayList<>(nowShowing);
@@ -61,18 +86,61 @@
             movies.add(cm);
         }
     }
+
     List<Centre> centres = cinemaDAO.getActiveCentres();
     List<ShowtimeView> showtimes = cinemaDAO.getScheduledShowtimes();
+
+    // Lấy ngày hôm nay theo hệ thống (00:00:00)
+    Calendar todayCal = Calendar.getInstance();
+    todayCal.set(Calendar.HOUR_OF_DAY, 0);
+    todayCal.set(Calendar.MINUTE, 0);
+    todayCal.set(Calendar.SECOND, 0);
+    todayCal.set(Calendar.MILLISECOND, 0);
+    java.sql.Timestamp todayTimestamp = new java.sql.Timestamp(todayCal.getTimeInMillis());
+    String todayKey = formatDateKey(todayTimestamp);
+
     Set<String> cityNames = new LinkedHashSet<>();
+    Set<String> genreNames = new LinkedHashSet<>();
     Set<String> dateKeys = new LinkedHashSet<>();
     List<java.sql.Timestamp> scheduleDates = new ArrayList<>();
+
     for (Centre centre : centres) {
-        if (centre.getCity() != null && !centre.getCity().trim().isEmpty()) cityNames.add(centre.getCity());
+        if (centre.getCity() != null && !centre.getCity().trim().isEmpty()) {
+            cityNames.add(centre.getCity().trim());
+        }
     }
+
+    for (Movie m : movies) {
+        if (m.getGenre() != null && !m.getGenre().trim().isEmpty()) {
+            String[] parts = m.getGenre().split("[,/·•]");
+            for (String p : parts) {
+                String g = p.trim();
+                if (!g.isEmpty()) {
+                    genreNames.add(g);
+                }
+            }
+        }
+    }
+
+    // Chỉ thu thập các ngày có suất chiếu từ HÔM NAY trở đi (không xem được hôm qua, hôm kia)
     for (ShowtimeView showtime : showtimes) {
         String dateKey = formatDateKey(showtime.getStartTime());
-        if (dateKeys.add(dateKey)) scheduleDates.add(showtime.getStartTime());
+        if (dateKey.compareTo(todayKey) >= 0) {
+            if (dateKeys.add(dateKey)) {
+                scheduleDates.add(showtime.getStartTime());
+            }
+        }
     }
+
+    // Đảm bảo HÔM NAY luôn có trong danh sách lựa chọn
+    if (!dateKeys.contains(todayKey)) {
+        scheduleDates.add(0, todayTimestamp);
+        dateKeys.add(todayKey);
+    }
+
+    // Sắp xếp ngày tăng dần từ Hôm nay trở đi
+    Collections.sort(scheduleDates, (d1, d2) -> d1.compareTo(d2));
+
     int requestedCentreId = -1;
     try {
         String cParam = request.getParameter("centreId");
@@ -89,6 +157,7 @@
             break;
         }
     }
+
     int requestedMovieId = -1;
     try {
         requestedMovieId = Integer.parseInt(request.getParameter("movieId"));
@@ -96,7 +165,6 @@
         requestedMovieId = -1;
     }
 
-    // Đảm bảo phim được yêu cầu có mặt trong danh sách phim
     if (requestedMovieId > 0) {
         boolean reqFound = false;
         for (Movie m : movies) {
@@ -110,181 +178,192 @@
             if (reqMovie != null) movies.add(reqMovie);
         }
     }
-    int nowShowingCount = 0;
-    int comingSoonCount = 0;
-    for (Movie m : movies) {
-        if ("COMING_SOON".equalsIgnoreCase(m.getStatus())) {
-            comingSoonCount++;
-        } else {
-            nowShowingCount++;
-        }
-    }
 
-    ShowtimeView initialShowtime = null;
-    if (requestedMovieId > 0) {
-        if (requestedCentreId > 0) {
-            for (ShowtimeView showtime : showtimes) {
-                if (showtime.getMovieId() == requestedMovieId && showtime.getCentreId() == requestedCentreId) {
-                    initialShowtime = showtime;
-                    break;
-                }
-            }
-        }
-        if (initialShowtime == null) {
-            for (ShowtimeView showtime : showtimes) {
-                if (showtime.getMovieId() == requestedMovieId) {
-                    initialShowtime = showtime;
-                    break;
-                }
-            }
-        }
-    } else if (requestedCentreId > 0) {
-        for (ShowtimeView showtime : showtimes) {
-            if (showtime.getCentreId() == requestedCentreId) {
-                initialShowtime = showtime;
-                break;
-            }
-        }
-    }
+    // Yêu cầu:
+    // 1. Phim mặc định: nếu có param movieId thì mặc định là phim đó, ngược lại lấy phim đầu tiên
+    int selectedMovieId = requestedMovieId > 0 ? requestedMovieId : (!movies.isEmpty() ? movies.get(0).getMovieId() : -1);
 
-    if (initialShowtime == null && !showtimes.isEmpty()) {
-        initialShowtime = showtimes.get(0);
-    }
+    // 2. Ngày tháng mặc định: BẮT BUỘC LÀ NGÀY HÔM NAY
+    String selectedDate = todayKey;
 
-    int selectedMovieId = requestedMovieId > 0 ? requestedMovieId : (initialShowtime != null ? initialShowtime.getMovieId() : (!movies.isEmpty() ? movies.get(0).getMovieId() : -1));
-    int selectedCentreId = -1;
-    String selectedCity = "";
-    String selectedDate = "";
+    // 3. Thành phố mặc định: BẮT BUỘC LÀ "TẤT CẢ THÀNH PHỐ" ("") khi chuyển tới booking
+    String selectedCity = request.getParameter("city") != null ? request.getParameter("city").trim() : "";
 
-    if (requestedMovieId > 0 && initialShowtime != null && initialShowtime.getMovieId() == requestedMovieId) {
-        selectedCentreId = requestedCentre != null ? requestedCentre.getCentreId() : initialShowtime.getCentreId();
-        selectedCity = requestedCentre != null ? requestedCentre.getCity() : initialShowtime.getCity();
-        selectedDate = formatDateKey(initialShowtime.getStartTime());
-    } else {
-        selectedCentreId = requestedCentre != null ? requestedCentre.getCentreId() : (initialShowtime != null ? initialShowtime.getCentreId() : (!centres.isEmpty() ? centres.get(0).getCentreId() : -1));
-        selectedCity = requestedCentre != null ? requestedCentre.getCity() : (initialShowtime != null ? initialShowtime.getCity() : "");
-        selectedDate = initialShowtime != null ? formatDateKey(initialShowtime.getStartTime()) : (!scheduleDates.isEmpty() ? formatDateKey(scheduleDates.get(0)) : "");
-    }
+    // 4. Cụm rạp mặc định: lấy rạp đầu tiên phù hợp
+    int selectedCentreId = requestedCentre != null ? requestedCentre.getCentreId() : (!centres.isEmpty() ? centres.get(0).getCentreId() : -1);
 %>
 <!DOCTYPE html>
 <html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#0B0F17">
-    <title>CineFlow - Mua vé xem phim</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/layout.css?v=<%= System.currentTimeMillis() %>">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/booking/booking.css?v=<%= System.currentTimeMillis() %>">
-</head>
-<body>
-<div class="page-shell">
-    <!-- Thanh điều hướng và đầu trang chung -->
-    <jsp:include page="/common/header.jsp">
-        <jsp:param name="activeNav" value="booking"/>
-    </jsp:include>
-    <main class="container" id="booking">
-        <section class="date-section" aria-label="Chọn ngày chiếu">
-            <button class="date-arrow left" type="button" aria-label="Ngày trước" data-date-scroll="left">‹</button>
-            <div class="month-label" id="bookingMonth"><%= scheduleDates.isEmpty() ? "Chưa có lịch chiếu" : formatMonthYear(scheduleDates.get(0)) %></div>
-            <div class="dates" id="bookingDates">
-                <% for (java.sql.Timestamp scheduleDate : scheduleDates) {
-                    String dateKey = formatDateKey(scheduleDate);
-                    String dayOfWeek = new SimpleDateFormat("u").format(scheduleDate);
-                    String dateClass = "date" + (dateKey.equals(selectedDate) ? " active" : ("6".equals(dayOfWeek) ? " saturday" : ("7".equals(dayOfWeek) ? " sunday" : "")));
-                %>
-                    <button class="<%= dateClass %>" type="button" data-date="<%= dateKey %>" data-month="<%= formatMonthYear(scheduleDate) %>">
-                        <span class="day-name"><%= escapeHtml(formatDateLabel(scheduleDate)) %></span>
-                        <span class="day-number"><%= new SimpleDateFormat("dd").format(scheduleDate) %></span>
-                    </button>
-                <% } %>
-                <% if (scheduleDates.isEmpty()) { %><p class="empty-state">Chưa có ngày chiếu nào được lên lịch.</p><% } %>
-            </div>
-            <button class="date-arrow right" type="button" aria-label="Ngày tiếp theo" data-date-scroll="right">›</button>
-        </section>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#0B0F17">
+        <title>CineFlow - Mua vé xem phim</title>
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/layout.css?v=<%= System.currentTimeMillis() %>">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/booking/booking.css?v=<%= System.currentTimeMillis() %>">
+    </head>
+    <body>
+        <div class="page-shell">
+            <!-- Thanh điều hướng và đầu trang chung -->
+            <jsp:include page="/common/header.jsp">
+                <jsp:param name="activeNav" value="booking"/>
+            </jsp:include>
 
-        <div class="booking-content" id="bookingContent"
-             data-customer="<%= isCustomer %>"
-             data-initial-date="<%= selectedDate %>"
-             data-initial-city="<%= escapeHtml(selectedCity) %>"
-             data-initial-centre="<%= selectedCentreId %>"
-             data-initial-movie="<%= selectedMovieId %>">
-            <section class="cinema-panel" aria-labelledby="cinema-title">
-                <h1 class="panel-title" id="cinema-title">Rạp</h1>
-                <div class="login-row">
-                    <% if (signedInUser == null) { %>
-                        <div><strong>Rạp chiếu phim của tôi</strong><span>Bạn có thể kiểm tra sau khi đăng nhập</span></div>
-                        <a href="<%= contextPath %>/auth/login.jsp">Đăng nhập</a>
-                    <% } else { %>
-                        <div><strong><%= escapeHtml(memberName) %></strong><span>Chọn rạp và suất chiếu phù hợp</span></div>
-                    <% } %>
-                </div>
-                <div class="city-tabs" aria-label="Lọc theo thành phố">
-                    <button class="city-tab<%= selectedCity == null || selectedCity.isEmpty() ? " active" : "" %>" type="button" data-city="">Tất cả</button>
-                    <% for (String city : cityNames) { %>
-                        <button class="city-tab<%= city.equalsIgnoreCase(selectedCity) ? " active" : "" %>" type="button" data-city="<%= escapeHtml(city) %>"><%= escapeHtml(city) %></button>
-                    <% } %>
-                </div>
-                <div class="centre-area">
-                    <div class="centre-grid" id="bookingCentres">
-                        <% for (Centre centre : centres) { %>
-                            <button class="centre<%= centre.getCentreId() == selectedCentreId ? " active" : "" %>" type="button" data-centre-id="<%= centre.getCentreId() %>" data-city="<%= escapeHtml(centre.getCity()) %>" data-name="<%= escapeHtml(centre.getCentreName()) %>"><%= escapeHtml(centre.getCentreName()) %></button>
-                        <% } %>
-                        <% if (centres.isEmpty()) { %><p class="empty-state">Chưa có trung tâm chiếu phim đang hoạt động.</p><% } %>
+            <main class="container" id="booking">
+                <!-- ========================================================= -->
+                <!-- 1. BỘ CHỌN NGÀY CHIẾU (TOP DATE BAR)                     -->
+                <!-- ========================================================= -->
+                <section class="date-section" aria-label="Chọn ngày chiếu">
+                    <div class="month-label" id="bookingMonth">
+                        <%= scheduleDates.isEmpty() ? "Tháng 10, 2026" : formatDateMonthYearVi(scheduleDates.get(0)) %>
                     </div>
-                </div>
-            </section>
-
-            <section class="movie-panel" aria-labelledby="movie-title">
-                <h2 class="panel-title" id="movie-title">Phim</h2>
-                <div class="movie-tab-filter" role="tablist" aria-label="Bộ lọc loại phim">
-                    <button class="movie-tab-btn active" type="button" data-filter="all">
-                        <span class="tab-text">Tất cả</span>
-                        <span class="tab-count"><%= movies.size() %></span>
-                    </button>
-                    <button class="movie-tab-btn" type="button" data-filter="NOW_SHOWING">
-                        <span class="tab-text">Đang chiếu</span>
-                        <span class="tab-count"><%= nowShowingCount %></span>
-                    </button>
-                    <button class="movie-tab-btn" type="button" data-filter="COMING_SOON">
-                        <span class="tab-text">Sắp chiếu</span>
-                        <span class="tab-count"><%= comingSoonCount %></span>
-                    </button>
-                </div>
-                <div class="movie-list" id="bookingMovies">
-                    <% for (Movie movie : movies) {
-                        String rating = movie.getAgeRating() == null ? "" : movie.getAgeRating().toUpperCase();
-                        String ratingClass = "";
-                        if ("T13".equals(rating)) ratingClass = " age-13";
-                        else if ("T16".equals(rating)) ratingClass = " age-16";
-                        else if ("T18".equals(rating)) ratingClass = " age-18";
-                        else if ("P".equals(rating) || "K".equals(rating)) ratingClass = " age-p";
-                        boolean isSoon = "COMING_SOON".equalsIgnoreCase(movie.getStatus());
-                    %>
-                        <button class="movie-item<%= movie.getMovieId() == selectedMovieId ? " active" : "" %>"
-                                type="button"
-                                data-movie-id="<%= movie.getMovieId() %>"
-                                data-status="<%= isSoon ? "COMING_SOON" : "NOW_SHOWING" %>"
-                                data-title="<%= escapeHtml(movie.getTitle()) %>">
-                            <span class="movie-age<%= ratingClass %>"><%= escapeHtml(movie.getAgeRating()) %></span>
-                            <span class="movie-name"><%= escapeHtml(movie.getTitle()) %></span>
-                            <% if (isSoon) { %>
-                                <span class="badge-coming-soon">Sắp chiếu</span>
-                            <% } %>
+                    <div class="date-carousel-wrap">
+                        <button class="date-nav-btn prev" id="btnDatePrev" type="button" aria-label="Ngày trước đó" title="Trước">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
                         </button>
-                    <% } %>
-                    <% if (movies.isEmpty()) { %><p class="empty-state">Chưa có phim.</p><% } %>
-                    <p class="empty-state" id="bookingMovieEmpty" hidden>Không có phim nào theo bộ lọc đã chọn.</p>
-                </div>
-            </section>
+                        <div class="dates" id="bookingDates">
+                            <% for (java.sql.Timestamp scheduleDate : scheduleDates) {
+                                String dateKey = formatDateKey(scheduleDate);
+                                String dayOfWeek = new SimpleDateFormat("u").format(scheduleDate);
+                                String dayNameVi = formatDayOfWeekVi(scheduleDate, todayKey);
+                                String dayNum = new SimpleDateFormat("dd").format(scheduleDate);
+                                boolean isToday = dateKey.equals(todayKey);
+                                String dateClass = "date" + (dateKey.equals(selectedDate) ? " active" : "")
+                                        + (isToday ? " is-today" : "")
+                                        + ("6".equals(dayOfWeek) ? " saturday" : "")
+                                        + ("7".equals(dayOfWeek) ? " sunday" : "");
+                            %>
+                            <button class="<%= dateClass %>" type="button"
+                                    data-date="<%= dateKey %>"
+                                    data-month="<%= formatDateMonthYearVi(scheduleDate) %>"
+                                    title="<%= dayNameVi %>, <%= new SimpleDateFormat("dd/MM/yyyy").format(scheduleDate) %>">
+                                <span class="day-name"><%= dayNameVi %></span>
+                                <span class="day-number"><%= dayNum %></span>
+                            </button>
+                            <% } %>
+                        </div>
+                        <button class="date-nav-btn next" id="btnDateNext" type="button" aria-label="Ngày tiếp theo" title="Sau">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+                        </button>
+                    </div>
+                </section>
 
-            <section class="booking-showtimes" id="booking-showtimes" aria-labelledby="showtimes-title">
-                <h2 id="showtimes-title">Lịch chiếu</h2>
-                <p class="selected-info" id="bookingSelectionInfo">Chọn ngày, rạp và phim để xem giờ chiếu.</p>
-                <div class="showtimes" id="bookingShowtimes">
-                    <% for (ShowtimeView showtime : showtimes) { %>
-                        <button class="showtime" type="button"
+                <!-- ========================================================= -->
+                <!-- 2. BỐ CỤC 2 CỘT: CỤM RẠP & PHIM (MIDDLE 2-COLUMNS)         -->
+                <!-- ========================================================= -->
+                <div class="booking-content" id="bookingContent"
+                     data-customer="<%= isCustomer %>"
+                     data-initial-date="<%= selectedDate %>"
+                     data-initial-city="<%= escapeHtml(selectedCity) %>"
+                     data-initial-centre="<%= selectedCentreId %>"
+                     data-initial-movie="<%= selectedMovieId %>">
+
+                    <!-- CỘT TRÁI: CỤM RẠP -->
+                    <section class="cinema-panel" aria-labelledby="cinema-title">
+                        <div class="column-header">
+                            <h2 class="column-title" id="cinema-title">Cụm rạp</h2>
+                            <a id="bookingCinemaLoginLink"
+                               href="<%= contextPath %>/auth/login.jsp"
+                               class="btn-cinema-login"
+                               hidden
+                               title="Đăng nhập để đặt vé">
+                                <span>Đăng nhập</span>
+                            </a>
+                        </div>
+                        <div class="column-filter-bar">
+                            <label for="citySelect" class="filter-label">Thành phố</label>
+                            <select id="citySelect" class="cf-filter-select" aria-label="Lọc theo thành phố">
+                                <option value="">Tất cả thành phố</option>
+                                <% for (String city : cityNames) { %>
+                                <option value="<%= escapeHtml(city) %>" <%= city.equalsIgnoreCase(selectedCity) ? "selected" : "" %>><%= escapeHtml(city) %></option>
+                                <% } %>
+                            </select>
+                        </div>
+                        <div class="centre-list" id="bookingCentres">
+                            <% for (Centre centre : centres) {
+                                boolean isSelected = centre.getCentreId() == selectedCentreId;
+                            %>
+                            <button class="centre-row<%= isSelected ? " active" : "" %>"
+                                    type="button"
+                                    data-centre-id="<%= centre.getCentreId() %>"
+                                    data-city="<%= escapeHtml(centre.getCity()) %>"
+                                    data-name="<%= escapeHtml(centre.getCentreName()) %>">
+                                <span class="centre-name"><%= escapeHtml(centre.getCentreName()) %></span>
+                                <span class="centre-city"><%= escapeHtml(centre.getCity()) %></span>
+                            </button>
+                            <% } %>
+                            <% if (centres.isEmpty()) { %>
+                            <p class="empty-state">Chưa có trung tâm chiếu phim đang hoạt động.</p>
+                            <% } %>
+                            <p class="empty-state" id="bookingCentreEmpty" hidden>Không có cụm rạp nào tại thành phố này.</p>
+                        </div>
+                    </section>
+
+                    <!-- CỘT PHẢI: PHIM -->
+                    <section class="movie-panel" aria-labelledby="movie-title">
+                        <div class="column-header">
+                            <h2 class="column-title" id="movie-title">Phim</h2>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <label for="genreSelect" class="filter-label">Thể loại</label>
+                                <select id="genreSelect" class="cf-filter-select" aria-label="Lọc theo thể loại phim">
+                                    <option value="">Tất cả thể loại</option>
+                                    <% for (String genre : genreNames) { %>
+                                    <option value="<%= escapeHtml(genre) %>"><%= escapeHtml(genre) %></option>
+                                    <% } %>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="movie-list" id="bookingMovies">
+                            <% for (Movie movie : movies) {
+                                String rating = movie.getAgeRating() == null ? "P" : movie.getAgeRating().toUpperCase().trim();
+                                String ratingClass = "age-p";
+                                if ("T13".equalsIgnoreCase(rating)) ratingClass = "age-t13";
+                                else if ("T16".equalsIgnoreCase(rating)) ratingClass = "age-t16";
+                                else if ("T18".equalsIgnoreCase(rating)) ratingClass = "age-t18";
+                                else if ("K".equalsIgnoreCase(rating)) ratingClass = "age-k";
+
+                                String genreStr = movie.getGenre() != null ? movie.getGenre() : "Phim chiếu rạp";
+                                int duration = movie.getDuration() > 0 ? movie.getDuration() : 120;
+                                boolean isSelected = movie.getMovieId() == selectedMovieId;
+                            %>
+                            <button class="movie-row<%= isSelected ? " active" : "" %>"
+                                    type="button"
+                                    data-movie-id="<%= movie.getMovieId() %>"
+                                    data-genres="<%= escapeHtml(genreStr) %>"
+                                    data-status="<%= movie.getStatus() %>"
+                                    data-title="<%= escapeHtml(movie.getTitle()) %>">
+                                <span class="movie-age-circle <%= ratingClass %>"><%= escapeHtml(rating) %></span>
+                                <div class="movie-row-info">
+                                    <div class="movie-title"><%= escapeHtml(movie.getTitle()) %></div>
+                                    <div class="movie-meta"><%= escapeHtml(genreStr) %> · <%= duration %> phút</div>
+                                </div>
+                            </button>
+                            <% } %>
+                            <% if (movies.isEmpty()) { %>
+                            <p class="empty-state">Chưa có phim nào trong danh mục.</p>
+                            <% } %>
+                            <p class="empty-state" id="bookingMovieEmpty" hidden>Không có phim nào theo thể loại đã chọn.</p>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- ========================================================= -->
+                <!-- 3. SUẤT CHIẾU DƯỚI CÙNG (BOTTOM SHOWTIMES FULL WIDTH)     -->
+                <!-- ========================================================= -->
+                <section class="booking-showtimes" id="bookingShowtimesSection" aria-labelledby="showtimes-title">
+                    <div class="showtimes-header">
+                        <h2 class="showtimes-title" id="showtimes-title">Suất chiếu</h2>
+                    </div>
+
+                    <!-- Lưới nút giờ chiếu -->
+                    <div class="showtimes-grid" id="bookingShowtimes">
+                        <% for (ShowtimeView showtime : showtimes) {
+                            String showDateKey = formatDateKey(showtime.getStartTime());
+                            if (showDateKey.compareTo(todayKey) < 0) continue;
+                        %>
+                        <button class="showtime-pill" type="button"
                                 data-showtime-id="<%= showtime.getShowtimeId() %>"
-                                data-date="<%= formatDateKey(showtime.getStartTime()) %>"
+                                data-date="<%= showDateKey %>"
                                 data-centre-id="<%= showtime.getCentreId() %>"
                                 data-city="<%= escapeHtml(showtime.getCity()) %>"
                                 data-movie-id="<%= showtime.getMovieId() %>"
@@ -293,385 +372,334 @@
                                 data-price="<%= formatMoney(showtime.getBaseTicketPrice()) %>">
                             <%= formatTime(showtime.getStartTime()) %>
                         </button>
-                    <% } %>
-                </div>
-                <p class="empty-state" id="bookingShowtimeEmpty" hidden>Không có suất chiếu phù hợp với lựa chọn này.</p>
-                <p class="booking-message"><span id="bookingMessage">Chọn một suất chiếu để tiếp tục.</span> <a id="bookingLoginLink" href="<%= contextPath %>/auth/login.jsp" hidden>Đăng nhập</a></p>
-            </section>
-        </div>
-    </main>
-    <script>
-        (function () {
-            const content = document.getElementById("bookingContent");
-            const dateButtons = Array.from(document.querySelectorAll(".date[data-date]"));
-            const cityButtons = Array.from(document.querySelectorAll(".city-tab"));
-            const centreButtons = Array.from(document.querySelectorAll(".centre[data-centre-id]"));
-            const movieButtons = Array.from(document.querySelectorAll(".movie-item[data-movie-id]"));
-            const movieFilterButtons = Array.from(document.querySelectorAll(".movie-tab-btn"));
-            const showtimeButtons = Array.from(document.querySelectorAll(".showtime[data-showtime-id]"));
-            const bookingMonth = document.getElementById("bookingMonth");
-            const movieEmpty = document.getElementById("bookingMovieEmpty");
-            const showtimeEmpty = document.getElementById("bookingShowtimeEmpty");
-            const selectionInfo = document.getElementById("bookingSelectionInfo");
-            const message = document.getElementById("bookingMessage");
-            const loginLink = document.getElementById("bookingLoginLink");
-            const dates = document.getElementById("bookingDates");
+                        <% } %>
+                    </div>
 
-            let selectedDate = content.dataset.initialDate || "";
-            let selectedCity = content.dataset.initialCity || "";
-            let selectedCentreId = content.dataset.initialCentre || "";
-            let selectedMovieId = content.dataset.initialMovie || "";
-            let selectedShowtimeId = "";
-            let currentMovieFilter = "all";
-            const isCustomer = content.dataset.customer === "true";
+                    <!-- Trạng thái không có suất chiếu -->
+                    <div class="empty-state" id="bookingShowtimeEmpty" hidden>
+                        Không có suất chiếu phù hợp với lựa chọn này. Vui lòng chọn ngày khác hoặc cụm rạp khác.
+                    </div>
 
-            function normalize(value) {
-                if (!value) return "";
-                return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\u0111/g, "d").replace(/\u0110/g, "D").toLowerCase().trim();
-            }
+                    <!-- Dải xác nhận & hành động -->
+                    <div class="showtime-action-strip">
+                        <div class="showtime-action-info">
+                            <span id="bookingMessage">Chọn một suất chiếu để tiếp tục.</span>
+                        </div>
+                    </div>
+                </section>
+            </main>
 
-            function escapeHtmlText(str) {
-                if (!str) return "";
-                return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-            }
+            <!-- ========================================================= -->
+            <!-- JAVASCRIPT ĐIỀU KHIỂN BỘ LỌC VÀ TƯƠNG TÁC                -->
+            <!-- ========================================================= -->
+            <script>
+                (function () {
+                    const content = document.getElementById("bookingContent");
+                    const dateButtons = Array.from(document.querySelectorAll(".date[data-date]"));
+                    const citySelect = document.getElementById("citySelect");
+                    const genreSelect = document.getElementById("genreSelect");
+                    const centreButtons = Array.from(document.querySelectorAll(".centre-row[data-centre-id]"));
+                    const movieButtons = Array.from(document.querySelectorAll(".movie-row[data-movie-id]"));
+                    const showtimeButtons = Array.from(document.querySelectorAll(".showtime-pill[data-showtime-id]"));
+                    const bookingMonth = document.getElementById("bookingMonth");
+                    const centreEmpty = document.getElementById("bookingCentreEmpty");
+                    const movieEmpty = document.getElementById("bookingMovieEmpty");
+                    const showtimeEmpty = document.getElementById("bookingShowtimeEmpty");
+                    const message = document.getElementById("bookingMessage");
+                    const loginLink = document.getElementById("bookingLoginLink");
+                    const cinemaLoginLink = document.getElementById("bookingCinemaLoginLink");
+                    const btnProceed = document.getElementById("btnProceedBooking");
 
-            // Nếu phim ban đầu là sắp chiếu, mặc định đặt bộ lọc về tất cả
-            const initialMovie = movieButtons.find((m) => m.dataset.movieId === selectedMovieId);
-            if (initialMovie && initialMovie.dataset.status === "COMING_SOON") {
-                currentMovieFilter = "all";
-            }
+                    let selectedDate = content.dataset.initialDate || "";
+                    let selectedCity = content.dataset.initialCity || "";
+                    let selectedGenre = "";
+                    let selectedCentreId = content.dataset.initialCentre || "";
+                    let selectedMovieId = content.dataset.initialMovie || "";
+                    let selectedShowtimeId = "";
+                    const isCustomer = content.dataset.customer === "true";
 
-            function scrollActiveIntoView() {
-                const activeMovie = document.querySelector('.movie-item[data-movie-id="' + selectedMovieId + '"]');
-                if (activeMovie) {
-                    activeMovie.scrollIntoView({ block: "nearest", behavior: "smooth" });
-                }
-                const activeDate = document.querySelector('.date[data-date="' + selectedDate + '"]');
-                if (activeDate) {
-                    activeDate.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
-                }
-            }
-
-            function render() {
-                // 1. Các nút chọn ngày
-                dateButtons.forEach((button) => {
-                    button.classList.toggle("active", button.dataset.date === selectedDate);
-                    if (selectedMovieId) {
-                        const dateHasShows = showtimeButtons.some((s) =>
-                            s.dataset.date === button.dataset.date &&
-                            s.dataset.movieId === selectedMovieId
-                        );
-                        button.classList.toggle("no-shows", !dateHasShows);
-                    } else {
-                        button.classList.remove("no-shows");
+                    function normalize(value) {
+                        if (!value)
+                            return "";
+                        return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\u0111/g, "d").replace(/\u0110/g, "D").toLowerCase().trim();
                     }
-                });
-                const activeDate = dateButtons.find((button) => button.dataset.date === selectedDate);
-                if (activeDate && activeDate.dataset.month) {
-                    bookingMonth.textContent = activeDate.dataset.month;
-                }
 
-                // 2. Các tab thành phố
-                cityButtons.forEach((button) => {
-                    const btnCity = button.dataset.city || "";
-                    button.classList.toggle("active", normalize(btnCity) === normalize(selectedCity));
-                    if (selectedMovieId && btnCity) {
-                        const cityHasShows = showtimeButtons.some((s) =>
-                            normalize(s.dataset.city || "") === normalize(btnCity) &&
-                            s.dataset.movieId === selectedMovieId &&
-                            (!selectedDate || s.dataset.date === selectedDate)
-                        );
-                        button.classList.toggle("no-shows", !cityHasShows);
-                    } else {
-                        button.classList.remove("no-shows");
+                    function escapeHtmlText(str) {
+                        if (!str)
+                            return "";
+                        return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
                     }
-                });
 
-                // 3. Các nút chọn cụm rạp
-                centreButtons.forEach((button) => {
-                    const matchCity = !selectedCity || normalize(button.dataset.city || "") !== normalize(selectedCity) ? false : true;
-                    button.hidden = !matchCity;
-
-                    if (selectedMovieId) {
-                        const centreHasShows = showtimeButtons.some((s) =>
-                            s.dataset.centreId === button.dataset.centreId &&
-                            s.dataset.movieId === selectedMovieId &&
-                            s.dataset.date === selectedDate
-                        );
-                        button.classList.toggle("has-shows", centreHasShows);
-                        button.classList.toggle("no-shows", !centreHasShows);
-                    } else {
-                        button.classList.remove("has-shows");
-                        button.classList.remove("no-shows");
-                    }
-                });
-
-                // Tự động chọn rạp tối ưu:
-                // Nếu rạp hiện tại bị ẩn hoặc không có suất chiếu cho phim và ngày này,
-                // ưu tiên tự động chọn rạp đầu tiên CÓ suất chiếu trong thành phố đã chọn!
-                let activeCentre = centreButtons.find((button) => button.dataset.centreId === selectedCentreId && !button.hidden);
-                const activeHasShows = activeCentre && showtimeButtons.some((s) =>
-                    s.dataset.centreId === activeCentre.dataset.centreId &&
-                    s.dataset.movieId === selectedMovieId &&
-                    s.dataset.date === selectedDate
-                );
-
-                if ((!activeCentre || !activeHasShows) && Boolean(selectedMovieId)) {
-                    const firstAvailableInCity = centreButtons.find((button) =>
-                        !button.hidden &&
-                        showtimeButtons.some((s) =>
-                            s.dataset.centreId === button.dataset.centreId &&
-                            s.dataset.movieId === selectedMovieId &&
-                            s.dataset.date === selectedDate
-                        )
-                    );
-                    if (firstAvailableInCity) {
-                        activeCentre = firstAvailableInCity;
-                        selectedCentreId = activeCentre.dataset.centreId;
-                    }
-                }
-
-                if (!activeCentre) {
-                    activeCentre = centreButtons.find((button) => !button.hidden);
-                    selectedCentreId = activeCentre ? activeCentre.dataset.centreId : "";
-                }
-                centreButtons.forEach((button) => button.classList.toggle("active", button === activeCentre));
-
-                // 4. Tab lọc phim theo trạng thái
-                movieFilterButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.filter === currentMovieFilter));
-
-                // 5. Danh sách phim
-                let visibleCount = 0;
-                movieButtons.forEach((movie) => {
-                    const matchFilter = (currentMovieFilter === "all" || movie.dataset.status === currentMovieFilter);
-                    movie.hidden = !matchFilter;
-                    movie.classList.toggle("active", movie.dataset.movieId === selectedMovieId);
-                    if (matchFilter) visibleCount++;
-                });
-                if (movieEmpty) movieEmpty.hidden = visibleCount > 0;
-
-                // 6. Các nút suất chiếu
-                const matchingShowtimes = showtimeButtons.filter((showtime) =>
-                    showtime.dataset.date === selectedDate &&
-                    showtime.dataset.centreId === selectedCentreId &&
-                    showtime.dataset.movieId === selectedMovieId
-                );
-
-                if (!matchingShowtimes.some((showtime) => showtime.dataset.showtimeId === selectedShowtimeId)) {
-                    selectedShowtimeId = "";
-                }
-
-                showtimeButtons.forEach((button) => {
-                    const isMatch = matchingShowtimes.includes(button);
-                    button.hidden = !isMatch;
-                    button.classList.toggle("active", button.dataset.showtimeId === selectedShowtimeId);
-                });
-
-                // 7. Trạng thái rỗng và thông tin tóm tắt đã chọn
-                const activeMovie = movieButtons.find((button) => button.dataset.movieId === selectedMovieId);
-                const activeMovieTitle = activeMovie ? activeMovie.dataset.title : "";
-                const isComingSoon = activeMovie && activeMovie.dataset.status === "COMING_SOON";
-
-                if (matchingShowtimes.length === 0) {
-                    showtimeEmpty.hidden = false;
-                    if (isComingSoon) {
-                        showtimeEmpty.innerHTML = "Phim <strong>" + escapeHtmlText(activeMovieTitle) + "</strong> là phim sắp chiếu và hiện chưa mở bán suất chiếu. Vui lòng quay lại sau.";
-                    } else if (activeMovieTitle) {
-                        const altDateSlot = showtimeButtons.find((s) => s.dataset.movieId === selectedMovieId && s.dataset.centreId === selectedCentreId);
-                        const altCentreSlot = showtimeButtons.find((s) => s.dataset.movieId === selectedMovieId && s.dataset.date === selectedDate);
-                        let hint = "";
-                        if (altDateSlot) {
-                            hint = " (Phim có suất chiếu vào ngày khác tại rạp này)";
-                        } else if (altCentreSlot) {
-                            hint = " (Phim có suất chiếu tại cụm rạp khác)";
-                        }
-                        showtimeEmpty.innerHTML = "Không có suất chiếu cho phim <strong>" + escapeHtmlText(activeMovieTitle) + "</strong> tại rạp và ngày đã chọn." + hint;
-                    } else {
-                        showtimeEmpty.textContent = "Không có suất chiếu phù hợp với lựa chọn này.";
-                    }
-                } else {
-                    showtimeEmpty.hidden = true;
-                }
-
-                const selectedShowtime = showtimeButtons.find((button) => button.dataset.showtimeId === selectedShowtimeId);
-                const dateLabel = activeDate ? (activeDate.querySelector(".day-number").textContent + " " + activeDate.querySelector(".day-name").textContent) : "";
-                selectionInfo.textContent = [selectedCity, activeCentre && activeCentre.dataset.name, activeMovieTitle, dateLabel].filter(Boolean).join(" / ") || "Chọn ngày, rạp và phim để xem giờ chiếu.";
-
-                if (selectedShowtime) {
-                    const details = [selectedShowtime.dataset.time, selectedShowtime.dataset.hall, selectedShowtime.dataset.price].filter(Boolean).join(" · ");
-                    message.textContent = isCustomer ? ("Đã chọn " + details + ". Bước chọn ghế chưa được tích hợp.") : ("Đã chọn " + details + ". Đăng nhập để tiếp tục đặt vé.");
-                    loginLink.href = "<%= contextPath %>/auth/login.jsp?redirect=" + encodeURIComponent(window.location.pathname + window.location.search);
-                    loginLink.hidden = isCustomer;
-                } else {
-                    message.textContent = "Chọn một suất chiếu để tiếp tục.";
-                    loginLink.hidden = true;
-                }
-            }
-
-            // Lắng nghe sự kiện người dùng:
-            // Xử lý chọn phim
-            movieButtons.forEach((button) => {
-                button.addEventListener("click", () => {
-                    selectedMovieId = button.dataset.movieId;
-                    selectedShowtimeId = "";
-
-                    // Tự động căn chỉnh: Phim này có suất chiếu vào ngày và rạp đang chọn không?
-                    const hasCurrentSlot = showtimeButtons.some((s) =>
-                        s.dataset.movieId === selectedMovieId &&
-                        s.dataset.centreId === selectedCentreId &&
-                        s.dataset.date === selectedDate
-                    );
-
-                    if (!hasCurrentSlot) {
-                        // 1. Ưu tiên tìm rạp khác trong CÙNG thành phố và CÙNG ngày hiện tại
-                        const sameCitySameDate = showtimeButtons.find((s) =>
-                            s.dataset.movieId === selectedMovieId &&
-                            s.dataset.date === selectedDate &&
-                            (!selectedCity || normalize(s.dataset.city || "") === normalize(selectedCity))
-                        );
-                        if (sameCitySameDate) {
-                            selectedCentreId = sameCitySameDate.dataset.centreId;
-                        } else {
-                            // 2. Tìm ngày khác tại chính rạp đang chọn
-                            const centreSlot = showtimeButtons.find((s) =>
-                                s.dataset.movieId === selectedMovieId &&
-                                s.dataset.centreId === selectedCentreId
-                            );
-                            if (centreSlot) {
-                                selectedDate = centreSlot.dataset.date;
-                            } else {
-                                // 3. Tìm bất kỳ rạp/ngày nào trong cùng thành phố
-                                const citySlot = showtimeButtons.find((s) =>
-                                    s.dataset.movieId === selectedMovieId &&
-                                    (!selectedCity || normalize(s.dataset.city || "") === normalize(selectedCity))
+                    function render() {
+                        // 1. CẬP NHẬT CÁC NÚT NGÀY
+                        dateButtons.forEach((button) => {
+                            const isSelected = button.dataset.date === selectedDate;
+                            button.classList.toggle("active", isSelected);
+                            if (selectedMovieId && selectedCentreId) {
+                                const hasShows = showtimeButtons.some((s) =>
+                                    s.dataset.date === button.dataset.date &&
+                                            s.dataset.movieId === selectedMovieId &&
+                                            s.dataset.centreId === selectedCentreId
                                 );
-                                if (citySlot) {
-                                    selectedDate = citySlot.dataset.date;
-                                    selectedCentreId = citySlot.dataset.centreId;
-                                } else {
-                                    // 4. Mở rộng tìm toàn quốc nếu thành phố không có rạp chiếu
-                                    const anySlot = showtimeButtons.find((s) => s.dataset.movieId === selectedMovieId);
-                                    if (anySlot) {
-                                        selectedDate = anySlot.dataset.date;
-                                        selectedCentreId = anySlot.dataset.centreId;
-                                        selectedCity = anySlot.dataset.city || "";
-                                    }
-                                }
+                                button.classList.toggle("no-shows", !hasShows);
+                            } else {
+                                button.classList.remove("no-shows");
                             }
+                        });
+
+                        const activeDateBtn = dateButtons.find((button) => button.dataset.date === selectedDate);
+                        if (activeDateBtn && activeDateBtn.dataset.month && bookingMonth) {
+                            bookingMonth.textContent = activeDateBtn.dataset.month;
                         }
-                    }
 
-                    render();
-                    scrollActiveIntoView();
-                });
-            });
+                        // 2. LỌC DANH SÁCH CỤM RẠP THEO CITY
+                        let visibleCentres = 0;
+                        centreButtons.forEach((button) => {
+                            const centreCity = button.dataset.city || "";
+                            const matchCity = !selectedCity || normalize(centreCity) === normalize(selectedCity);
+                            button.style.display = matchCity ? "" : "none";
+                            if (matchCity)
+                                visibleCentres++;
+                        });
+                        if (centreEmpty)
+                            centreEmpty.hidden = visibleCentres > 0;
 
-            // Xử lý chọn ngày
-            dateButtons.forEach((button) => {
-                button.addEventListener("click", () => {
-                    selectedDate = button.dataset.date;
-                    selectedShowtimeId = "";
-                    render();
-                });
-            });
+                        // Nếu rạp đang chọn bị ẩn theo thành phố mới, tự động chọn rạp đầu tiên hiển thị
+                        let currentCentre = centreButtons.find((b) => b.dataset.centreId === selectedCentreId && b.style.display !== "none");
+                        if (!currentCentre && visibleCentres > 0) {
+                            currentCentre = centreButtons.find((b) => b.style.display !== "none");
+                            selectedCentreId = currentCentre ? currentCentre.dataset.centreId : "";
+                        }
+                        centreButtons.forEach((b) => b.classList.toggle("active", b === currentCentre));
 
-            // Xử lý chọn cụm rạp
-            centreButtons.forEach((button) => {
-                button.addEventListener("click", () => {
-                    selectedCentreId = button.dataset.centreId;
-                    selectedCity = button.dataset.city;
-                    selectedShowtimeId = "";
+                        // 3. LỌC DANH SÁCH PHIM THEO GENRE
+                        let visibleMovies = 0;
+                        movieButtons.forEach((button) => {
+                            const movieGenres = button.dataset.genres || "";
+                            const matchGenre = !selectedGenre || normalize(movieGenres).indexOf(normalize(selectedGenre)) !== -1;
+                            button.style.display = matchGenre ? "" : "none";
+                            if (matchGenre)
+                                visibleMovies++;
+                        });
+                        if (movieEmpty)
+                            movieEmpty.hidden = visibleMovies > 0;
 
-                    // Nếu phim đang chọn có suất chiếu tại rạp này vào ngày khác, chuyển sang ngày đó
-                    if (selectedMovieId) {
-                        const hasDateSlot = showtimeButtons.some((s) =>
-                            s.dataset.movieId === selectedMovieId &&
-                            s.dataset.centreId === selectedCentreId &&
-                            s.dataset.date === selectedDate
+                        // Nếu phim đang chọn bị ẩn theo thể loại mới, tự động chọn phim đầu tiên hiển thị
+                        let currentMovie = movieButtons.find((b) => b.dataset.movieId === selectedMovieId && b.style.display !== "none");
+                        if (!currentMovie && visibleMovies > 0) {
+                            currentMovie = movieButtons.find((b) => b.style.display !== "none");
+                            selectedMovieId = currentMovie ? currentMovie.dataset.movieId : "";
+                        }
+                        movieButtons.forEach((b) => b.classList.toggle("active", b === currentMovie));
+
+                        // 4. LỌC SUẤT CHIẾU THEO (NGÀY, RẠP, PHIM)
+                        const matchingShowtimes = showtimeButtons.filter((showtime) =>
+                            showtime.dataset.date === selectedDate &&
+                                    showtime.dataset.centreId === selectedCentreId &&
+                                    showtime.dataset.movieId === selectedMovieId
                         );
-                        if (!hasDateSlot) {
-                            const altDateSlot = showtimeButtons.find((s) =>
-                                s.dataset.movieId === selectedMovieId &&
-                                s.dataset.centreId === selectedCentreId
-                            );
-                            if (altDateSlot) {
-                                selectedDate = altDateSlot.dataset.date;
+
+                        if (!matchingShowtimes.some((s) => s.dataset.showtimeId === selectedShowtimeId)) {
+                            selectedShowtimeId = "";
+                        }
+
+                        showtimeButtons.forEach((button) => {
+                            const isMatch = matchingShowtimes.includes(button);
+                            button.style.display = isMatch ? "" : "none";
+                            button.classList.toggle("active", button.dataset.showtimeId === selectedShowtimeId);
+                        });
+
+                        const centreName = currentCentre ? currentCentre.dataset.name : "CineFlow";
+                        const movieTitle = currentMovie ? currentMovie.dataset.title : "Chọn phim";
+
+                        // 6. XỬ LÝ TRẠNG THÁI RỖNG / THÔNG BÁO
+                        if (matchingShowtimes.length === 0) {
+                            showtimeEmpty.hidden = false;
+                            const isComingSoon = currentMovie && currentMovie.dataset.status === "COMING_SOON";
+                            if (isComingSoon) {
+                                showtimeEmpty.innerHTML = "Phim <strong>" + escapeHtmlText(movieTitle) + "</strong> là phim sắp chiếu và hiện chưa mở bán suất chiếu. Vui lòng quay lại sau.";
+                            } else {
+                                showtimeEmpty.innerHTML = "Không có suất chiếu cho phim <strong>" + escapeHtmlText(movieTitle) + "</strong> tại <strong>" + escapeHtmlText(centreName) + "</strong> vào ngày đã chọn. Vui lòng chọn ngày khác hoặc cụm rạp khác.";
                             }
-                        }
-                    }
-                    render();
-                    scrollActiveIntoView();
-                });
-            });
-
-            // Xử lý chọn tab thành phố
-            cityButtons.forEach((button) => {
-                button.addEventListener("click", () => {
-                    selectedCity = button.dataset.city;
-                    selectedShowtimeId = "";
-                    const currentCentreBtn = centreButtons.find((c) => c.dataset.centreId === selectedCentreId);
-                    if (!currentCentreBtn || (selectedCity && normalize(currentCentreBtn.dataset.city || "") !== normalize(selectedCity))) {
-                        // Nếu phim đang chọn có suất chiếu tại thành phố này, chọn rạp và ngày tương ứng
-                        const movieSlotInCity = showtimeButtons.find((s) =>
-                            s.dataset.movieId === selectedMovieId &&
-                            (!selectedCity || normalize(s.dataset.city || "") === normalize(selectedCity))
-                        );
-                        if (movieSlotInCity) {
-                            selectedCentreId = movieSlotInCity.dataset.centreId;
-                            selectedDate = movieSlotInCity.dataset.date;
                         } else {
-                            const firstCentreInCity = centreButtons.find((c) =>
-                                !selectedCity || normalize(c.dataset.city || "") === normalize(selectedCity)
-                            );
-                            if (firstCentreInCity) {
-                                selectedCentreId = firstCentreInCity.dataset.centreId;
+                            showtimeEmpty.hidden = true;
+                        }
+
+                        // 7. XỬ LÝ NÚT HÀNH ĐỘNG
+                        const activeShowtime = showtimeButtons.find((b) => b.dataset.showtimeId === selectedShowtimeId);
+                        if (activeShowtime) {
+                            const details = [activeShowtime.dataset.time, activeShowtime.dataset.hall, activeShowtime.dataset.price].filter(Boolean).join(" · ");
+                            message.innerHTML = "Đã chọn suất chiếu: <strong>" + details + "</strong>.";
+                            if (!isCustomer) {
+                                const redirectUrl = "<%= contextPath %>/auth/login.jsp?redirect=" + encodeURIComponent(
+                                        "<%= contextPath %>/booking/booking.jsp?movieId=" + selectedMovieId + "&date=" + selectedDate + (selectedCity ? "&city=" + encodeURIComponent(selectedCity) : "") + (selectedCentreId ? "&centreId=" + selectedCentreId : "")
+                                        );
+                                if (loginLink) {
+                                    loginLink.href = redirectUrl;
+                                    loginLink.hidden = false;
+                                }
+                                if (cinemaLoginLink) {
+                                    cinemaLoginLink.href = redirectUrl;
+                                    cinemaLoginLink.hidden = false;
+                                }
+                                if (btnProceed)
+                                    btnProceed.style.display = "none";
+                            } else {
+                                if (loginLink)
+                                    loginLink.hidden = true;
+                                if (cinemaLoginLink)
+                                    cinemaLoginLink.hidden = true;
+                                if (btnProceed)
+                                    btnProceed.style.display = "inline-flex";
+                            }
+                        } else {
+                            message.textContent = "Chọn một suất chiếu để tiếp tục.";
+                            if (loginLink)
+                                loginLink.hidden = true;
+                            if (cinemaLoginLink)
+                                cinemaLoginLink.hidden = true;
+                            if (btnProceed)
+                                btnProceed.style.display = "none";
+                        }
+                    }
+
+                    // GẮN SỰ KIỆN:
+                    // 1. Dropdown Thành phố
+                    if (citySelect) {
+                        citySelect.addEventListener("change", function () {
+                            selectedCity = this.value;
+                            render();
+                        });
+                    }
+
+                    // 2. Dropdown Thể loại
+                    if (genreSelect) {
+                        genreSelect.addEventListener("change", function () {
+                            selectedGenre = this.value;
+                            render();
+                        });
+                    }
+
+                    // 3. Chọn Rạp
+                    centreButtons.forEach((button) => {
+                        button.addEventListener("click", function () {
+                            selectedCentreId = this.dataset.centreId;
+                            render();
+                        });
+                    });
+
+                    // 4. Chọn Phim
+                    movieButtons.forEach((button) => {
+                        button.addEventListener("click", function () {
+                            selectedMovieId = this.dataset.movieId;
+                            render();
+                        });
+                    });
+
+                    // 5. Chọn Ngày
+                    dateButtons.forEach((button) => {
+                        button.addEventListener("click", function () {
+                            selectedDate = this.dataset.date;
+                            render();
+                            this.scrollIntoView({behavior: "smooth", inline: "center", block: "nearest"});
+                        });
+                    });
+
+                    // 6. Điều khiển thanh trượt chọn ngày (Nút Trượt Trái / Trượt Phải)
+                    const bookingDates = document.getElementById("bookingDates");
+                    const btnDatePrev = document.getElementById("btnDatePrev");
+                    const btnDateNext = document.getElementById("btnDateNext");
+
+                    function updateNavBtnState() {
+                        if (!bookingDates || !btnDatePrev || !btnDateNext)
+                            return;
+                        const sl = bookingDates.scrollLeft;
+                        const maxScroll = Math.max(0, bookingDates.scrollWidth - bookingDates.clientWidth - 2);
+                        const isAtStart = sl <= 2;
+                        const isAtEnd = sl >= maxScroll;
+
+                        btnDatePrev.disabled = isAtStart;
+                        btnDatePrev.classList.toggle("disabled", isAtStart);
+
+                        btnDateNext.disabled = isAtEnd;
+                        btnDateNext.classList.toggle("disabled", isAtEnd);
+                    }
+
+                    if (btnDatePrev && bookingDates) {
+                        btnDatePrev.addEventListener("click", function () {
+                            bookingDates.scrollBy({left: -260, behavior: "smooth"});
+                        });
+                    }
+
+                    if (btnDateNext && bookingDates) {
+                        btnDateNext.addEventListener("click", function () {
+                            bookingDates.scrollBy({left: 260, behavior: "smooth"});
+                        });
+                    }
+
+                    function updateVisibleMonth() {
+                        if (!bookingDates || !bookingMonth)
+                            return;
+                        const containerLeft = bookingDates.getBoundingClientRect().left;
+                        for (let i = 0; i < dateButtons.length; i++) {
+                            const rect = dateButtons[i].getBoundingClientRect();
+                            if (rect.right > containerLeft + 30) {
+                                if (dateButtons[i].dataset.month) {
+                                    bookingMonth.textContent = dateButtons[i].dataset.month;
+                                }
+                                break;
                             }
                         }
                     }
+
+                    if (bookingDates) {
+                        bookingDates.addEventListener("scroll", function () {
+                            updateNavBtnState();
+                            updateVisibleMonth();
+                        }, {passive: true});
+                        window.addEventListener("resize", function () {
+                            updateNavBtnState();
+                            updateVisibleMonth();
+                        });
+                    }
+
+                    // 7. Chọn Suất chiếu
+                    showtimeButtons.forEach((button) => {
+                        button.addEventListener("click", function () {
+                            selectedShowtimeId = this.dataset.showtimeId;
+                            render();
+                        });
+                    });
+
+                    // 8. Nút Tiếp tục đặt vé
+                    if (btnProceed) {
+                        btnProceed.addEventListener("click", function () {
+                            if (!selectedShowtimeId) {
+                                alert("Vui lòng chọn một suất chiếu!");
+                                return;
+                            }
+                            const activeShowtime = showtimeButtons.find((b) => b.dataset.showtimeId === selectedShowtimeId);
+                            const time = activeShowtime ? activeShowtime.dataset.time : "";
+                            const hall = activeShowtime ? activeShowtime.dataset.hall : "";
+                            const price = activeShowtime ? activeShowtime.dataset.price : "";
+                            alert("Bạn đã chọn suất chiếu: " + time + " (" + hall + ") - Giá vé: " + price + ".\nHệ thống đang chuẩn bị mở sơ đồ ghế ngồi!");
+                        });
+                    }
+
+                    // Khởi chạy hiển thị ban đầu
                     render();
-                    scrollActiveIntoView();
-                });
-            });
 
-            // Tab lọc phân loại phim
-            movieFilterButtons.forEach((btn) => {
-                btn.addEventListener("click", () => {
-                    currentMovieFilter = btn.dataset.filter;
-                    render();
-                });
-            });
+                    // Cuộn ngày hiện tại vào giữa tầm nhìn và khởi tạo trạng thái nút trượt
+                    const initialActiveDate = dateButtons.find((b) => b.dataset.date === selectedDate);
+                    if (initialActiveDate && bookingDates) {
+                        initialActiveDate.scrollIntoView({behavior: "smooth", inline: "center", block: "nearest"});
+                    }
+                    setTimeout(updateNavBtnState, 200);
+                }());
+            </script>
 
-            // Chọn suất chiếu
-            showtimeButtons.forEach((button) => {
-                button.addEventListener("click", () => {
-                    selectedShowtimeId = button.dataset.showtimeId;
-                    render();
-                });
-            });
-
-            // Cuộn ngang thanh chọn ngày
-            document.querySelectorAll("[data-date-scroll]").forEach((button) => {
-                button.addEventListener("click", () => {
-                    dates.scrollBy({ left: button.dataset.dateScroll === "right" ? 240 : -240, behavior: "smooth" });
-                });
-            });
-
-            // Khởi tạo hiển thị và cuộn tới mục đang chọn
-            render();
-            setTimeout(scrollActiveIntoView, 100);
-
-            if (new URLSearchParams(window.location.search).get("view") === "schedule") {
-                document.getElementById("booking-showtimes").scrollIntoView();
-            }
-        }());
-    </script>
-
-    <!-- Chân trang chung -->
-    <jsp:include page="/common/footer.jsp"/>
-</div>
-</body>
+            <!-- Chân trang chung -->
+            <jsp:include page="/common/footer.jsp"/>
+        </div>
+    </body>
 </html>
-
-
-
-

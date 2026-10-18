@@ -219,12 +219,13 @@ public class CinemaDAO {
         String sql = "SELECT b.CentreID, b.CentreName, b.Address, b.City, b.Phone, b.Status, "
                 + "COUNT(DISTINCT h.HallID) AS HallCount, "
                 + "COALESCE(SUM(h.Capacity), 0) AS SeatCount, "
-                + "u.UserID AS ManagerID, u.FullName AS ManagerName, u.Email AS ManagerEmail "
+                + "cma.ManagerID, u.FullName AS ManagerName, u.Email AS ManagerEmail, u.Status AS ManagerStatus "
                 + "FROM Centres b "
                 + "LEFT JOIN Halls h ON h.CentreID = b.CentreID "
-                + "LEFT JOIN Users u ON u.CentreID = b.CentreID AND u.Role = 'MANAGER' AND u.Status = 'ACTIVE' "
+                + "LEFT JOIN CentreManagerAssignments cma ON cma.CentreID = b.CentreID AND cma.Status = 'ACTIVE' AND cma.EndDate IS NULL "
+                + "LEFT JOIN Users u ON u.UserID = cma.ManagerID "
                 + "WHERE b.CentreID = ? "
-                + "GROUP BY b.CentreID, b.CentreName, b.Address, b.City, b.Phone, b.Status, u.UserID, u.FullName, u.Email";
+                + "GROUP BY b.CentreID, b.CentreName, b.Address, b.City, b.Phone, b.Status, cma.ManagerID, u.FullName, u.Email, u.Status";
 
         try (Connection connection = DBContext.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -245,6 +246,7 @@ public class CinemaDAO {
                         centre.setManagerId(mgrId);
                         centre.setManagerName(resultSet.getString("ManagerName"));
                         centre.setManagerEmail(resultSet.getString("ManagerEmail"));
+                        centre.setManagerStatus(resultSet.getString("ManagerStatus"));
                     }
                     return centre;
                 }
@@ -257,20 +259,25 @@ public class CinemaDAO {
     }
 
     /**
-     * Lấy danh sách các trung tâm kèm trạng thái đã được phân phối một bộ phim cụ thể hay chưa.
+     * Lấy danh sách các trung tâm kèm trạng thái đã được phân phối một bộ phim cụ thể hay chưa,
+     * đồng thời đếm số lượng suất chiếu sắp tới của phim tại từng trung tâm.
      *
      * @param movieId mã định danh phim
-     * @return danh sách trung tâm kèm cờ distributed
+     * @return danh sách trung tâm kèm cờ distributed và số suất chiếu tương lai
      */
     public List<Centre> getDistributionCentres(int movieId) {
         String sql = "SELECT b.CentreID, b.CentreName, b.Address, b.City, b.Phone, b.Status, "
-                + "CAST(CASE WHEN UPPER(b.Status) = 'ACTIVE' AND bm.IsActive = 1 THEN 1 ELSE 0 END AS bit) AS [Distributed] "
+                + "CAST(CASE WHEN UPPER(b.Status) = 'ACTIVE' AND bm.IsActive = 1 THEN 1 ELSE 0 END AS bit) AS [Distributed], "
+                + "COALESCE((SELECT COUNT(*) FROM Showtimes s JOIN Halls h ON s.HallID = h.HallID "
+                + "          WHERE s.MovieID = ? AND h.CentreID = b.CentreID AND s.StartTime > GETDATE() "
+                + "          AND UPPER(s.Status) = 'SCHEDULED'), 0) AS [FutureShowtimeCount] "
                 + "FROM Centres b LEFT JOIN CentreMovies bm ON bm.CentreID = b.CentreID AND bm.MovieID = ? "
                 + "ORDER BY b.City, b.CentreName";
         List<Centre> centres = new ArrayList<>();
         try (Connection connection = DBContext.getConnection();
              PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, movieId);
+            ps.setInt(2, movieId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Centre centre = new Centre();
@@ -281,6 +288,7 @@ public class CinemaDAO {
                     centre.setPhone(rs.getString("Phone"));
                     centre.setStatus(rs.getString("Status"));
                     centre.setDistributed(rs.getBoolean("Distributed"));
+                    centre.setFutureShowtimeCount(rs.getInt("FutureShowtimeCount"));
                     centres.add(centre);
                 }
             }
@@ -291,70 +299,25 @@ public class CinemaDAO {
     }
 
     /**
-     * Lấy phạm vi phân phối đã cấu hình của phim.
-     *
-     * @param movieId mã định danh phim
-     * @return chuỗi biểu thị phạm vi (ví dụ: ALL, CITY, CUSTOM) hoặc null
+     * Đếm số lượng suất chiếu trong tương lai của một bộ phim tại một trung tâm cụ thể.
      */
-    public String getMovieDistributionScope(int movieId) {
-        String sql = "SELECT Scope FROM MovieDistributionSettings WHERE MovieID = ?";
+    public int countFutureShowtimes(int movieId, int centreId) {
+        String sql = "SELECT COUNT(*) FROM Showtimes s JOIN Halls h ON s.HallID = h.HallID "
+                + "WHERE s.MovieID = ? AND h.CentreID = ? AND s.StartTime > GETDATE() "
+                + "AND UPPER(s.Status) = 'SCHEDULED'";
         try (Connection connection = DBContext.getConnection();
              PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, movieId);
+            ps.setInt(2, centreId);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    return rs.getString("Scope");
+                    return rs.getInt(1);
                 }
             }
         } catch (Exception exception) {
             exception.printStackTrace();
         }
-        return null;
-    }
-
-    /**
-     * Lấy thành phố được áp dụng phạm vi phân phối cho phim.
-     *
-     * @param movieId mã định danh phim
-     * @return tên thành phố hoặc null
-     */
-    public String getMovieDistributionCity(int movieId) {
-        String sql = "SELECT City FROM MovieDistributionSettings WHERE MovieID = ?";
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setInt(1, movieId);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getString("City");
-                }
-            }
-        } catch (Exception exception) {
-            exception.printStackTrace();
-        }
-        return null;
-    }
-
-    /**
-     * Lấy danh sách mã các trung tâm nằm trong danh sách ngoại lệ phân phối.
-     *
-     * @param movieId mã định danh phim
-     * @return tập hợp các mã trung tâm ngoại lệ
-     */
-    public Set<Integer> getMovieDistributionExceptions(int movieId) {
-        String sql = "SELECT CentreID FROM MovieDistributionExceptions WHERE MovieID = ?";
-        Set<Integer> centreIds = new HashSet<>();
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setInt(1, movieId);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    centreIds.add(rs.getInt("CentreID"));
-                }
-            }
-        } catch (Exception exception) {
-            exception.printStackTrace();
-        }
-        return centreIds;
+        return 0;
     }
 
     /**
@@ -473,13 +436,23 @@ public class CinemaDAO {
         }
     }
 
-    /**
-     * Lưu cấu hình phân phối phim theo phạm vi, thành phố và các ngoại lệ.
-     */
-    public boolean saveMovieDistribution(int movieId, String scope, String city,
-            Set<Integer> selectedCentreIDs, Set<Integer> exceptionCentreIDs) {
-        return saveMovieDistribution(movieId, selectedCentreIDs);
-    }
+
+    private static final String DYNAMIC_PRICE_SELECT = "(COALESCE(bp.BasePrice, 80000) + COALESCE(tsp.Surcharge, 0)) AS BaseTicketPrice ";
+    private static final String DYNAMIC_PRICE_APPLY = "OUTER APPLY ( "
+            + "    SELECT TOP 1 bp.BasePrice FROM BranchPricing bp "
+            + "    WHERE bp.BranchID = b.CentreID AND s.StartTime >= bp.EffectiveFrom "
+            + "      AND (bp.EffectiveTo IS NULL OR s.StartTime <= bp.EffectiveTo) "
+            + "    ORDER BY bp.EffectiveFrom DESC "
+            + ") bp "
+            + "OUTER APPLY ( "
+            + "    SELECT TOP 1 tsp.Surcharge FROM TimeSlotPricing tsp "
+            + "    WHERE tsp.BranchID = b.CentreID "
+            + "      AND CAST(s.StartTime AS TIME) >= tsp.StartTime "
+            + "      AND CAST(s.StartTime AS TIME) < tsp.EndTime "
+            + "      AND s.StartTime >= tsp.EffectiveFrom "
+            + "      AND (tsp.EffectiveTo IS NULL OR s.StartTime <= tsp.EffectiveTo) "
+            + "    ORDER BY tsp.EffectiveFrom DESC "
+            + ") tsp ";
 
     /**
      * Lấy tất cả các suất chiếu đã lên lịch của những phim đang chiếu hoặc sắp chiếu.
@@ -488,12 +461,13 @@ public class CinemaDAO {
      */
     public List<ShowtimeView> getScheduledShowtimes() {
         String sql = "SELECT s.ShowtimeID, m.MovieID, b.CentreID, m.Title, "
-                + "b.CentreName, b.City, h.HallName, "
-                + "s.StartTime, s.BaseTicketPrice "
+                + "b.CentreName, b.City, h.HallName, s.StartTime, "
+                + DYNAMIC_PRICE_SELECT
                 + "FROM Showtimes s "
                 + "JOIN Movies m ON m.MovieID = s.MovieID "
                 + "JOIN Halls h ON h.HallID = s.HallID "
                 + "JOIN Centres b ON b.CentreID = h.CentreID "
+                + DYNAMIC_PRICE_APPLY
                 + "WHERE s.Status = 'SCHEDULED' AND m.Status IN ('NOW_SHOWING', 'COMING_SOON') "
                 + "ORDER BY s.StartTime";
         List<ShowtimeView> showtimes = new ArrayList<>();
@@ -529,12 +503,13 @@ public class CinemaDAO {
      */
     public List<ShowtimeView> getScheduledShowtimesByMovieId(int movieId) {
         String sql = "SELECT s.ShowtimeID, m.MovieID, b.CentreID, m.Title, "
-                + "b.CentreName, b.City, h.HallName, "
-                + "s.StartTime, s.BaseTicketPrice "
+                + "b.CentreName, b.City, h.HallName, s.StartTime, "
+                + DYNAMIC_PRICE_SELECT
                 + "FROM Showtimes s "
                 + "JOIN Movies m ON m.MovieID = s.MovieID "
                 + "JOIN Halls h ON h.HallID = s.HallID "
                 + "JOIN Centres b ON b.CentreID = h.CentreID "
+                + DYNAMIC_PRICE_APPLY
                 + "WHERE s.Status = 'SCHEDULED' AND s.MovieID = ? "
                 + "ORDER BY s.StartTime";
         List<ShowtimeView> showtimes = new ArrayList<>();
@@ -572,12 +547,13 @@ public class CinemaDAO {
      */
     public List<ShowtimeView> getScheduledShowtimesByCentreId(int centreId) {
         String sql = "SELECT s.ShowtimeID, m.MovieID, b.CentreID, m.Title, m.PosterURL, m.AgeRating, m.Duration, m.Genre, "
-                + "b.CentreName, b.City, h.HallName, "
-                + "s.StartTime, s.BaseTicketPrice "
+                + "b.CentreName, b.City, h.HallName, s.StartTime, "
+                + DYNAMIC_PRICE_SELECT
                 + "FROM Showtimes s "
                 + "JOIN Movies m ON m.MovieID = s.MovieID "
                 + "JOIN Halls h ON h.HallID = s.HallID "
                 + "JOIN Centres b ON b.CentreID = h.CentreID "
+                + DYNAMIC_PRICE_APPLY
                 + "WHERE s.Status = 'SCHEDULED' AND m.Status IN ('NOW_SHOWING', 'COMING_SOON') AND b.CentreID = ? "
                 + "ORDER BY s.StartTime";
         List<ShowtimeView> showtimes = new ArrayList<>();
@@ -612,14 +588,19 @@ public class CinemaDAO {
     }
 
     /**
-     * Lấy toàn bộ danh sách phim để phục vụ trang quản trị.
+     * Lấy toàn bộ danh sách phim để phục vụ trang quản trị,
+     * bao gồm số lượng trung tâm đang phân phối phim và tổng số trung tâm hoạt động.
      *
      * @return danh sách tất cả các phim
      */
     public List<Movie> getAllMovies() {
-        String sql = "SELECT MovieID, Title, Description, Duration, Genre, Director, Cast, Language, "
-                + "ReleaseDate, EndDate, PosterURL, TrailerURL, AgeRating, Status "
-                + "FROM Movies ORDER BY MovieID DESC";
+        String sql = "SELECT m.MovieID, m.Title, m.Description, m.Duration, m.Genre, m.Director, m.Cast, m.Language, "
+                + "m.ReleaseDate, m.EndDate, m.PosterURL, m.TrailerURL, m.AgeRating, m.Status, "
+                + "(SELECT COUNT(*) FROM Centres WHERE UPPER(Status) = 'ACTIVE') AS TotalCentres, "
+                + "COALESCE((SELECT COUNT(DISTINCT cm.CentreID) FROM CentreMovies cm "
+                + "          JOIN Centres c ON c.CentreID = cm.CentreID "
+                + "          WHERE cm.MovieID = m.MovieID AND cm.IsActive = 1 AND UPPER(c.Status) = 'ACTIVE'), 0) AS DistributedCentres "
+                + "FROM Movies m ORDER BY m.MovieID DESC";
         List<Movie> movies = new ArrayList<>();
         try (Connection connection = DBContext.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql);
@@ -745,6 +726,11 @@ public class CinemaDAO {
         movie.setTrailerUrl(rs.getString("TrailerURL"));
         movie.setAgeRating(rs.getString("AgeRating"));
         movie.setStatus(rs.getString("Status"));
+        try {
+            movie.setDistributedCentres(rs.getInt("DistributedCentres"));
+            movie.setTotalCentres(rs.getInt("TotalCentres"));
+        } catch (SQLException ignored) {
+        }
         return movie;
     }
 
@@ -779,11 +765,12 @@ public class CinemaDAO {
         String sql = "SELECT b.CentreID, b.CentreName, b.Address, b.City, b.Phone, b.Status, "
                 + "COUNT(DISTINCT h.HallID) AS HallCount, "
                 + "COALESCE(SUM(h.Capacity), 0) AS SeatCount, "
-                + "u.UserID AS ManagerID, u.FullName AS ManagerName, u.Email AS ManagerEmail "
+                + "cma.ManagerID, u.FullName AS ManagerName, u.Email AS ManagerEmail, u.Status AS ManagerStatus "
                 + "FROM Centres b "
                 + "LEFT JOIN Halls h ON h.CentreID = b.CentreID "
-                + "LEFT JOIN Users u ON u.CentreID = b.CentreID AND u.Role = 'MANAGER' AND u.Status = 'ACTIVE' "
-                + "GROUP BY b.CentreID, b.CentreName, b.Address, b.City, b.Phone, b.Status, u.UserID, u.FullName, u.Email "
+                + "LEFT JOIN CentreManagerAssignments cma ON cma.CentreID = b.CentreID AND cma.Status = 'ACTIVE' AND cma.EndDate IS NULL "
+                + "LEFT JOIN Users u ON u.UserID = cma.ManagerID "
+                + "GROUP BY b.CentreID, b.CentreName, b.Address, b.City, b.Phone, b.Status, cma.ManagerID, u.FullName, u.Email, u.Status "
                 + "ORDER BY b.CentreID DESC";
         List<Centre> list = new ArrayList<>();
         try (Connection connection = DBContext.getConnection();
@@ -805,6 +792,7 @@ public class CinemaDAO {
                     centre.setManagerId(mgrId);
                     centre.setManagerName(rs.getString("ManagerName"));
                     centre.setManagerEmail(rs.getString("ManagerEmail"));
+                    centre.setManagerStatus(rs.getString("ManagerStatus"));
                 }
                 list.add(centre);
             }
@@ -813,4 +801,57 @@ public class CinemaDAO {
         }
         return list;
     }
+
+    /**
+     * Lấy danh sách các cụm rạp đang hoạt động nhưng chưa có Quản lý phụ trách.
+     */
+    public List<Centre> getCentresWithoutActiveManager() {
+        String sql = "SELECT b.CentreID, b.CentreName, b.Address, b.City, b.Phone, b.Status "
+                + "FROM Centres b "
+                + "WHERE b.Status = 'ACTIVE' "
+                + "AND NOT EXISTS ("
+                + "    SELECT 1 FROM CentreManagerAssignments cma "
+                + "    JOIN Users u ON u.UserID = cma.ManagerID "
+                + "    WHERE cma.CentreID = b.CentreID AND cma.Status = 'ACTIVE' AND cma.EndDate IS NULL AND UPPER(u.Status) = 'ACTIVE'"
+                + ") "
+                + "ORDER BY b.City, b.CentreName";
+        List<Centre> list = new ArrayList<>();
+        try (Connection connection = DBContext.getConnection();
+             PreparedStatement ps = connection.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                Centre centre = new Centre();
+                centre.setCentreId(rs.getInt("CentreID"));
+                centre.setCentreName(rs.getString("CentreName"));
+                centre.setAddress(rs.getString("Address"));
+                centre.setCity(rs.getString("City"));
+                centre.setPhone(rs.getString("Phone"));
+                centre.setStatus(rs.getString("Status"));
+                list.add(centre);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    /**
+     * Kiểm tra xem một cụm rạp đã có Quản lý đang hoạt động hay chưa.
+     */
+    public boolean hasActiveManager(int centreId) {
+        String sql = "SELECT 1 FROM CentreManagerAssignments cma "
+                + "JOIN Users u ON u.UserID = cma.ManagerID "
+                + "WHERE cma.CentreID = ? AND cma.Status = 'ACTIVE' AND cma.EndDate IS NULL AND UPPER(u.Status) = 'ACTIVE'";
+        try (Connection connection = DBContext.getConnection();
+             PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, centreId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return true;
+        }
+    }
 }
+

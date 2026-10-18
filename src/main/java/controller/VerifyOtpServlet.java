@@ -47,6 +47,52 @@ public class VerifyOtpServlet extends HttpServlet {
         email = email.trim();
         otp = otp.trim();
 
+        // 1. Luồng xác thực thay đổi email từ trang hồ sơ người dùng
+        if ("changeEmail".equalsIgnoreCase(action)) {
+            jakarta.servlet.http.HttpSession session = request.getSession(false);
+            Integer currentUserId = session != null ? (Integer) session.getAttribute("userId") : null;
+            String pendingNewEmail = session != null ? (String) session.getAttribute("pendingNewEmail") : null;
+
+            if (currentUserId == null || pendingNewEmail == null) {
+                User otpUser = userDAO.getUserByResetToken(otp);
+                if (otpUser != null) {
+                    currentUserId = otpUser.getUserId();
+                    pendingNewEmail = email;
+                } else {
+                    response.sendRedirect(request.getContextPath() + "/account?error=sessionExpired");
+                    return;
+                }
+            }
+
+            User user = userDAO.getUserById(currentUserId);
+            if (user == null || user.getResetToken() == null || !otp.equals(user.getResetToken())
+                    || (user.getResetTokenExpiry() != null && user.getResetTokenExpiry().before(new Timestamp(System.currentTimeMillis())))) {
+                response.sendRedirect(request.getContextPath() + "/auth/verify-otp.jsp?error=invalid&email="
+                        + URLEncoder.encode(pendingNewEmail, StandardCharsets.UTF_8) + "&action=changeEmail");
+                return;
+            }
+
+            // Kiểm tra xem email mới có bị tài khoản khác đăng ký trong lúc chờ OTP hay không
+            if (userDAO.isEmailUsedByOtherUser(pendingNewEmail, currentUserId)) {
+                response.sendRedirect(request.getContextPath() + "/account?error=email");
+                return;
+            }
+
+            // Cập nhật email mới chính thức và xác thực thành công
+            boolean updated = userDAO.updateUserEmail(currentUserId, pendingNewEmail, true);
+            if (updated) {
+                if (session != null) {
+                    session.removeAttribute("pendingNewEmail");
+                    session.removeAttribute("pendingEmailUserId");
+                    session.setAttribute("user", userDAO.getUserById(currentUserId));
+                }
+                response.sendRedirect(request.getContextPath() + "/account?updated=emailVerified");
+            } else {
+                response.sendRedirect(request.getContextPath() + "/account?error=updateFailed");
+            }
+            return;
+        }
+
         User user = userDAO.getUserByEmail(email);
         User otpUser = user == null ? null : userDAO.getUserByResetToken(otp);
 
@@ -59,7 +105,7 @@ public class VerifyOtpServlet extends HttpServlet {
         }
 
         // 1. Luồng kích hoạt tài khoản đăng ký mới
-        if ("register".equalsIgnoreCase(action) || "INACTIVE".equalsIgnoreCase(user.getStatus())) {
+        if ("register".equalsIgnoreCase(action)) {
             userDAO.activateUser(user.getUserId());
             response.sendRedirect(request.getContextPath() + "/auth/login.jsp?verified=true");
             return;
@@ -81,13 +127,35 @@ public class VerifyOtpServlet extends HttpServlet {
         // Xử lý gửi lại mã OTP khi người dùng bấm "Gửi lại mã"
         if ("resend".equalsIgnoreCase(action) && email != null && !email.trim().isEmpty()) {
             email = email.trim();
+
+            if ("changeEmail".equalsIgnoreCase(type)) {
+                jakarta.servlet.http.HttpSession session = request.getSession(false);
+                Integer currentUserId = session != null ? (Integer) session.getAttribute("userId") : null;
+                if (currentUserId != null) {
+                    User user = userDAO.getUserById(currentUserId);
+                    if (user != null) {
+                        String otp = String.format("%06d", ThreadLocalRandom.current().nextInt(0, 1_000_000));
+                        Timestamp expiry = new Timestamp(System.currentTimeMillis() + (15 * 60 * 1000));
+                        userDAO.updateActivationOtp(user.getUserId(), otp, expiry);
+                        try {
+                            EmailUtils.sendEmailChangeOtpEmail(email, otp, user.getFullName());
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        }
+                    }
+                }
+                response.sendRedirect(request.getContextPath() + "/auth/verify-otp.jsp?email="
+                        + URLEncoder.encode(email, StandardCharsets.UTF_8) + "&action=changeEmail&resent=true");
+                return;
+            }
+
             User user = userDAO.getUserByEmail(email);
             if (user != null) {
                 String otp = String.format("%06d", ThreadLocalRandom.current().nextInt(0, 1_000_000));
                 Timestamp expiry = new Timestamp(System.currentTimeMillis() + (15 * 60 * 1000));
                 userDAO.updateActivationOtp(user.getUserId(), otp, expiry);
                 try {
-                    if ("register".equalsIgnoreCase(type) || "INACTIVE".equalsIgnoreCase(user.getStatus())) {
+                    if ("register".equalsIgnoreCase(type)) {
                         EmailUtils.sendAccountActivationOtpEmail(user.getEmail(), otp, user.getFullName());
                     } else {
                         EmailUtils.sendResetPasswordOtpEmail(user.getEmail(), otp);

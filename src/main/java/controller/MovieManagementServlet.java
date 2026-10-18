@@ -11,7 +11,7 @@ import jakarta.servlet.http.Part;
 import model.Movie;
 import model.User;
 import utils.MediaStorage;
-
+import utils.ValidationUtils;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -84,6 +84,59 @@ public class MovieManagementServlet extends HttpServlet {
 
         String action = request.getParameter("action");
         if ("save".equals(action)) {
+            String movieIdStr = request.getParameter("movieId");
+            int movieId = 0;
+            if (movieIdStr != null && !movieIdStr.isBlank()) {
+                try {
+                    movieId = Integer.parseInt(movieIdStr.trim());
+                } catch (NumberFormatException ignored) {
+                }
+            }
+
+            String title = request.getParameter("title");
+            String durationStr = request.getParameter("duration");
+            String ageRating = request.getParameter("ageRating");
+            String status = request.getParameter("status");
+            String releaseDateStr = request.getParameter("releaseDate");
+            String endDateStr = request.getParameter("endDate");
+
+            String redirectTarget = request.getContextPath() + (movieId > 0 ? "/admin/movie?movieId=" + movieId : "/admin/movie");
+            String sep = redirectTarget.contains("?") ? "&" : "?";
+
+            if (ValidationUtils.isBlank(title)) {
+                response.sendRedirect(redirectTarget + sep + "error=missing_title");
+                return;
+            }
+
+            int duration;
+            try {
+                duration = Integer.parseInt(durationStr != null ? durationStr.trim() : "0");
+                if (!ValidationUtils.isValidDuration(duration)) {
+                    response.sendRedirect(redirectTarget + sep + "error=invalid_duration");
+                    return;
+                }
+            } catch (NumberFormatException e) {
+                response.sendRedirect(redirectTarget + sep + "error=invalid_duration");
+                return;
+            }
+
+            if (!ValidationUtils.isValidAgeRating(ageRating)) {
+                response.sendRedirect(redirectTarget + sep + "error=invalid_age_rating");
+                return;
+            }
+
+            if (!ValidationUtils.isValidMovieStatus(status)) {
+                response.sendRedirect(redirectTarget + sep + "error=invalid_status");
+                return;
+            }
+
+            Date releaseDate = parseDate(releaseDateStr);
+            Date endDate = parseDate(endDateStr);
+            if (!ValidationUtils.isValidDateRange(releaseDate, endDate)) {
+                response.sendRedirect(redirectTarget + sep + "error=invalid_date_range");
+                return;
+            }
+
             try {
                 Movie movie = readMovie(request);
                 String posterUrl = saveUpload(request, "posterFile", "poster");
@@ -99,9 +152,12 @@ public class MovieManagementServlet extends HttpServlet {
                 } else {
                     dao.updateMovie(movie);
                 }
-            } catch (Exception ignored) {
+                response.sendRedirect(request.getContextPath() + "/admin/movies?success=saved");
+            } catch (IllegalArgumentException e) {
+                response.sendRedirect(redirectTarget + sep + "error=" + e.getMessage());
+            } catch (Exception e) {
+                response.sendRedirect(redirectTarget + sep + "error=save_failed");
             }
-            response.sendRedirect(request.getContextPath() + "/admin/movies");
             return;
         }
 
@@ -112,14 +168,15 @@ public class MovieManagementServlet extends HttpServlet {
                 try {
                     int movieId = Integer.parseInt(movieIdParam.trim());
                     String targetStatus = newStatus.trim().toUpperCase();
-                    if ("NOW_SHOWING".equals(targetStatus) || "COMING_SOON".equals(targetStatus)
-                            || "ENDED".equals(targetStatus) || "ARCHIVED".equals(targetStatus)) {
+                    if (ValidationUtils.isValidMovieStatus(targetStatus)) {
                         dao.updateMovieStatus(movieId, targetStatus);
+                        response.sendRedirect(request.getContextPath() + "/admin/movies?success=statusUpdated");
+                        return;
                     }
                 } catch (NumberFormatException ignored) {
                 }
             }
-            response.sendRedirect(request.getContextPath() + "/admin/movies?success=statusUpdated");
+            response.sendRedirect(request.getContextPath() + "/admin/movies?error=invalid_status");
             return;
         }
 
@@ -152,7 +209,14 @@ public class MovieManagementServlet extends HttpServlet {
     }
 
     private Date parseDate(String value) {
-        return value == null || value.isBlank() ? null : Date.valueOf(value);
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return Date.valueOf(value.trim());
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 
     /**
@@ -173,7 +237,15 @@ public class MovieManagementServlet extends HttpServlet {
         if (dot >= 0) {
             extension = original.substring(dot).toLowerCase();
         }
-        if (!extension.matches("\\.(jpg|jpeg|png|webp|mp4|webm|ogg)")) {
+        if ("poster".equals(prefix)) {
+            if (!ValidationUtils.isValidImageExtension(original)) {
+                throw new IllegalArgumentException("invalid_poster_file");
+            }
+        } else if ("trailer".equals(prefix)) {
+            if (!ValidationUtils.isValidVideoExtension(original)) {
+                throw new IllegalArgumentException("invalid_trailer_file");
+            }
+        } else if (!extension.matches("\\.(jpg|jpeg|png|webp|mp4|webm|ogg)")) {
             return null;
         }
         Path directory = MediaStorage.uploadDirectory(getServletContext(), "movies");

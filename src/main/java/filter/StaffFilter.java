@@ -41,10 +41,13 @@ public class StaffFilter implements Filter {
         if (role == null && session.getAttribute("user") instanceof User) {
             role = ((User) session.getAttribute("user")).getRole();
         }
-        if (role == null) {
-            return false;
-        }
-        return "STAFF".equalsIgnoreCase(role) || "MANAGER".equalsIgnoreCase(role) || "ADMIN".equalsIgnoreCase(role);
+        return "STAFF".equalsIgnoreCase(role)
+                || "TICKET_SALES_STAFF".equalsIgnoreCase(role)
+                || "TICKET_CHECKER_STAFF".equalsIgnoreCase(role)
+                || "TICKET_SALES".equalsIgnoreCase(role)
+                || "TICKET_CHECKER".equalsIgnoreCase(role)
+                || "MANAGER".equalsIgnoreCase(role)
+                || "ADMIN".equalsIgnoreCase(role);
     }
 
     @Override

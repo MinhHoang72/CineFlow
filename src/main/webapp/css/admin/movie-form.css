@@ -196,21 +196,22 @@
 .cf-poster-compact-wrap {
     display: flex;
     align-items: flex-start;
-    gap: 14px;
+    gap: 16px;
 }
 
 .cf-poster-thumb-preview {
-    width: 95px;
-    min-width: 95px;
-    max-width: 95px;
-    height: 138px;
-    border-radius: var(--cf-radius-sm, 6px);
+    width: 105px;
+    min-width: 105px;
+    max-width: 105px;
+    height: 150px;
+    border-radius: 8px;
     overflow: hidden;
     background: #F1F5F9;
     border: 1px solid #CBD5E1;
     display: grid;
     place-items: center;
     flex-shrink: 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .cf-poster-thumb-preview img {
@@ -225,9 +226,9 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 4px;
+    gap: 6px;
     color: #64748B;
-    font-size: 11px;
+    font-size: 11.5px;
     text-align: center;
     padding: 8px;
 }
@@ -242,75 +243,117 @@
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
 }
 
+/* NÚT TẢI TỆP ĐỒNG BỘ PHONG CÁCH CHUYÊN NGHIỆP */
 .cf-file-picker-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    min-height: 36px;
-    padding: 0 12px;
+    gap: 8px;
+    width: 100%;
+    min-height: 42px;
+    padding: 10px 16px;
     border: 1px solid #CBD5E1;
-    border-radius: var(--cf-radius-sm, 6px);
-    background: #F1F5F9;
-    color: #1E293B;
-    font-size: 12.5px;
+    border-radius: 8px;
+    background: #F8FAFC;
+    color: #0F172A;
+    font-size: 13.5px;
     font-weight: 600;
     cursor: pointer;
-    transition: background 0.15s, border-color 0.15s;
+    transition: all 0.2s ease;
     user-select: none;
     box-sizing: border-box;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .cf-file-picker-btn:hover {
-    background: #E2E8F0;
+    background: #F1F5F9;
     border-color: #94A3B8;
+    color: #0284C7;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+.cf-file-picker-btn svg {
+    color: #475569;
+    flex-shrink: 0;
+    transition: color 0.2s ease;
+}
+
+.cf-file-picker-btn:hover svg {
+    color: #0284C7;
 }
 
 .cf-file-name-hint {
     font-size: 11.5px;
-    color: #059669;
-    font-weight: 600;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    color: #047857;
+    background: #ECFDF5;
+    border: 1px solid #A7F3D0;
+    border-radius: 6px;
+    padding: 6px 10px;
     display: none;
+    align-items: center;
+    gap: 6px;
+    word-break: break-all;
+    line-height: 1.4;
 }
 
-.cf-field-group-compact {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    width: 100%;
+.cf-file-name-hint svg {
+    color: #059669;
+    flex-shrink: 0;
 }
 
-.cf-field-group-compact label {
+.cf-file-support-hint {
+    margin: 4px 0 0;
     font-size: 11.5px;
     color: #64748B;
-    font-weight: 500;
+    line-height: 1.4;
 }
 
-.cf-input-sm {
-    width: 100%;
-    min-height: 36px;
-    height: 36px;
-    padding: 0 10px;
-    border: 1px solid #CBD5E1;
-    border-radius: var(--cf-radius-sm, 6px);
-    font-size: 12.5px;
-    font-family: inherit;
-    color: #1E293B;
-    background: #F1F5F9;
-    box-sizing: border-box;
-}
-
-/* KHUNG TẢI VÀ NHẬP LIÊN KẾT TRAILER */
+/* KHUNG TẢI VÀ XEM TRƯỚC TRAILER */
 .cf-trailer-compact-wrap {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
+}
+
+.cf-trailer-preview-frame {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #0B0F17;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #CBD5E1;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.4);
+}
+
+.cf-trailer-preview-frame iframe,
+.cf-trailer-preview-frame video {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+    object-fit: contain;
+    background: #000;
+}
+
+.cf-trailer-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    color: #94A3B8;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 16px;
+    text-align: center;
+    user-select: none;
 }
 
 .cf-trailer-file-row {

@@ -1,5 +1,5 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ page import="model.Movie,model.Centre,java.util.List,java.util.Map,java.util.LinkedHashMap" %>
+<%@ page import="model.Movie,model.Centre,java.util.List,java.util.Set,java.util.LinkedHashSet" %>
 <%
     String authRole = (String) session.getAttribute("role");
     if (authRole == null && session.getAttribute("user") instanceof model.User) {
@@ -9,467 +9,653 @@
         response.sendError(HttpServletResponse.SC_FORBIDDEN, "Chỉ Quản trị viên (ADMIN) mới có quyền truy cập trang này.");
         return;
     }
-%>
-<%!
-    private String esc(String value) {
-        if (value == null) return "";
-        return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-                .replace("\"", "&quot;").replace("'", "&#39;");
-    }
-    private String cityKey(String city) {
-        return city == null || city.isBlank() ? "" : city.trim();
-    }
-    private String cityLabel(String city) {
-        return city == null || city.isBlank() ? "Chưa phân loại" : city.trim();
-    }
-%>
-<%
+
     Movie movie = (Movie) request.getAttribute("movie");
-    if (movie == null) {
-        response.sendRedirect(request.getContextPath() + "/admin/movies");
-        return;
-    }
+    List<Movie> allMovies = (List<Movie>) request.getAttribute("allMovies");
     List<Centre> centres = (List<Centre>) request.getAttribute("centres");
     if (centres == null) centres = java.util.Collections.emptyList();
+    if (allMovies == null) allMovies = java.util.Collections.emptyList();
 
     int totalActiveCentres = 0;
     int totalDistributed = 0;
-    Map<String, Integer> cityActiveCounts = new LinkedHashMap<>();
-    Map<String, Integer> cityDistributedCounts = new LinkedHashMap<>();
+    Set<String> cities = new LinkedHashSet<>();
 
-    for (Centre centre : centres) {
-        String city = cityKey(centre.getCity());
-        if ("ACTIVE".equalsIgnoreCase(centre.getStatus())) {
+    for (Centre c : centres) {
+        if (c.getCity() != null && !c.getCity().isBlank()) {
+            cities.add(c.getCity().trim());
+        }
+        if ("ACTIVE".equalsIgnoreCase(c.getStatus())) {
             totalActiveCentres++;
-            cityActiveCounts.put(city, cityActiveCounts.getOrDefault(city, 0) + 1);
-            if (centre.isDistributed()) {
+            if (c.isDistributed()) {
                 totalDistributed++;
-                cityDistributedCounts.put(city, cityDistributedCounts.getOrDefault(city, 0) + 1);
             }
         }
     }
 
-    request.setAttribute("activeNav", "movies");
-    request.setAttribute("pageTitle", "Phân phối: " + (movie != null ? movie.getTitle() : "Phim"));
-    request.setAttribute("pageBreadcrumb", "Phân phối phim");
+    request.setAttribute("activeNav", "distribution");
 %>
 <!DOCTYPE html>
 <html lang="vi">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Phân phối rạp chiếu | CineFlow Admin</title>
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/reset.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/variables.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/buttons.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/badges.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/forms.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/tables.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/alerts.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/manager/shell.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin/dashboard.css">
-        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin/distribution.css?v=<%= System.currentTimeMillis() %>">
-    </head>
-    <body>
-        <div class="cf-manager-shell">
-            <jsp:include page="/admin/sidebar.jsp" />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Phân phối rạp chiếu | CineFlow Admin</title>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/reset.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/variables.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/buttons.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/badges.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/alerts.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/manager/shell.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin/dashboard.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin/distribution.css?v=<%= System.currentTimeMillis() %>">
+</head>
+<body>
+<div class="cf-manager-shell">
+    <jsp:include page="/admin/sidebar.jsp" />
 
-            <div class="cf-manager-main">
-                <jsp:include page="/admin/topbar.jsp" />
+    <div class="cf-manager-main">
+        <jsp:include page="/admin/topbar.jsp" />
 
-                <main class="cf-content">
-                    <!-- TIÊU ĐỀ TRANG -->
-                    <div class="cf-page-header">
-                        <div>
-                            <p class="cf-breadcrumb">Quản trị nội dung / Phân phối phim</p>
-                            <h1>Thiết lập phân phối trung tâm chiếu</h1>
-                            <p>Cấp phép phát hành phim cho các trung tâm hoạt động trên toàn hệ thống.</p>
+        <main class="cf-content">
+            <!-- TIÊU ĐỀ TRANG -->
+            <div class="cf-page-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;">
+                <div style="display: flex; align-items: center; gap: 14px;">
+                    <div class="cf-dist-icon-box">
+                        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                            <line x1="8" y1="21" x2="16" y2="21"></line>
+                            <line x1="12" y1="17" x2="12" y2="21"></line>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 style="margin: 0; font-size: 22px; font-weight: 700; color: #ffffff;">Phân phối rạp chiếu</h1>
+                        <p style="margin: 4px 0 0; color: var(--cf-muted, #94a3b8); font-size: 13px;">
+                            Chọn phim và cấu hình các chi nhánh được phép chiếu. Việc phân phối giúp kiểm soát phạm vi phát hành theo từng phim và từng chi nhánh.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- THÔNG BÁO LƯU THÀNH CÔNG -->
+            <% if ("1".equals(request.getParameter("saved"))) { %>
+                <div id="saveSuccessAlert" class="cf-alert cf-alert-success" style="margin-bottom: 20px;">
+                    Cập nhật cấu hình phân phối rạp chiếu thành công.
+                </div>
+                <script>
+                    setTimeout(function() {
+                        const alert = document.getElementById('saveSuccessAlert');
+                        if (alert) {
+                            alert.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+                            alert.style.opacity = '0';
+                            alert.style.transform = 'translateY(-6px)';
+                            setTimeout(function() { alert.remove(); }, 400);
+                        }
+                    }, 3000);
+                </script>
+            <% } %>
+
+            <!-- BƯỚC 1: CHỌN PHIM -->
+            <section class="cf-dist-section">
+                <div class="cf-step-header">
+                    <div class="cf-step-title-wrap">
+                        <div class="cf-step-badge">1</div>
+                        <h2 class="cf-step-title">Chọn phim</h2>
+                    </div>
+                </div>
+
+                <!-- BỘ CHỌN PHIM COMBOBOX TÌM KIẾM THÔNG MINH (CUSTOM FLOATING DROPDOWN) -->
+                <div class="cf-movie-picker-container" id="moviePickerContainer">
+                    <div class="cf-movie-input-box" id="movieInputBox">
+                        <span class="cf-movie-search-icon">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            </svg>
+                        </span>
+                        <input type="text"
+                               id="movieSearchInput"
+                               class="cf-movie-search-input"
+                               placeholder="Tìm kiếm phim theo tên hoặc mã phim..."
+                               value="<%= movie != null ? movie.getTitle() : "" %>"
+                               data-selected-title="<%= movie != null ? movie.getTitle().replace("\"", "&quot;") : "" %>"
+                               autocomplete="off">
+                        <div class="cf-movie-input-actions">
+                            <button type="button" class="cf-btn-clear-search" id="btnClearMovieSearch" title="Xóa từ khóa" style="display: none;">✕</button>
+                            <span class="cf-movie-dropdown-icon" id="toggleMovieDropdown">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                            </span>
                         </div>
-                        <a href="${pageContext.request.contextPath}/admin/movies" class="cf-btn cf-btn-secondary cf-btn-sm">
-                            Quay lại danh mục
+                    </div>
+
+                    <!-- POPUP DANH SÁCH PHIM (FLOATING ABSOLUTE, GIỚI HẠN 300PX, KHÔNG ĐẨY BỐ CỤC) -->
+                    <div class="cf-movie-dropdown-panel" id="movieDropdownPanel">
+                        <div class="cf-movie-list-scroll" id="movieListScroll">
+                            <% if (allMovies.isEmpty()) { %>
+                                <div class="cf-movie-empty-opt">Chưa có phim nào trong hệ thống</div>
+                            <% } else {
+                                for (Movie m : allMovies) {
+                                    boolean isSelected = (movie != null && m.getMovieId() == movie.getMovieId());
+                                    String mCode = "CF-" + String.format("%04d", m.getMovieId());
+                                    String st = m.getStatus();
+                                    String stText = "NOW_SHOWING".equals(st) ? "Đang chiếu" :
+                                                    "COMING_SOON".equals(st) ? "Sắp khởi chiếu" :
+                                                    "ENDED".equals(st) ? "Đã kết thúc" : "Lưu trữ";
+                                    String badgeClass = "NOW_SHOWING".equals(st) ? "cf-badge-success" :
+                                                        "COMING_SOON".equals(st) ? "cf-badge-info" :
+                                                        "ENDED".equals(st) ? "cf-badge-warning" : "cf-badge-muted";
+                            %>
+                            <div class="cf-movie-option <%= isSelected ? "is-selected" : "" %>"
+                                 data-movie-id="<%= m.getMovieId() %>"
+                                 data-title="<%= m.getTitle() != null ? m.getTitle().toLowerCase().replace("\"", "&quot;") : "" %>"
+                                 data-code="<%= mCode.toLowerCase() %>"
+                                 onclick="selectMovie(<%= m.getMovieId() %>)">
+                                <div class="cf-movie-opt-poster">
+                                    <% if (m.getPosterUrl() != null && !m.getPosterUrl().isBlank()) { %>
+                                        <img src="<%= m.getPosterUrl() %>" alt="<%= m.getTitle() %>" loading="lazy" onerror="this.parentElement.innerHTML='🎬';">
+                                    <% } else { %>
+                                        🎬
+                                    <% } %>
+                                </div>
+                                <div class="cf-movie-opt-info">
+                                    <div class="cf-movie-opt-title-row">
+                                        <span class="cf-movie-opt-title"><%= m.getTitle() %></span>
+                                        <span class="cf-badge <%= badgeClass %>"><%= stText %></span>
+                                    </div>
+                                    <div class="cf-movie-opt-sub">
+                                        <span><%= mCode %></span> · <span><%= m.getGenre() != null ? m.getGenre() : "Chưa cập nhật" %></span>
+                                        <% if (m.getDuration() > 0) { %> · <span><%= m.getDuration() %> phút</span><% } %>
+                                    </div>
+                                </div>
+                                <% if (isSelected) { %>
+                                    <span class="cf-movie-opt-check" title="Đang chọn">✓</span>
+                                <% } %>
+                            </div>
+                            <% }} %>
+                            <div class="cf-movie-empty-opt" id="movieEmptyOption" style="display: none;">
+                                Không tìm thấy phim nào khớp với từ khóa
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- THẺ THÔNG TIN PHIM ĐƯỢC CHỌN -->
+                <% if (movie != null) {
+                    String st = movie.getStatus();
+                    String stText = "NOW_SHOWING".equals(st) ? "Đang chiếu" :
+                                    "COMING_SOON".equals(st) ? "Sắp khởi chiếu" :
+                                    "ENDED".equals(st) ? "Đã kết thúc" : "Lưu trữ";
+                    String badgeClass = "NOW_SHOWING".equals(st) ? "cf-badge-success" :
+                                        "COMING_SOON".equals(st) ? "cf-badge-info" :
+                                        "ENDED".equals(st) ? "cf-badge-warning" : "cf-badge-muted";
+                %>
+                <div class="cf-selected-movie-card">
+                    <div class="cf-movie-card-poster">
+                        <% if (movie.getPosterUrl() != null && !movie.getPosterUrl().isBlank()) { %>
+                            <img src="<%= movie.getPosterUrl() %>" alt="<%= movie.getTitle() %>" loading="lazy" onerror="this.parentElement.innerHTML='🎬';">
+                        <% } else { %>
+                            🎬
+                        <% } %>
+                    </div>
+                    <div class="cf-movie-card-details">
+                        <div class="cf-movie-card-title-row">
+                            <h3 class="cf-movie-card-title"><%= movie.getTitle() %></h3>
+                            <span class="cf-badge <%= badgeClass %>"><%= stText %></span>
+                        </div>
+                        <div class="cf-movie-card-meta">
+                            Mã phim: CF-<%= String.format("%04d", movie.getMovieId()) %> · Thể loại: <%= movie.getGenre() != null ? movie.getGenre() : "Chưa cập nhật" %>
+                        </div>
+                        <div class="cf-movie-card-meta" style="margin-top: 3px;">
+                            Thời lượng: <%= movie.getDuration() %> phút · Khởi chiếu: <%= movie.getReleaseDate() != null ? movie.getReleaseDate() : "—" %>
+                        </div>
+                    </div>
+                    <div class="cf-movie-card-action">
+                        <a href="${pageContext.request.contextPath}/admin/movie?movieId=<%= movie.getMovieId() %>" class="cf-btn-view-movie">
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="16" x2="12" y2="12"></line>
+                                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                            </svg>
+                            Xem thông tin phim
                         </a>
                     </div>
+                </div>
+                <% } %>
+            </section>
 
-                    <!-- THÔNG BÁO THÀNH CÔNG -->
+            <!-- BƯỚC 2: CẤU HÌNH PHÂN PHỐI -->
+            <% if (movie != null) { %>
+            <form id="distributionForm" action="${pageContext.request.contextPath}/admin/distribution" method="POST">
+                <input type="hidden" name="movieId" value="<%= movie.getMovieId() %>">
 
-                    <% if ("1".equals(request.getParameter("saved"))) { %>
-                    <div id="autoDismissAlert" class="cf-alert cf-alert-success">
-                        Đã lưu cấu hình phân phối trung tâm chiếu thành công.
-                    </div>
-                    <% } %>
-
-                    <script>
-                        document.addEventListener('DOMContentLoaded', function () {
-                            const alert = document.getElementById('autoDismissAlert');
-
-                            if (alert) {
-                                setTimeout(function () {
-                                    alert.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
-                                    alert.style.opacity = '0';
-                                    alert.style.transform = 'translateY(-8px)';
-
-                                    setTimeout(function () {
-                                        alert.remove();
-                                    }, 400);
-                                }, 2000);
-                            }
-                        });
-                    </script>
-
-                    <!-- 1. THẺ THÔNG TIN PHIM -->
-                    <section class="cf-card" style="margin-bottom: 20px;">
-                        <div class="cf-dist-movie-info">
-                            <div class="cf-dist-movie-poster">
-                                <% if (movie.getPosterUrl() != null && !movie.getPosterUrl().isBlank()) { %>
-                                <img src="<%= movie.getPosterUrl() %>" alt="<%= esc(movie.getTitle()) %>" loading="lazy" onerror="this.parentElement.innerHTML='🎬';">
-                                <% } else { %>
-                                🎬
-                                <% } %>
-                            </div>
-                            <div class="cf-dist-movie-details">
-                                <div class="cf-dist-movie-title-row">
-                                    <h2><%= esc(movie.getTitle()) %></h2>
-                                    <% 
-                                        String st = movie.getStatus() != null ? movie.getStatus() : "";
-                                        String stText = "NOW_SHOWING".equals(st) ? "Đang chiếu" :
-                                                        "COMING_SOON".equals(st) ? "Sắp chiếu" :
-                                                        "ENDED".equals(st) ? "Đã kết thúc" : "Lưu trữ";
-                                        String badgeClass = "NOW_SHOWING".equals(st) ? "cf-badge-success" :
-                                                            "COMING_SOON".equals(st) ? "cf-badge-info" :
-                                                            "ENDED".equals(st) ? "cf-badge-warning" : "cf-badge-muted";
-                                        String age = (movie.getAgeRating() != null && !movie.getAgeRating().isBlank()) ? movie.getAgeRating() : "P";
-                                    %>
-                                    <span class="cf-badge <%= badgeClass %>"><%= stText %></span>
-                                    <span class="cf-badge cf-badge-muted"><%= age %></span>
-                                </div>
-
-                                <div class="cf-dist-movie-code">
-                                    MÃ PHIM · CF-<%= String.format("%04d", movie.getMovieId()) %>
-                                </div>
-
-                                <div class="cf-dist-movie-divider"></div>
-
-                                <div class="cf-dist-movie-meta-grid">
-                                    <div class="cf-dist-meta-col">
-                                        <span class="cf-dist-meta-label">ĐẠO DIỄN</span>
-                                        <strong class="cf-dist-meta-value"><%= (movie.getDirector() != null && !movie.getDirector().isBlank()) ? esc(movie.getDirector()) : "—" %></strong>
-                                    </div>
-                                    <div class="cf-dist-meta-col">
-                                        <span class="cf-dist-meta-label">THỜI LƯỢNG</span>
-                                        <strong class="cf-dist-meta-value"><%= (movie.getDuration() > 0) ? (movie.getDuration() + " phút") : "—" %></strong>
-                                    </div>
-                                    <div class="cf-dist-meta-col">
-                                        <span class="cf-dist-meta-label">THỂ LOẠI</span>
-                                        <strong class="cf-dist-meta-value"><%= (movie.getGenre() != null && !movie.getGenre().isBlank()) ? esc(movie.getGenre()) : "Chưa cập nhật" %></strong>
-                                    </div>
-                                    <div class="cf-dist-meta-col">
-                                        <span class="cf-dist-meta-label">KHỞI CHIẾU</span>
-                                        <strong class="cf-dist-meta-value"><%= (movie.getReleaseDate() != null) ? movie.getReleaseDate() : "—" %></strong>
-                                    </div>
-                                </div>
-                            </div>
+                <section class="cf-dist-section">
+                    <div class="cf-step-header">
+                        <div class="cf-step-title-wrap">
+                            <div class="cf-step-badge">2</div>
+                            <h2 class="cf-step-title">Cấu hình phân phối</h2>
                         </div>
-                    </section>
+                        <div class="cf-step-counter" id="selectedCounterText">
+                            Đã chọn <strong id="selectedCountNum" style="color: #ffffff;"><%= totalDistributed %></strong>/<%= totalActiveCentres %> chi nhánh
+                        </div>
+                    </div>
 
-                    <!-- 2. WORKSPACE PHÂN PHỐI RẠP CHIẾU (CHUẨN WHITELIST) -->
-                    <form id="distForm" action="${pageContext.request.contextPath}/admin/distribution" method="POST">
-                        <input type="hidden" name="movieId" value="<%= movie.getMovieId() %>">
+                    <!-- BỘ LỌC CHI NHÁNH -->
+                    <div class="cf-dist-toolbar">
+                        <div class="cf-search-input-wrap">
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            </svg>
+                            <input type="text" id="centreSearchInput" placeholder="Tìm chi nhánh theo tên hoặc thành phố...">
+                        </div>
 
-                        <section class="cf-card" style="margin-bottom: 24px;">
-                            <!-- THANH CÔNG CỤ TOOLBAR HIỆN ĐẠI -->
-                            <div class="cf-dist-toolbar">
-                                <div class="cf-dist-toolbar-left">
-                                    <div class="cf-filter-pills" id="cityTabsContainer">
-                                        <button type="button" class="cf-pill active" data-city="all">
-                                            <span>Tất cả cụm rạp</span>
-                                            <span class="cf-pill-count" id="badgeCity-all"><%= totalDistributed %>/<%= totalActiveCentres %></span>
-                                        </button>
-                                        <% 
-                                            for (Map.Entry<String, Integer> entry : cityActiveCounts.entrySet()) {
-                                                String cName = entry.getKey();
-                                                int cActive = entry.getValue();
-                                                int cDist = cityDistributedCounts.getOrDefault(cName, 0);
-                                        %>
-                                        <button type="button" class="cf-pill" data-city="<%= esc(cName) %>">
-                                            <span><%= esc(cityLabel(cName)) %></span>
-                                            <span class="cf-pill-count" id="badgeCity-<%= esc(cName.replace(" ", "_")) %>"><%= cDist %>/<%= cActive %></span>
-                                        </button>
-                                        <% } %>
-                                    </div>
-                                </div>
+                        <select id="cityFilterSelect" class="cf-filter-select">
+                            <option value="ALL">Tất cả thành phố</option>
+                            <% for (String cName : cities) { %>
+                                <option value="<%= cName %>"><%= cName %></option>
+                            <% } %>
+                        </select>
 
-                                <div class="cf-dist-toolbar-right">
-                                    <div class="cf-search-box">
-                                        <input type="text" id="inputSearchCentre" placeholder="Tìm kiếm trung tâm, địa chỉ..." autocomplete="off">
-                                    </div>
-                                    <div class="cf-dist-btn-group">
-                                        <button type="button" class="cf-btn cf-btn-secondary cf-btn-sm" id="btnSelectAll" title="Chọn tất cả trung tâm đang hiển thị">
-                                            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                            <span>Chọn tất cả</span>
-                                        </button>
-                                        <button type="button" class="cf-btn cf-btn-ghost cf-btn-sm" id="btnDeselectAll" title="Bỏ chọn tất cả trung tâm đang hiển thị">
-                                            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                                            <span>Bỏ chọn</span>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
+                        <select id="statusFilterSelect" class="cf-filter-select">
+                            <option value="ALL">Tất cả trạng thái</option>
+                            <option value="ACTIVE">Hoạt động</option>
+                            <option value="MAINTENANCE">Bảo trì / Tạm đóng</option>
+                        </select>
 
-                            <!-- TIÊU ĐỀ CÁC CỘT -->
-                            <div class="cf-centre-list-header">
-                                <div class="cf-col-header col-left">Trung tâm chiếu</div>
-                                <div class="cf-col-header col-center">Trạng thái trung tâm</div>
-                                <div class="cf-col-header col-right">Phân phối phim</div>
-                            </div>
+                        <button type="button" class="cf-btn-reset-filter" id="btnResetFilters" title="Đặt lại bộ lọc">
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="23 4 23 10 17 10"></polyline>
+                                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                            </svg>
+                        </button>
+                    </div>
 
-                            <!-- DANH SÁCH TRUNG TÂM CHIẾU -->
-                            <div id="centreListWrapper">
-                                <%
-                                    for (Centre c : centres) {
-                                        boolean isActive = "ACTIVE".equalsIgnoreCase(c.getStatus());
-                                        boolean isDistributed = c.isDistributed();
-                                        String cKey = cityKey(c.getCity());
+                    <!-- BẢNG DANH SÁCH CHI NHÁNH -->
+                    <div class="cf-dist-table-wrap">
+                        <table class="cf-dist-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 44px; text-align: center;">
+                                        <input type="checkbox" id="masterCheckbox" title="Chọn / Bỏ chọn tất cả rạp đang hoạt động" style="cursor: pointer; width: 16px; height: 16px;">
+                                    </th>
+                                    <th>Chi nhánh</th>
+                                    <th>Thành phố</th>
+                                    <th>Trạng thái chi nhánh</th>
+                                    <th style="width: 120px;">Cho phép chiếu</th>
+                                </tr>
+                            </thead>
+                            <tbody id="centreTableBody">
+                                <% for (Centre c : centres) {
+                                    boolean isActive = "ACTIVE".equalsIgnoreCase(c.getStatus());
+                                    boolean isDistributed = c.isDistributed();
+                                    int futureCount = c.getFutureShowtimeCount();
+                                    String cCity = c.getCity() != null ? c.getCity() : "";
                                 %>
-                                <div class="cf-centre-item centre-row <%= !isActive ? "is-disabled" : "" %>"
-                                     data-city="<%= esc(cKey) %>"
-                                     data-name="<%= esc(c.getCentreName().toLowerCase()) %>"
-                                     data-address="<%= esc((c.getAddress() != null ? c.getAddress() : "").toLowerCase()) %>"
-                                     data-active="<%= isActive ? "1" : "0" %>">
-                                    <!-- BÊN TRÁI: Checkbox + Tên trung tâm + Địa chỉ -->
-                                    <div class="cf-centre-left">
-                                        <% if (isActive) { %>
-                                        <label class="cf-centre-label">
-                                            <input type="checkbox" name="centreIds" value="<%= c.getCentreId() %>"
-                                                   class="cf-centre-checkbox centre-check"
-                                                   data-city="<%= esc(cKey) %>"
-                                                   <%= isDistributed ? "checked" : "" %>>
-                                            <span class="cf-centre-info">
-                                                <span class="cf-centre-title"><%= esc(c.getCentreName()) %></span>
-                                                <span class="cf-centre-sub"><%= esc(cityLabel(c.getCity())) %> · <%= esc(c.getAddress()) %></span>
+                                <tr class="cf-centre-row <%= !isActive ? "is-disabled" : "" %>"
+                                    data-centre-id="<%= c.getCentreId() %>"
+                                    data-name="<%= c.getCentreName().toLowerCase() %>"
+                                    data-city="<%= cCity.toLowerCase() %>"
+                                    data-city-raw="<%= cCity %>"
+                                    data-status="<%= isActive ? "ACTIVE" : "MAINTENANCE" %>"
+                                    data-active="<%= isActive ? "1" : "0" %>"
+                                    data-future="<%= futureCount %>">
+                                    <td style="text-align: center;">
+                                        <input type="checkbox" name="centreIds" value="<%= c.getCentreId() %>"
+                                               class="cf-row-check"
+                                               id="check-<%= c.getCentreId() %>"
+                                               <%= (isActive && isDistributed) ? "checked" : "" %>
+                                               <%= !isActive ? "disabled" : "" %>
+                                               style="cursor: pointer; width: 16px; height: 16px;">
+                                    </td>
+                                    <td>
+                                        <div class="cf-centre-name-cell">
+                                            <span class="cf-centre-icon">
+                                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect>
+                                                    <line x1="9" y1="22" x2="9" y2="22.01"></line>
+                                                    <line x1="15" y1="22" x2="15" y2="22.01"></line>
+                                                    <line x1="8" y1="6" x2="8" y2="6.01"></line>
+                                                    <line x1="16" y1="6" x2="16" y2="6.01"></line>
+                                                    <line x1="8" y1="10" x2="8" y2="10.01"></line>
+                                                    <line x1="16" y1="10" x2="16" y2="10.01"></line>
+                                                    <line x1="8" y1="14" x2="8" y2="14.01"></line>
+                                                    <line x1="16" y1="14" x2="16" y2="14.01"></line>
+                                                    <line x1="8" y1="18" x2="8" y2="18.01"></line>
+                                                    <line x1="16" y1="18" x2="16" y2="18.01"></line>
+                                                </svg>
                                             </span>
-                                        </label>
+                                            <span><%= c.getCentreName() %></span>
+                                        </div>
+                                    </td>
+                                    <td style="color: #94a3b8;">
+                                        <%= !cCity.isBlank() ? cCity : "—" %>
+                                    </td>
+                                    <td>
+                                        <% if (isActive) { %>
+                                            <span class="cf-badge-active">Hoạt động</span>
                                         <% } else { %>
-                                        <div class="cf-centre-label" style="cursor: not-allowed;">
-                                            <input type="checkbox" disabled class="cf-centre-checkbox">
-                                            <span class="cf-centre-info">
-                                                <span class="cf-centre-title"><%= esc(c.getCentreName()) %></span>
-                                                <span class="cf-centre-sub"><%= esc(cityLabel(c.getCity())) %> · <%= esc(c.getAddress()) %></span>
+                                            <span class="cf-badge-maintenance">Bảo trì / Tạm đóng</span>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <div class="cf-switch-cell-wrap">
+                                            <label class="cf-switch <%= !isActive ? "is-disabled" : "" %>"
+                                                   title="<%= !isActive ? "Chi nhánh đang tạm đóng, không thể phân phối" : "Bật/Tắt phân phối" %>">
+                                                <input type="checkbox"
+                                                       class="cf-switch-input"
+                                                       data-target-check="check-<%= c.getCentreId() %>"
+                                                       data-future="<%= futureCount %>"
+                                                       <%= (isActive && isDistributed) ? "checked" : "" %>
+                                                       <%= !isActive ? "disabled" : "" %>>
+                                                <span class="cf-switch-slider"></span>
+                                            </label>
+                                            <span class="cf-row-arrow">
+                                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <polyline points="9 18 15 12 9 6"></polyline>
+                                                </svg>
                                             </span>
                                         </div>
-                                        <% } %>
-                                    </div>
-
-                                    <!-- Ở GIỮA: Trạng thái vận hành của trung tâm -->
-                                    <div class="cf-centre-center">
-                                        <% if (isActive) { %>
-                                        <span class="cf-op-status active">
-                                            <span class="cf-dot"></span> Hoạt động
-                                        </span>
-                                        <% } else { %>
-                                        <span class="cf-op-status inactive">
-                                            <span class="cf-dot"></span> Tạm dừng
-                                        </span>
-                                        <% } %>
-                                    </div>
-
-                                    <!-- BÊN PHẢI: Trạng thái phân phối phim -->
-                                    <div class="cf-centre-right">
-                                        <% if (isActive) { %>
-                                        <span class="cf-dist-state <%= isDistributed ? "state-showing" : "state-none" %> item-dist-badge">
-                                            <%= isDistributed ? "Được chiếu" : "Không chiếu" %>
-                                        </span>
-                                        <% } else { %>
-                                        <span class="cf-dist-state state-disabled">Không khả dụng</span>
-                                        <% } %>
-                                    </div>
-                                </div>
+                                    </td>
+                                </tr>
                                 <% } %>
+                            </tbody>
+                        </table>
+                    </div>
 
-                                <!-- DÒNG THÔNG BÁO KHI KHÔNG TÌM THẤY KẾT QUẢ -->
-                                <div id="noMatchRow" style="display: none; padding: 40px 20px; text-align: center; color: var(--cf-muted); font-size: 13.5px;">
-                                    Không tìm thấy trung tâm nào phù hợp với từ khóa hoặc bộ lọc đã chọn.
-                                </div>
-                            </div>
+                    <!-- THÔNG BÁO GHI CHÚ NGUYÊN TẮC NGHIỆP VỤ -->
+                    <div class="cf-dist-note-box">
+                        <div class="cf-dist-note-icon">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="16" x2="12" y2="12"></line>
+                                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                            </svg>
+                        </div>
+                        <div>
+                            <strong>Lưu ý:</strong> Chỉ các chi nhánh đang hoạt động mới được chọn. Phim đã kết thúc hoặc lưu trữ không được phân phối để chiếu mới.
+                            Nếu bỏ chọn chi nhánh đã có lịch chiếu tương lai, hệ thống sẽ yêu cầu xác nhận để tránh ảnh hưởng đến vé đã đặt.
+                        </div>
+                    </div>
 
-                            <!-- 3. THANH TÓM TẮT & NÚT LƯU (STICKY FOOTER) -->
-                            <div class="cf-dist-sticky-bar">
-                                <div class="cf-dist-summary-line">
-                                    Đã phân phối: <strong id="footerCount"><%= totalDistributed %>/<%= totalActiveCentres %></strong> trung tâm đang hoạt động trên toàn hệ thống
-                                </div>
+                    <!-- KHỐI NÚT HÀNH ĐỘNG HỦY VÀ LƯU PHÂN PHỐI -->
+                    <div class="cf-dist-actions-bar">
+                        <button type="button" class="cf-btn-cancel" onclick="location.reload();">
+                            Hủy
+                        </button>
+                        <button type="submit" class="cf-btn-save">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                                <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                                <polyline points="7 3 7 8 15 8"></polyline>
+                            </svg>
+                            Lưu phân phối
+                        </button>
+                    </div>
+                </section>
+            </form>
+            <% } %>
+        </main>
+    </div>
+</div>
 
-                                <div class="cf-dist-actions">
+<!-- CLIENT JAVASCRIPT ĐIỀU KHIỂN TƯƠNG TÁC -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // === 1. XỬ LÝ CHỌN PHIM COMBOBOX TÌM KIẾM THÔNG MINH ===
+    const moviePickerContainer = document.getElementById('moviePickerContainer');
+    const movieInputBox = document.getElementById('movieInputBox');
+    const movieSearchInput = document.getElementById('movieSearchInput');
+    const movieDropdownPanel = document.getElementById('movieDropdownPanel');
+    const btnClearMovieSearch = document.getElementById('btnClearMovieSearch');
+    const toggleMovieDropdown = document.getElementById('toggleMovieDropdown');
+    const movieOptions = Array.from(document.querySelectorAll('.cf-movie-option'));
+    const movieEmptyOption = document.getElementById('movieEmptyOption');
 
-                                    <button type="submit" class="cf-btn cf-btn-primary cf-btn-sm" id="btnSubmit">
-                                        Lưu thiết lập phân phối
-                                    </button>
-                                </div>
-                            </div>
-                        </section>
-                    </form>
-                </main>
-            </div>
-        </div>
+    function openMovieDropdown() {
+        if (!moviePickerContainer) return;
+        moviePickerContainer.classList.add('is-open');
+        if (movieInputBox) movieInputBox.classList.add('is-focused');
+    }
 
-        <!-- MÃ JAVASCRIPT ĐIỀU KHIỂN PHÍA CLIENT -->
-        <script>
-            document.addEventListener('DOMContentLoaded', function () {
-                let currentCityFilter = 'all';
-                let searchQuery = '';
+    function closeMovieDropdown(restoreValue) {
+        if (!moviePickerContainer) return;
+        moviePickerContainer.classList.remove('is-open');
+        if (movieInputBox) movieInputBox.classList.remove('is-focused');
+        if (restoreValue && movieSearchInput) {
+            movieSearchInput.value = movieSearchInput.dataset.selectedTitle || '';
+            filterMovieOptions('');
+        }
+    }
 
-                const cityPills = document.querySelectorAll('#cityTabsContainer .cf-pill');
-                const inputSearch = document.getElementById('inputSearchCentre');
-                const btnSelectAll = document.getElementById('btnSelectAll');
-                const btnDeselectAll = document.getElementById('btnDeselectAll');
-                const rows = document.querySelectorAll('.centre-row');
-                const noMatchRow = document.getElementById('noMatchRow');
-                const footerCount = document.getElementById('footerCount');
-                const badgeAll = document.getElementById('badgeCity-all');
-                const distForm = document.getElementById('distForm');
-                const btnSubmit = document.getElementById('btnSubmit');
+    function filterMovieOptions(keyword) {
+        const q = (keyword || '').trim().toLowerCase();
+        let matchCount = 0;
+        movieOptions.forEach(opt => {
+            const title = opt.dataset.title || '';
+            const code = opt.dataset.code || '';
+            if (!q || title.includes(q) || code.includes(q)) {
+                opt.style.display = 'flex';
+                matchCount++;
+            } else {
+                opt.style.display = 'none';
+            }
+        });
+        if (movieEmptyOption) {
+            movieEmptyOption.style.display = (matchCount === 0) ? 'block' : 'none';
+        }
+        if (btnClearMovieSearch) {
+            btnClearMovieSearch.style.display = q ? 'flex' : 'none';
+        }
+    }
 
-                // 1. Áp dụng bộ lọc (tab thành phố + từ khóa tìm kiếm)
-                function applyFilters() {
-                    let visibleCount = 0;
-                    rows.forEach(row => {
-                        const rowCity = row.dataset.city || '';
-                        const rowName = row.dataset.name || '';
-                        const rowAddress = row.dataset.address || '';
+    window.selectMovie = function(movieId) {
+        closeMovieDropdown(false);
+        window.location.href = '${pageContext.request.contextPath}/admin/distribution?movieId=' + movieId;
+    };
 
-                        const cityMatch = (currentCityFilter === 'all') || (rowCity === currentCityFilter);
-                        const searchMatch = !searchQuery ||
-                                rowName.includes(searchQuery) ||
-                                rowAddress.includes(searchQuery) ||
-                                rowCity.toLowerCase().includes(searchQuery);
+    if (movieSearchInput) {
+        // Nhấn vào ô input -> mở danh sách và bôi đen text để gõ tìm ngay
+        movieSearchInput.addEventListener('focus', function () {
+            openMovieDropdown();
+            this.select();
+        });
 
-                        const isVisible = cityMatch && searchMatch;
-                        row.style.display = isVisible ? 'flex' : 'none';
-                        if (isVisible)
-                            visibleCount++;
-                    });
+        movieSearchInput.addEventListener('click', function () {
+            openMovieDropdown();
+        });
 
-                    if (noMatchRow) {
-                        noMatchRow.style.display = (visibleCount === 0) ? 'block' : 'none';
+        movieSearchInput.addEventListener('input', function () {
+            openMovieDropdown();
+            filterMovieOptions(this.value);
+        });
+
+        movieSearchInput.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                closeMovieDropdown(true);
+                this.blur();
+            }
+        });
+    }
+
+    if (toggleMovieDropdown) {
+        toggleMovieDropdown.addEventListener('click', function (e) {
+            e.stopPropagation();
+            if (moviePickerContainer.classList.contains('is-open')) {
+                closeMovieDropdown(true);
+            } else {
+                openMovieDropdown();
+                if (movieSearchInput) movieSearchInput.focus();
+            }
+        });
+    }
+
+    if (btnClearMovieSearch) {
+        btnClearMovieSearch.addEventListener('click', function (e) {
+            e.stopPropagation();
+            if (movieSearchInput) {
+                movieSearchInput.value = '';
+                filterMovieOptions('');
+                movieSearchInput.focus();
+            }
+        });
+    }
+
+    // Đóng dropdown khi click ra ngoài
+    document.addEventListener('click', function (e) {
+        if (moviePickerContainer && !moviePickerContainer.contains(e.target)) {
+            closeMovieDropdown(true);
+        }
+    });
+
+    // === 2. XỬ LÝ CẤU HÌNH PHÂN PHỐI CHI NHÁNH ===
+    const tableBody = document.getElementById('centreTableBody');
+    if (!tableBody) return;
+
+    const rows = Array.from(tableBody.querySelectorAll('.cf-centre-row'));
+    const masterCheckbox = document.getElementById('masterCheckbox');
+    const searchInput = document.getElementById('centreSearchInput');
+    const cityFilter = document.getElementById('cityFilterSelect');
+    const statusFilter = document.getElementById('statusFilterSelect');
+    const btnReset = document.getElementById('btnResetFilters');
+    const selectedCountNum = document.getElementById('selectedCountNum');
+
+    const totalActive = <%= totalActiveCentres %>;
+
+    // 1. Đồng bộ Switch Toggle với Row Checkbox
+    function updateCounter() {
+        let count = 0;
+        rows.forEach(row => {
+            if (row.dataset.active === '1') {
+                const check = row.querySelector('.cf-row-check');
+                if (check && check.checked) {
+                    count++;
+                }
+            }
+        });
+        if (selectedCountNum) {
+            selectedCountNum.textContent = count;
+        }
+        updateMasterCheckbox();
+    }
+
+    function updateMasterCheckbox() {
+        if (!masterCheckbox) return;
+        const visibleActiveRows = rows.filter(r => r.style.display !== 'none' && r.dataset.active === '1');
+        if (visibleActiveRows.length === 0) {
+            masterCheckbox.checked = false;
+            masterCheckbox.indeterminate = false;
+            return;
+        }
+        const checkedCount = visibleActiveRows.filter(r => {
+            const ch = r.querySelector('.cf-row-check');
+            return ch && ch.checked;
+        }).length;
+
+        if (checkedCount === visibleActiveRows.length) {
+            masterCheckbox.checked = true;
+            masterCheckbox.indeterminate = false;
+        } else if (checkedCount > 0) {
+            masterCheckbox.checked = false;
+            masterCheckbox.indeterminate = true;
+        } else {
+            masterCheckbox.checked = false;
+            masterCheckbox.indeterminate = false;
+        }
+    }
+
+    // Xử lý khi click vào Switch Toggle
+    rows.forEach(row => {
+        const switchInput = row.querySelector('.cf-switch-input');
+        const checkInput = row.querySelector('.cf-row-check');
+        const futureCount = parseInt(row.dataset.future || '0', 10);
+
+        if (switchInput && checkInput) {
+            switchInput.addEventListener('change', function () {
+                if (!this.checked && futureCount > 0) {
+                    const confirmMsg = "Cảnh báo nghiệp vụ:\nChi nhánh này đang có " + futureCount + " suất chiếu trong tương lai của phim này.\n\nBỏ phân phối có thể gây ảnh hưởng đến lịch chiếu và vé khán giả đã đặt. Bạn có chắc chắn muốn bỏ chọn?";
+                    if (!confirm(confirmMsg)) {
+                        this.checked = true;
+                        return;
                     }
                 }
+                checkInput.checked = this.checked;
+                updateCounter();
+            });
 
-                // 2. Chuyển đổi Tab Thành phố
-                cityPills.forEach(pill => {
-                    pill.addEventListener('click', function () {
-                        currentCityFilter = this.dataset.city || 'all';
-                        cityPills.forEach(p => p.classList.toggle('active', p === pill));
-                        applyFilters();
-                    });
-                });
-
-                // 3. Tìm kiếm tức thì
-                if (inputSearch) {
-                    inputSearch.addEventListener('input', function () {
-                        searchQuery = this.value.trim().toLowerCase();
-                        applyFilters();
-                    });
-                }
-
-                // 4. Đồng bộ nhãn hiển thị khi thay đổi checkbox
-                function updateRowVisual(checkbox) {
-                    const row = checkbox.closest('.centre-row');
-                    const badge = row ? row.querySelector('.item-dist-badge') : null;
-                    if (badge) {
-                        if (checkbox.checked) {
-                            badge.className = 'cf-dist-state state-showing item-dist-badge';
-                            badge.textContent = 'Được chiếu';
-                        } else {
-                            badge.className = 'cf-dist-state state-none item-dist-badge';
-                            badge.textContent = 'Không chiếu';
-                        }
+            checkInput.addEventListener('change', function () {
+                if (!this.checked && futureCount > 0) {
+                    const confirmMsg = "Cảnh báo nghiệp vụ:\nChi nhánh này đang có " + futureCount + " suất chiếu trong tương lai của phim này.\n\nBỏ phân phối có thể gây ảnh hưởng đến lịch chiếu và vé khán giả đã đặt. Bạn có chắc chắn muốn bỏ chọn?";
+                    if (!confirm(confirmMsg)) {
+                        this.checked = true;
+                        return;
                     }
                 }
+                switchInput.checked = this.checked;
+                updateCounter();
+            });
+        }
+    });
 
-                // 5. Cập nhật số đếm thống kê thời gian thực (realtime counters)
-                function recalculateCounters() {
-                    let totalActive = 0;
-                    let totalDistributed = 0;
-                    const cityStats = {};
+    // 2. Master Checkbox
+    if (masterCheckbox) {
+        masterCheckbox.addEventListener('change', function () {
+            const isChecked = this.checked;
+            const visibleActiveRows = rows.filter(r => r.style.display !== 'none' && r.dataset.active === '1');
 
-                    rows.forEach(row => {
-                        if (row.dataset.active === '1') {
-                            totalActive++;
-                            const c = row.dataset.city || '';
-                            if (!cityStats[c])
-                                cityStats[c] = {active: 0, distributed: 0};
-                            cityStats[c].active++;
-
-                            const chk = row.querySelector('.centre-check');
-                            if (chk && chk.checked) {
-                                totalDistributed++;
-                                cityStats[c].distributed++;
-                            }
-                        }
-                    });
-
-                    if (badgeAll) {
-                        badgeAll.textContent = totalDistributed + '/' + totalActive;
-                    }
-                    if (footerCount) {
-                        footerCount.textContent = totalDistributed + '/' + totalActive;
-                    }
-
-                    Object.keys(cityStats).forEach(cName => {
-                        const badgeId = 'badgeCity-' + cName.replace(/\s+/g, '_');
-                        const badgeEl = document.getElementById(badgeId);
-                        if (badgeEl) {
-                            badgeEl.textContent = cityStats[cName].distributed + '/' + cityStats[cName].active;
-                        }
-                    });
+            visibleActiveRows.forEach(row => {
+                const check = row.querySelector('.cf-row-check');
+                const sw = row.querySelector('.cf-switch-input');
+                if (check && !check.disabled) {
+                    check.checked = isChecked;
                 }
-
-                // Lắng nghe sự kiện click checkbox của từng rạp
-                document.querySelectorAll('.centre-check').forEach(chk => {
-                    chk.addEventListener('change', function () {
-                        updateRowVisual(this);
-                        recalculateCounters();
-                    });
-                });
-
-                // 6. Hành động nhanh: Chọn tất cả rạp đang hiển thị
-                if (btnSelectAll) {
-                    btnSelectAll.addEventListener('click', function () {
-                        rows.forEach(row => {
-                            if (row.style.display !== 'none' && row.dataset.active === '1') {
-                                const chk = row.querySelector('.centre-check');
-                                if (chk && !chk.checked) {
-                                    chk.checked = true;
-                                    updateRowVisual(chk);
-                                }
-                            }
-                        });
-                        recalculateCounters();
-                    });
-                }
-
-                // 7. Hành động nhanh: Bỏ chọn tất cả rạp đang hiển thị
-                if (btnDeselectAll) {
-                    btnDeselectAll.addEventListener('click', function () {
-                        rows.forEach(row => {
-                            if (row.style.display !== 'none' && row.dataset.active === '1') {
-                                const chk = row.querySelector('.centre-check');
-                                if (chk && chk.checked) {
-                                    chk.checked = false;
-                                    updateRowVisual(chk);
-                                }
-                            }
-                        });
-                        recalculateCounters();
-                    });
-                }
-
-                // 8. Trạng thái khi bấm Lưu
-                if (distForm && btnSubmit) {
-                    distForm.addEventListener('submit', function () {
-                        btnSubmit.classList.add('is-submitting');
-                        btnSubmit.textContent = 'Đang lưu thiết lập...';
-                    });
+                if (sw && !sw.disabled) {
+                    sw.checked = isChecked;
                 }
             });
-        </script>
-    </body>
+            updateCounter();
+        });
+    }
+
+    // 3. Lọc & Tìm kiếm tức thì
+    function applyFilters() {
+        const query = (searchInput ? searchInput.value : '').trim().toLowerCase();
+        const city = cityFilter ? cityFilter.value : 'ALL';
+        const status = statusFilter ? statusFilter.value : 'ALL';
+
+        rows.forEach(row => {
+            const rName = row.dataset.name || '';
+            const rCity = row.dataset.city || '';
+            const rCityRaw = row.dataset.cityRaw || '';
+            const rStatus = row.dataset.status || '';
+
+            let matchesSearch = !query || rName.includes(query) || rCity.includes(query);
+            let matchesCity = (city === 'ALL') || (rCityRaw.toLowerCase() === city.toLowerCase());
+            let matchesStatus = (status === 'ALL') || (rStatus === status);
+
+            if (matchesSearch && matchesCity && matchesStatus) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        updateMasterCheckbox();
+    }
+
+    if (searchInput) searchInput.addEventListener('input', applyFilters);
+    if (cityFilter) cityFilter.addEventListener('change', applyFilters);
+    if (statusFilter) statusFilter.addEventListener('change', applyFilters);
+
+    if (btnReset) {
+        btnReset.addEventListener('click', function () {
+            if (searchInput) searchInput.value = '';
+            if (cityFilter) cityFilter.value = 'ALL';
+            if (statusFilter) statusFilter.value = 'ALL';
+            applyFilters();
+        });
+    }
+});
+</script>
+</body>
 </html>

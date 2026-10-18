@@ -23,6 +23,7 @@
     String status = editing && movie.getStatus() != null ? movie.getStatus() : "COMING_SOON";
     String posterUrl = editing && movie.getPosterUrl() != null ? movie.getPosterUrl() : "";
     String trailerUrl = editing && movie.getTrailerUrl() != null ? movie.getTrailerUrl() : "";
+    String errorParam = request.getParameter("error");
 
     request.setAttribute("activeNav", "movies");
     request.setAttribute("pageTitle", editing ? "Chỉnh sửa phim: " + movie.getTitle() : "Tạo phim mới");
@@ -55,21 +56,49 @@
             <!-- TIÊU ĐỀ TRANG -->
             <div class="cf-page-header">
                 <div>
-                    <p class="cf-breadcrumb">Quản trị nội dung / <%= editing ? "Chỉnh sửa phim" : "Thêm mới" %></p>
-                    <h1><%= editing ? "Chỉnh sửa thông tin phim" : "Thêm phim mới vào hệ thống" %></h1>
-                    <p><%= editing ? "Cập nhật dữ liệu phim, áp phích và tình trạng phân phối chiếu." : "Nhập đầy đủ thông tin chi tiết để thêm phim mới vào cơ sở dữ liệu CineFlow." %></p>
+                    <h1><%= editing ? "Chỉnh sửa thông tin phim" : "Thêm phim mới" %></h1>
                 </div>
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <a href="${pageContext.request.contextPath}/admin/movies" class="cf-btn cf-btn-secondary">
                         Danh mục phim
                     </a>
-                    <% if (editing) { %>
-                        <a href="${pageContext.request.contextPath}/admin/distribution?movieId=<%= movie.getMovieId() %>" class="cf-btn cf-btn-primary">
-                        Phân phối rạp chiếu
-                        </a>
-                    <% } %>
                 </div>
             </div>
+
+            <!-- THÔNG BÁO LỖI VALIDATION NẾU CÓ -->
+            <% if ("missing_title".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
+                    <span>⚠</span> <strong>Lỗi:</strong> Vui lòng nhập tên phim (không được để trống).
+                </div>
+            <% } else if ("invalid_duration".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
+                    <span>⚠</span> <strong>Lỗi:</strong> Thời lượng phim không hợp lệ (phải là số nguyên từ 1 đến 600 phút).
+                </div>
+            <% } else if ("invalid_age_rating".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
+                    <span>⚠</span> <strong>Lỗi:</strong> Độ tuổi khuyến nghị không thuộc danh mục hợp lệ (P, K, T13, T16, T18, C).
+                </div>
+            <% } else if ("invalid_status".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
+                    <span>⚠</span> <strong>Lỗi:</strong> Trạng thái phát hành không hợp lệ.
+                </div>
+            <% } else if ("invalid_date_range".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
+                    <span>⚠</span> <strong>Lỗi:</strong> Khoảng thời gian phát hành không hợp lệ: Ngày kết thúc phải sau hoặc bằng ngày khởi chiếu.
+                </div>
+            <% } else if ("invalid_poster_file".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
+                    <span>⚠</span> <strong>Lỗi tệp:</strong> Áp phích (poster) phải là tệp hình ảnh (.jpg, .jpeg, .png, .webp).
+                </div>
+            <% } else if ("invalid_trailer_file".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
+                    <span>⚠</span> <strong>Lỗi tệp:</strong> Trailer phải là tệp video (.mp4, .webm, .ogg).
+                </div>
+            <% } else if (errorParam != null) { %>
+                <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
+                    <span>⚠</span> Thao tác lưu phim thất bại. Vui lòng kiểm tra lại thông tin.
+                </div>
+            <% } %>
 
             <!-- FORM THÔNG TIN PHIM -->
             <form id="movieForm" method="post" action="${pageContext.request.contextPath}/admin/movie" enctype="multipart/form-data">
@@ -235,44 +264,46 @@
                                     </div>
 
                                     <div class="cf-poster-controls">
+                                        <input type="hidden" name="posterUrl" id="posterUrlInput" value="<%= esc(posterUrl) %>">
                                         <label class="cf-file-picker-btn">
-                                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                                            <span>Chọn tệp ảnh...</span>
+                                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"></path><polyline points="7 9 12 4 17 9"></polyline><line x1="12" y1="4" x2="12" y2="16"></line></svg>
+                                            <span>Tải ảnh poster...</span>
                                             <input type="file" name="posterFile" id="posterFileInput" accept="image/png,image/jpeg,image/webp" style="display: none;">
                                         </label>
-                                        <span class="cf-file-name-hint" id="posterFileName"></span>
-
-                                        <div class="cf-field-group-compact">
-                                            <label>Hoặc nhập URL ảnh:</label>
-                                            <input type="text" name="posterUrl" id="posterUrlInput" value="<%= esc(posterUrl) %>" placeholder="https://..." class="cf-input-sm">
-                                        </div>
+                                        <div class="cf-file-name-hint" id="posterFileName"></div>
+                                        <p class="cf-file-support-hint">Định dạng hỗ trợ: JPG, PNG, WEBP (Tỉ lệ 2:3, tối đa 5MB).</p>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- TRAILER GIỚI THIỆU -->
+                        <!-- TRAILER PHIM -->
                         <div class="cf-side-card" style="margin-top: 18px;">
                             <div class="cf-side-header">
                                 <span class="cf-side-title">
                                     <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
-                                    Trailer giới thiệu
+                                    Trailer phim
                                 </span>
                             </div>
                             <div class="cf-side-body">
                                 <div class="cf-trailer-compact-wrap">
-                                    <div class="cf-trailer-file-row">
-                                        <label class="cf-file-picker-btn">
-                                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                                            <span>Tải video trailer...</span>
-                                            <input type="file" name="trailerFile" id="trailerFileInput" accept="video/mp4,video/webm" style="display: none;">
-                                        </label>
-                                        <span class="cf-file-name-hint" id="trailerFileName"></span>
+                                    <input type="hidden" name="trailerUrl" id="trailerUrlInput" value="<%= esc(trailerUrl) %>">
+
+                                    <!-- Khung xem trước Trailer (16:9) -->
+                                    <div class="cf-trailer-preview-frame" id="trailerPreviewFrame">
+                                        <div class="cf-trailer-placeholder" id="trailerPlaceholder">
+                                            <span>Xem trước trailer</span>
+                                        </div>
                                     </div>
 
-                                    <div class="cf-field-group-compact" style="margin-top: 6px;">
-                                        <label>Hoặc đường dẫn YouTube / Video URL:</label>
-                                        <input type="text" name="trailerUrl" value="<%= esc(trailerUrl) %>" placeholder="https://youtube.com/..." class="cf-input-sm">
+                                    <div class="cf-trailer-file-row">
+                                        <label class="cf-file-picker-btn">
+                                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"></path><polyline points="7 9 12 4 17 9"></polyline><line x1="12" y1="4" x2="12" y2="16"></line></svg>
+                                            <span>Tải video trailer...</span>
+                                            <input type="file" name="trailerFile" id="trailerFileInput" accept="video/mp4,video/webm,video/ogg" style="display: none;">
+                                        </label>
+                                        <div class="cf-file-name-hint" id="trailerFileName"></div>
+                                        <p class="cf-file-support-hint">Định dạng hỗ trợ: MP4, WebM, OGG.</p>
                                     </div>
                                 </div>
                             </div>
@@ -328,21 +359,15 @@ document.addEventListener('DOMContentLoaded', function() {
             '<span>Lỗi tải ảnh</span></div>';
     };
 
-    if (urlInput) {
-        urlInput.addEventListener('input', function() {
-            const val = this.value.trim();
-            if (val) updatePosterPreview(val);
-            else if (!fileInput || !fileInput.files.length) updatePosterPreview('');
-        });
-    }
-
     if (fileInput) {
         fileInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (file) {
+                const sizeKB = Math.round(file.size / 1024);
+                const sizeDisplay = sizeKB > 1024 ? (sizeKB / 1024).toFixed(1) + ' MB' : sizeKB + ' KB';
                 if (posterFileName) {
-                    posterFileName.style.display = 'block';
-                    posterFileName.textContent = file.name;
+                    posterFileName.style.display = 'flex';
+                    posterFileName.innerHTML = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <span>' + file.name + ' (' + sizeDisplay + ')</span>';
                 }
                 const reader = new FileReader();
                 reader.onload = function(evt) {
@@ -355,14 +380,85 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    const trailerUrlInput = document.getElementById('trailerUrlInput');
+    const trailerFrame = document.getElementById('trailerPreviewFrame');
+
+    function extractYouTubeId(url) {
+        if (!url) return null;
+        url = url.trim();
+        const regExp = /^.*(?:youtu\.be\/|v\/|u\/\w\/|embed\/|shorts\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+        const match = url.match(regExp);
+        return (match && match[1].length === 11) ? match[1] : null;
+    }
+
+    function isDirectVideo(url) {
+        return /\.(mp4|webm|ogg|m4v)(\?.*)?$/i.test(url);
+    }
+
+    function updateTrailerPreview(src, isLocalFile) {
+        if (!trailerFrame) return;
+
+        if (!src) {
+            trailerFrame.innerHTML = '<div class="cf-trailer-placeholder" id="trailerPlaceholder">' +
+                '<span>Xem trước trailer</span></div>';
+            return;
+        }
+
+        if (isLocalFile) {
+            trailerFrame.innerHTML = '<video controls playsinline preload="metadata" style="width:100%;height:100%;background:#000;display:block;">' +
+                '<source src="' + src + '">' +
+                'Trình duyệt không hỗ trợ phát video này.' +
+                '</video>';
+            return;
+        }
+
+        const ytId = extractYouTubeId(src);
+        if (ytId) {
+            trailerFrame.innerHTML = '<iframe src="https://www.youtube-nocookie.com/embed/' + ytId + '?rel=0&enablejsapi=1" ' +
+                'title="Trailer YouTube Preview" ' +
+                'frameborder="0" ' +
+                'allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" ' +
+                'allowfullscreen ' +
+                'style="width:100%;height:100%;border:none;display:block;"></iframe>';
+            return;
+        }
+
+        if (isDirectVideo(src) || src.startsWith('/') || src.startsWith('http')) {
+            trailerFrame.innerHTML = '<video controls playsinline preload="metadata" style="width:100%;height:100%;background:#000;display:block;">' +
+                '<source src="' + src + '">' +
+                'Trình duyệt không hỗ trợ phát video này.' +
+                '</video>';
+            return;
+        }
+
+        trailerFrame.innerHTML = '<div class="cf-trailer-placeholder">' +
+            '<span>Xem trước trailer</span></div>';
+    }
+
+    // Khởi tạo xem trước trailer ban đầu (nếu đã có dữ liệu)
+    if (trailerUrlInput && trailerUrlInput.value.trim()) {
+        updateTrailerPreview(trailerUrlInput.value.trim(), false);
+    }
+
+    // Lắng nghe khi tải lên tệp video
     if (trailerFileInput) {
         trailerFileInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
-            if (file && trailerFileName) {
-                trailerFileName.style.display = 'block';
-                trailerFileName.textContent = file.name;
-            } else if (trailerFileName) {
-                trailerFileName.style.display = 'none';
+            if (file) {
+                const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+                if (trailerFileName) {
+                    trailerFileName.style.display = 'flex';
+                    trailerFileName.innerHTML = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <span>' + file.name + ' (' + sizeMB + ' MB)</span>';
+                }
+                const objectUrl = URL.createObjectURL(file);
+                updateTrailerPreview(objectUrl, true);
+            } else {
+                if (trailerFileName) trailerFileName.style.display = 'none';
+                if (trailerUrlInput && trailerUrlInput.value.trim()) {
+                    updateTrailerPreview(trailerUrlInput.value.trim(), false);
+                } else {
+                    updateTrailerPreview('', false);
+                }
             }
         });
     }

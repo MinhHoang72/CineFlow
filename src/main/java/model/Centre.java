@@ -12,11 +12,41 @@ public class Centre {
     private String phone;
     private String status;
     private boolean distributed;
+    private int futureShowtimeCount;
     private int hallCount;
     private int seatCount;
     private Integer managerId;
     private String managerName;
     private String managerEmail;
+    private String managerStatus;
+
+    public String getManagerStatus() {
+        return managerStatus;
+    }
+
+    public void setManagerStatus(String managerStatus) {
+        this.managerStatus = managerStatus;
+    }
+
+    public boolean hasActiveManager() {
+        return managerId != null && managerId > 0 && "ACTIVE".equalsIgnoreCase(managerStatus);
+    }
+
+    public boolean hasLockedManager() {
+        return managerId != null && managerId > 0 && ("LOCKED".equalsIgnoreCase(managerStatus) || "INACTIVE".equalsIgnoreCase(managerStatus));
+    }
+
+    public boolean hasNoManager() {
+        return managerId == null || managerId <= 0;
+    }
+
+    public int getFutureShowtimeCount() {
+        return futureShowtimeCount;
+    }
+
+    public void setFutureShowtimeCount(int futureShowtimeCount) {
+        this.futureShowtimeCount = futureShowtimeCount;
+    }
 
     public Centre() {
     }

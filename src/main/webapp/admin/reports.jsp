@@ -39,42 +39,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= isAdmin ? "Báo cáo toàn hệ thống | CineFlow Admin" : "Báo cáo hoạt động | CineFlow Manager" %></title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin/admin-style.css?v=<%= System.currentTimeMillis() %>">
-    <style>
-        .report-tabs {
-            display: flex;
-            gap: 8px;
-            border-bottom: 2px solid var(--cf-border);
-            margin-bottom: 24px;
-        }
-        .report-tab-btn {
-            padding: 12px 20px;
-            background: transparent;
-            border: none;
-            border-bottom: 2px solid transparent;
-            margin-bottom: -2px;
-            font-size: 13.5px;
-            font-weight: 600;
-            color: var(--cf-text-muted);
-            cursor: pointer;
-            transition: var(--cf-transition);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .report-tab-btn:hover {
-            color: var(--cf-text);
-        }
-        .report-tab-btn.active {
-            color: var(--cf-primary);
-            border-bottom-color: var(--cf-primary);
-        }
-        .report-tab-pane {
-            display: none;
-        }
-        .report-tab-pane.active {
-            display: block;
-        }
-    </style>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin/reports.css?v=<%= System.currentTimeMillis() %>">
 </head>
 <body>
 <div class="admin-layout">
@@ -87,9 +52,7 @@
             <!-- TIÊU ĐỀ TRANG VÀ NÚT TÁC VỤ -->
             <div class="page-hero">
                 <div class="page-hero-text">
-                    <p class="eyebrow"><%= isAdmin ? "PHÂN TÍCH TOÀN HỆ THỐNG" : "BÁO CÁO HOẠT ĐỘNG" %></p>
-                    <h1><%= isAdmin ? "Báo cáo & Phân tích tài chính chuỗi CineFlow" : "Báo cáo & Phân tích hoạt động kinh doanh" %></h1>
-                    <p><%= isAdmin ? "Theo dõi tổng hợp doanh thu vé, hiệu suất bán vé từng cụm rạp và thống kê phim ăn khách." : "Tổng hợp doanh thu, lượng vé bán và hiệu suất suất chiếu." %></p>
+                    <h1><%= isAdmin ? "Báo cáo & Phân tích tài chính" : "Báo cáo & Phân tích kinh doanh" %></h1>
                 </div>
                 <div class="page-hero-actions">
                     <button type="button" class="cf-btn cf-btn-secondary" onclick="window.print();">

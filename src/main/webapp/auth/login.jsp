@@ -75,12 +75,19 @@
                     <p class="form-error" role="alert">Tài khoản/email hoặc mật khẩu không chính xác.</p>
                 <% } else if ("locked".equals(errorParam)) { %>
                     <p class="form-error" role="alert">Tài khoản này đã bị tạm khóa bởi Quản trị viên.</p>
+                <% } else if ("inactive".equals(errorParam)) { %>
+                    <p class="form-error" role="alert">Tài khoản này đang tạm ngưng hoạt động. Vui lòng liên hệ Quản trị viên.</p>
                 <% } else if ("unverified".equals(errorParam)) { %>
                     <div style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); color: #F59E0B; padding: 12px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 18px; line-height: 1.5;">
                         ⚠ Tài khoản của bạn chưa được kích hoạt qua email.<br>
                         <a href="${pageContext.request.contextPath}/verify-otp?action=resend&email=<%= unverifiedEmail != null ? java.net.URLEncoder.encode(unverifiedEmail, "UTF-8") : "" %>&type=register" style="color: #FF2A54; font-weight: 700; text-decoration: underline;">
                             Nhận mã OTP và kích hoạt ngay ›
                         </a>
+                    </div>
+                <% } %>
+                <% if ("password_reset".equals(request.getParameter("success"))) { %>
+                    <div style="background: rgba(52, 211, 153, 0.12); border: 1px solid rgba(52, 211, 153, 0.3); color: #34D399; padding: 12px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 18px;">
+                        ✓ Đặt lại mật khẩu thành công! Bạn có thể đăng nhập bằng mật khẩu mới.
                     </div>
                 <% } %>
                 <% if ("true".equals(verifiedParam)) { %>

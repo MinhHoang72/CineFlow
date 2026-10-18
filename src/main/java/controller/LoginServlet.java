@@ -76,16 +76,30 @@ public class LoginServlet extends HttpServlet {
         }
 
         // Tài khoản khách hàng (CUSTOMER) bắt buộc phải xác thực email trước khi đăng nhập
-        // Các tài khoản nội bộ (ADMIN, MANAGER, STAFF) do quản trị cấp trực tiếp
-        boolean requiresVerification = "CUSTOMER".equalsIgnoreCase(user.getRole());
-        if ("INACTIVE".equalsIgnoreCase(user.getStatus()) || (requiresVerification && !user.isEmailVerified())) {
+        boolean isCustomer = "CUSTOMER".equalsIgnoreCase(user.getRole());
+
+        // Kiểm tra tài khoản tạm ngưng (INACTIVE)
+        if ("INACTIVE".equalsIgnoreCase(user.getStatus())) {
+            // Chỉ hiển thị yêu cầu nhập OTP xác thực email nếu là CUSTOMER chưa kích hoạt email
+            if (isCustomer && !user.isEmailVerified()) {
+                String encodedEmail = URLEncoder.encode(user.getEmail(), StandardCharsets.UTF_8);
+                response.sendRedirect(request.getContextPath() + "/auth/login.jsp?error=unverified&email=" + encodedEmail);
+                return;
+            }
+            // Tài khoản nội bộ (Admin, Manager, Staff) hoặc tài khoản bị Admin tạm ngưng
+            response.sendRedirect(request.getContextPath() + "/auth/login.jsp?error=inactive");
+            return;
+        }
+
+        // Khách hàng chưa xác thực email (dù status có thể là ACTIVE hoặc rỗng)
+        if (isCustomer && !user.isEmailVerified()) {
             String encodedEmail = URLEncoder.encode(user.getEmail(), StandardCharsets.UTF_8);
             response.sendRedirect(request.getContextPath() + "/auth/login.jsp?error=unverified&email=" + encodedEmail);
             return;
         }
 
         // Tự động đồng bộ trạng thái xác thực email cho tài khoản nội bộ nếu chưa kích hoạt
-        if (!requiresVerification && !user.isEmailVerified()) {
+        if (!isCustomer && !user.isEmailVerified()) {
             userDAO.activateUser(user.getUserId());
             user.setEmailVerified(true);
         }

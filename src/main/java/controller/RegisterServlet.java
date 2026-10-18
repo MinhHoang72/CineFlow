@@ -4,6 +4,7 @@ import dao.UserDAO;
 import model.User;
 import utils.EmailUtils;
 import utils.PasswordUtils;
+import utils.ValidationUtils;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -42,38 +43,60 @@ public class RegisterServlet extends HttpServlet {
             String confirmPassword = request.getParameter("confirmPassword");
 
             // 2. Kiểm tra các trường dữ liệu bắt buộc
-            if (fullName == null || fullName.trim().isEmpty()
-                    || account == null || account.trim().isEmpty()
-                    || email == null || email.trim().isEmpty()
-                    || password == null || password.isEmpty()
-                    || confirmPassword == null || confirmPassword.isEmpty()) {
-                response.sendError(HttpServletResponse.SC_BAD_REQUEST, "All fields are required.");
+            if (ValidationUtils.isBlank(fullName) || ValidationUtils.isBlank(account)
+                    || ValidationUtils.isBlank(email) || ValidationUtils.isBlank(password)
+                    || ValidationUtils.isBlank(confirmPassword)) {
+                response.sendRedirect(request.getContextPath() + "/auth/register.jsp?error=missing_fields");
                 return;
             }
 
             fullName = fullName.trim();
             account = account.trim();
             email = email.trim();
-            password = password.trim();
-            confirmPassword = confirmPassword.trim();
 
-            // 3. Kiểm tra mật khẩu xác nhận trùng khớp
+            // 3. Kiểm tra tính hợp lệ của họ tên, tài khoản và email
+            if (!ValidationUtils.isValidFullName(fullName)) {
+                response.sendRedirect(request.getContextPath() + "/auth/register.jsp?error=invalid_name&account="
+                        + URLEncoder.encode(account, StandardCharsets.UTF_8)
+                        + "&email=" + URLEncoder.encode(email, StandardCharsets.UTF_8));
+                return;
+            }
+
+            if (!ValidationUtils.isValidAccount(account)) {
+                response.sendRedirect(request.getContextPath() + "/auth/register.jsp?error=invalid_account&email="
+                        + URLEncoder.encode(email, StandardCharsets.UTF_8));
+                return;
+            }
+
+            if (!ValidationUtils.isValidEmail(email)) {
+                response.sendRedirect(request.getContextPath() + "/auth/register.jsp?error=invalid_email&account="
+                        + URLEncoder.encode(account, StandardCharsets.UTF_8));
+                return;
+            }
+
+            if (ValidationUtils.isDisposableEmail(email)) {
+                response.sendRedirect(request.getContextPath() + "/auth/register.jsp?error=tempmail&account="
+                        + URLEncoder.encode(account, StandardCharsets.UTF_8));
+                return;
+            }
+
+            // 4. Kiểm tra mật khẩu xác nhận trùng khớp
             if (!password.equals(confirmPassword)) {
-                response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Password and Confirm Password do not match.");
+                response.sendRedirect(request.getContextPath() + "/auth/register.jsp?error=password_mismatch&account="
+                        + URLEncoder.encode(account, StandardCharsets.UTF_8)
+                        + "&email=" + URLEncoder.encode(email, StandardCharsets.UTF_8));
                 return;
             }
 
-            // 4. Kiểm tra độ mạnh của mật khẩu (tối thiểu 9 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt)
-            String passwordRegex = "^(?=.*[A-Z])(?=.*[a-z])(?=.*\\d)(?=.*[^A-Za-z0-9]).{9,}$";
-            if (!password.matches(passwordRegex)) {
-                response.sendError(
-                        HttpServletResponse.SC_BAD_REQUEST,
-                        "Password must be at least 9 characters and contain uppercase, lowercase, number and special character."
-                );
+            // 5. Kiểm tra độ mạnh của mật khẩu
+            if (!ValidationUtils.isValidPassword(password)) {
+                response.sendRedirect(request.getContextPath() + "/auth/register.jsp?error=weak_password&account="
+                        + URLEncoder.encode(account, StandardCharsets.UTF_8)
+                        + "&email=" + URLEncoder.encode(email, StandardCharsets.UTF_8));
                 return;
             }
 
-            // 5. Kiểm tra tên tài khoản (username) đã tồn tại hay chưa
+            // 6. Kiểm tra tên tài khoản (username) đã tồn tại hay chưa
             boolean accountExists = userDAO.isAccountExists(account);
             if (accountExists) {
                 String encodedAccount = URLEncoder.encode(account, StandardCharsets.UTF_8);
@@ -81,17 +104,6 @@ public class RegisterServlet extends HttpServlet {
                 response.sendRedirect(request.getContextPath()
                         + "/auth/register.jsp?error=account&account=" + encodedAccount
                         + "&email=" + encodedEmail);
-                return;
-            }
-
-            // 5.1 Kiểm tra và chặn các dịch vụ email rác, email tạm thời
-            String lowerEmail = email.toLowerCase();
-            if (lowerEmail.endsWith("@tempmail.com") || lowerEmail.endsWith("@10minutemail.com")
-                    || lowerEmail.endsWith("@guerrillamail.com") || lowerEmail.endsWith("@mailinator.com")
-                    || lowerEmail.endsWith("@throwawaymail.com")) {
-                String encodedAccount = URLEncoder.encode(account, StandardCharsets.UTF_8);
-                response.sendRedirect(request.getContextPath()
-                        + "/auth/register.jsp?error=tempmail&account=" + encodedAccount);
                 return;
             }
 

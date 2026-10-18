@@ -21,6 +21,37 @@ public class EmailUtils {
     private static final String APP_PASSWORD = "egwocrjeufohujlz";
 
     /**
+     * Khởi tạo Session gửi mail với đầy đủ cấu hình SMTP Gmail và bảng mã UTF-8.
+     */
+    private static Session getMailSession() {
+        Properties properties = new Properties();
+        properties.put("mail.smtp.host", "smtp.gmail.com");
+        properties.put("mail.smtp.port", "587");
+        properties.put("mail.smtp.auth", "true");
+        properties.put("mail.smtp.starttls.enable", "true");
+        properties.put("mail.mime.charset", "UTF-8");
+
+        return Session.getInstance(properties, new Authenticator() {
+            @Override
+            protected PasswordAuthentication getPasswordAuthentication() {
+                return new PasswordAuthentication(FROM_EMAIL, APP_PASSWORD);
+            }
+        });
+    }
+
+    /**
+     * Tạo đối tượng MimeMessage với người gửi đại diện "CineFlow" và tiêu đề được mã hóa UTF-8 chuẩn RFC 2047.
+     */
+    private static MimeMessage createMessage(String toEmail, String subject) throws Exception {
+        Session session = getMailSession();
+        MimeMessage message = new MimeMessage(session);
+        message.setFrom(new InternetAddress(FROM_EMAIL, "CineFlow", "UTF-8"));
+        message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(toEmail));
+        message.setSubject(subject, "UTF-8");
+        return message;
+    }
+
+    /**
      * Gửi mã OTP xác thực đặt lại mật khẩu cho người dùng.
      *
      * @param toEmail địa chỉ email nhận mã
@@ -28,23 +59,7 @@ public class EmailUtils {
      * @throws Exception khi xảy ra lỗi trong quá trình kết nối hoặc gửi email
      */
     public static void sendResetPasswordOtpEmail(String toEmail, String otp) throws Exception {
-        Properties properties = new Properties();
-        properties.put("mail.smtp.host", "smtp.gmail.com");
-        properties.put("mail.smtp.port", "587");
-        properties.put("mail.smtp.auth", "true");
-        properties.put("mail.smtp.starttls.enable", "true");
-
-        Session session = Session.getInstance(properties, new Authenticator() {
-            @Override
-            protected PasswordAuthentication getPasswordAuthentication() {
-                return new PasswordAuthentication(FROM_EMAIL, APP_PASSWORD);
-            }
-        });
-
-        Message message = new MimeMessage(session);
-        message.setFrom(new InternetAddress(FROM_EMAIL));
-        message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(toEmail));
-        message.setSubject("CineFlow - Mã xác thực đặt lại mật khẩu");
+        MimeMessage message = createMessage(toEmail, "CineFlow - Mã xác thực đặt lại mật khẩu");
 
         message.setContent(
                 "<!DOCTYPE html>"
@@ -93,30 +108,20 @@ public class EmailUtils {
         Transport.send(message);
     }
 
+    /**
+     * Gửi mã OTP kích hoạt tài khoản đăng ký mới cho người dùng.
+     *
+     * @param toEmail địa chỉ email nhận mã
+     * @param otp mã OTP 6 chữ số
+     * @param fullName họ tên người dùng
+     * @throws Exception khi xảy ra lỗi gửi thư
+     */
     public static void sendAccountActivationOtpEmail(
             String toEmail,
             String otp,
             String fullName) throws Exception {
 
-        Properties properties = new Properties();
-        properties.put("mail.smtp.host", "smtp.gmail.com");
-        properties.put("mail.smtp.port", "587");
-        properties.put("mail.smtp.auth", "true");
-        properties.put("mail.smtp.starttls.enable", "true");
-
-        Session session = Session.getInstance(
-                properties,
-                new Authenticator() {
-            @Override
-            protected PasswordAuthentication getPasswordAuthentication() {
-                return new PasswordAuthentication(FROM_EMAIL, APP_PASSWORD);
-            }
-        });
-
-        Message message = new MimeMessage(session);
-        message.setFrom(new InternetAddress(FROM_EMAIL));
-        message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(toEmail));
-        message.setSubject("CineFlow - Mã kích hoạt tài khoản");
+        MimeMessage message = createMessage(toEmail, "CineFlow - Mã kích hoạt tài khoản");
 
         String recipientName = (fullName != null && !fullName.isBlank()) ? fullName : "Quý khách";
 
@@ -168,5 +173,72 @@ public class EmailUtils {
 
         Transport.send(message);
     }
-}
 
+    /**
+     * Gửi mã OTP xác nhận thay đổi địa chỉ email cho người dùng.
+     *
+     * @param toEmail địa chỉ email mới cần xác nhận
+     * @param otp mã OTP 6 chữ số
+     * @param fullName họ tên người dùng
+     * @throws Exception khi xảy ra lỗi gửi thư
+     */
+    public static void sendEmailChangeOtpEmail(
+            String toEmail,
+            String otp,
+            String fullName) throws Exception {
+
+        MimeMessage message = createMessage(toEmail, "CineFlow - Mã xác thực thay đổi địa chỉ email");
+
+        String recipientName = (fullName != null && !fullName.isBlank()) ? fullName : "Quý khách";
+
+        message.setContent(
+                "<!DOCTYPE html>"
+                + "<html>"
+                + "<head><meta charset='UTF-8'></head>"
+                + "<body style='margin:0; padding:0; background-color:#0B0F17; font-family:Arial,sans-serif; color:#F8FAFC;'>"
+                + "<div style='max-width:600px; margin:40px auto; background:#161B26; "
+                + "border-radius:14px; overflow:hidden; border:1px solid rgba(255,255,255,0.08); "
+                + "box-shadow:0 12px 40px rgba(0,0,0,0.6);'>"
+                + "<div style='background:linear-gradient(135deg, #FF2A54 0%, #E11D48 100%); padding:28px; text-align:center;'>"
+                + "<h1 style='margin:0; color:#ffffff; font-size:28px; font-weight:800; letter-spacing:1px;'>CineFlow</h1>"
+                + "<p style='margin:6px 0 0; color:#ffffff; font-size:13px; opacity:0.9;'>Hệ thống Quản lý và Đặt vé Rạp chiếu phim</p>"
+                + "</div>"
+                + "<div style='padding:36px; color:#F8FAFC;'>"
+                + "<h2 style='color:#ffffff; margin-top:0; font-size:20px;'>Xác thực thay đổi địa chỉ email</h2>"
+                + "<p style='color:#94A3B8; font-size:14px; line-height:1.6;'>"
+                + "Xin chào <strong>" + recipientName + "</strong>,<br>"
+                + "Chúng tôi nhận được yêu cầu cập nhật địa chỉ email này cho tài khoản CineFlow của bạn.<br>"
+                + "Vui lòng nhập mã OTP gồm 6 chữ số dưới đây để hoàn tất việc xác thực và cập nhật email:"
+                + "</p>"
+                + "<div style='background:#111622; border:2px dashed #FF2A54; "
+                + "border-radius:10px; padding:22px; text-align:center; margin:26px 0;'>"
+                + "<div style='font-size:38px; font-weight:bold; letter-spacing:10px; color:#FF2A54; font-family:monospace;'>"
+                + otp
+                + "</div>"
+                + "</div>"
+                + "<p style='color:#94A3B8; font-size:13px; line-height:1.6;'>"
+                + "Mã xác thực có hiệu lực trong vòng <strong style='color:#F8FAFC;'>15 phút</strong>. "
+                + "Tuyệt đối không chia sẻ mã này cho bất kỳ ai để bảo vệ an toàn tài khoản của bạn."
+                + "</p>"
+                + "<div style='background:rgba(255,42,84,0.08); border-left:4px solid #FF2A54; "
+                + "padding:12px 16px; margin-top:24px; border-radius:4px;'>"
+                + "<p style='margin:0; color:#CBD5E1; font-size:12px; line-height:1.5;'>"
+                + "<strong>Lưu ý bảo mật:</strong> Nếu bạn không thực hiện yêu cầu thay đổi email này, vui lòng bỏ qua email và kiểm tra lại bảo mật tài khoản của bạn."
+                + "</p>"
+                + "</div>"
+                + "<p style='margin-top:28px; color:#64748B; font-size:11px;'>"
+                + "Đây là email tự động từ hệ thống CineFlow. Vui lòng không phản hồi thư này."
+                + "</p>"
+                + "</div>"
+                + "<div style='background:#111622; padding:16px; text-align:center; border-top:1px solid rgba(255,255,255,0.05);'>"
+                + "<p style='margin:0; color:#64748B; font-size:12px;'>© 2026 CineFlow - Cinema Modern Experience</p>"
+                + "</div>"
+                + "</div>"
+                + "</body>"
+                + "</html>",
+                "text/html; charset=UTF-8"
+        );
+
+        Transport.send(message);
+    }
+}

@@ -2,7 +2,9 @@ package controller;
 
 import dao.UserDAO;
 import model.User;
+import utils.EmailUtils;
 import utils.MediaStorage;
+import utils.ValidationUtils;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.MultipartConfig;
@@ -13,8 +15,12 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.Part;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.sql.Timestamp;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Điều khiển trang quản lý tài khoản cá nhân, xem lịch sử đặt vé và cập nhật thông tin người dùng.
@@ -37,16 +43,7 @@ public class AccountServlet extends HttpServlet {
         request.setAttribute("accountUser", userDAO.getUserById(userId));
         request.setAttribute("bookingHistory", userDAO.getBookingHistory(userId));
 
-        String role = (String) session.getAttribute("role");
-        if (role == null && session.getAttribute("user") instanceof User) {
-            role = ((User) session.getAttribute("user")).getRole();
-        }
-
-        // Phân định trang hồ sơ theo quyền: Admin/Manager dùng giao diện quản trị, khách dùng giao diện người dùng
-        String page = ("ADMIN".equalsIgnoreCase(role) || "MANAGER".equalsIgnoreCase(role))
-                ? "/admin/profile.jsp"
-                : "/account/profile.jsp";
-        request.getRequestDispatcher(page).forward(request, response);
+        request.getRequestDispatcher("/account/profile.jsp").forward(request, response);
     }
 
     @Override
@@ -68,8 +65,23 @@ public class AccountServlet extends HttpServlet {
                 && request.getContentType().toLowerCase().startsWith("multipart/form-data")
                 ? request.getPart("avatarFile") : null;
 
-        if (fullName == null || fullName.trim().isEmpty() || email == null || email.trim().isEmpty()) {
+        if (ValidationUtils.isBlank(fullName) || ValidationUtils.isBlank(email)) {
             response.sendRedirect(request.getContextPath() + "/account?error=required");
+            return;
+        }
+
+        if (!ValidationUtils.isValidFullName(fullName)) {
+            response.sendRedirect(request.getContextPath() + "/account?error=invalidName");
+            return;
+        }
+
+        if (!ValidationUtils.isValidEmail(email)) {
+            response.sendRedirect(request.getContextPath() + "/account?error=invalidEmail");
+            return;
+        }
+
+        if (!ValidationUtils.isValidPhone(phone, false)) {
+            response.sendRedirect(request.getContextPath() + "/account?error=invalidPhone");
             return;
         }
 
@@ -81,6 +93,12 @@ public class AccountServlet extends HttpServlet {
 
         // Xử lý tải ảnh đại diện nếu có
         if (avatarPart != null && avatarPart.getSize() > 0) {
+            String submittedFileName = avatarPart.getSubmittedFileName();
+            if (submittedFileName != null && !ValidationUtils.isValidImageExtension(submittedFileName)) {
+                response.sendRedirect(request.getContextPath() + "/account?error=avatarType");
+                return;
+            }
+
             String contentType = avatarPart.getContentType();
             String extension = "image/png".equalsIgnoreCase(contentType) ? ".png"
                     : "image/jpeg".equalsIgnoreCase(contentType) ? ".jpg"
@@ -96,14 +114,52 @@ public class AccountServlet extends HttpServlet {
             avatar = request.getContextPath() + "/uploads/avatars/" + fileName;
         }
 
-        boolean updated = userDAO.updateProfile(userId, fullName.trim(), email.trim(),
-                phone == null ? "" : phone.trim(), avatar == null ? "" : avatar.trim());
-
-        if (updated) {
-            // Cập nhật lại thông tin đối tượng user trong session
-            session.setAttribute("user", userDAO.getUserById(userId));
+        User currentUser = userDAO.getUserById(userId);
+        if (currentUser == null) {
+            response.sendRedirect(request.getContextPath() + "/auth/login.jsp");
+            return;
         }
 
-        response.sendRedirect(request.getContextPath() + "/account?updated=" + updated);
+        if (avatar == null || avatar.trim().isEmpty()) {
+            avatar = currentUser.getAvatar();
+        }
+
+        boolean isEmailChanged = !currentUser.getEmail().equalsIgnoreCase(email.trim());
+
+        if (!isEmailChanged) {
+            // Không đổi email: Cập nhật các thông tin khác ngay
+            boolean updated = userDAO.updateProfile(userId, fullName.trim(), currentUser.getEmail(),
+                    phone == null ? "" : phone.trim(), avatar == null ? "" : avatar.trim());
+            if (updated) {
+                session.setAttribute("user", userDAO.getUserById(userId));
+            }
+            response.sendRedirect(request.getContextPath() + "/account?updated=" + updated);
+        } else {
+            // Có thay đổi email: Cập nhật trước thông tin cá nhân (vẫn giữ email cũ trong DB cho tới khi xác thực OTP)
+            userDAO.updateProfile(userId, fullName.trim(), currentUser.getEmail(),
+                    phone == null ? "" : phone.trim(), avatar == null ? "" : avatar.trim());
+            session.setAttribute("user", userDAO.getUserById(userId));
+
+            // Sinh mã OTP 6 chữ số và thời hạn 15 phút
+            String otp = String.format("%06d", ThreadLocalRandom.current().nextInt(0, 1_000_000));
+            Timestamp expiry = new Timestamp(System.currentTimeMillis() + (15 * 60 * 1000));
+            userDAO.updateActivationOtp(userId, otp, expiry);
+
+            // Lưu email mới vào session để đối soát khi xác thực
+            session.setAttribute("pendingNewEmail", email.trim());
+            session.setAttribute("pendingEmailUserId", userId);
+
+            // Gửi OTP đến địa chỉ email mới
+            try {
+                EmailUtils.sendEmailChangeOtpEmail(email.trim(), otp, fullName.trim());
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+
+            // Chuyển hướng người dùng sang trang nhập OTP xác thực email
+            response.sendRedirect(request.getContextPath() + "/auth/verify-otp.jsp?email="
+                    + URLEncoder.encode(email.trim(), StandardCharsets.UTF_8)
+                    + "&action=changeEmail");
+        }
     }
 }

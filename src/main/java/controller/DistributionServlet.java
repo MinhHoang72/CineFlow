@@ -49,26 +49,50 @@ public class DistributionServlet extends HttpServlet {
             return;
         }
 
+        List<Movie> allMovies = dao.getAllMovies();
+        Movie selectedMovie = null;
+
         String movieIdValue = request.getParameter("movieId");
-        if (movieIdValue == null || movieIdValue.isBlank()) {
-            response.sendRedirect(request.getContextPath() + "/admin/movies");
-            return;
+        if (movieIdValue != null && !movieIdValue.isBlank()) {
+            try {
+                int movieId = Integer.parseInt(movieIdValue.trim());
+                for (Movie m : allMovies) {
+                    if (m.getMovieId() == movieId) {
+                        selectedMovie = m;
+                        break;
+                    }
+                }
+                if (selectedMovie == null) {
+                    selectedMovie = dao.getMovieById(movieId);
+                }
+            } catch (NumberFormatException ignored) {
+            }
         }
 
-        try {
-            int movieId = Integer.parseInt(movieIdValue);
-            Movie movie = dao.getMovieById(movieId);
-            if (movie == null) {
-                response.sendError(HttpServletResponse.SC_NOT_FOUND, "Không tìm thấy phim.");
-                return;
+        // Nếu không có movieId hoặc không tìm thấy, mặc định chọn phim đầu tiên
+        if (selectedMovie == null && allMovies != null && !allMovies.isEmpty()) {
+            // Ưu tiên phim Đang chiếu hoặc Sắp khởi chiếu
+            for (Movie m : allMovies) {
+                if ("NOW_SHOWING".equalsIgnoreCase(m.getStatus()) || "COMING_SOON".equalsIgnoreCase(m.getStatus())) {
+                    selectedMovie = m;
+                    break;
+                }
             }
-            List<Centre> centres = dao.getDistributionCentres(movieId);
-            request.setAttribute("movie", movie);
-            request.setAttribute("centres", centres);
-            request.getRequestDispatcher("/admin/distribution.jsp").forward(request, response);
-        } catch (NumberFormatException exception) {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Mã phim không hợp lệ.");
+            if (selectedMovie == null) {
+                selectedMovie = allMovies.get(0);
+            }
         }
+
+        List<Centre> centres = java.util.Collections.emptyList();
+        if (selectedMovie != null) {
+            centres = dao.getDistributionCentres(selectedMovie.getMovieId());
+        }
+
+        request.setAttribute("activeNav", "distribution");
+        request.setAttribute("movie", selectedMovie);
+        request.setAttribute("allMovies", allMovies != null ? allMovies : java.util.Collections.emptyList());
+        request.setAttribute("centres", centres);
+        request.getRequestDispatcher("/admin/distribution.jsp").forward(request, response);
     }
 
     @Override

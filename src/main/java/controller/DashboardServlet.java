@@ -53,8 +53,12 @@ public class DashboardServlet extends HttpServlet {
             return;
         }
 
-        // 3. Nhân viên cụm rạp (STAFF) -> Bàn làm việc của nhân viên
-        if ("STAFF".equalsIgnoreCase(role)) {
+        // 3. Nhân viên cụm rạp (Ticket Sales Staff, Ticket Checker Staff, Staff chung)
+        if ("STAFF".equalsIgnoreCase(role)
+                || "TICKET_SALES_STAFF".equalsIgnoreCase(role)
+                || "TICKET_CHECKER_STAFF".equalsIgnoreCase(role)
+                || "TICKET_SALES".equalsIgnoreCase(role)
+                || "TICKET_CHECKER".equalsIgnoreCase(role)) {
             request.getRequestDispatcher("/staff/dashboard.jsp").forward(request, response);
             return;
         }

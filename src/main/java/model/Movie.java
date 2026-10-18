@@ -21,6 +21,28 @@ public class Movie {
     private String trailerUrl;
     private String status;
     private String ageRating;
+    private int distributedCentres;
+    private int totalCentres;
+
+    public int getDistributedCentres() {
+        return distributedCentres;
+    }
+
+    public void setDistributedCentres(int distributedCentres) {
+        this.distributedCentres = distributedCentres;
+    }
+
+    public int getTotalCentres() {
+        return totalCentres;
+    }
+
+    public void setTotalCentres(int totalCentres) {
+        this.totalCentres = totalCentres;
+    }
+
+    public String getDistributionRatio() {
+        return distributedCentres + "/" + totalCentres;
+    }
 
     public int getMovieId() {
         return movieId;

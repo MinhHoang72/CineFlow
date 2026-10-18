@@ -25,16 +25,13 @@
         <main class="cf-content">
             <div class="cf-page-header">
                 <div>
-                    <p class="cf-breadcrumb">Dashboard</p>
                     <h1>Tổng quan Manager</h1>
-                    <p>Quản lý hoạt động nhân sự và trung tâm CineFlow.</p>
                 </div>
             </div>
             <div class="cf-card">
                 <div class="cf-card-header">
                     <div>
                         <h2>Chức năng quản lý</h2>
-                        <p>Các chức năng theo phạm vi trung tâm được cấp.</p>
                     </div>
                 </div>
                 <div class="cf-card-body">

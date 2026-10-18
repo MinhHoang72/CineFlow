@@ -3,6 +3,7 @@ package controller;
 import dao.UserDAO;
 import model.User;
 import utils.PasswordUtils;
+import utils.ValidationUtils;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -60,6 +61,12 @@ public class ChangePasswordServlet extends HttpServlet {
         // 4. Kiểm tra xác nhận mật khẩu mới trùng khớp
         if (!newPassword.equals(confirmPassword)) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "New password and Confirm Password do not match.");
+            return;
+        }
+
+        // 4.1 Kiểm tra độ mạnh của mật khẩu mới
+        if (!ValidationUtils.isValidPassword(newPassword)) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "New password must be at least 8 characters and contain uppercase, lowercase, number and special character.");
             return;
         }
 

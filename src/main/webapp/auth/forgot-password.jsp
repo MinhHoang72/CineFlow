@@ -88,7 +88,9 @@
             </button>
 
             <% if ("email".equals(error)) { %>
-                <p class="form-error" role="alert">Email này chưa được đăng ký. Vui lòng kiểm tra lại.</p>
+                <p class="form-error" role="alert">Email này chưa được đăng ký trong hệ thống. Vui lòng kiểm tra lại.</p>
+            <% } else if ("invalid_email".equals(error)) { %>
+                <p class="form-error" role="alert">Địa chỉ email không đúng định dạng chuẩn. Vui lòng nhập lại.</p>
             <% } %>
         </form>
 

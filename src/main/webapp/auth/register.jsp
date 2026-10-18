@@ -172,6 +172,18 @@
                     <p class="form-error" role="alert">Email này đã được đăng ký. Vui lòng sử dụng email khác.</p>
                 <% } else if ("tempmail".equals(registerError)) { %>
                     <p class="form-error" role="alert">Vui lòng sử dụng địa chỉ email chính thức (Gmail, Outlook, v.v.) để đăng ký và nhận vé xem phim.</p>
+                <% } else if ("invalid_email".equals(registerError)) { %>
+                    <p class="form-error" role="alert">Định dạng email không hợp lệ. Vui lòng kiểm tra lại.</p>
+                <% } else if ("invalid_account".equals(registerError)) { %>
+                    <p class="form-error" role="alert">Tên tài khoản không hợp lệ (3 - 30 ký tự, gồm chữ, số, dấu chấm, gạch dưới, gạch ngang).</p>
+                <% } else if ("invalid_name".equals(registerError)) { %>
+                    <p class="form-error" role="alert">Họ và tên không hợp lệ (từ 2 đến 100 ký tự).</p>
+                <% } else if ("password_mismatch".equals(registerError)) { %>
+                    <p class="form-error" role="alert">Mật khẩu xác nhận không trùng khớp.</p>
+                <% } else if ("weak_password".equals(registerError)) { %>
+                    <p class="form-error" role="alert">Mật khẩu chưa đủ độ mạnh (tối thiểu 8 ký tự, có chữ hoa, thường, số và ký tự đặc biệt).</p>
+                <% } else if ("missing_fields".equals(registerError)) { %>
+                    <p class="form-error" role="alert">Vui lòng điền đầy đủ các thông tin bắt buộc.</p>
                 <% } %>
 
                 <!-- ĐIỀU KHOẢN VÀ CHÍNH SÁCH -->

@@ -1,7 +1,9 @@
 package controller;
 
 import dao.UserDAO;
+import model.User;
 import utils.PasswordUtils;
+import utils.ValidationUtils;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -42,30 +44,45 @@ public class ResetPasswordServlet extends HttpServlet {
         String newPassword = request.getParameter("newPassword");
         String confirmPassword = request.getParameter("confirmPassword");
 
-        if (newPassword == null || newPassword.isEmpty()
-                || confirmPassword == null || confirmPassword.isEmpty()) {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "All password fields are required.");
+        if (ValidationUtils.isBlank(newPassword) || ValidationUtils.isBlank(confirmPassword)) {
+            request.setAttribute("error", "missing_fields");
+            request.getRequestDispatcher("/auth/reset-password.jsp").forward(request, response);
             return;
         }
 
         // 2. Kiểm tra mật khẩu xác nhận
         if (!newPassword.equals(confirmPassword)) {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "New password and Confirm Password do not match.");
+            request.setAttribute("error", "password_mismatch");
+            request.getRequestDispatcher("/auth/reset-password.jsp").forward(request, response);
             return;
         }
 
-        // 3. Băm mật khẩu mới và lưu vào cơ sở dữ liệu, đồng thời hủy bỏ token đặt lại
+        // 3. Kiểm tra độ mạnh mật khẩu
+        if (!ValidationUtils.isValidPassword(newPassword)) {
+            request.setAttribute("error", "weak_password");
+            request.getRequestDispatcher("/auth/reset-password.jsp").forward(request, response);
+            return;
+        }
+
+        // 4. Băm mật khẩu mới và lưu vào cơ sở dữ liệu, đồng thời hủy bỏ token đặt lại
         String hashedPassword = PasswordUtils.hashPassword(newPassword);
         boolean success = userDAO.resetPassword(resetUserId, hashedPassword);
 
         if (!success) {
-            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to reset password.");
+            request.setAttribute("error", "reset_failed");
+            request.getRequestDispatcher("/auth/reset-password.jsp").forward(request, response);
             return;
         }
 
-        // 4. Hủy phiên làm việc tạm và chuyển về trang đăng nhập
+        // Nếu là khách hàng CUSTOMER chưa kích hoạt email, đặt lại mật khẩu qua OTP cũng đồng thời xác thực email
+        User resetUser = userDAO.getUserById(resetUserId);
+        if (resetUser != null && "CUSTOMER".equalsIgnoreCase(resetUser.getRole()) && !resetUser.isEmailVerified()) {
+            userDAO.activateUser(resetUserId);
+        }
+
+        // 5. Hủy phiên làm việc tạm và chuyển về trang đăng nhập
         session.invalidate();
-        response.sendRedirect(request.getContextPath() + "/auth/login.jsp");
+        response.sendRedirect(request.getContextPath() + "/auth/login.jsp?success=password_reset");
     }
 
     @Override

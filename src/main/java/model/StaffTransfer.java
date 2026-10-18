@@ -19,6 +19,9 @@ public class StaffTransfer {
     private int transferredBy;
     private String transferredByName;
     private Timestamp transferDate;
+    private java.sql.Date effectiveDate;
+    private String oldRole;
+    private String newRole;
     private String reason;
     private String notes;
 
@@ -150,6 +153,47 @@ public class StaffTransfer {
 
     public void setTransferDate(Timestamp transferDate) {
         this.transferDate = transferDate;
+    }
+
+    public java.sql.Date getEffectiveDate() {
+        return effectiveDate;
+    }
+
+    public void setEffectiveDate(java.sql.Date effectiveDate) {
+        this.effectiveDate = effectiveDate;
+    }
+
+    public String getOldRole() {
+        return oldRole;
+    }
+
+    public void setOldRole(String oldRole) {
+        this.oldRole = oldRole;
+    }
+
+    public String getNewRole() {
+        return newRole;
+    }
+
+    public void setNewRole(String newRole) {
+        this.newRole = newRole;
+    }
+
+    public String getOldRoleDisplayName() {
+        return formatRole(oldRole != null ? oldRole : userRole);
+    }
+
+    public String getNewRoleDisplayName() {
+        return formatRole(newRole != null ? newRole : userRole);
+    }
+
+    private String formatRole(String r) {
+        if (r == null) return "Nhân viên";
+        if ("MANAGER".equalsIgnoreCase(r)) return "Quản lý";
+        if ("TICKET_SALES_STAFF".equalsIgnoreCase(r) || "TICKET_SALES".equalsIgnoreCase(r)) return "Bán vé";
+        if ("TICKET_CHECKER_STAFF".equalsIgnoreCase(r) || "TICKET_CHECKER".equalsIgnoreCase(r)) return "Soát vé";
+        if ("ADMIN".equalsIgnoreCase(r)) return "Quản trị viên";
+        return r;
     }
 
     public String getReason() {

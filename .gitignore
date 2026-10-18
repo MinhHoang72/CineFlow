@@ -19,8 +19,9 @@
 *.ipr
 out/
 
-# VS Code
+# VS Code & Visual Studio
 .vscode/
+.vs/
 
 # OS generated files
 Thumbs.db
