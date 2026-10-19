@@ -7,8 +7,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 /**
- * Tiện ích: Quản lý thư mục lưu trữ tệp tin đa phương tiện vật lý (avatar, poster phim, trailer)
- * bên ngoài thư mục build tạm thời để đảm bảo không bị mất file khi redeploy hoặc rebuild server.
+ * Tiện ích: Quản lý thư mục lưu trữ tệp tin đa phương tiện vật lý (avatar,
+ * poster phim, trailer)
+ * bên ngoài thư mục build tạm thời để đảm bảo không bị mất file khi redeploy
+ * hoặc rebuild server.
  */
 public final class MediaStorage {
 
@@ -22,7 +24,8 @@ public final class MediaStorage {
      * @param context  ngữ cảnh ServletContext của ứng dụng
      * @param category danh mục file ("avatars" hoặc "movies")
      * @return đường dẫn Path tới thư mục lưu trữ
-     * @throws IOException              nếu không thể giải quyết thư mục hoặc tạo thư mục thất bại
+     * @throws IOException              nếu không thể giải quyết thư mục hoặc tạo
+     *                                  thư mục thất bại
      * @throws IllegalArgumentException nếu danh mục không được hỗ trợ
      */
     public static Path uploadDirectory(ServletContext context, String category) throws IOException {
@@ -32,7 +35,8 @@ public final class MediaStorage {
             throw new IllegalArgumentException("Unsupported media category: " + category);
         }
 
-        // 2. Xác định thư mục gốc lưu trữ từ cấu hình init-param hoặc tự động dò tìm thư mục resources của dự án
+        // 2. Xác định thư mục gốc lưu trữ từ cấu hình init-param hoặc tự động dò tìm
+        // thư mục resources của dự án
         String configuredRoot = context.getInitParameter("media.root");
         Path resourcesRoot;
         if (configuredRoot != null && !configuredRoot.isBlank()) {
@@ -50,7 +54,8 @@ public final class MediaStorage {
             resourcesRoot = projectRoot.resolve("resources");
         }
 
-        // 3. Chuẩn hóa đường dẫn thư mục lưu trữ uploads/{category} và phòng chống Path Traversal
+        // 3. Chuẩn hóa đường dẫn thư mục lưu trữ uploads/{category} và phòng chống Path
+        // Traversal
         Path directory = resourcesRoot.resolve("uploads").resolve(category).normalize();
         if (!directory.startsWith(resourcesRoot)) {
             throw new IOException("Invalid media directory.");
