@@ -116,6 +116,199 @@ public class SeatDAO {
     }
 
     /**
+     * Đếm tổng số ghế của phòng chiếu theo điều kiện tìm kiếm và bộ lọc.
+     * Phục vụ phân trang (Pagination) danh sách ghế.
+     *
+     * @param hallId mã phòng chiếu
+     * @param search từ khóa tìm kiếm (theo hàng 'A' hoặc mã ghế 'A1' hoặc số '1')
+     * @param seatType loại ghế ('ALL', 'STANDARD', 'VIP', 'SWEETBOX')
+     * @param status trạng thái ('ALL', 'AVAILABLE', 'MAINTENANCE')
+     * @return tổng số ghế tìm thấy
+     */
+    public int countSeatsByHall(int hallId, String search, String seatType, String status) {
+        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM Seats WHERE HallID = ? ");
+        List<Object> params = new ArrayList<>();
+        params.add(hallId);
+
+        if (search != null && !search.trim().isEmpty()) {
+            String kw = "%" + search.trim().toLowerCase() + "%";
+            sql.append("AND (LOWER(SeatRow) LIKE ? OR LOWER(CONCAT(SeatRow, CAST(SeatNumber AS VARCHAR))) LIKE ? OR CAST(SeatNumber AS VARCHAR) LIKE ?) ");
+            params.add(kw);
+            params.add(kw);
+            params.add(kw);
+        }
+
+        if (seatType != null && !seatType.trim().isEmpty() && !"ALL".equalsIgnoreCase(seatType)) {
+            sql.append("AND UPPER(SeatType) = ? ");
+            params.add(seatType.trim().toUpperCase());
+        }
+
+        if (status != null && !status.trim().isEmpty() && !"ALL".equalsIgnoreCase(status)) {
+            sql.append("AND UPPER(Status) = ? ");
+            params.add(status.trim().toUpperCase());
+        }
+
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
+            }
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    /**
+     * Lấy danh sách ghế của một phòng chiếu có phân trang (Pagination).
+     *
+     * @param hallId mã phòng chiếu
+     * @param search từ khóa tìm kiếm
+     * @param seatType loại ghế
+     * @param status trạng thái
+     * @param page số trang hiện tại
+     * @param pageSize số ghế mỗi trang
+     * @return danh sách các SeatConfigDTO trên trang
+     */
+    public List<SeatConfigDTO> getSeatsByHallPaged(int hallId, String search, String seatType, String status, int page, int pageSize) {
+        if (page < 1) {
+            page = 1;
+        }
+        if (pageSize < 1) {
+            pageSize = 12;
+        }
+        int offset = (page - 1) * pageSize;
+
+        List<SeatConfigDTO> list = new ArrayList<>();
+        StringBuilder sql = new StringBuilder(
+            "SELECT SeatID, HallID, SeatRow, SeatNumber, SeatType, Status "
+            + "FROM Seats WHERE HallID = ? "
+        );
+
+        List<Object> params = new ArrayList<>();
+        params.add(hallId);
+
+        if (search != null && !search.trim().isEmpty()) {
+            String kw = "%" + search.trim().toLowerCase() + "%";
+            sql.append("AND (LOWER(SeatRow) LIKE ? OR LOWER(CONCAT(SeatRow, CAST(SeatNumber AS VARCHAR))) LIKE ? OR CAST(SeatNumber AS VARCHAR) LIKE ?) ");
+            params.add(kw);
+            params.add(kw);
+            params.add(kw);
+        }
+
+        if (seatType != null && !seatType.trim().isEmpty() && !"ALL".equalsIgnoreCase(seatType)) {
+            sql.append("AND UPPER(SeatType) = ? ");
+            params.add(seatType.trim().toUpperCase());
+        }
+
+        if (status != null && !status.trim().isEmpty() && !"ALL".equalsIgnoreCase(status)) {
+            sql.append("AND UPPER(Status) = ? ");
+            params.add(status.trim().toUpperCase());
+        }
+
+        sql.append("ORDER BY SeatRow ASC, SeatNumber ASC ");
+        sql.append("OFFSET ? ROWS FETCH NEXT ? ROWS ONLY");
+        params.add(offset);
+        params.add(pageSize);
+
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
+            }
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    SeatConfigDTO dto = new SeatConfigDTO();
+                    dto.setSeatId(rs.getInt("SeatID"));
+                    dto.setHallId(rs.getInt("HallID"));
+                    dto.setSeatRow(rs.getString("SeatRow"));
+                    dto.setSeatNumber(rs.getInt("SeatNumber"));
+                    dto.setSeatType(rs.getString("SeatType"));
+                    dto.setStatus(rs.getString("Status"));
+                    list.add(dto);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return list;
+    }
+
+    /**
+     * Bật / Tắt trạng thái bảo trì cho một ghế đơn lẻ (Trường hợp B).
+     * Tự động đồng bộ lại Capacity (tổng số ghế AVAILABLE) của phòng chiếu.
+     *
+     * @param seatId mã định danh ghế
+     * @param hallId mã phòng chiếu
+     * @return chuỗi kết quả: "SUCCESS", "HAS_FUTURE_BOOKINGS:[thời gian]", "FAILED"
+     */
+    public String toggleSeatMaintenance(int seatId, int hallId) {
+        String queryCurrent = "SELECT SeatRow, SeatNumber, Status FROM Seats WHERE SeatID = ? AND HallID = ?";
+        String seatRow = null;
+        int seatNumber = 0;
+        String currentStatus = null;
+
+        try (Connection conn = DBContext.getConnection()) {
+            try (PreparedStatement ps = conn.prepareStatement(queryCurrent)) {
+                ps.setInt(1, seatId);
+                ps.setInt(2, hallId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        seatRow = rs.getString("SeatRow");
+                        seatNumber = rs.getInt("SeatNumber");
+                        currentStatus = rs.getString("Status");
+                    } else {
+                        return "FAILED";
+                    }
+                }
+            }
+
+            // Nếu ghế đang hoạt động (AVAILABLE) và chuẩn bị chuyển sang bảo trì (MAINTENANCE)
+            // Cần kiểm tra Alt 2: Ghế này có khách đặt trong suất chiếu tương lai không
+            if ("AVAILABLE".equalsIgnoreCase(currentStatus)) {
+                String bookedShowtime = checkFutureBookingForSeat(hallId, seatRow, seatNumber);
+                if (bookedShowtime != null) {
+                    return "HAS_FUTURE_BOOKINGS:" + bookedShowtime;
+                }
+            }
+
+            String newStatus = "AVAILABLE".equalsIgnoreCase(currentStatus) ? "MAINTENANCE" : "AVAILABLE";
+
+            // Cập nhật trạng thái ghế
+            String updateSql = "UPDATE Seats SET Status = ? WHERE SeatID = ? AND HallID = ?";
+            try (PreparedStatement ps = conn.prepareStatement(updateSql)) {
+                ps.setString(1, newStatus);
+                ps.setInt(2, seatId);
+                ps.setInt(3, hallId);
+                ps.executeUpdate();
+            }
+
+            // Đồng bộ lại Capacity của phòng chiếu (Total Capacity = số ghế AVAILABLE)
+            String syncCapacitySql = "UPDATE Halls SET Capacity = (SELECT COUNT(*) FROM Seats WHERE HallID = ? AND UPPER(Status) = 'AVAILABLE') WHERE HallID = ?";
+            try (PreparedStatement ps = conn.prepareStatement(syncCapacitySql)) {
+                ps.setInt(1, hallId);
+                ps.setInt(2, hallId);
+                ps.executeUpdate();
+            }
+
+            return "SUCCESS";
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return "FAILED";
+        }
+    }
+
+    /**
      * Alt 2: Kiểm tra xem vị trí ghế cụ thể có đang được khách đặt trước trong một suất chiếu sắp tới hay không.
      *
      * @param hallId mã phòng chiếu

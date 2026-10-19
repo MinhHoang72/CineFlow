@@ -21,6 +21,20 @@
         hasBookedShowtimes = false;
     }
 
+    List<SeatConfigDTO> pagedSeats = (List<SeatConfigDTO>) request.getAttribute("pagedSeats");
+    Integer currentPage = (Integer) request.getAttribute("currentPage");
+    if (currentPage == null) currentPage = 1;
+    Integer pageSize = (Integer) request.getAttribute("pageSize");
+    if (pageSize == null) pageSize = 12;
+    Integer totalPages = (Integer) request.getAttribute("totalPages");
+    if (totalPages == null) totalPages = 1;
+    Integer totalFilteredSeats = (Integer) request.getAttribute("totalFilteredSeats");
+    if (totalFilteredSeats == null) totalFilteredSeats = 0;
+
+    String currentSearch = (String) request.getAttribute("currentSearch");
+    String currentSeatType = (String) request.getAttribute("currentSeatType");
+    String currentSeatStatus = (String) request.getAttribute("currentSeatStatus");
+
     String successParam = request.getParameter("success");
     String errorParam = request.getParameter("error");
     String customMsg = request.getParameter("msg");
@@ -70,6 +84,10 @@
             <% if ("saved".equals(successParam)) { %>
                 <div class="cf-alert cf-alert-success">
                     <span>✓</span> <strong>Thành công!</strong> Đã lưu cấu hình sơ đồ ghế và tự động đồng bộ sức chứa phòng chiếu thành công.
+                </div>
+            <% } else if ("maintenance_toggled".equals(successParam)) { %>
+                <div class="cf-alert cf-alert-success">
+                    <span>✓</span> <strong>Thành công!</strong> Đã cập nhật trạng thái bảo trì ghế và tự động đồng bộ lại sức chứa khả dụng của phòng chiếu.
                 </div>
             <% } else if ("cannot_regenerate".equals(errorParam)) { %>
                 <!-- Alt 1: Chặn khởi tạo lại lưới khi phòng đã có lịch chiếu mở bán vé -->
@@ -262,6 +280,198 @@
                     </button>
                 </div>
             </form>
+
+            <!-- ============================================================== -->
+            <!-- PHẦN 2: BẢNG TRA CỨU GHẾ NGỒI & QUẢN LÝ BẢO TRÌ (PAGINATION) -->
+            <!-- ============================================================== -->
+            <div class="cf-seats-table-card" style="margin-top: 36px;">
+                <div class="cf-section-header">
+                    <div>
+                        <h2 style="font-size: 18px; font-weight: 700; color: #0F172A; margin: 0 0 4px 0;">
+                            📋 Danh sách chi tiết ghế ngồi &amp; Quản lý bảo trì
+                        </h2>
+                        <p style="font-size: 13px; color: #64748B; margin: 0;">
+                            Tra cứu từng vị trí ghế theo mã hoặc hàng, lọc phân hạng Standard/VIP/Sweetbox và thao tác bật/tắt bảo trì nhanh (Alt 2).
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Thanh tìm kiếm & bộ lọc ghế -->
+                <div class="cf-filter-card" style="margin-top: 16px;">
+                    <form class="cf-filter-form" method="GET" action="${pageContext.request.contextPath}/manager/seat-config">
+                        <input type="hidden" name="hallId" value="<%= hall != null ? hall.getHallId() : 0 %>">
+
+                        <div class="cf-search-box">
+                            <span class="icon">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                            </span>
+                            <input type="text" name="search" placeholder="Tìm theo hàng hoặc số ghế (VD: A, 1, A1)..." value="<%= currentSearch != null ? currentSearch : "" %>">
+                        </div>
+
+                        <select name="seatType" class="cf-select">
+                            <option value="ALL" <%= "ALL".equalsIgnoreCase(currentSeatType) ? "selected" : "" %>>Tất cả phân hạng</option>
+                            <option value="STANDARD" <%= "STANDARD".equalsIgnoreCase(currentSeatType) ? "selected" : "" %>>Ghế Standard (Thường)</option>
+                            <option value="VIP" <%= "VIP".equalsIgnoreCase(currentSeatType) ? "selected" : "" %>>Ghế VIP</option>
+                            <option value="SWEETBOX" <%= "SWEETBOX".equalsIgnoreCase(currentSeatType) ? "selected" : "" %>>Ghế Sweetbox (Đôi)</option>
+                        </select>
+
+                        <select name="seatStatus" class="cf-select">
+                            <option value="ALL" <%= "ALL".equalsIgnoreCase(currentSeatStatus) ? "selected" : "" %>>Tất cả trạng thái</option>
+                            <option value="AVAILABLE" <%= "AVAILABLE".equalsIgnoreCase(currentSeatStatus) ? "selected" : "" %>>Khả dụng (Active)</option>
+                            <option value="MAINTENANCE" <%= "MAINTENANCE".equalsIgnoreCase(currentSeatStatus) ? "selected" : "" %>>Đang bảo trì (Maintenance)</option>
+                        </select>
+
+                        <button type="submit" class="cf-btn cf-btn-primary">Lọc</button>
+                        <% if ((currentSearch != null && !currentSearch.isEmpty()) || (currentSeatType != null && !"ALL".equalsIgnoreCase(currentSeatType)) || (currentSeatStatus != null && !"ALL".equalsIgnoreCase(currentSeatStatus))) { %>
+                            <a href="${pageContext.request.contextPath}/manager/seat-config?hallId=<%= hall != null ? hall.getHallId() : 0 %>" class="cf-btn cf-btn-secondary">Xóa lọc</a>
+                        <% } %>
+                    </form>
+                </div>
+
+                <!-- Bảng danh sách ghế -->
+                <div class="cf-table-container">
+                    <table class="cf-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 80px;">Mã ghế</th>
+                                <th style="min-width: 140px;">Vị trí ghế</th>
+                                <th style="min-width: 160px;">Phân hạng ghế</th>
+                                <th style="min-width: 160px;">Trạng thái hoạt động</th>
+                                <th style="min-width: 160px; text-align: right;">Thao tác bảo trì</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <%
+                                if (pagedSeats != null && !pagedSeats.isEmpty()) {
+                                    for (SeatConfigDTO s : pagedSeats) {
+                                        boolean isAvailable = s.isAvailable();
+                                        boolean isMaint = s.isMaintenance();
+                                        String type = s.getSeatType() != null ? s.getSeatType().toUpperCase() : "STANDARD";
+                            %>
+                            <tr>
+                                <td><strong>#<%= s.getSeatId() %></strong></td>
+                                <td>
+                                    <div style="display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 32px; background: #0F172A; color: #FFFFFF; font-weight: 700; border-radius: 6px; font-size: 13px;">
+                                        <%= s.getLabel() %>
+                                    </div>
+                                    <span style="font-size: 13px; color: #64748B; margin-left: 8px;">(Hàng <%= s.getSeatRow() %>, Ghế <%= s.getSeatNumber() %>)</span>
+                                </td>
+                                <td>
+                                    <% if ("VIP".equals(type)) { %>
+                                        <span class="cf-badge" style="background: #FEF3C7; color: #B45309; border: 1px solid #F59E0B;">★ VIP</span>
+                                    <% } else if ("SWEETBOX".equals(type)) { %>
+                                        <span class="cf-badge" style="background: #FCE7F3; color: #BE185D; border: 1px solid #EC4899;">♥ Sweetbox</span>
+                                    <% } else { %>
+                                        <span class="cf-badge" style="background: #F1F5F9; color: #334155; border: 1px solid #CBD5E1;">Standard</span>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <% if (isAvailable) { %>
+                                        <span class="cf-badge cf-badge-active">● Khả dụng (Active)</span>
+                                    <% } else if (isMaint) { %>
+                                        <span class="cf-badge" style="background: #FEE2E2; color: #DC2626; border: 1px solid #EF4444;">🔧 Đang bảo trì (Disabled)</span>
+                                    <% } else { %>
+                                        <span class="cf-badge cf-badge-inactive">● <%= s.getStatus() %></span>
+                                    <% } %>
+                                </td>
+                                <td style="text-align: right;">
+                                    <form method="POST" action="${pageContext.request.contextPath}/manager/seat-config" style="display: inline-block; margin: 0;"
+                                          onsubmit="return confirm('<%= isAvailable ? ("Khóa bảo trì ghế " + s.getLabel() + "? Ghế này sẽ không thể đặt vé cho đến khi mở lại.") : ("Mở bảo trì lại ghế " + s.getLabel() + "?") %>');">
+                                        <input type="hidden" name="action" value="toggleMaintenance">
+                                        <input type="hidden" name="hallId" value="<%= hall != null ? hall.getHallId() : 0 %>">
+                                        <input type="hidden" name="seatId" value="<%= s.getSeatId() %>">
+                                        <input type="hidden" name="search" value="<%= currentSearch != null ? currentSearch : "" %>">
+                                        <input type="hidden" name="seatType" value="<%= currentSeatType != null ? currentSeatType : "ALL" %>">
+                                        <input type="hidden" name="seatStatus" value="<%= currentSeatStatus != null ? currentSeatStatus : "ALL" %>">
+                                        <input type="hidden" name="page" value="<%= currentPage %>">
+
+                                        <% if (isAvailable) { %>
+                                            <button type="submit" class="cf-btn cf-btn-danger cf-btn-sm" title="Khóa bảo trì vị trí ghế này">
+                                                🔧 Khóa bảo trì
+                                            </button>
+                                        <% } else { %>
+                                            <button type="submit" class="cf-btn cf-btn-primary cf-btn-sm" style="background: #16A34A; border-color: #16A34A;" title="Mở hoạt động lại vị trí ghế này">
+                                                ✓ Mở hoạt động
+                                            </button>
+                                        <% } %>
+                                    </form>
+                                </td>
+                            </tr>
+                            <%
+                                    }
+                                } else {
+                            %>
+                            <tr>
+                                <td colspan="5" style="text-align: center; padding: 40px; color: #64748B;">
+                                    Không tìm thấy ghế nào phù hợp với điều kiện tìm kiếm / lọc.
+                                </td>
+                            </tr>
+                            <% } %>
+                        </tbody>
+                    </table>
+
+                    <% if (totalFilteredSeats != null && totalFilteredSeats > 0) { 
+                        int startItem = (currentPage - 1) * pageSize + 1;
+                        int endItem = Math.min(currentPage * pageSize, totalFilteredSeats);
+
+                        String baseParams = "&hallId=" + (hall != null ? hall.getHallId() : 0);
+                        if (currentSearch != null && !currentSearch.trim().isEmpty()) {
+                            baseParams += "&search=" + java.net.URLEncoder.encode(currentSearch.trim(), "UTF-8");
+                        }
+                        if (currentSeatType != null && !currentSeatType.trim().isEmpty()) {
+                            baseParams += "&seatType=" + java.net.URLEncoder.encode(currentSeatType.trim(), "UTF-8");
+                        }
+                        if (currentSeatStatus != null && !currentSeatStatus.trim().isEmpty()) {
+                            baseParams += "&seatStatus=" + java.net.URLEncoder.encode(currentSeatStatus.trim(), "UTF-8");
+                        }
+                    %>
+                    <!-- THANH PHÂN TRANG (PAGINATION) -->
+                    <div class="cf-pagination-bar">
+                        <div class="cf-pagination-info">
+                            Hiển thị <strong><%= startItem %> - <%= endItem %></strong> trên tổng số <strong><%= totalFilteredSeats %></strong> vị trí ghế
+                        </div>
+                        <% if (totalPages > 1) { %>
+                        <div class="cf-pagination-controls">
+                            <!-- Nút trang trước (Previous) -->
+                            <% if (currentPage > 1) { %>
+                                <a href="${pageContext.request.contextPath}/manager/seat-config?page=<%= currentPage - 1 %><%= baseParams %>" 
+                                   class="cf-page-btn" title="Trang trước">«</a>
+                            <% } else { %>
+                                <span class="cf-page-btn disabled" title="Trang trước">«</span>
+                            <% } %>
+
+                            <!-- Danh sách các số trang -->
+                            <% for (int i = 1; i <= totalPages; i++) { 
+                                if (i == 1 || i == totalPages || Math.abs(i - currentPage) <= 2) {
+                            %>
+                                <% if (i == currentPage) { %>
+                                    <span class="cf-page-btn active"><%= i %></span>
+                                <% } else { %>
+                                    <a href="${pageContext.request.contextPath}/manager/seat-config?page=<%= i %><%= baseParams %>" 
+                                       class="cf-page-btn"><%= i %></a>
+                                <% } %>
+                            <% 
+                                } else if (i == currentPage - 3 || i == currentPage + 3) { 
+                            %>
+                                <span class="cf-page-ellipsis">...</span>
+                            <% 
+                                }
+                            } 
+                            %>
+
+                            <!-- Nút trang sau (Next) -->
+                            <% if (currentPage < totalPages) { %>
+                                <a href="${pageContext.request.contextPath}/manager/seat-config?page=<%= currentPage + 1 %><%= baseParams %>" 
+                                   class="cf-page-btn" title="Trang sau">»</a>
+                            <% } else { %>
+                                <span class="cf-page-btn disabled" title="Trang sau">»</span>
+                            <% } %>
+                        </div>
+                        <% } %>
+                    </div>
+                    <% } %>
+                </div>
+            </div>
         </main>
     </div>
 </div>
