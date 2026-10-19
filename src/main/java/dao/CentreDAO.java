@@ -109,6 +109,134 @@ public class CentreDAO {
     }
 
     /**
+     * Đếm tổng số Cụm rạp phù hợp với từ khóa tìm kiếm và trạng thái.
+     * Dùng để tính toán tổng số trang cho phân trang (Pagination).
+     *
+     * @param search từ khóa tìm kiếm (tên rạp, địa chỉ, hotline, thành phố)
+     * @param status bộ lọc trạng thái ('ALL', 'ACTIVE', 'INACTIVE')
+     * @return tổng số lượng Cụm rạp tìm thấy
+     */
+    public int countCentres(String search, String status) {
+        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM Centres c WHERE 1=1 ");
+        List<Object> params = new ArrayList<>();
+
+        // Điều kiện tìm kiếm
+        if (search != null && !search.trim().isEmpty()) {
+            sql.append("AND (LOWER(c.CentreName) LIKE ? OR LOWER(c.Address) LIKE ? OR c.Phone LIKE ? OR LOWER(c.City) LIKE ?) ");
+            String keyword = "%" + search.trim().toLowerCase() + "%";
+            params.add(keyword);
+            params.add(keyword);
+            params.add(keyword);
+            params.add(keyword);
+        }
+
+        // Điều kiện trạng thái
+        if (status != null && !status.trim().isEmpty() && !"ALL".equalsIgnoreCase(status)) {
+            sql.append("AND UPPER(c.Status) = ? ");
+            params.add(status.trim().toUpperCase());
+        }
+
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
+            }
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    /**
+     * Lấy danh sách Cụm rạp theo từng trang (Pagination).
+     * Sử dụng câu lệnh OFFSET ... ROWS FETCH NEXT ... ROWS ONLY chuẩn của SQL Server.
+     *
+     * @param search từ khóa tìm kiếm
+     * @param status bộ lọc trạng thái ('ALL', 'ACTIVE', 'INACTIVE')
+     * @param page số trang hiện tại (bắt đầu từ 1)
+     * @param pageSize số bản ghi hiển thị trên mỗi trang
+     * @return danh sách các Centre trên trang hiện tại
+     */
+    public List<Centre> getCentresPaged(String search, String status, int page, int pageSize) {
+        if (page < 1) {
+            page = 1;
+        }
+        if (pageSize < 1) {
+            pageSize = 6;
+        }
+        int offset = (page - 1) * pageSize;
+
+        List<Centre> list = new ArrayList<>();
+        StringBuilder sql = new StringBuilder(
+            "SELECT c.CentreID, c.CentreName, c.Address, c.City, c.Phone, c.Status, "
+            + "COUNT(DISTINCT h.HallID) AS HallCount, "
+            + "COALESCE(SUM(h.Capacity), 0) AS SeatCount "
+            + "FROM Centres c "
+            + "LEFT JOIN Halls h ON h.CentreID = c.CentreID "
+            + "WHERE 1=1 "
+        );
+
+        List<Object> params = new ArrayList<>();
+
+        // Điều kiện tìm kiếm
+        if (search != null && !search.trim().isEmpty()) {
+            sql.append("AND (LOWER(c.CentreName) LIKE ? OR LOWER(c.Address) LIKE ? OR c.Phone LIKE ? OR LOWER(c.City) LIKE ?) ");
+            String keyword = "%" + search.trim().toLowerCase() + "%";
+            params.add(keyword);
+            params.add(keyword);
+            params.add(keyword);
+            params.add(keyword);
+        }
+
+        // Điều kiện trạng thái
+        if (status != null && !status.trim().isEmpty() && !"ALL".equalsIgnoreCase(status)) {
+            sql.append("AND UPPER(c.Status) = ? ");
+            params.add(status.trim().toUpperCase());
+        }
+
+        sql.append("GROUP BY c.CentreID, c.CentreName, c.Address, c.City, c.Phone, c.Status ");
+        sql.append("ORDER BY c.CentreID ASC ");
+        sql.append("OFFSET ? ROWS FETCH NEXT ? ROWS ONLY");
+
+        params.add(offset);
+        params.add(pageSize);
+
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
+            }
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Centre centre = new Centre();
+                    centre.setCentreId(rs.getInt("CentreID"));
+                    centre.setCentreName(rs.getString("CentreName"));
+                    centre.setAddress(rs.getString("Address"));
+                    centre.setCity(rs.getString("City"));
+                    centre.setPhone(rs.getString("Phone"));
+                    centre.setStatus(rs.getString("Status"));
+                    centre.setHallCount(rs.getInt("HallCount"));
+                    centre.setSeatCount(rs.getInt("SeatCount"));
+                    list.add(centre);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return list;
+    }
+
+    /**
      * Lấy thông tin một Cụm rạp theo ID.
      *
      * @param centreId mã định danh rạp

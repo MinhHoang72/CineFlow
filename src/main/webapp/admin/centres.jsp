@@ -20,6 +20,15 @@
     Integer inactiveCentres = (Integer) request.getAttribute("inactiveCentres");
     Integer totalHalls = (Integer) request.getAttribute("totalHalls");
 
+    Integer currentPage = (Integer) request.getAttribute("currentPage");
+    if (currentPage == null) currentPage = 1;
+    Integer pageSize = (Integer) request.getAttribute("pageSize");
+    if (pageSize == null) pageSize = 6;
+    Integer totalPages = (Integer) request.getAttribute("totalPages");
+    if (totalPages == null) totalPages = 1;
+    Integer totalFilteredCentres = (Integer) request.getAttribute("totalFilteredCentres");
+    if (totalFilteredCentres == null) totalFilteredCentres = 0;
+
     String currentSearch = (String) request.getAttribute("currentSearch");
     String currentStatus = (String) request.getAttribute("currentStatus");
 
@@ -214,6 +223,7 @@
                                         <input type="hidden" name="centreId" value="<%= c.getCentreId() %>">
                                         <input type="hidden" name="search" value="<%= currentSearch != null ? currentSearch : "" %>">
                                         <input type="hidden" name="status" value="<%= currentStatus != null ? currentStatus : "ALL" %>">
+                                        <input type="hidden" name="page" value="<%= currentPage %>">
 
                                         <% if (isActive) { %>
                                             <button type="submit" class="cf-btn cf-btn-danger cf-btn-sm" title="Tạm ngưng hoạt động cụm rạp">
@@ -240,6 +250,64 @@
                         <% } %>
                     </tbody>
                 </table>
+
+                <% if (totalFilteredCentres != null && totalFilteredCentres > 0) { 
+                    int startItem = (currentPage - 1) * pageSize + 1;
+                    int endItem = Math.min(currentPage * pageSize, totalFilteredCentres);
+
+                    String baseParams = "";
+                    if (currentSearch != null && !currentSearch.trim().isEmpty()) {
+                        baseParams += "&search=" + java.net.URLEncoder.encode(currentSearch.trim(), "UTF-8");
+                    }
+                    if (currentStatus != null && !currentStatus.trim().isEmpty()) {
+                        baseParams += "&status=" + java.net.URLEncoder.encode(currentStatus.trim(), "UTF-8");
+                    }
+                %>
+                <!-- THANH PHÂN TRANG (PAGINATION) -->
+                <div class="cf-pagination-bar">
+                    <div class="cf-pagination-info">
+                        Hiển thị <strong><%= startItem %> - <%= endItem %></strong> trên tổng số <strong><%= totalFilteredCentres %></strong> cụm rạp
+                    </div>
+                    <% if (totalPages > 1) { %>
+                    <div class="cf-pagination-controls">
+                        <!-- Nút trang trước (Previous) -->
+                        <% if (currentPage > 1) { %>
+                            <a href="${pageContext.request.contextPath}/admin/centres?page=<%= currentPage - 1 %><%= baseParams %>" 
+                               class="cf-page-btn" title="Trang trước">«</a>
+                        <% } else { %>
+                            <span class="cf-page-btn disabled" title="Trang trước">«</span>
+                        <% } %>
+
+                        <!-- Danh sách các số trang -->
+                        <% for (int i = 1; i <= totalPages; i++) { 
+                            if (i == 1 || i == totalPages || Math.abs(i - currentPage) <= 2) {
+                        %>
+                            <% if (i == currentPage) { %>
+                                <span class="cf-page-btn active"><%= i %></span>
+                            <% } else { %>
+                                <a href="${pageContext.request.contextPath}/admin/centres?page=<%= i %><%= baseParams %>" 
+                                   class="cf-page-btn"><%= i %></a>
+                            <% } %>
+                        <% 
+                            } else if (i == currentPage - 3 || i == currentPage + 3) { 
+                        %>
+                            <span class="cf-page-ellipsis">...</span>
+                        <% 
+                            }
+                        } 
+                        %>
+
+                        <!-- Nút trang sau (Next) -->
+                        <% if (currentPage < totalPages) { %>
+                            <a href="${pageContext.request.contextPath}/admin/centres?page=<%= currentPage + 1 %><%= baseParams %>" 
+                               class="cf-page-btn" title="Trang sau">»</a>
+                        <% } else { %>
+                            <span class="cf-page-btn disabled" title="Trang sau">»</span>
+                        <% } %>
+                    </div>
+                    <% } %>
+                </div>
+                <% } %>
             </div>
         </main>
     </div>
@@ -258,6 +326,7 @@
             <input type="hidden" name="action" value="create">
             <input type="hidden" name="search" value="<%= currentSearch != null ? currentSearch : "" %>">
             <input type="hidden" name="status" value="<%= currentStatus != null ? currentStatus : "ALL" %>">
+            <input type="hidden" name="page" value="1">
 
             <div class="cf-modal-body">
                 <div class="cf-form-group">
@@ -304,6 +373,7 @@
             <input type="hidden" name="centreId" id="editCentreId">
             <input type="hidden" name="search" value="<%= currentSearch != null ? currentSearch : "" %>">
             <input type="hidden" name="status" value="<%= currentStatus != null ? currentStatus : "ALL" %>">
+            <input type="hidden" name="page" value="<%= currentPage %>">
 
             <div class="cf-modal-body">
                 <div class="cf-form-group">

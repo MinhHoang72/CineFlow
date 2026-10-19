@@ -92,24 +92,53 @@ public class CentreManagementServlet extends HttpServlet {
             return;
         }
 
-        // 4. Đọc các tham số tìm kiếm và bộ lọc trạng thái
+        // 4. Đọc các tham số tìm kiếm, bộ lọc trạng thái và phân trang
         String search = request.getParameter("search");
         String status = request.getParameter("status");
         if (status == null || status.trim().isEmpty()) {
             status = "ALL";
         }
 
-        // 5. Truy vấn danh sách Centre từ CSDL
-        List<Centre> centres = centreDAO.getAllCentres(search, status);
+        // 5. Đọc tham số phân trang (mặc định trang 1, 6 cụm rạp / trang)
+        int page = 1;
+        int pageSize = 6;
+        try {
+            String pageParam = request.getParameter("page");
+            if (pageParam != null && !pageParam.trim().isEmpty()) {
+                page = Integer.parseInt(pageParam.trim());
+            }
+        } catch (NumberFormatException e) {
+            page = 1;
+        }
+        if (page < 1) {
+            page = 1;
+        }
 
-        // 6. Thống kê số lượng
+        // 6. Tính toán tổng số kết quả lọc và số trang
+        int totalFilteredCentres = centreDAO.countCentres(search, status);
+        int totalPages = (int) Math.ceil((double) totalFilteredCentres / pageSize);
+        if (totalPages < 1) {
+            totalPages = 1;
+        }
+        if (page > totalPages) {
+            page = totalPages;
+        }
+
+        // 7. Truy vấn danh sách Centre trang hiện tại từ CSDL
+        List<Centre> centres = centreDAO.getCentresPaged(search, status, page, pageSize);
+
+        // 8. Thống kê số lượng tổng quan trên thẻ KPI (không bị ảnh hưởng bởi bộ lọc/phân trang)
         int totalCentres = centreDAO.countCentresByStatus("ALL");
         int activeCentres = centreDAO.countCentresByStatus("ACTIVE");
         int inactiveCentres = centreDAO.countCentresByStatus("INACTIVE");
         int totalHalls = centreDAO.countTotalHalls();
 
-        // 7. Gán dữ liệu vào request attributes
+        // 9. Gán dữ liệu vào request attributes
         request.setAttribute("centres", centres);
+        request.setAttribute("currentPage", page);
+        request.setAttribute("pageSize", pageSize);
+        request.setAttribute("totalPages", totalPages);
+        request.setAttribute("totalFilteredCentres", totalFilteredCentres);
         request.setAttribute("totalCentres", totalCentres);
         request.setAttribute("activeCentres", activeCentres);
         request.setAttribute("inactiveCentres", inactiveCentres);
@@ -119,7 +148,7 @@ public class CentreManagementServlet extends HttpServlet {
         request.setAttribute("activeNav", "centres");
         request.setAttribute("pageTitle", "Quản lý Cụm rạp");
 
-        // 8. Chuyển tiếp tới giao diện admin/centres.jsp
+        // 10. Chuyển tiếp tới giao diện admin/centres.jsp
         request.getRequestDispatcher("/admin/centres.jsp").forward(request, response);
     }
 
@@ -143,10 +172,11 @@ public class CentreManagementServlet extends HttpServlet {
             return;
         }
 
-        // 3. Đọc hành động cần thực thi và lưu lại tham số lọc tìm kiếm để chuyển hướng tiện lợi
+        // 3. Đọc hành động cần thực thi và lưu lại tham số lọc tìm kiếm, số trang để chuyển hướng tiện lợi
         String action = request.getParameter("action");
         String search = request.getParameter("search");
         String status = request.getParameter("status");
+        String pageParam = request.getParameter("page");
 
         StringBuilder redirectUrl = new StringBuilder(request.getContextPath() + "/admin/centres?");
         if (search != null && !search.trim().isEmpty()) {
@@ -154,6 +184,9 @@ public class CentreManagementServlet extends HttpServlet {
         }
         if (status != null && !status.trim().isEmpty()) {
             redirectUrl.append("status=").append(URLEncoder.encode(status.trim(), StandardCharsets.UTF_8)).append("&");
+        }
+        if (pageParam != null && !pageParam.trim().isEmpty()) {
+            redirectUrl.append("page=").append(URLEncoder.encode(pageParam.trim(), StandardCharsets.UTF_8)).append("&");
         }
 
         // ==============================================================
