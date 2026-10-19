@@ -20,6 +20,13 @@
     </nav>
 
     <% if (isManagerOrAdmin) { %>
+    <div class="cf-sidebar-section">PHÒNG CHIẾU</div>
+    <nav class="cf-sidebar-nav">
+        <a class="<%= cfUri.contains("/halls") ? "active" : "" %>" href="<%= cfPath %>/manager/halls">
+            <span class="icon">🎬</span>Quản lý phòng chiếu
+        </a>
+    </nav>
+
     <div class="cf-sidebar-section">NHÂN SỰ</div>
     <nav class="cf-sidebar-nav">
         <a class="<%= cfUri.contains("/staff") ? "active" : "" %>" href="<%= cfPath %>/staff">

@@ -4,12 +4,13 @@ import java.sql.Timestamp;
 
 /**
  * Đại diện cho một phòng chiếu (Hall) trực thuộc cụm rạp (Centre).
- * Đáp ứng Business Rule BR-HS-01: Một Centre quản lý danh sách các Hall trực thuộc.
+ * Đáp ứng Business Rule BR-HS-01: Mỗi phòng chiếu phải thuộc về duy nhất một cụm rạp (Centre).
  */
 public class Hall {
 
     private int hallId;
     private int centreId;
+    private String centreName;
     private String hallName;
     private String hallType; // '2D', '3D'
     private int capacity;
@@ -28,6 +29,24 @@ public class Hall {
         this.status = status;
     }
 
+    /**
+     * Kiểm tra phòng chiếu có đang ở trạng thái hoạt động (Active) hay không.
+     * Trong database, trạng thái hoạt động là 'AVAILABLE' (hoặc 'ACTIVE').
+     */
+    public boolean isActive() {
+        return "AVAILABLE".equalsIgnoreCase(status) || "ACTIVE".equalsIgnoreCase(status);
+    }
+
+    /**
+     * Trả về tên hiển thị chuẩn cho định dạng phòng chiếu (Standard 2D / 3D).
+     */
+    public String getFormattedType() {
+        if ("3D".equalsIgnoreCase(hallType)) {
+            return "3D";
+        }
+        return "Standard 2D";
+    }
+
     public int getHallId() {
         return hallId;
     }
@@ -42,6 +61,14 @@ public class Hall {
 
     public void setCentreId(int centreId) {
         this.centreId = centreId;
+    }
+
+    public String getCentreName() {
+        return centreName;
+    }
+
+    public void setCentreName(String centreName) {
+        this.centreName = centreName;
     }
 
     public String getHallName() {
