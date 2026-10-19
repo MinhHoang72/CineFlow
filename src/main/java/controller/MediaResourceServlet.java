@@ -20,7 +20,7 @@ import java.util.Set;
  */
 public class MediaResourceServlet extends HttpServlet {
 
-    private static final Set<String> CATEGORIES = Set.of("avatars", "movies");
+    private static final Set<String> CATEGORIES = Set.of("avatars", "movies", "poster", "video_trailer");
     private static final Set<String> EXTENSIONS = Set.of("jpg", "jpeg", "png", "webp", "mp4", "webm", "ogg");
 
     /**
@@ -62,6 +62,20 @@ public class MediaResourceServlet extends HttpServlet {
         // 4. Xác định đường dẫn file vật lý trên máy chủ và kiểm tra file có tồn tại hay không
         Path root = MediaStorage.resourcesRoot(getServletContext()).toAbsolutePath().normalize();
         Path file = root.resolve("uploads").resolve(segments[0]).resolve(filename).normalize();
+
+        // Hỗ trợ tương thích ngược: nếu yêu cầu đến movies mà file đã chuyển sang poster hoặc video_trailer
+        if (!Files.isRegularFile(file) && "movies".equals(segments[0])) {
+            Path posterFile = root.resolve("uploads").resolve("poster").resolve(filename).normalize();
+            if (Files.isRegularFile(posterFile)) {
+                file = posterFile;
+            } else {
+                Path trailerFile = root.resolve("uploads").resolve("video_trailer").resolve(filename).normalize();
+                if (Files.isRegularFile(trailerFile)) {
+                    file = trailerFile;
+                }
+            }
+        }
+
         if (!file.startsWith(root) || !Files.isRegularFile(file)) {
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;
