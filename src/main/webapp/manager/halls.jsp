@@ -46,7 +46,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản lý Phòng chiếu (Cinema Hall Management) | CineFlow</title>
+    <title>Quản lý Phòng chiếu | CineFlow</title>
+
+    <!-- Phông chữ chuẩn hệ thống CineFlow -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
 
     <!-- CSS chung của hệ thống -->
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/reset.css">
@@ -73,8 +78,8 @@
             <!-- Header trang -->
             <div class="cf-page-header">
                 <div>
-                    <h1>Quản lý Phòng chiếu (Cinema Hall Management)</h1>
-                    <p>UC-FE-03.2: Quản lý danh sách phòng chiếu, định dạng kỹ thuật 2D/3D và sức chứa thiết kế trực thuộc cụm rạp</p>
+                    <h1>Quản lý Phòng chiếu</h1>
+                    <p>Danh sách phòng chiếu, định dạng kỹ thuật 2D/3D và sức chứa thiết kế trực thuộc cụm rạp</p>
                 </div>
                 <% if (Boolean.TRUE.equals(noCentreAssigned)) { %>
                     <!-- Không hiển thị nút thêm khi chưa có rạp -->
@@ -86,7 +91,7 @@
                 <% } %>
             </div>
 
-            <!-- THÔNG BÁO THEO BẢNG ĐẶC TẢ UC-FE-03.2 -->
+            <!-- Thông báo kết quả thao tác -->
             <% if ("created".equals(successParam)) { %>
                 <div class="cf-alert cf-alert-success">
                     <span>✓</span> <strong>Thành công!</strong> Thêm phòng chiếu mới thành công.
@@ -269,10 +274,10 @@
                                             💺 Cấu hình ghế
                                         </a>
 
-                                        <!-- Nút Edit (Trường hợp B) -->
+                                        <!-- Nút Sửa -->
                                         <button type="button" class="cf-btn cf-btn-secondary cf-btn-sm"
                                                 onclick="openEditHallModal(<%= h.getHallId() %>, '<%= h.getHallName().replace("'", "\\'") %>', '<%= h.getHallType() %>', <%= h.getCapacity() %>, '<%= isActive ? "AVAILABLE" : "INACTIVE" %>')">
-                                            Edit
+                                            Sửa
                                         </button>
 
                                         <!-- Nút Toggle Status (Bật/Tắt Active <-> Inactive) -->
@@ -378,12 +383,12 @@
 </div>
 
 <!-- ============================================================== -->
-<!-- MODAL A: THÊM MỚI PHÒNG CHIẾU (ADD HALL) -->
+<!-- MODAL A: THÊM MỚI PHÒNG CHIẾU -->
 <!-- ============================================================== -->
 <div class="cf-modal-backdrop" id="createHallModal">
     <div class="cf-modal">
         <div class="cf-modal-header">
-            <h3>Add New Hall (Thêm phòng chiếu mới)</h3>
+            <h3>Thêm phòng chiếu mới</h3>
             <button type="button" class="cf-modal-close" onclick="closeCreateHallModal()">&times;</button>
         </div>
         <form method="POST" action="${pageContext.request.contextPath}/manager/halls">
@@ -401,7 +406,7 @@
                 </div>
 
                 <div class="cf-form-group">
-                    <label>Định dạng kỹ thuật (Format) *</label>
+                    <label>Định dạng kỹ thuật *</label>
                     <select name="hallType" class="cf-select">
                         <option value="2D" selected>Standard 2D</option>
                         <option value="3D">3D</option>
@@ -416,26 +421,26 @@
 
                 <div class="cf-form-group">
                     <label>Trạng thái khởi tạo</label>
-                    <input type="text" value="Active (Đang hoạt động)" disabled style="background: #E2E8F0; color: #475569; font-weight: 600;">
+                    <input type="text" value="Đang hoạt động" disabled style="background: #E2E8F0; color: #475569; font-weight: 600;">
                     <input type="hidden" name="status" value="AVAILABLE">
                 </div>
             </div>
 
             <div class="cf-modal-footer">
                 <button type="button" class="cf-btn cf-btn-secondary" onclick="closeCreateHallModal()">Hủy</button>
-                <button type="submit" class="cf-btn cf-btn-primary">Save (Lưu phòng chiếu)</button>
+                <button type="submit" class="cf-btn cf-btn-primary">Lưu phòng chiếu</button>
             </div>
         </form>
     </div>
 </div>
 
 <!-- ============================================================== -->
-<!-- MODAL B: CHỈNH SỬA PHÒNG CHIẾU (EDIT HALL) -->
+<!-- MODAL B: CHỈNH SỬA PHÒNG CHIẾU -->
 <!-- ============================================================== -->
 <div class="cf-modal-backdrop" id="editHallModal">
     <div class="cf-modal">
         <div class="cf-modal-header">
-            <h3>Edit Hall (Chỉnh sửa phòng chiếu)</h3>
+            <h3>Chỉnh sửa thông tin phòng chiếu</h3>
             <button type="button" class="cf-modal-close" onclick="closeEditHallModal()">&times;</button>
         </div>
         <form method="POST" action="${pageContext.request.contextPath}/manager/halls">
@@ -454,7 +459,7 @@
                 </div>
 
                 <div class="cf-form-group">
-                    <label>Định dạng kỹ thuật (Format) *</label>
+                    <label>Định dạng kỹ thuật *</label>
                     <select name="hallType" id="editHallType" class="cf-select">
                         <option value="2D">Standard 2D</option>
                         <option value="3D">3D</option>
@@ -469,16 +474,16 @@
                 <div class="cf-form-group">
                     <label>Trạng thái hoạt động *</label>
                     <select name="status" id="editStatus" class="cf-select">
-                        <option value="AVAILABLE">Active (Đang hoạt động)</option>
-                        <option value="INACTIVE">Inactive (Tạm ngưng)</option>
+                        <option value="AVAILABLE">Đang hoạt động</option>
+                        <option value="INACTIVE">Tạm ngưng hoạt động</option>
                     </select>
-                    <span class="cf-form-hint">Lưu ý: Không thể chuyển Inactive nếu phòng đang có suất chiếu tương lai đã bán vé.</span>
+                    <span class="cf-form-hint">Lưu ý: Không thể chuyển sang tạm ngưng nếu phòng đang có suất chiếu tương lai đã bán vé.</span>
                 </div>
             </div>
 
             <div class="cf-modal-footer">
                 <button type="button" class="cf-btn cf-btn-secondary" onclick="closeEditHallModal()">Hủy</button>
-                <button type="submit" class="cf-btn cf-btn-primary">Update (Cập nhật)</button>
+                <button type="submit" class="cf-btn cf-btn-primary">Cập nhật thay đổi</button>
             </div>
         </form>
     </div>

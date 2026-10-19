@@ -46,6 +46,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cấu hình Sơ đồ ghế - <%= hall != null ? hall.getHallName() : "" %> | CineFlow</title>
 
+    <!-- Phông chữ chuẩn hệ thống CineFlow -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+
     <!-- CSS chung của hệ thống -->
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/reset.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/variables.css">
@@ -71,8 +76,8 @@
             <!-- Header trang -->
             <div class="cf-page-header">
                 <div>
-                    <h1>Cấu hình Sơ đồ &amp; Trạng thái ghế (Seat Configuration)</h1>
-                    <p>UC-FE-03.3: Khởi tạo lưới ma trận hàng/cột, phân hạng Standard, VIP, Sweetbox và khóa bảo trì vị trí ghế hỏng</p>
+                    <h1>Cấu hình Sơ đồ &amp; Trạng thái ghế</h1>
+                    <p>Khởi tạo lưới ma trận hàng/cột, phân hạng Standard, VIP, Sweetbox và khóa bảo trì vị trí ghế hỏng</p>
                 </div>
                 <a href="${pageContext.request.contextPath}/manager/halls<%= isAdmin && centre != null ? "?centreId=" + centre.getCentreId() : "" %>"
                    class="cf-btn cf-btn-secondary" style="display: flex; align-items: center; gap: 6px;">
@@ -80,7 +85,7 @@
                 </a>
             </div>
 
-            <!-- THÔNG BÁO THEO ĐẶC TẢ UC-FE-03.3 -->
+            <!-- Thông báo trạng thái -->
             <% if ("saved".equals(successParam)) { %>
                 <div class="cf-alert cf-alert-success">
                     <span>✓</span> <strong>Thành công!</strong> Đã lưu cấu hình sơ đồ ghế và tự động đồng bộ sức chứa phòng chiếu thành công.
@@ -90,12 +95,10 @@
                     <span>✓</span> <strong>Thành công!</strong> Đã cập nhật trạng thái bảo trì ghế và tự động đồng bộ lại sức chứa khả dụng của phòng chiếu.
                 </div>
             <% } else if ("cannot_regenerate".equals(errorParam)) { %>
-                <!-- Alt 1: Chặn khởi tạo lại lưới khi phòng đã có lịch chiếu mở bán vé -->
                 <div class="cf-alert cf-alert-danger">
-                    <span>⚠</span> <strong>Cảnh báo (Alt 1):</strong> Không thể tạo lại cấu trúc lưới ghế vì phòng chiếu đang có lịch chiếu đã mở bán vé. Bạn chỉ được phép khóa bảo trì từng ghế đơn lẻ.
+                    <span>⚠</span> <strong>Cảnh báo:</strong> Không thể tạo lại cấu trúc lưới ghế vì phòng chiếu đang có lịch chiếu đã mở bán vé. Bạn chỉ được phép khóa bảo trì từng ghế đơn lẻ.
                 </div>
             <% } else if ("booked_seat".equals(errorParam)) { %>
-                <!-- Alt 2: Chặn khóa bảo trì ghế đã có khách đặt trước -->
                 <div class="cf-alert cf-alert-danger">
                     <span>⚠</span> <strong><%= customMsg != null ? customMsg : "Không thể khóa bảo trì ghế đã có khách đặt vé trong suất chiếu tương lai!" %></strong>
                 </div>
@@ -133,10 +136,10 @@
 
             <!-- Khu vực điều khiển: Khởi tạo lưới & Palette công cụ -->
             <div class="cf-canvas-controls">
-                <!-- Panel 1: Khởi tạo lưới ban đầu (Trường hợp A) -->
+                <!-- Panel 1: Khởi tạo lưới ban đầu -->
                 <div class="cf-panel">
                     <h3>
-                        <span>📐</span> Khởi tạo lưới sơ đồ (Generate Layout Grid)
+                        <span>📐</span> Khởi tạo lưới sơ đồ
                     </h3>
                     <div class="cf-grid-form">
                         <div class="cf-form-inline">
@@ -148,12 +151,12 @@
                             <input type="number" id="gridColsInput" min="1" max="30" value="10" <%= hasBookedShowtimes ? "disabled" : "" %>>
                         </div>
                         <button type="button" class="cf-btn cf-btn-secondary" onclick="handleGenerateGridClick()" <%= hasBookedShowtimes ? "disabled style='opacity: 0.5; cursor: not-allowed;'" : "" %>>
-                            Generate Grid
+                            Tạo lưới sơ đồ
                         </button>
                     </div>
                     <% if (hasBookedShowtimes) { %>
                         <p style="font-size: 12px; color: #B45309; margin: 8px 0 0 0;">
-                            * Quy tắc Alt 1: Không được phép tạo lại lưới khi phòng đang có suất chiếu đã bán vé.
+                            * Lưu ý: Không được phép tạo lại lưới khi phòng đang có suất chiếu đã bán vé.
                         </p>
                     <% } else { %>
                         <p style="font-size: 12px; color: #64748B; margin: 8px 0 0 0;">
@@ -162,10 +165,10 @@
                     <% } %>
                 </div>
 
-                <!-- Panel 2: Thanh công cụ chọn hạng ghế & bảo trì (Trường hợp A & B) -->
+                <!-- Panel 2: Thanh công cụ chọn hạng ghế & bảo trì -->
                 <div class="cf-panel">
                     <h3>
-                        <span>🎨</span> Công cụ phân hạng &amp; Bảo trì (Tool Palette)
+                        <span>🎨</span> Công cụ phân hạng &amp; Bảo trì
                     </h3>
                     <div class="cf-tool-palette">
                         <button type="button" class="cf-tool-btn active" data-tool="STANDARD" onclick="selectTool('STANDARD', this)">
@@ -235,7 +238,7 @@
             <div class="cf-seat-canvas-wrapper">
                 <!-- Màn hình chiếu -->
                 <div class="cf-screen">
-                    <div class="cf-screen-label">MÀN HÌNH (SCREEN)</div>
+                    <div class="cf-screen-label">MÀN HÌNH CHIẾU</div>
                 </div>
 
                 <!-- Lưới ma trận ghế -->
@@ -276,7 +279,7 @@
                     </a>
 
                     <button type="button" class="cf-btn cf-btn-primary" onclick="submitSeatConfiguration()" style="padding: 10px 24px; font-size: 15px;">
-                        💾 Save Seat Configuration (Lưu cấu hình ghế)
+                        💾 Lưu cấu hình sơ đồ ghế
                     </button>
                 </div>
             </form>
@@ -291,7 +294,7 @@
                             📋 Danh sách chi tiết ghế ngồi &amp; Quản lý bảo trì
                         </h2>
                         <p style="font-size: 13px; color: #64748B; margin: 0;">
-                            Tra cứu từng vị trí ghế theo mã hoặc hàng, lọc phân hạng Standard/VIP/Sweetbox và thao tác bật/tắt bảo trì nhanh (Alt 2).
+                            Tra cứu từng vị trí ghế theo mã hoặc hàng, lọc phân hạng Standard/VIP/Sweetbox và thao tác bật/tắt bảo trì nhanh.
                         </p>
                     </div>
                 </div>
@@ -539,7 +542,7 @@
     // Xử lý khi nhấn nút Generate Grid
     function handleGenerateGridClick() {
         if (hasBookedShowtimes) {
-            alert("CẢNH BÁO (Alt 1): Không thể tạo lại cấu trúc lưới ghế vì phòng chiếu đang có lịch chiếu đã mở bán vé.");
+            alert("CẢNH BÁO: Không thể tạo lại cấu trúc lưới ghế vì phòng chiếu đang có lịch chiếu đã mở bán vé.");
             return;
         }
 
@@ -723,7 +726,7 @@
         });
 
         if (seatList.length === 0) {
-            alert("Sơ đồ chưa có ghế nào. Vui lòng bấm Generate Grid để tạo sơ đồ trước!");
+            alert("Sơ đồ chưa có ghế nào. Vui lòng bấm Tạo lưới sơ đồ trước!");
             return;
         }
 

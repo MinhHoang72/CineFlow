@@ -40,7 +40,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản lý Cụm rạp (Centre Operations) | CineFlow Admin</title>
+    <title>Quản lý Cụm rạp | CineFlow Admin</title>
+
+    <!-- Phông chữ chuẩn hệ thống CineFlow -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
 
     <!-- CSS chung của hệ thống -->
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/reset.css">
@@ -67,8 +72,8 @@
             <!-- Header trang -->
             <div class="cf-page-header">
                 <div>
-                    <h1>Quản lý Cụm rạp (Centre Operations)</h1>
-                    <p>Quản lý danh sách các cụm rạp, thông tin liên hệ và danh sách phòng chiếu trực thuộc (BR-HS-01)</p>
+                    <h1>Quản lý Cụm rạp</h1>
+                    <p>Danh sách các cụm rạp, thông tin liên hệ và trạng thái hoạt động trên toàn hệ thống</p>
                 </div>
                 <button type="button" class="cf-btn cf-btn-primary" onclick="openCreateCentreModal()" style="display: flex; align-items: center; gap: 8px;">
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
@@ -167,7 +172,7 @@
                             <th style="min-width: 180px;">Tên Cụm rạp</th>
                             <th style="min-width: 240px;">Địa chỉ & Thành phố</th>
                             <th style="min-width: 130px;">Hotline</th>
-                            <th style="min-width: 170px;">Phòng chiếu (BR-HS-01)</th>
+                            <th style="min-width: 170px;">Phòng chiếu trực thuộc</th>
                             <th style="min-width: 120px;">Trạng thái</th>
                             <th style="min-width: 190px; text-align: right;">Thao tác</th>
                         </tr>
@@ -414,7 +419,7 @@
         <div class="cf-modal-header">
             <div>
                 <h3 id="viewHallsTitle">Danh sách phòng chiếu</h3>
-                <small id="viewHallsSubtitle" style="color: #64748B; font-size: 13px;">Quy tắc BR-HS-01: Một Centre quản lý danh sách các Hall trực thuộc</small>
+                <small id="viewHallsSubtitle" style="color: #64748B; font-size: 13px;">Danh sách các phòng chiếu hiện có trực thuộc cụm rạp này</small>
             </div>
             <button type="button" class="cf-modal-close" onclick="closeViewHallsModal()">&times;</button>
         </div>
