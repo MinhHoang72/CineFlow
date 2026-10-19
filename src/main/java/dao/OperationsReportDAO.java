@@ -56,7 +56,7 @@ public class OperationsReportDAO {
                 + (centreId == null ? "" : " AND u.CentreID = ?");
         String stockSql = "SELECT COUNT(*) FROM FnbItems i "
                 + "LEFT JOIN CentreFnbInventory inv ON inv.FnbItemID = i.FnbItemID AND inv.CentreID = i.CentreID "
-                + "WHERE i.Status = 'ACTIVE' AND ISNULL(inv.IsAvailable, 0) = 0"
+                + "WHERE i.Status = 'ACTIVE' AND i.CentreID IS NOT NULL AND ISNULL(inv.IsAvailable, 0) = 0"
                 + (centreId == null ? "" : " AND i.CentreID = ?");
         try (Connection connection = DBContext.getConnection()) {
             try (PreparedStatement statement = connection.prepareStatement(showtimeSql)) {

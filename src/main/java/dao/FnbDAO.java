@@ -407,6 +407,24 @@ public class FnbDAO {
         }
     }
 
+    public String centreLabel(Integer centreId) {
+        if (centreId == null) {
+            return null;
+        }
+        String sql = "SELECT CentreName FROM Centres WHERE CentreID = ?";
+        try (Connection connection = DBContext.getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, centreId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    return "Centre " + centreId + " - " + resultSet.getString(1);
+                }
+            }
+        } catch (SQLException exception) {
+            exception.printStackTrace();
+        }
+        return null;
+    }
+
     private List<OptionDTO> options(String sql) {
         List<OptionDTO> list = new ArrayList<>();
         try (Connection connection = DBContext.getConnection();

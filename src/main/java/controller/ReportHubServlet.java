@@ -32,6 +32,11 @@ public class ReportHubServlet extends HttpServlet {
     private final OperationsReportDAO operations = new OperationsReportDAO();
     private final FnbDAO fnb = new FnbDAO();
 
+    private String crumb(User user, String base) {
+        String label = fnb.centreLabel(user.getCentreId());
+        return label == null ? base : base + " · " + label;
+    }
+
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -96,7 +101,7 @@ public class ReportHubServlet extends HttpServlet {
         request.setAttribute("centres", centres);
         request.setAttribute("selectedCentre", centreId);
         request.setAttribute("filters", filters);
-        request.setAttribute("pageBreadcrumb", "Báo cáo");
+        request.setAttribute("pageBreadcrumb", admin ? "Báo cáo" : crumb(user, "Báo cáo"));
 
         switch (path) {
             case "/sales":

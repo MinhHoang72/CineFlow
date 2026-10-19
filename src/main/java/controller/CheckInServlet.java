@@ -1,6 +1,7 @@
 package controller;
 
 import dao.CheckInDAO;
+import dao.FnbDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -20,6 +21,12 @@ public class CheckInServlet extends HttpServlet {
 
     private static final int HISTORY_SIZE = 20;
     private final CheckInDAO dao = new CheckInDAO();
+    private final FnbDAO centres = new FnbDAO();
+
+    private String crumb(User user, String base) {
+        String label = centres.centreLabel(user.getCentreId());
+        return label == null ? base : base + " · " + label;
+    }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -114,7 +121,7 @@ public class CheckInServlet extends HttpServlet {
         request.setAttribute("canVerify", "TICKET_CHECKER_STAFF".equals(user.getRole()));
         request.setAttribute("logs", dao.recent(user.getCentreId(), HISTORY_SIZE));
         request.setAttribute("pageTitle", "Soát vé");
-        request.setAttribute("pageBreadcrumb", "Vận hành");
+        request.setAttribute("pageBreadcrumb", crumb(user, "Vận hành"));
         request.getRequestDispatcher("/WEB-INF/views/checkin/index.jsp").forward(request, response);
     }
 }

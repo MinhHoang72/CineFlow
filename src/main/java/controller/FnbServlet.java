@@ -38,6 +38,11 @@ public class FnbServlet extends HttpServlet {
     private static final BigDecimal MAX_PRICE = new BigDecimal("10000000");
     private final FnbDAO dao = new FnbDAO();
 
+    private String crumb(User user, String base) {
+        String label = "ADMIN".equals(user.getRole()) ? null : dao.centreLabel(user.getCentreId());
+        return label == null ? base : base + " · " + label;
+    }
+
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -336,7 +341,7 @@ public class FnbServlet extends HttpServlet {
         request.setAttribute("backQuery", filters + "&page=" + page);
         request.setAttribute("csrf", csrfToken(request));
         request.setAttribute("pageTitle", "Món & Combo");
-        request.setAttribute("pageBreadcrumb", "Bắp nước");
+        request.setAttribute("pageBreadcrumb", crumb(user, "Bắp nước"));
         showFlash(request);
         request.getRequestDispatcher("/WEB-INF/views/fnb/list.jsp").forward(request, response);
     }
@@ -366,7 +371,7 @@ public class FnbServlet extends HttpServlet {
         request.setAttribute("categories", dao.categories());
         request.setAttribute("csrf", csrfToken(request));
         request.setAttribute("pageTitle", item.getFnbItemId() == 0 ? "Thêm món" : "Sửa món");
-        request.setAttribute("pageBreadcrumb", "Bắp nước");
+        request.setAttribute("pageBreadcrumb", crumb(user, "Bắp nước"));
         request.getRequestDispatcher("/WEB-INF/views/fnb/item-form.jsp").forward(request, response);
     }
 
@@ -449,7 +454,7 @@ public class FnbServlet extends HttpServlet {
             request.setAttribute("categories", categories);
             request.setAttribute("csrf", csrfToken(request));
             request.setAttribute("pageTitle", item.getFnbItemId() == 0 ? "Thêm món" : "Sửa món");
-            request.setAttribute("pageBreadcrumb", "Bắp nước");
+            request.setAttribute("pageBreadcrumb", crumb(user, "Bắp nước"));
             request.getRequestDispatcher("/WEB-INF/views/fnb/item-form.jsp").forward(request, response);
             return;
         }
@@ -508,7 +513,7 @@ public class FnbServlet extends HttpServlet {
         request.setAttribute("items", dao.activeItems(centreId));
         request.setAttribute("csrf", csrfToken(request));
         request.setAttribute("pageTitle", combo.getComboId() == 0 ? "Tạo combo" : "Sửa combo");
-        request.setAttribute("pageBreadcrumb", "Bắp nước");
+        request.setAttribute("pageBreadcrumb", crumb(user, "Bắp nước"));
         request.getRequestDispatcher("/WEB-INF/views/fnb/combo-form.jsp").forward(request, response);
     }
 
@@ -610,7 +615,7 @@ public class FnbServlet extends HttpServlet {
             request.setAttribute("items", items);
             request.setAttribute("csrf", csrfToken(request));
             request.setAttribute("pageTitle", combo.getComboId() == 0 ? "Tạo combo" : "Sửa combo");
-            request.setAttribute("pageBreadcrumb", "Bắp nước");
+            request.setAttribute("pageBreadcrumb", crumb(user, "Bắp nước"));
             request.getRequestDispatcher("/WEB-INF/views/fnb/combo-form.jsp").forward(request, response);
             return;
         }
@@ -708,7 +713,7 @@ public class FnbServlet extends HttpServlet {
         request.setAttribute("canEdit", manager);
         request.setAttribute("csrf", csrfToken(request));
         request.setAttribute("pageTitle", "Kho theo Centre");
-        request.setAttribute("pageBreadcrumb", "Bắp nước");
+        request.setAttribute("pageBreadcrumb", crumb(user, "Bắp nước"));
         showFlash(request);
         request.getRequestDispatcher("/WEB-INF/views/fnb/stock.jsp").forward(request, response);
     }
