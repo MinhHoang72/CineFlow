@@ -222,6 +222,13 @@
                                 </td>
                                 <td style="text-align: right;">
                                     <div class="cf-actions" style="justify-content: flex-end;">
+                                        <!-- Nút Configure Seats / Cấu hình sơ đồ ghế (UC-FE-03.3) -->
+                                        <a href="${pageContext.request.contextPath}/manager/seat-config?hallId=<%= h.getHallId() %>"
+                                           class="cf-btn cf-btn-sm" style="background: rgba(59, 130, 246, 0.12); color: #2563EB; border: 1px solid rgba(59, 130, 246, 0.3);"
+                                           title="Cấu hình ma trận sơ đồ ghế và bảo trì">
+                                            💺 Cấu hình ghế
+                                        </a>
+
                                         <!-- Nút Edit (Trường hợp B) -->
                                         <button type="button" class="cf-btn cf-btn-secondary cf-btn-sm"
                                                 onclick="openEditHallModal(<%= h.getHallId() %>, '<%= h.getHallName().replace("'", "\\'") %>', '<%= h.getHallType() %>', <%= h.getCapacity() %>, '<%= isActive ? "AVAILABLE" : "INACTIVE" %>')">
