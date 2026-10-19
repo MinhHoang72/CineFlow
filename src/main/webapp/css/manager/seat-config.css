@@ -459,3 +459,210 @@
     border: 1px solid rgba(239, 68, 68, 0.4);
     color: #B91C1C;
 }
+
+/* =====================================================
+   Bảng danh sách chi tiết ghế ngồi & Quản lý bảo trì
+   ===================================================== */
+.cf-seats-table-card {
+    background: #ffffff;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.cf-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+/* Thanh tìm kiếm & bộ lọc */
+.cf-filter-card {
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.cf-filter-form {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    flex-wrap: wrap;
+}
+
+.cf-search-box {
+    position: relative;
+    flex: 1;
+    min-width: 220px;
+}
+
+.cf-search-box input {
+    width: 100%;
+    padding: 8px 14px 8px 36px;
+    background: #ffffff;
+    border: 1px solid #CBD5E1;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #1E293B;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.cf-search-box input:focus {
+    border-color: #FF2855;
+    box-shadow: 0 0 0 3px rgba(255, 40, 85, 0.12);
+}
+
+.cf-search-box .icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94A3B8;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+}
+
+.cf-select {
+    padding: 8px 12px;
+    background: #ffffff;
+    border: 1px solid #CBD5E1;
+    border-radius: 8px;
+    font-size: 13.5px;
+    color: #1E293B;
+    outline: none;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.cf-select:focus {
+    border-color: #FF2855;
+}
+
+/* Bảng danh sách ghế */
+.cf-table-container {
+    background: #ffffff;
+    border: 1px solid #E2E8F0;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.cf-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.cf-table th {
+    background: #F8FAFC;
+    padding: 12px 16px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #475569;
+    border-bottom: 1px solid #E2E8F0;
+}
+
+.cf-table td {
+    padding: 14px 16px;
+    font-size: 13.5px;
+    color: #1E293B;
+    border-bottom: 1px solid #F1F5F9;
+    vertical-align: middle;
+}
+
+.cf-table tr:hover td {
+    background: #F8FAFC;
+}
+
+.cf-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* Thanh phân trang */
+.cf-pagination-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 14px 18px;
+    background: #F8FAFC;
+    border-top: 1px solid #E2E8F0;
+}
+
+.cf-pagination-info {
+    font-size: 13px;
+    color: #64748B;
+}
+
+.cf-pagination-info strong {
+    color: #0F172A;
+    font-weight: 600;
+}
+
+.cf-pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.cf-page-btn {
+    min-width: 32px;
+    height: 32px;
+    padding: 0 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #CBD5E1;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #334155;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s ease;
+}
+
+.cf-page-btn:hover:not(.disabled):not(.active) {
+    border-color: #FF2855;
+    color: #FF2855;
+    background: rgba(255, 40, 85, 0.05);
+}
+
+.cf-page-btn.active {
+    background: #FF2855;
+    border-color: #FF2855;
+    color: #ffffff;
+    box-shadow: 0 2px 6px rgba(255, 40, 85, 0.3);
+}
+
+.cf-page-btn.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: #F1F5F9;
+    color: #94A3B8;
+    border-color: #E2E8F0;
+    pointer-events: none;
+}
+
+.cf-page-ellipsis {
+    padding: 0 4px;
+    color: #94A3B8;
+    font-size: 13px;
+    user-select: none;
+}

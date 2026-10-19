@@ -133,21 +133,58 @@ public class HallManagementServlet extends HttpServlet {
         // 5. Lấy thông tin Cụm rạp hiện tại
         Centre currentCentre = centreDAO.getCentreById(targetCentreId);
 
-        // 6. Lấy danh sách các phòng chiếu trực thuộc cụm rạp
-        List<Hall> halls = hallDAO.getHallsByCentre(targetCentreId);
+        // 6. Đọc các tham số tìm kiếm, bộ lọc trạng thái và phân trang
+        String search = request.getParameter("search");
+        String status = request.getParameter("status");
+        if (status == null || status.trim().isEmpty()) {
+            status = "ALL";
+        }
 
-        // 7. Thống kê số lượng phòng và sức chứa
+        int page = 1;
+        int pageSize = 6; // Hiển thị 6 phòng chiếu / trang
+        try {
+            String pageParam = request.getParameter("page");
+            if (pageParam != null && !pageParam.trim().isEmpty()) {
+                page = Integer.parseInt(pageParam.trim());
+            }
+        } catch (NumberFormatException e) {
+            page = 1;
+        }
+        if (page < 1) {
+            page = 1;
+        }
+
+        // 7. Tính toán tổng số phòng theo bộ lọc và số trang
+        int totalFilteredHalls = hallDAO.countHallsByCentre(targetCentreId, search, status);
+        int totalPages = (int) Math.ceil((double) totalFilteredHalls / pageSize);
+        if (totalPages < 1) {
+            totalPages = 1;
+        }
+        if (page > totalPages) {
+            page = totalPages;
+        }
+
+        // 8. Lấy danh sách các phòng chiếu trang hiện tại
+        List<Hall> halls = hallDAO.getHallsByCentrePaged(targetCentreId, search, status, page, pageSize);
+
+        // 9. Thống kê số lượng phòng và sức chứa tổng thể (của cụm rạp)
         int totalHalls = hallDAO.countHallsByStatus(targetCentreId, "ALL");
         int activeHalls = hallDAO.countHallsByStatus(targetCentreId, "ACTIVE");
         int inactiveHalls = hallDAO.countHallsByStatus(targetCentreId, "INACTIVE");
         int totalCapacity = hallDAO.sumCapacityByCentre(targetCentreId);
 
-        // 8. Đặt các thuộc tính vào request scope
+        // 10. Đặt các thuộc tính vào request scope
         request.setAttribute("currentCentre", currentCentre);
         request.setAttribute("targetCentreId", targetCentreId);
         request.setAttribute("allCentres", allCentres);
         request.setAttribute("isAdmin", isAdmin);
         request.setAttribute("halls", halls);
+        request.setAttribute("currentPage", page);
+        request.setAttribute("pageSize", pageSize);
+        request.setAttribute("totalPages", totalPages);
+        request.setAttribute("totalFilteredHalls", totalFilteredHalls);
+        request.setAttribute("currentSearch", search != null ? search.trim() : "");
+        request.setAttribute("currentStatus", status);
         request.setAttribute("totalHalls", totalHalls);
         request.setAttribute("activeHalls", activeHalls);
         request.setAttribute("inactiveHalls", inactiveHalls);
@@ -155,7 +192,7 @@ public class HallManagementServlet extends HttpServlet {
         request.setAttribute("activeNav", "halls");
         request.setAttribute("pageTitle", "Quản lý Phòng chiếu");
 
-        // 9. Chuyển tiếp tới giao diện JSP
+        // 11. Chuyển tiếp tới giao diện JSP
         request.getRequestDispatcher("/manager/halls.jsp").forward(request, response);
     }
 
@@ -197,10 +234,23 @@ public class HallManagementServlet extends HttpServlet {
             return;
         }
 
-        // Đường dẫn chuyển hướng giữ nguyên centreId nếu là Admin
+        // Đường dẫn chuyển hướng giữ nguyên centreId nếu là Admin, kèm tham số lọc và phân trang
         StringBuilder redirectUrl = new StringBuilder(request.getContextPath() + "/manager/halls?");
         if (isAdmin) {
             redirectUrl.append("centreId=").append(centreId).append("&");
+        }
+
+        String filterSearch = request.getParameter("search");
+        String filterStatus = request.getParameter("status");
+        String pageParam = request.getParameter("page");
+        if (filterSearch != null && !filterSearch.trim().isEmpty()) {
+            redirectUrl.append("search=").append(URLEncoder.encode(filterSearch.trim(), StandardCharsets.UTF_8)).append("&");
+        }
+        if (filterStatus != null && !filterStatus.trim().isEmpty()) {
+            redirectUrl.append("status=").append(URLEncoder.encode(filterStatus.trim(), StandardCharsets.UTF_8)).append("&");
+        }
+        if (pageParam != null && !pageParam.trim().isEmpty()) {
+            redirectUrl.append("page=").append(URLEncoder.encode(pageParam.trim(), StandardCharsets.UTF_8)).append("&");
         }
 
         String action = request.getParameter("action");

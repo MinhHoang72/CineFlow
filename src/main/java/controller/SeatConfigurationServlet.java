@@ -119,12 +119,58 @@ public class SeatConfigurationServlet extends HttpServlet {
         List<SeatConfigDTO> existingSeats = seatDAO.getSeatConfigsByHall(hallId);
         String seatsJson = gson.toJson(existingSeats);
 
+        // Đọc các tham số tìm kiếm & phân trang cho bảng danh sách ghế
+        String search = request.getParameter("search");
+        String seatType = request.getParameter("seatType");
+        String seatStatus = request.getParameter("seatStatus");
+        if (seatType == null || seatType.trim().isEmpty()) {
+            seatType = "ALL";
+        }
+        if (seatStatus == null || seatStatus.trim().isEmpty()) {
+            seatStatus = "ALL";
+        }
+
+        int page = 1;
+        int pageSize = 12; // Hiển thị 12 ghế / trang
+        try {
+            String pageParam = request.getParameter("page");
+            if (pageParam != null && !pageParam.trim().isEmpty()) {
+                page = Integer.parseInt(pageParam.trim());
+            }
+        } catch (NumberFormatException ignored) {
+        }
+        if (page < 1) {
+            page = 1;
+        }
+
+        int totalFilteredSeats = seatDAO.countSeatsByHall(hallId, search, seatType, seatStatus);
+        int totalPages = (int) Math.ceil((double) totalFilteredSeats / pageSize);
+        if (totalPages < 1) {
+            totalPages = 1;
+        }
+        if (page > totalPages) {
+            page = totalPages;
+        }
+
+        List<SeatConfigDTO> pagedSeats = seatDAO.getSeatsByHallPaged(hallId, search, seatType, seatStatus, page, pageSize);
+
         request.setAttribute("hall", hall);
         request.setAttribute("centre", centre);
         request.setAttribute("existingSeats", existingSeats);
         request.setAttribute("seatsJson", seatsJson);
         request.setAttribute("hasBookedShowtimes", hasBookedShowtimes);
         request.setAttribute("isAdmin", isAdmin);
+
+        // Thuộc tính phân trang và bộ lọc danh sách ghế
+        request.setAttribute("pagedSeats", pagedSeats);
+        request.setAttribute("currentPage", page);
+        request.setAttribute("pageSize", pageSize);
+        request.setAttribute("totalPages", totalPages);
+        request.setAttribute("totalFilteredSeats", totalFilteredSeats);
+        request.setAttribute("currentSearch", search != null ? search.trim() : "");
+        request.setAttribute("currentSeatType", seatType);
+        request.setAttribute("currentSeatStatus", seatStatus);
+
         request.setAttribute("activeNav", "halls");
         request.setAttribute("pageTitle", "Cấu hình Sơ đồ ghế - " + hall.getHallName());
 
@@ -166,10 +212,50 @@ public class SeatConfigurationServlet extends HttpServlet {
             return;
         }
 
-        String seatDataJson = request.getParameter("seatData");
-        boolean isRegenerating = "true".equalsIgnoreCase(request.getParameter("isRegenerating"));
+        String action = request.getParameter("action");
+        String filterSearch = request.getParameter("search");
+        String filterSeatType = request.getParameter("seatType");
+        String filterSeatStatus = request.getParameter("seatStatus");
+        String pageParam = request.getParameter("page");
 
         StringBuilder redirectUrl = new StringBuilder(request.getContextPath() + "/manager/seat-config?hallId=" + hallId + "&");
+        if (filterSearch != null && !filterSearch.trim().isEmpty()) {
+            redirectUrl.append("search=").append(URLEncoder.encode(filterSearch.trim(), StandardCharsets.UTF_8)).append("&");
+        }
+        if (filterSeatType != null && !filterSeatType.trim().isEmpty()) {
+            redirectUrl.append("seatType=").append(URLEncoder.encode(filterSeatType.trim(), StandardCharsets.UTF_8)).append("&");
+        }
+        if (filterSeatStatus != null && !filterSeatStatus.trim().isEmpty()) {
+            redirectUrl.append("seatStatus=").append(URLEncoder.encode(filterSeatStatus.trim(), StandardCharsets.UTF_8)).append("&");
+        }
+        if (pageParam != null && !pageParam.trim().isEmpty()) {
+            redirectUrl.append("page=").append(URLEncoder.encode(pageParam.trim(), StandardCharsets.UTF_8)).append("&");
+        }
+
+        // TÁC VỤ B: KHÓA / MỞ BẢO TRÌ NHANH MỘT GHẾ CỤ THỂ TỪ BẢNG
+        if ("toggleMaintenance".equalsIgnoreCase(action)) {
+            String seatIdParam = request.getParameter("seatId");
+            try {
+                int seatId = Integer.parseInt(seatIdParam.trim());
+                String result = seatDAO.toggleSeatMaintenance(seatId, hallId);
+                if ("SUCCESS".equals(result)) {
+                    redirectUrl.append("success=maintenance_toggled");
+                } else if (result != null && result.startsWith("HAS_FUTURE_BOOKINGS:")) {
+                    String bookedTime = result.substring("HAS_FUTURE_BOOKINGS:".length());
+                    String msg = "CẢNH BÁO: Ghế này đã được đặt vé ở suất chiếu [" + bookedTime + "]. Vui lòng đổi chỗ ngồi thủ công cho khách hàng trước khi khóa bảo trì.";
+                    redirectUrl.append("error=booked_seat&msg=").append(URLEncoder.encode(msg, StandardCharsets.UTF_8));
+                } else {
+                    redirectUrl.append("error=failed");
+                }
+            } catch (Exception e) {
+                redirectUrl.append("error=invalid_id");
+            }
+            response.sendRedirect(redirectUrl.toString());
+            return;
+        }
+
+        String seatDataJson = request.getParameter("seatData");
+        boolean isRegenerating = "true".equalsIgnoreCase(request.getParameter("isRegenerating"));
 
         // Alt 1: Phòng chiếu đã có lịch chiếu tương lai mở bán vé nhưng cố tình tái cấu trúc lưới ghế
         if (isRegenerating && seatDAO.hasFutureBookedShowtimes(hallId)) {

@@ -56,6 +56,140 @@ public class HallDAO {
     }
 
     /**
+     * Đếm tổng số phòng chiếu của Cụm rạp thỏa mãn điều kiện tìm kiếm và bộ lọc.
+     * Dùng để tính toán số trang cho phân trang (Pagination).
+     *
+     * @param centreId mã định danh cụm rạp
+     * @param search từ khóa tìm kiếm theo tên phòng
+     * @param status bộ lọc trạng thái ('ALL', 'ACTIVE', 'INACTIVE', '2D', '3D')
+     * @return tổng số phòng chiếu tìm thấy
+     */
+    public int countHallsByCentre(int centreId, String search, String status) {
+        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM Halls h WHERE h.CentreID = ? ");
+        List<Object> params = new ArrayList<>();
+        params.add(centreId);
+
+        // Lọc theo từ khóa tìm kiếm tên phòng
+        if (search != null && !search.trim().isEmpty()) {
+            sql.append("AND LOWER(h.HallName) LIKE ? ");
+            params.add("%" + search.trim().toLowerCase() + "%");
+        }
+
+        // Lọc theo trạng thái hoặc định dạng kỹ thuật
+        if (status != null && !status.trim().isEmpty() && !"ALL".equalsIgnoreCase(status)) {
+            if ("ACTIVE".equalsIgnoreCase(status)) {
+                sql.append("AND UPPER(h.Status) = 'AVAILABLE' ");
+            } else if ("INACTIVE".equalsIgnoreCase(status)) {
+                sql.append("AND UPPER(h.Status) IN ('INACTIVE', 'MAINTENANCE') ");
+            } else if ("2D".equalsIgnoreCase(status) || "3D".equalsIgnoreCase(status)) {
+                sql.append("AND UPPER(h.HallType) = ? ");
+                params.add(status.trim().toUpperCase());
+            }
+        }
+
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
+            }
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return 0;
+    }
+
+    /**
+     * Lấy danh sách các phòng chiếu trực thuộc Cụm rạp có phân trang (Pagination).
+     * Sử dụng lệnh OFFSET ... ROWS FETCH NEXT ... ROWS ONLY chuẩn của SQL Server.
+     *
+     * @param centreId mã định danh cụm rạp
+     * @param search từ khóa tìm kiếm theo tên phòng
+     * @param status bộ lọc trạng thái ('ALL', 'ACTIVE', 'INACTIVE', '2D', '3D')
+     * @param page số trang hiện tại (bắt đầu từ 1)
+     * @param pageSize số bản ghi hiển thị trên mỗi trang
+     * @return danh sách các phòng chiếu trên trang hiện tại
+     */
+    public List<Hall> getHallsByCentrePaged(int centreId, String search, String status, int page, int pageSize) {
+        if (page < 1) {
+            page = 1;
+        }
+        if (pageSize < 1) {
+            pageSize = 6;
+        }
+        int offset = (page - 1) * pageSize;
+
+        List<Hall> list = new ArrayList<>();
+        StringBuilder sql = new StringBuilder(
+            "SELECT h.HallID, h.CentreID, h.HallName, h.HallType, h.Capacity, h.Status, h.CreatedAt, c.CentreName "
+            + "FROM Halls h "
+            + "JOIN Centres c ON c.CentreID = h.CentreID "
+            + "WHERE h.CentreID = ? "
+        );
+
+        List<Object> params = new ArrayList<>();
+        params.add(centreId);
+
+        // Lọc theo từ khóa tìm kiếm tên phòng
+        if (search != null && !search.trim().isEmpty()) {
+            sql.append("AND LOWER(h.HallName) LIKE ? ");
+            params.add("%" + search.trim().toLowerCase() + "%");
+        }
+
+        // Lọc theo trạng thái hoặc định dạng kỹ thuật
+        if (status != null && !status.trim().isEmpty() && !"ALL".equalsIgnoreCase(status)) {
+            if ("ACTIVE".equalsIgnoreCase(status)) {
+                sql.append("AND UPPER(h.Status) = 'AVAILABLE' ");
+            } else if ("INACTIVE".equalsIgnoreCase(status)) {
+                sql.append("AND UPPER(h.Status) IN ('INACTIVE', 'MAINTENANCE') ");
+            } else if ("2D".equalsIgnoreCase(status) || "3D".equalsIgnoreCase(status)) {
+                sql.append("AND UPPER(h.HallType) = ? ");
+                params.add(status.trim().toUpperCase());
+            }
+        }
+
+        sql.append("ORDER BY h.HallID ASC ");
+        sql.append("OFFSET ? ROWS FETCH NEXT ? ROWS ONLY");
+
+        params.add(offset);
+        params.add(pageSize);
+
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
+            }
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Hall h = new Hall();
+                    h.setHallId(rs.getInt("HallID"));
+                    h.setCentreId(rs.getInt("CentreID"));
+                    h.setCentreName(rs.getString("CentreName"));
+                    h.setHallName(rs.getString("HallName"));
+                    h.setHallType(rs.getString("HallType"));
+                    h.setCapacity(rs.getInt("Capacity"));
+                    h.setStatus(rs.getString("Status"));
+                    h.setCreatedAt(rs.getTimestamp("CreatedAt"));
+                    list.add(h);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return list;
+    }
+
+    /**
      * Lấy thông tin chi tiết một phòng chiếu theo mã HallID.
      *
      * @param hallId mã định danh phòng chiếu
