@@ -127,6 +127,22 @@ public class ShowtimeDAO {
         return list;
     }
 
+    /** Rap co suat chieu som nhat con mo ban cua phim, null neu phim khong con suat nao. */
+    public Integer findFirstCentreForMovie(int movieId) throws SQLException {
+        String sql = "SELECT TOP 1 b.CentreID FROM Showtimes s "
+                   + "JOIN Movies m ON m.MovieID = s.MovieID "
+                   + "JOIN Halls h ON h.HallID = s.HallID "
+                   + "JOIN Centres b ON b.CentreID = h.CentreID "
+                   + "WHERE " + BOOKABLE + "AND s.MovieID = ? ORDER BY s.StartTime";
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, movieId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : null;
+            }
+        }
+    }
+
     /** Suat chieu con mo ban, null neu khong ton tai hoac da qua gio. */
     public Showtime getBookableById(int showtimeId) throws SQLException {
         try (Connection conn = DBContext.getConnection()) {

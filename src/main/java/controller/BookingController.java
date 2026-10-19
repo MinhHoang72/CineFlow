@@ -96,6 +96,14 @@ public class BookingController extends HttpServlet {
             throws SQLException, ServletException, IOException {
         Integer branchId = WebUtil.parseInt(req.getParameter("branchId"));
         Integer movieId = WebUtil.parseInt(req.getParameter("movieId"));
+        // Tu trang chu / chi tiet phim chi truyen movieId: chon san rap co suat som nhat cua phim do
+        if (branchId == null && movieId != null) {
+            branchId = showtimeDAO.findFirstCentreForMovie(movieId);
+            if (branchId == null) {
+                WebUtil.flash(req, "info", "Phim này hiện chưa có suất chiếu mở bán.");
+                movieId = null;
+            }
+        }
 
         req.setAttribute("branches", centreDAO.getActiveCentres());
         req.setAttribute("selectedBranchId", branchId);
