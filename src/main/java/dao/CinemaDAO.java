@@ -478,6 +478,8 @@ public class CinemaDAO {
                 + "JOIN Centres b ON b.CentreID = h.CentreID "
                 + DYNAMIC_PRICE_APPLY
                 + "WHERE s.Status = 'SCHEDULED' AND m.Status IN ('NOW_SHOWING', 'COMING_SOON') "
+                + "  AND s.StartTime >= CAST(GETDATE() AS DATE) "
+                + "  AND s.StartTime < DATEADD(day, 7, CAST(GETDATE() AS DATE)) "
                 + "ORDER BY s.StartTime";
         List<ShowtimeView> showtimes = new ArrayList<>();
 
@@ -520,6 +522,7 @@ public class CinemaDAO {
                 + "JOIN Centres b ON b.CentreID = h.CentreID "
                 + DYNAMIC_PRICE_APPLY
                 + "WHERE s.Status = 'SCHEDULED' AND s.MovieID = ? "
+                + "  AND s.StartTime >= CAST(GETDATE() AS DATE) "
                 + "ORDER BY s.StartTime";
         List<ShowtimeView> showtimes = new ArrayList<>();
 
@@ -564,6 +567,7 @@ public class CinemaDAO {
                 + "JOIN Centres b ON b.CentreID = h.CentreID "
                 + DYNAMIC_PRICE_APPLY
                 + "WHERE s.Status = 'SCHEDULED' AND m.Status IN ('NOW_SHOWING', 'COMING_SOON') AND b.CentreID = ? "
+                + "  AND s.StartTime >= CAST(GETDATE() AS DATE) "
                 + "ORDER BY s.StartTime";
         List<ShowtimeView> showtimes = new ArrayList<>();
 
