@@ -1,0 +1,26 @@
+<%@ page pageEncoding="UTF-8" %>
+<%
+    boolean filterAdmin = Boolean.TRUE.equals(request.getAttribute("isAdmin"));
+    java.util.List<model.OptionDTO> filterCentres = (java.util.List<model.OptionDTO>) request.getAttribute("centres");
+    Integer filterCentre = (Integer) request.getAttribute("selectedCentre");
+%>
+<form class="rp-filter" method="get" action="<%= ctx %><%= filterAction %>">
+    <label>Từ ngày
+        <input class="cf-form-control" type="date" name="from" value="<%= esc(request.getAttribute("from")) %>">
+    </label>
+    <label>Đến ngày
+        <input class="cf-form-control" type="date" name="to" value="<%= esc(request.getAttribute("to")) %>">
+    </label>
+    <% if (filterAdmin) { %>
+    <label>Centre
+        <select class="cf-form-control" name="centreId">
+            <option value="">Toàn chuỗi</option>
+            <% for (model.OptionDTO option : filterCentres) { %>
+            <option value="<%= option.getId() %>" <%= filterCentre != null && filterCentre == option.getId() ? "selected" : "" %>><%= esc(option.getLabel()) %></option>
+            <% } %>
+        </select>
+    </label>
+    <% } %>
+    <button class="cf-btn cf-btn-primary" type="submit">Xem báo cáo</button>
+    <% if (!filterAdmin) { %><span class="rp-scope">Phạm vi: Centre của bạn</span><% } %>
+</form>
