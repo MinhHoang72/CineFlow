@@ -2,29 +2,29 @@ package utils;
 
 import org.mindrot.jbcrypt.BCrypt;
 
+/**
+ * Tiện ích mã hóa và kiểm tra mật khẩu sử dụng thuật toán BCrypt.
+ */
 public class PasswordUtils {
 
+    /**
+     * Băm mật khẩu dạng văn bản thuần sang chuỗi mã hóa BCrypt an toàn.
+     *
+     * @param password mật khẩu văn bản thuần
+     * @return chuỗi mật khẩu đã được băm
+     */
     public static String hashPassword(String password) {
         return BCrypt.hashpw(password, BCrypt.gensalt(10));
     }
 
+    /**
+     * Kiểm tra tính khớp giữa mật khẩu nhập vào và chuỗi mật khẩu đã băm.
+     *
+     * @param password mật khẩu văn bản thuần do người dùng nhập
+     * @param hashedPassword chuỗi băm lưu trữ trong cơ sở dữ liệu
+     * @return true nếu mật khẩu chính xác, ngược lại false
+     */
     public static boolean checkPassword(String password, String hashedPassword) {
         return BCrypt.checkpw(password, hashedPassword);
-    }
-
-    public static void main(String[] args) {
-
-        String password = "123456";
-
-        String hashedPassword = hashPassword(password);
-
-        System.out.println("================================");
-        System.out.println("Original password: " + password);
-        System.out.println("Hashed password: " + hashedPassword);
-        System.out.println("Check correct password: "
-                + checkPassword("123456", hashedPassword));
-        System.out.println("Check wrong password: "
-                + checkPassword("999999", hashedPassword));
-        System.out.println("================================");
     }
 }

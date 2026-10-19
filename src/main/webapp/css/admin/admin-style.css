@@ -1,7 +1,7 @@
 @import url("dashboard.css");
 
 /* ==========================================================================
-   CINEFLOW ADMIN COMPLETE DESIGN SYSTEM (MODERN DARK THEME)
+   HỆ THỐNG GIAO DIỆN QUẢN TRỊ CINEFLOW (GIAO DIỆN TỐI HIỆN ĐẠI)
    ========================================================================== */
 :root {
     --cf-primary: #FF2855;
@@ -42,7 +42,7 @@ html, body {
     background: #0B0F16 !important;
 }
 
-/* SIDEBAR */
+/* THANH ĐIỀU HƯỚNG BÊN (SIDEBAR) */
 .admin-sidebar {
     width: 260px !important;
     min-width: 260px !important;
@@ -246,7 +246,7 @@ html, body {
     background: rgba(244, 63, 94, 0.12);
 }
 
-/* MAIN AREA */
+/* KHU VỰC CHÍNH */
 .admin-main {
     flex: 1 !important;
     min-width: 0 !important;
@@ -255,7 +255,7 @@ html, body {
     background: #0B0F16 !important;
 }
 
-/* TOPBAR */
+/* THANH ĐIỀU HƯỚNG TRÊN (TOPBAR) */
 .admin-topbar, .cf-topbar {
     height: 68px !important;
     background: #ffffff !important;
@@ -415,7 +415,7 @@ html, body {
     color: #94a3b8;
 }
 
-/* CONTENT CONTAINER */
+/* KHUNG CHỨA NỘI DUNG */
 .admin-content {
     flex: 1;
     width: min(1360px, 100%);
@@ -423,7 +423,7 @@ html, body {
     padding: 28px 32px 60px;
 }
 
-/* HERO SECTION */
+/* PHẦN BANNER TIÊU ĐỀ */
 .page-hero {
     display: flex;
     align-items: flex-start;
@@ -462,7 +462,7 @@ html, body {
     flex-shrink: 0;
 }
 
-/* KPI GRID */
+/* LƯỚI CHỈ SỐ KPI */
 .kpi-grid {
     display: grid !important;
     grid-template-columns: repeat(4, 1fr) !important;
@@ -546,7 +546,7 @@ html, body {
     color: #64748B !important;
 }
 
-/* ADMIN CARD */
+/* THẺ GIAO DIỆN QUẢN TRỊ (ADMIN CARD) */
 .admin-card {
     background: #161B26;
     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -578,7 +578,7 @@ html, body {
     color: #94a3b8;
 }
 
-/* TOOLBAR */
+/* THANH CÔNG CỤ TÌM KIẾM VÀ LỌC */
 .cf-toolbar {
     display: flex !important;
     align-items: center !important;
@@ -709,7 +709,7 @@ html, body {
     color: #FF2855;
 }
 
-/* DATA TABLE */
+/* BẢNG DỮ LIỆU */
 .table-responsive {
     width: 100%;
     overflow-x: auto;
@@ -795,7 +795,7 @@ html, body {
     color: #94a3b8;
 }
 
-/* BADGES */
+/* HUY HIỆU TRẠNG THÁI (BADGES) */
 .cf-badge {
     display: inline-flex;
     align-items: center;
@@ -835,7 +835,7 @@ html, body {
 .age-T18 { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }
 .age-C   { background: #450a0a; color: #ffffff; }
 
-/* BUTTONS */
+/* NÚT BẤM (BUTTONS) */
 .cf-btn-group {
     display: flex;
     align-items: center;
@@ -894,7 +894,7 @@ html, body {
     color: #ffffff !important;
 }
 
-/* PAGINATION CONTROLS */
+/* ĐIỀU KHIỂN PHÂN TRANG */
 .cf-pagination-bar {
     display: flex !important;
     align-items: center !important;
@@ -967,7 +967,7 @@ html, body {
     color: #94a3b8 !important;
 }
 
-/* GRID VIEW */
+/* CHẾ ĐỘ XEM LƯỚI */
 .movie-grid-view {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));

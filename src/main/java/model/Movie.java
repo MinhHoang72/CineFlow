@@ -2,6 +2,9 @@ package model;
 
 import java.sql.Date;
 
+/**
+ * Đại diện cho thông tin một bộ phim trong danh mục phim của CineFlow.
+ */
 public class Movie {
 
     private int movieId;
@@ -18,6 +21,28 @@ public class Movie {
     private String trailerUrl;
     private String status;
     private String ageRating;
+    private int distributedCentres;
+    private int totalCentres;
+
+    public int getDistributedCentres() {
+        return distributedCentres;
+    }
+
+    public void setDistributedCentres(int distributedCentres) {
+        this.distributedCentres = distributedCentres;
+    }
+
+    public int getTotalCentres() {
+        return totalCentres;
+    }
+
+    public void setTotalCentres(int totalCentres) {
+        this.totalCentres = totalCentres;
+    }
+
+    public String getDistributionRatio() {
+        return distributedCentres + "/" + totalCentres;
+    }
 
     public int getMovieId() {
         return movieId;

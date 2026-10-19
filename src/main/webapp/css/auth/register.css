@@ -1,647 +1,332 @@
 @import url("https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap");
+
 * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: "Be Vietnam Pro", "Segoe UI", Arial, sans-serif;
-        }
-
-
-        /* ================================
-           BODY
-           ================================ */
-
-        body {
-
-            min-height: 100vh;
-
-            background:
-                radial-gradient(
-                    circle at 15% 20%,
-                    rgba(229, 9, 20, 0.20),
-                    transparent 30%
-                ),
-                radial-gradient(
-                    circle at 85% 80%,
-                    rgba(229, 9, 20, 0.12),
-                    transparent 30%
-                ),
-                #080808;
-
-            color: white;
-
-            display: flex;
-
-            align-items: center;
-
-            justify-content: center;
-
-        }
-
-
-        /* ================================
-           BACKGROUND
-           ================================ */
-
-        .background {
-
-            position: fixed;
-
-            inset: 0;
-
-            z-index: -1;
-
-            overflow: hidden;
-
-        }
-
-
-        .background::before {
-
-            content: "";
-
-            position: absolute;
-
-            inset: 0;
-
-            background:
-                linear-gradient(
-                    90deg,
-                    rgba(0,0,0,0.95),
-                    rgba(0,0,0,0.72),
-                    rgba(0,0,0,0.94)
-                );
-
-        }
-
-
-        .light {
-
-            position: absolute;
-
-            width: 450px;
-
-            height: 450px;
-
-            border-radius: 50%;
-
-            background: rgba(229, 9, 20, 0.10);
-
-            filter: blur(100px);
-
-        }
-
-
-        .light-1 {
-
-            top: -180px;
-
-            right: -100px;
-
-        }
-
-
-        .light-2 {
-
-            bottom: -200px;
-
-            left: -100px;
-
-        }
-
-
-        /* ================================
-           MAIN CONTAINER
-           ================================ */
-
-        .container {
-
-            width: 100%;
-
-            max-width: 1180px;
-
-            min-height: 700px;
-
-            display: grid;
-
-            grid-template-columns: 1fr 450px;
-
-            gap: 70px;
-
-            align-items: center;
-
-            padding: 40px;
-
-        }
-
-
-        /* ================================
-           LEFT SIDE
-           ================================ */
-
-        .hero {
-
-            padding-left: 30px;
-
-        }
-
-
-        .logo {
-
-            font-size: 34px;
-
-            font-weight: 800;
-
-            letter-spacing: -1px;
-
-            margin-bottom: 65px;
-
-        }
-
-
-        .logo span {
-
-            color: #e50914;
-
-        }
-
-
-        .hero h1 {
-
-            font-size: 56px;
-
-            line-height: 1.05;
-
-            letter-spacing: -2px;
-
-            margin-bottom: 25px;
-
-        }
-
-
-        .hero h1 span {
-
-            color: #e50914;
-
-        }
-
-
-        .hero p {
-
-            max-width: 530px;
-
-            color: #999;
-
-            font-size: 17px;
-
-            line-height: 1.7;
-
-        }
-
-
-        .movie-line {
-
-            width: 80px;
-
-            height: 4px;
-
-            background: #e50914;
-
-            border-radius: 10px;
-
-            margin-top: 35px;
-
-        }
-
-
-        /* ================================
-           REGISTER CARD
-           ================================ */
-
-        .register-card {
-
-            width: 100%;
-
-            background: rgba(20, 20, 20, 0.90);
-
-            border: 1px solid rgba(255,255,255,0.08);
-
-            border-radius: 24px;
-
-            padding: 38px 42px;
-
-            box-shadow:
-                0 30px 80px rgba(0,0,0,0.65),
-                inset 0 1px 0 rgba(255,255,255,0.03);
-
-            backdrop-filter: blur(20px);
-
-        }
-
-
-        .register-card h2 {
-
-            font-size: 30px;
-
-            margin-bottom: 8px;
-
-        }
-
-
-        .subtitle {
-
-            color: #888;
-
-            font-size: 14px;
-
-            margin-bottom: 27px;
-
-        }
-
-
-        /* ================================
-           FORM
-           ================================ */
-
-        .form-group {
-
-            margin-bottom: 16px;
-
-        }
-
-
-        .form-group label {
-
-            display: block;
-
-            color: #d5d5d5;
-
-            font-size: 13px;
-
-            font-weight: 600;
-
-            margin-bottom: 8px;
-
-        }
-
-
-        .input-wrapper {
-
-            position: relative;
-
-        }
-
-
-        .input-icon {
-
-            position: absolute;
-
-            left: 15px;
-
-            top: 50%;
-
-            transform: translateY(-50%);
-
-            color: #666;
-
-            font-size: 15px;
-
-        }
-
-
-        .input-wrapper input {
-
-            width: 100%;
-
-            height: 49px;
-
-            background: #111;
-
-            border: 1px solid #292929;
-
-            border-radius: 11px;
-
-            outline: none;
-
-            color: white;
-
-            padding: 0 44px;
-
-            font-size: 14px;
-
-            transition: 0.25s;
-
-        }
-
-
-        .input-wrapper input::placeholder {
-
-            color: #555;
-
-        }
-
-
-        .input-wrapper input:focus {
-
-            border-color: #e50914;
-
-            box-shadow:
-                0 0 0 3px rgba(229, 9, 20, 0.10);
-
-        }
-
-
-        /* ================================
-           PASSWORD TOGGLE
-           ================================ */
-
-        .password-toggle {
-
-            position: absolute;
-
-            right: 14px;
-
-            top: 50%;
-
-            transform: translateY(-50%);
-
-            color: #666;
-
-            font-size: 12px;
-
-            cursor: pointer;
-
-            user-select: none;
-
-        }
-
-
-        .password-toggle:hover {
-
-            color: white;
-
-        }
-
-
-        /* ================================
-           PASSWORD REQUIREMENTS
-           ================================ */
-
-        .password-requirements {
-
-            margin-top: 10px;
-
-            margin-bottom: 18px;
-
-        }
-
-
-        .requirement {
-
-            display: flex;
-
-            align-items: center;
-
-            gap: 8px;
-
-            font-size: 12px;
-
-            margin: 5px 0;
-
-            transition: 0.2s ease;
-
-        }
-
-
-        .requirement.invalid {
-
-            color: #ef4444;
-
-        }
-
-
-        .requirement.valid {
-
-            color: #22c55e;
-
-        }
-
-
-        .requirement-icon {
-
-            width: 16px;
-
-            min-width: 16px;
-
-            font-weight: 700;
-
-            text-align: center;
-
-        }
-
-
-        /* ================================
-           CONFIRM PASSWORD MESSAGE
-           ================================ */
-
-        .confirm-password-message {
-
-            display: none;
-
-            margin-top: 8px;
-
-            font-size: 12px;
-
-        }
-
-
-        .confirm-password-message.invalid {
-
-            color: #ef4444;
-
-        }
-
-
-        .confirm-password-message.valid {
-
-            color: #22c55e;
-
-        }
-
-
-        /* ================================
-           REGISTER BUTTON
-           ================================ */
-
-        .register-btn {
-
-            width: 100%;
-
-            height: 51px;
-
-            margin-top: 5px;
-
-            border: none;
-
-            border-radius: 11px;
-
-            background: #e50914;
-
-            color: white;
-
-            font-size: 15px;
-
-            font-weight: 700;
-
-            cursor: pointer;
-
-            transition: 0.25s;
-
-            box-shadow:
-                0 10px 25px rgba(229, 9, 20, 0.22);
-
-        }
-
-
-        .register-btn:hover {
-
-            background: #f20d19;
-
-            transform: translateY(-1px);
-
-            box-shadow:
-                0 14px 30px rgba(229, 9, 20, 0.30);
-
-        }
-
-
-        .register-btn:active {
-
-            transform: translateY(0);
-
-        }
-
-
-        /* ================================
-           TERMS
-           ================================ */
-
-        .terms {
-
-            margin-top: 17px;
-
-            color: #666;
-
-            font-size: 11px;
-
-            line-height: 1.5;
-
-            text-align: center;
-
-        }
-
-
-        .terms span {
-
-            color: #aaa;
-
-        }
-
-
-        /* ================================
-           LOGIN LINK
-           ================================ */
-
-        .login-link {
-
-            text-align: center;
-
-            margin-top: 23px;
-
-            color: #777;
-
-            font-size: 13px;
-
-        }
-
-
-        .login-link a {
-
-            color: white;
-
-            text-decoration: none;
-
-            font-weight: 600;
-
-        }
-
-
-        .login-link a:hover {
-
-            color: #e50914;
-
-        }
-
-
-        /* ================================
-           RESPONSIVE
-           ================================ */
-
-        @media (max-width: 900px) {
-
-            body {
-
-                padding: 20px 0;
-
-            }
-
-
-            .container {
-
-                display: block;
-
-                max-width: 500px;
-
-                min-height: auto;
-
-                padding: 20px;
-
-            }
-
-
-            .hero {
-
-                display: none;
-
-            }
-
-
-            .register-card {
-
-                padding: 34px 28px;
-
-            }
-
-        }
-
-
-        @media (max-width: 450px) {
-
-            .register-card {
-
-                padding: 30px 22px;
-
-                border-radius: 18px;
-
-            }
-
-
-            .register-card h2 {
-
-                font-size: 26px;
-
-            }
-
-        }
-
-
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Be Vietnam Pro", "Segoe UI", Arial, sans-serif;
+}
+
+/* Toàn trang */
+body {
+    min-height: 100vh;
+    background:
+        radial-gradient(circle at 15% 20%, rgba(229, 9, 20, 0.20), transparent 30%),
+        radial-gradient(circle at 85% 80%, rgba(229, 9, 20, 0.12), transparent 30%),
+        #080808;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Hình nền và hiệu ứng ánh sáng */
+.background {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+}
+
+.background::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, rgba(0,0,0,0.95), rgba(0,0,0,0.72), rgba(0,0,0,0.94));
+}
+
+.light {
+    position: absolute;
+    width: 450px;
+    height: 450px;
+    border-radius: 50%;
+    background: rgba(229, 9, 20, 0.10);
+    filter: blur(100px);
+}
+
+.light-1 {
+    top: -180px;
+    right: -100px;
+}
+
+.light-2 {
+    bottom: -200px;
+    left: -100px;
+}
+
+/* Khung chứa giao diện chính */
+.container {
+    width: 100%;
+    max-width: 1180px;
+    min-height: 700px;
+    display: grid;
+    grid-template-columns: 1fr 450px;
+    gap: 70px;
+    align-items: center;
+    padding: 40px;
+}
+
+/* Phần giới thiệu bên trái */
+.hero {
+    padding-left: 30px;
+}
+
+.logo {
+    font-size: 34px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    margin-bottom: 65px;
+}
+
+.logo span {
+    color: #e50914;
+}
+
+.hero h1 {
+    font-size: 56px;
+    line-height: 1.05;
+    letter-spacing: -2px;
+    margin-bottom: 25px;
+}
+
+.hero h1 span {
+    color: #e50914;
+}
+
+.hero p {
+    max-width: 530px;
+    color: #999;
+    font-size: 17px;
+    line-height: 1.7;
+}
+
+.movie-line {
+    width: 80px;
+    height: 4px;
+    background: #e50914;
+    border-radius: 10px;
+    margin-top: 35px;
+}
+
+/* Thẻ đăng ký tài khoản */
+.register-card {
+    width: 100%;
+    background: rgba(20, 20, 20, 0.90);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 24px;
+    padding: 38px 42px;
+    box-shadow:
+        0 30px 80px rgba(0,0,0,0.65),
+        inset 0 1px 0 rgba(255,255,255,0.03);
+    backdrop-filter: blur(20px);
+}
+
+.register-card h2 {
+    font-size: 30px;
+    margin-bottom: 8px;
+}
+
+.subtitle {
+    color: #888;
+    font-size: 14px;
+    margin-bottom: 27px;
+}
+
+/* Biểu mẫu đăng ký */
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-group label {
+    display: block;
+    color: #d5d5d5;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.input-wrapper {
+    position: relative;
+}
+
+.input-icon {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #666;
+    font-size: 15px;
+}
+
+.input-wrapper input {
+    width: 100%;
+    height: 49px;
+    background: #111;
+    border: 1px solid #292929;
+    border-radius: 11px;
+    outline: none;
+    color: white;
+    padding: 0 44px;
+    font-size: 14px;
+    transition: 0.25s;
+}
+
+.input-wrapper input::placeholder {
+    color: #555;
+}
+
+.input-wrapper input:focus {
+    border-color: #e50914;
+    box-shadow: 0 0 0 3px rgba(229, 9, 20, 0.10);
+}
+
+/* Nút ẩn hiện mật khẩu */
+.password-toggle {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #666;
+    font-size: 12px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.password-toggle:hover {
+    color: white;
+}
+
+/* Quy tắc yêu cầu mật khẩu */
+.password-requirements {
+    margin-top: 10px;
+    margin-bottom: 18px;
+}
+
+.requirement {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    margin: 5px 0;
+    transition: 0.2s ease;
+}
+
+.requirement.invalid {
+    color: #ef4444;
+}
+
+.requirement.valid {
+    color: #22c55e;
+}
+
+.requirement-icon {
+    width: 16px;
+    min-width: 16px;
+    font-weight: 700;
+    text-align: center;
+}
+
+/* Thông báo xác nhận mật khẩu */
+.confirm-password-message {
+    display: none;
+    margin-top: 8px;
+    font-size: 12px;
+}
+
+.confirm-password-message.invalid {
+    color: #ef4444;
+}
+
+.confirm-password-message.valid {
+    color: #22c55e;
+}
+
+/* Nút đăng ký tài khoản */
+.register-btn {
+    width: 100%;
+    height: 51px;
+    margin-top: 5px;
+    border: none;
+    border-radius: 11px;
+    background: #e50914;
+    color: white;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.25s;
+    box-shadow: 0 10px 25px rgba(229, 9, 20, 0.22);
+}
+
+.register-btn:hover {
+    background: #f20d19;
+    transform: translateY(-1px);
+    box-shadow: 0 14px 30px rgba(229, 9, 20, 0.30);
+}
+
+.register-btn:active {
+    transform: translateY(0);
+}
+
+/* Điều khoản sử dụng */
+.terms {
+    margin-top: 17px;
+    color: #666;
+    font-size: 11px;
+    line-height: 1.5;
+    text-align: center;
+}
+
+.terms span {
+    color: #aaa;
+}
+
+/* Liên kết chuyển hướng đăng nhập */
+.login-link {
+    text-align: center;
+    margin-top: 23px;
+    color: #777;
+    font-size: 13px;
+}
+
+.login-link a {
+    color: white;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.login-link a:hover {
+    color: #e50914;
+}
+
+/* Tương thích đa thiết bị */
+@media (max-width: 900px) {
+    body {
+        padding: 20px 0;
+    }
+
+    .container {
+        display: block;
+        max-width: 500px;
+        min-height: auto;
+        padding: 20px;
+    }
+
+    .hero {
+        display: none;
+    }
+
+    .register-card {
+        padding: 34px 28px;
+    }
+}
+
+@media (max-width: 450px) {
+    .register-card {
+        padding: 30px 22px;
+        border-radius: 18px;
+    }
+
+    .register-card h2 {
+        font-size: 26px;
+    }
+}

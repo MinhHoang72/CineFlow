@@ -9,4 +9,46 @@
         return;
     }
 %>
-<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Bảng điều khiển quản lý | CineFlow</title><link rel="stylesheet" href="${pageContext.request.contextPath}/css/manager/shell.css"></head><body><div class="cf-manager-shell"><jsp:include page="/manager/sidebar.jsp"/><div class="cf-manager-main"><jsp:include page="/manager/topbar.jsp"/><main class="cf-content"><div class="cf-page-header"><div><p class="cf-breadcrumb">Dashboard</p><h1>Tổng quan Manager</h1><p>Quản lý hoạt động nhân sự và trung tâm CineFlow.</p></div></div><div class="cf-card"><div class="cf-card-header"><div><h2>Chức năng quản lý</h2><p>Các chức năng theo phạm vi trung tâm được cấp.</p></div></div><div class="cf-card-body"><div class="cf-dashboard-links"><a class="cf-dashboard-link" href="${pageContext.request.contextPath}/staff"><strong>Nhân sự trung tâm</strong><span>Quản lý tài khoản nhân viên theo phạm vi được cấp.</span></a><a class="cf-dashboard-link" href="${pageContext.request.contextPath}/reports"><strong>Báo cáo hoạt động</strong><span>Xem doanh thu, tỷ lệ lấp đầy và phim bán chạy.</span></a></div></div></div></main></div></div></body></html>
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Bảng điều khiển quản lý | CineFlow</title>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/manager/shell.css">
+</head>
+<body>
+<div class="cf-manager-shell">
+    <jsp:include page="/manager/sidebar.jsp"/>
+    <div class="cf-manager-main">
+        <jsp:include page="/manager/topbar.jsp"/>
+        <main class="cf-content">
+            <div class="cf-page-header">
+                <div>
+                    <h1>Tổng quan Manager</h1>
+                </div>
+            </div>
+            <div class="cf-card">
+                <div class="cf-card-header">
+                    <div>
+                        <h2>Chức năng quản lý</h2>
+                    </div>
+                </div>
+                <div class="cf-card-body">
+                    <div class="cf-dashboard-links">
+                        <a class="cf-dashboard-link" href="${pageContext.request.contextPath}/staff">
+                            <strong>Nhân sự trung tâm</strong>
+                            <span>Quản lý tài khoản nhân viên theo phạm vi được cấp.</span>
+                        </a>
+                        <a class="cf-dashboard-link" href="${pageContext.request.contextPath}/reports">
+                            <strong>Báo cáo hoạt động</strong>
+                            <span>Xem doanh thu, tỷ lệ lấp đầy và phim bán chạy.</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+</body>
+</html>

@@ -5,6 +5,10 @@
     String error = request.getParameter("error");
     String resent = request.getParameter("resent");
     boolean isRegister = "register".equalsIgnoreCase(action);
+    boolean isChangeEmail = "changeEmail".equalsIgnoreCase(action);
+
+    String pageTitle = isRegister ? "Kích hoạt tài khoản" : (isChangeEmail ? "Xác nhận đổi email" : "Xác minh email");
+    String buttonText = isRegister ? "Kích hoạt & Đăng nhập" : (isChangeEmail ? "Xác nhận & Cập nhật Email" : "Xác minh OTP");
 %>
 <!DOCTYPE html>
 <html lang="vi">
@@ -12,18 +16,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#0B0F17">
-    <title>CineFlow - <%= isRegister ? "Kích hoạt tài khoản" : "Xác minh OTP" %></title>
+    <title>CineFlow - <%= pageTitle %></title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/auth/base.css?v=<%= System.currentTimeMillis() %>">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/auth/verify-otp.css?v=<%= System.currentTimeMillis() %>">
 </head>
 <body>
     <main class="card">
         <a class="logo" href="${pageContext.request.contextPath}/home/index.jsp">Cine<span>Flow</span></a>
-        <h1><%= isRegister ? "Kích hoạt tài khoản" : "Xác minh email" %></h1>
+        <h1><%= pageTitle %></h1>
         
         <p>
             Nhập mã OTP gồm 6 chữ số được gửi đến 
-            <strong style="color: #F8FAFC;"><%= email.isEmpty() ? "email của bạn" : email %></strong>. 
+            <strong style="color: #F8FAFC;"><%= email.isEmpty() ? "email của bạn" : email %></strong>
+            <%= isChangeEmail ? " để xác nhận cập nhật địa chỉ email mới" : "" %>. 
             Mã có hiệu lực trong 15 phút.
         </p>
 
@@ -46,16 +51,22 @@
             <label for="otp">Mã xác thực 6 chữ số</label>
             <input id="otp" name="otp" type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" placeholder="000000" required autofocus>
             
-            <button type="submit"><%= isRegister ? "Kích hoạt & Đăng nhập" : "Xác minh OTP" %></button>
+            <button type="submit"><%= buttonText %></button>
         </form>
 
         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 24px; font-size: 13px;">
             <a class="resend-link" href="${pageContext.request.contextPath}/verify-otp?action=resend&email=<%= java.net.URLEncoder.encode(email, "UTF-8") %>&type=<%= action %>" style="color: var(--cf-primary, #FF2A54); text-decoration: none; font-weight: 600;">
                 ↻ Gửi lại mã OTP
             </a>
-            <a class="back" href="${pageContext.request.contextPath}/auth/login.jsp" style="margin-top: 0;">
-                Quay lại đăng nhập
-            </a>
+            <% if (isChangeEmail) { %>
+                <a class="back" href="${pageContext.request.contextPath}/account" style="margin-top: 0;">
+                    Về hồ sơ cá nhân
+                </a>
+            <% } else { %>
+                <a class="back" href="${pageContext.request.contextPath}/auth/login.jsp" style="margin-top: 0;">
+                    Quay lại đăng nhập
+                </a>
+            <% } %>
         </div>
     </main>
 </body>

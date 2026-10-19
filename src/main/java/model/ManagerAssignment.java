@@ -2,6 +2,9 @@ package model;
 
 import java.sql.Timestamp;
 
+/**
+ * Đại diện cho thông tin bổ nhiệm hoặc phân công Quản lý (Manager) vào một trung tâm chiếu phim.
+ */
 public class ManagerAssignment {
     private int assignmentId;
     private int centreId;
@@ -76,6 +79,14 @@ public class ManagerAssignment {
 
     public void setManagerName(String managerName) {
         this.managerName = managerName;
+    }
+
+    public String getManagerCode() {
+        return String.format("QL%05d", managerId);
+    }
+
+    public String getEmployeeCode() {
+        return String.format("QL%05d", managerId);
     }
 
     public String getManagerAccount() {

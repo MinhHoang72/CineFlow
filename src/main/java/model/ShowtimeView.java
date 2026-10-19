@@ -3,6 +3,9 @@ package model;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 
+/**
+ * Đối tượng hiển thị chi tiết suất chiếu kết hợp thông tin phim, rạp và phòng chiếu.
+ */
 public class ShowtimeView {
 
     private int showtimeId;

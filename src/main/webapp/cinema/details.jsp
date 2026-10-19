@@ -79,12 +79,12 @@
 <body id="top">
 <div class="page-shell">
 
-    <!-- Common Header & Navigation -->
+    <!-- Thanh điều hướng và đầu trang chung -->
     <jsp:include page="/common/header.jsp">
         <jsp:param name="activeNav" value="cinema"/>
     </jsp:include>
 
-    <!-- Main Container -->
+    <!-- Khung chứa nội dung chính -->
     <main class="cinema-page-wrapper">
         <div class="cinema-main-wrap">
             <div class="cinema-container">
@@ -178,7 +178,7 @@
         </div>
     </main>
 
-    <!-- Common Footer -->
+    <!-- Chân trang chung -->
     <jsp:include page="/common/footer.jsp"/>
 
 </div>

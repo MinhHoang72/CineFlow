@@ -46,205 +46,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Admin | CineFlow</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin/admin-style.css?v=<%= System.currentTimeMillis() %>">
-    <style>
-        .dashboard-welcome-banner {
-            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 60%, #31102f 100%);
-            border-radius: var(--cf-radius-lg);
-            padding: 32px 36px;
-            color: #ffffff;
-            margin-bottom: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.3);
-            border: 1px solid #334155;
-        }
-        .dashboard-welcome-banner::after {
-            content: '';
-            position: absolute;
-            right: -60px;
-            bottom: -60px;
-            width: 260px;
-            height: 260px;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(225, 29, 72, 0.25) 0%, transparent 70%);
-            pointer-events: none;
-        }
-        .banner-content {
-            max-width: 650px;
-            z-index: 1;
-        }
-        .banner-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: rgba(225, 29, 72, 0.2);
-            border: 1px solid rgba(225, 29, 72, 0.4);
-            color: #fca5a5;
-            padding: 4px 12px;
-            border-radius: var(--cf-radius-pill);
-            font-size: 11.5px;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-            margin-bottom: 12px;
-        }
-        .banner-content h1 {
-            font-size: 28px;
-            font-weight: 800;
-            margin: 0 0 10px;
-            letter-spacing: -0.03em;
-            line-height: 1.2;
-        }
-        .banner-content p {
-            margin: 0 0 20px;
-            color: #cbd5e1;
-            font-size: 14px;
-            line-height: 1.6;
-        }
-        .banner-actions {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-        .banner-actions .cf-btn-primary {
-            background: var(--cf-primary);
-            color: #fff;
-            box-shadow: 0 4px 14px rgba(225, 29, 72, 0.4);
-        }
-        .banner-actions .cf-btn-ghost {
-            background: rgba(255, 255, 255, 0.1);
-            color: #ffffff;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        .banner-actions .cf-btn-ghost:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-        .banner-stat-bubble {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            padding: 20px 24px;
-            border-radius: var(--cf-radius);
-            backdrop-filter: blur(6px);
-            text-align: right;
-            z-index: 1;
-        }
-        .banner-stat-bubble small {
-            display: block;
-            color: #94a3b8;
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin-bottom: 4px;
-        }
-        .banner-stat-bubble strong {
-            font-size: 26px;
-            color: #ffffff;
-            font-weight: 800;
-        }
-        .dashboard-split-grid {
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 24px;
-            margin-bottom: 24px;
-        }
-        .quick-nav-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 16px;
-            margin-bottom: 28px;
-        }
-        .quick-nav-card {
-            background: #ffffff;
-            border: 1px solid #E2E8F0;
-            border-radius: var(--cf-radius, 10px);
-            padding: 18px;
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            text-decoration: none;
-            color: #111827;
-            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
-            transition: var(--cf-transition);
-        }
-        .quick-nav-card:hover {
-            border-color: #CBD5E1;
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-        }
-        .quick-nav-icon {
-            width: 44px;
-            height: 44px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            flex-shrink: 0;
-        }
-        .quick-nav-meta h3 {
-            margin: 0 0 3px;
-            font-size: 14px;
-            font-weight: 700;
-            color: #111827;
-        }
-        .quick-nav-meta p {
-            margin: 0;
-            font-size: 11.5px;
-            color: #64748B;
-        }
-        .metric-progress-item {
-            margin-bottom: 18px;
-        }
-        .metric-progress-header {
-            display: flex;
-            justify-content: space-between;
-            font-size: 12.5px;
-            margin-bottom: 6px;
-        }
-        .metric-progress-header span {
-            color: var(--cf-text-secondary);
-        }
-        .metric-progress-header strong {
-            color: var(--cf-text);
-        }
-        .progress-bar-bg {
-            height: 8px;
-            background: var(--cf-surface-secondary);
-            border-radius: 4px;
-            overflow: hidden;
-        }
-        .progress-bar-fill {
-            height: 100%;
-            border-radius: 4px;
-            transition: width 0.6s ease;
-        }
-        @media (max-width: 1024px) {
-            .dashboard-split-grid {
-                grid-template-columns: 1fr;
-            }
-            .quick-nav-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-        @media (max-width: 768px) {
-            .dashboard-welcome-banner {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 20px;
-                padding: 24px;
-            }
-            .banner-stat-bubble {
-                width: 100%;
-                text-align: left;
-            }
-            .quick-nav-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
 </head>
 <body>
 <div class="admin-layout">
@@ -254,7 +55,7 @@
         <jsp:include page="/admin/topbar.jsp" />
 
         <main class="admin-content">
-            <!-- WELCOME BANNER -->
+            <!-- BANNER CHÀO MỪNG QUẢN TRỊ VIÊN -->
             <div class="dashboard-welcome-banner">
                 <div class="banner-content">
                     <div class="banner-badge">TRUNG TÂM ĐIỀU HÀNH TOÀN CHUỖI</div>
@@ -273,7 +74,7 @@
                 </div>
             </div>
 
-            <!-- KPI METRIC CARDS -->
+            <!-- CÁC THẺ CHỈ SỐ DOANH THU VÀ HIỆU SUẤT KPI -->
             <div class="kpi-grid">
                 <div class="kpi-card ruby">
                     <div class="kpi-card-header">
@@ -320,7 +121,7 @@
                 </div>
             </div>
 
-            <!-- QUICK SHORTCUT TILES -->
+            <!-- PHÍM TẮT ĐIỀU HƯỚNG NHANH -->
             <div class="quick-nav-grid">
                 <a href="${pageContext.request.contextPath}/admin/movies" class="quick-nav-card">
                     <div class="quick-nav-icon" style="background: #FEE2E2; color: #FF2855;">▣</div>
@@ -355,9 +156,9 @@
                 </a>
             </div>
 
-            <!-- 2-COLUMN SPLIT: TOP MOVIES & SYSTEM STATUS -->
+            <!-- BẢNG PHÂN CHIA 2 CỘT: TOP PHIM & TRẠNG THÁI HỆ THỐNG -->
             <div class="dashboard-split-grid">
-                <!-- TOP MOVIES REVENUE TABLE -->
+                <!-- BẢNG XẾP HẠNG DOANH THU THEO PHIM -->
                 <div class="admin-card" style="margin-bottom: 0;">
                     <div class="admin-card-header">
                         <div>

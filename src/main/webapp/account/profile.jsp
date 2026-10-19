@@ -12,8 +12,12 @@
     }
 %>
 <%!
-    private String esc(String value) { return value == null ? "" : value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;"); }
-    private String money(java.math.BigDecimal value) { return value == null ? "0 đ" : String.format("%,.0f đ", value); }
+    private String esc(String value) { 
+        return value == null ? "" : value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;"); 
+    }
+    private String money(java.math.BigDecimal value) { 
+        return value == null ? "0 đ" : String.format("%,.0f đ", value); 
+    }
 %>
 <%
     User user = (User) request.getAttribute("accountUser");
@@ -21,38 +25,100 @@
     String error = request.getParameter("error");
     String updated = request.getParameter("updated");
     SimpleDateFormat dateTime = new SimpleDateFormat("dd/MM/yyyy HH:mm");
+    SimpleDateFormat dateOnly = new SimpleDateFormat("dd/MM/yyyy");
     String avatarUrl = user == null || user.getAvatar() == null ? "" : user.getAvatar();
+
+    boolean isInternal = user != null && user.isInternalRole();
+    boolean isAdmin = user != null && user.isAdmin();
+    boolean isCustomer = !isInternal;
+
+    dao.CinemaDAO cinemaDAO = new dao.CinemaDAO();
+    model.Centre userCentre = null;
+    if (user != null && user.getCentreId() != null && user.getCentreId() > 0) {
+        userCentre = cinemaDAO.getCentreById(user.getCentreId());
+    }
+    String centreDisplayName = "Toàn bộ hệ thống CineFlow";
+    if (userCentre != null) {
+        centreDisplayName = userCentre.getCentreName() + " (" + userCentre.getCity() + ")";
+    } else if (isCustomer) {
+        centreDisplayName = "Toàn bộ hệ thống CineFlow";
+    } else if (!isAdmin) {
+        centreDisplayName = "Chưa phân công cụm rạp";
+    }
+
+    if (isInternal) {
+        request.setAttribute("pageTitle", "Hồ sơ của tôi");
+        request.setAttribute("pageBreadcrumb", "Tài khoản");
+    }
 %>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Tài khoản của tôi | CineFlow</title>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/layout.css?v=<%= System.currentTimeMillis() %>">
+    <title>Hồ sơ của tôi | CineFlow</title>
+
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/reset.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/variables.css">
+
+    <% if (isInternal) { %>
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/buttons.css">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/badges.css">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/forms.css">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/alerts.css">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/manager/shell.css">
+    <% } else { %>
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/layout.css?v=<%= System.currentTimeMillis() %>">
+    <% } %>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/account/account.css?v=<%= System.currentTimeMillis() %>">
 </head>
 <body>
-<div class="page-shell">
-    <!-- Common Header & Navigation -->
-    <jsp:include page="/common/header.jsp"/>
+<% if (isInternal) { %>
+    <div class="cf-manager-shell">
+        <jsp:include page='<%= isAdmin ? "/admin/sidebar.jsp" : "/manager/sidebar.jsp" %>' />
+        <div class="cf-manager-main">
+            <jsp:include page="/admin/topbar.jsp" />
+            <main class="cf-content">
+                <div class="account-page staff-account-container">
+<% } else { %>
+    <div class="page-shell">
+        <jsp:include page="/common/header.jsp"/>
+        <main class="account-page">
+<% } %>
 
-    <main class="account-page">
-        <% if ("true".equals(updated)) { %>
+        <!-- THÔNG BÁO HỆ THỐNG -->
+        <% if ("emailVerified".equals(updated)) { %>
+            <div class="notice success">✓ Địa chỉ email mới đã được xác thực thành công và cập nhật vào tài khoản của bạn.</div>
+        <% } else if ("true".equals(updated)) { %>
             <div class="notice success">✓ Thông tin cá nhân đã được cập nhật thành công.</div>
         <% } %>
         <% if ("email".equals(error)) { %>
-            <div class="notice error">✕ Email này đã được sử dụng bởi một tài khoản khác.</div>
+            <div class="notice error">✕ Địa chỉ email này đã được sử dụng bởi một tài khoản khác trong hệ thống.</div>
+        <% } %>
+        <% if ("sessionExpired".equals(error)) { %>
+            <div class="notice error">✕ Phiên làm việc xác thực email đã hết hạn. Vui lòng thực hiện lại.</div>
+        <% } %>
+        <% if ("updateFailed".equals(error)) { %>
+            <div class="notice error">✕ Không thể cập nhật địa chỉ email. Vui lòng thử lại.</div>
         <% } %>
         <% if ("required".equals(error)) { %>
             <div class="notice error">✕ Họ tên và email là thông tin bắt buộc.</div>
+        <% } %>
+        <% if ("invalidName".equals(error)) { %>
+            <div class="notice error">✕ Họ và tên chỉ chứa chữ cái và không được quá ngắn.</div>
+        <% } %>
+        <% if ("invalidEmail".equals(error)) { %>
+            <div class="notice error">✕ Định dạng email không hợp lệ.</div>
+        <% } %>
+        <% if ("invalidPhone".equals(error)) { %>
+            <div class="notice error">✕ Số điện thoại không hợp lệ (cần 10 chữ số).</div>
         <% } %>
         <% if ("avatarType".equals(error)) { %>
             <div class="notice error">✕ Ảnh đại diện chỉ hỗ trợ định dạng PNG, JPG hoặc WEBP.</div>
         <% } %>
 
         <!-- ===================================================================
-             1. PROFILE OVERVIEW BANNER (HERO CARD)
+             1. KHÁI QUÁT THÔNG TIN CÁ NHÂN (HERO CARD)
              =================================================================== -->
         <section class="profile-overview">
             <div class="overview-left">
@@ -61,7 +127,7 @@
                         <% if (!avatarUrl.isBlank()) { %>
                             <img id="avatarPreview" src="<%= esc(avatarUrl) %>" alt="Ảnh đại diện">
                         <% } else { %>
-                            <span id="avatarInitial"><%= user.getFullName() == null || user.getFullName().isBlank() ? "C" : esc(user.getFullName().substring(0,1).toUpperCase()) %></span>
+                            <span id="avatarInitial"><%= user != null && user.getFullName() != null && !user.getFullName().isBlank() ? esc(user.getFullName().substring(0,1).toUpperCase()) : "C" %></span>
                         <% } %>
                     </div>
                     <label class="avatar-camera" for="avatarUpload" aria-label="Đổi ảnh đại diện" title="Đổi ảnh đại diện">
@@ -74,9 +140,9 @@
 
                 <div class="overview-info">
                     <div class="overview-name-row">
-                        <h2><%= esc(user.getFullName()) %></h2>
-                        <span class="role-badge"><%= "CUSTOMER".equalsIgnoreCase(user.getRole()) ? "Khách hàng" : esc(user.getRole()) %></span>
-                        <% if (user.isEmailVerified()) { %>
+                        <h2><%= user != null ? esc(user.getFullName()) : "" %></h2>
+                        <span class="role-badge"><%= user != null ? (isCustomer ? "Khách hàng" : esc(user.getRoleDisplayName())) : "Thành viên" %></span>
+                        <% if (user != null && user.isEmailVerified()) { %>
                             <span class="verified-badge">✓ Đã xác thực email</span>
                         <% } else { %>
                             <span class="unverified-badge">⚠ Chưa xác thực</span>
@@ -84,33 +150,44 @@
                     </div>
 
                     <div class="overview-details">
-                        <span class="detail-item">✉ <%= esc(user.getEmail()) %></span>
+                        <span class="detail-item">✉ <%= user != null ? esc(user.getEmail()) : "" %></span>
                         <span class="detail-dot">•</span>
-                        <span class="detail-item">📞 <%= user.getPhone() == null || user.getPhone().isBlank() ? "Chưa có SĐT" : esc(user.getPhone()) %></span>
+                        <span class="detail-item">📞 <%= user != null && user.getPhone() != null && !user.getPhone().isBlank() ? esc(user.getPhone()) : "Chưa có SĐT" %></span>
+                        <% if (!isCustomer) { %>
+                            <span class="detail-dot">•</span>
+                            <span class="detail-item">🏢 <%= esc(centreDisplayName) %></span>
+                        <% } %>
                     </div>
 
                     <div class="overview-dates">
-                        <span>Tham gia: <%= user.getCreatedAt() == null ? "—" : new SimpleDateFormat("dd/MM/yyyy").format(user.getCreatedAt()) %></span>
+                        <span>Tham gia: <%= user != null && user.getCreatedAt() != null ? dateOnly.format(user.getCreatedAt()) : "—" %></span>
                         <span class="detail-dot">•</span>
-                        <span>Cập nhật: <%= user.getUpdatedAt() == null ? "—" : new SimpleDateFormat("dd/MM/yyyy").format(user.getUpdatedAt()) %></span>
+                        <span>Cập nhật: <%= user != null && user.getUpdatedAt() != null ? dateOnly.format(user.getUpdatedAt()) : "—" %></span>
                     </div>
                 </div>
             </div>
 
             <div class="overview-stats">
+                <% if (isCustomer) { %>
+                    <div class="stat-card">
+                        <span class="stat-number"><%= history == null ? 0 : history.size() %></span>
+                        <span class="stat-label">Vé đã đặt</span>
+                    </div>
+                <% } else { %>
+                    <div class="stat-card">
+                        <span class="stat-number" style="font-size: 19px; letter-spacing: 0.5px;"><%= user != null ? user.getEmployeeCode() : "NV00000" %></span>
+                        <span class="stat-label">Mã nhân sự</span>
+                    </div>
+                <% } %>
                 <div class="stat-card">
-                    <span class="stat-number"><%= history == null ? 0 : history.size() %></span>
-                    <span class="stat-label">Vé đã đặt</span>
-                </div>
-                <div class="stat-card">
-                    <span class="stat-badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3);">● <%= esc(user.getStatus()) %></span>
+                    <span class="stat-badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3);">● <%= user != null ? esc(user.getStatus()) : "ACTIVE" %></span>
                     <span class="stat-label">Trạng thái</span>
                 </div>
             </div>
         </section>
 
         <!-- ===================================================================
-             2. MAIN ACCOUNT GRID (FORM + SECURITY + SUMMARY)
+             2. LƯỚI THÔNG TIN TÀI KHOẢN (BIỂU MẪU + BẢO MẬT + TỔNG KẾT)
              =================================================================== -->
         <section class="account-grid">
             <!-- CỘT TRÁI: FORM CẬP NHẬT THÔNG TIN -->
@@ -120,7 +197,7 @@
                         <span class="heading-icon">👤</span>
                         <div>
                             <h2>Thông tin cá nhân</h2>
-                            <p class="panel-desc">Cập nhật họ tên và thông tin liên lạc của bạn để sử dụng dịch vụ tốt nhất.</p>
+                            <p class="panel-desc"><%= isCustomer ? "Cập nhật họ tên và thông tin liên lạc của bạn để sử dụng dịch vụ tốt nhất." : "Cập nhật họ tên và thông tin liên lạc phục vụ công tác điều hành và phối hợp tại CineFlow." %></p>
                         </div>
                     </div>
                 </div>
@@ -128,22 +205,34 @@
                 <form method="post" enctype="multipart/form-data" action="${pageContext.request.contextPath}/account" class="profile-form">
                     <div class="form-group full-width">
                         <label for="fullName">Họ và tên <span class="required">*</span></label>
-                        <input id="fullName" name="fullName" value="<%= esc(user.getFullName()) %>" placeholder="Nhập họ và tên đầy đủ" required>
+                        <input id="fullName" name="fullName" value="<%= user != null ? esc(user.getFullName()) : "" %>" placeholder="Nhập họ và tên đầy đủ" required>
                     </div>
 
                     <div class="form-group">
                         <label for="account">Tên tài khoản</label>
-                        <input id="account" value="<%= esc(user.getAccount()) %>" disabled title="Tên tài khoản cố định">
+                        <input id="account" value="<%= user != null ? esc(user.getAccount()) : "" %>" disabled title="Tên tài khoản cố định">
                     </div>
 
+                    <% if (!isCustomer) { %>
                     <div class="form-group">
-                        <label for="email">Địa chỉ Email <span class="required">*</span></label>
-                        <input id="email" type="email" name="email" value="<%= esc(user.getEmail()) %>" placeholder="name@example.com" required>
+                        <label for="roleDisplay">Vai trò hệ thống</label>
+                        <input id="roleDisplay" value="<%= user != null ? esc(user.getRoleDisplayName()) : "" %>" disabled style="font-weight: 700; color: #38bdf8;">
                     </div>
 
                     <div class="form-group full-width">
+                        <label for="centreDisplay">Cụm rạp trực thuộc</label>
+                        <input id="centreDisplay" value="<%= esc(centreDisplayName) %>" disabled style="color: #cbd5e1;">
+                    </div>
+                    <% } %>
+
+                    <div class="form-group">
+                        <label for="email">Địa chỉ Email <span class="required">*</span></label>
+                        <input id="email" type="email" name="email" value="<%= user != null ? esc(user.getEmail()) : "" %>" placeholder="name@example.com" required>
+                    </div>
+
+                    <div class="form-group">
                         <label for="phone">Số điện thoại liên hệ</label>
-                        <input id="phone" name="phone" value="<%= esc(user.getPhone()) %>" placeholder="Nhập số điện thoại (dùng để nhận vé tại quầy & Kiosk)">
+                        <input id="phone" name="phone" value="<%= user != null && user.getPhone() != null ? esc(user.getPhone()) : "" %>" placeholder="<%= isCustomer ? "Nhập số điện thoại (dùng để nhận vé tại quầy & Kiosk)" : "09xxxxxxxx" %>">
                     </div>
 
                     <input id="avatarValue" type="hidden" name="avatar" value="<%= esc(avatarUrl) %>">
@@ -174,37 +263,56 @@
                     </div>
 
                     <div class="summary-list">
-                        <div class="summary-row">
-                            <span class="row-label">Loại tài khoản</span>
-                            <strong class="row-value"><%= "CUSTOMER".equalsIgnoreCase(user.getRole()) ? "Khách hàng" : esc(user.getRole()) %></strong>
-                        </div>
+                        <% if (isCustomer) { %>
+                            <div class="summary-row">
+                                <span class="row-label">Loại tài khoản</span>
+                                <strong class="row-value">Khách hàng</strong>
+                            </div>
+                        <% } else { %>
+                            <div class="summary-row">
+                                <span class="row-label">Mã nhân sự</span>
+                                <strong class="row-value highlight"><%= user != null ? user.getEmployeeCode() : "NV00000" %></strong>
+                            </div>
+                            <div class="summary-row">
+                                <span class="row-label">Vai trò chức vụ</span>
+                                <strong class="row-value"><%= user != null ? esc(user.getRoleDisplayName()) : "Nhân viên" %></strong>
+                            </div>
+                            <div class="summary-row">
+                                <span class="row-label">Cụm rạp làm việc</span>
+                                <strong class="row-value"><%= esc(centreDisplayName) %></strong>
+                            </div>
+                        <% } %>
 
                         <div class="summary-row">
                             <span class="row-label">Trạng thái</span>
-                            <span class="status-pill active">● <%= esc(user.getStatus()) %></span>
+                            <span class="status-pill active">● <%= user != null ? esc(user.getStatus()) : "ACTIVE" %></span>
                         </div>
 
                         <div class="summary-row">
                             <span class="row-label">Xác thực Email</span>
-                            <% if (user.isEmailVerified()) { %>
+                            <% if (user != null && user.isEmailVerified()) { %>
                                 <span class="status-pill verified">✓ Đã xác thực</span>
                             <% } else { %>
                                 <span class="status-pill unverified">
                                     ⚠ Chưa xác thực
-                                    <a href="${pageContext.request.contextPath}/verify-otp?action=resend&email=<%= java.net.URLEncoder.encode(user.getEmail(), "UTF-8") %>&type=register" class="verify-action-link">[Xác minh ngay]</a>
+                                    <% if (isCustomer && user != null && user.getEmail() != null) { %>
+                                        <a href="${pageContext.request.contextPath}/verify-otp?action=resend&email=<%= java.net.URLEncoder.encode(user.getEmail(), "UTF-8") %>&type=register" class="verify-action-link">[Xác minh ngay]</a>
+                                    <% } %>
                                 </span>
                             <% } %>
                         </div>
 
                         <div class="summary-row">
                             <span class="row-label">Ngày tham gia</span>
-                            <strong class="row-value"><%= user.getCreatedAt() == null ? "—" : new SimpleDateFormat("dd/MM/yyyy").format(user.getCreatedAt()) %></strong>
+                            <strong class="row-value"><%= user != null && user.getCreatedAt() != null ? dateOnly.format(user.getCreatedAt()) : "—" %></strong>
                         </div>
 
-                        <div class="summary-row">
-                            <span class="row-label">Tổng vé đã đặt</span>
-                            <strong class="row-value highlight"><%= history == null ? 0 : history.size() %> vé</strong>
-                        </div>
+                        <% if (isCustomer) { %>
+                            <div class="summary-row">
+                                <span class="row-label">Tổng vé đã đặt</span>
+                                <strong class="row-value highlight"><%= history == null ? 0 : history.size() %> vé</strong>
+                            </div>
+                        <% } %>
                     </div>
                 </article>
 
@@ -229,15 +337,16 @@
                     </a>
 
                     <div class="security-tip-box">
-                        <span class="tip-icon">💡</span>
-                        <p>Không chia sẻ mật khẩu và mã OTP cho bất kỳ ai để bảo vệ tài khoản CineFlow của bạn.</p>
+                        <span class="tip-icon"><%= isCustomer ? "💡" : "🛡️" %></span>
+                        <p><%= isCustomer ? "Không chia sẻ mật khẩu và mã OTP cho bất kỳ ai để bảo vệ tài khoản CineFlow của bạn." : "Tài khoản nhân sự và quản trị có quyền truy cập dữ liệu và vận hành hệ thống CineFlow. Vui lòng định kỳ cập nhật mật khẩu và không chia sẻ cho người khác." %></p>
                     </div>
                 </article>
             </div>
         </section>
 
+        <% if (isCustomer) { %>
         <!-- ===================================================================
-             3. BOOKING HISTORY PANEL
+             3. BẢNG LỊCH SỬ ĐẶT VÉ (CHỈ DÀNH CHO KHÁCH HÀNG)
              =================================================================== -->
         <section class="panel history-panel">
             <div class="panel-heading history-heading">
@@ -286,11 +395,19 @@
                 </div>
             <% } %>
         </section>
-    </main>
+        <% } %>
 
-    <!-- Common Footer -->
-    <jsp:include page="/common/footer.jsp"/>
-</div>
+<% if (isInternal) { %>
+                </div>
+            </main>
+        </div>
+    </div>
+<% } else { %>
+        </main>
+        <!-- Footer chung -->
+        <jsp:include page="/common/footer.jsp"/>
+    </div>
+<% } %>
 </body>
 
 <script>

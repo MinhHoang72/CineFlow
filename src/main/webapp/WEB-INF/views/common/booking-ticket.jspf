@@ -1,0 +1,50 @@
+<%@ page pageEncoding="UTF-8" %>
+<%-- Ve dien tu gop cua ca don: 1 ma QR + bang chi tiet (ghe; sau nay them dong F&B vao cung bang).
+     Can co: booking, bookingQr. --%>
+<style>
+    .eticket { border: 2px dashed #333; border-radius: 10px; background: #fff; padding: 20px; }
+    .eticket .qr { width: 200px; height: 200px; }
+    @media print {
+        nav, .hero, footer, .no-print, .alert { display: none !important; }
+        body { background: #fff; }
+        .eticket { page-break-inside: avoid; }
+    }
+</style>
+<div class="eticket">
+    <div class="row g-4 align-items-center">
+        <div class="col-md-auto text-center">
+            <img src="${bookingQr}" alt="QR đơn ${booking.code}" class="qr">
+            <div class="mt-1"><code class="fs-6"><c:out value="${booking.code}"/></code></div>
+            <div class="small text-muted">Đưa mã này cho nhân viên soát vé</div>
+        </div>
+        <div class="col">
+            <div class="text-muted small">CINEFLOW · <c:out value="${booking.showtime.branchName}"/></div>
+            <div class="fs-4 fw-bold"><c:out value="${booking.showtime.movieTitle}"/></div>
+            <div class="mb-3">
+                <fmt:formatDate value="${booking.showtime.startTime}" pattern="HH:mm - dd/MM/yyyy"/> ·
+                <c:out value="${booking.showtime.hallName}"/> (${booking.showtime.hallType}) ·
+                <strong>${booking.seats.size()} ghế</strong>
+            </div>
+            <table class="table table-sm mb-0">
+                <thead class="table-light">
+                <tr><th>Hạng mục</th><th>Chi tiết</th><th class="text-end">Thành tiền</th></tr>
+                </thead>
+                <tbody>
+                <c:forEach var="seat" items="${booking.seats}">
+                    <tr>
+                        <td>Ghế <strong>${seat.label}</strong></td>
+                        <td>${seat.type}</td>
+                        <td class="text-end"><fmt:formatNumber value="${seat.price}" pattern="#,##0"/> đ</td>
+                    </tr>
+                </c:forEach>
+                </tbody>
+                <tfoot>
+                <tr>
+                    <th colspan="2">Tổng cộng</th>
+                    <th class="text-end"><fmt:formatNumber value="${booking.totalAmount}" pattern="#,##0"/> đ</th>
+                </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>

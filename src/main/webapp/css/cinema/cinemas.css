@@ -1,7 +1,7 @@
 @import url("../common/layout.css");
 
 /* ==========================================================================
-   CineFlow Cinema Module Styles (Cinema Modern Dark)
+   Định dạng giao diện cụm rạp CineFlow (Phong cách Modern Dark)
    ========================================================================== */
 
 :root {
@@ -26,7 +26,7 @@
     --cf-shadow-hover: 0 10px 28px rgba(0, 0, 0, 0.55);
 }
 
-/* Page Outer Wrapper */
+/* Khung bao ngoài trang */
 .cinema-page-wrapper {
     width: 100%;
     margin: 0 auto;
@@ -35,13 +35,13 @@
     padding-bottom: 60px;
 }
 
-/* Cinema Main Wrapper */
+/* Khung nội dung chính của danh sách rạp */
 .cinema-main-wrap {
     width: min(1180px, calc(100% - 40px));
     margin: 32px auto 0;
 }
 
-/* Page Header & Title */
+/* Tiêu đề trang */
 .cf-page-header {
     margin-bottom: 24px;
 }
@@ -58,7 +58,7 @@
     line-height: 1.25;
 }
 
-/* Main Cinema Card Container */
+/* Khung thẻ danh sách rạp */
 .cinema-container {
     width: 100%;
     background: var(--cf-card-bg);
@@ -68,7 +68,7 @@
     box-shadow: var(--cf-shadow-sm);
 }
 
-/* City Selector (Pill Buttons) */
+/* Bộ chọn thành phố dạng nút pill */
 .cf-city-selector {
     display: flex;
     flex-wrap: wrap;
@@ -117,7 +117,7 @@
     color: #ffffff;
 }
 
-/* Section Divider */
+/* Đường phân cách phân mục */
 .cf-section-divider {
     height: 1px;
     background: var(--cf-border);
@@ -125,7 +125,7 @@
     border: none;
 }
 
-/* Dynamic City Title */
+/* Tiêu đề thành phố đang chọn */
 .cf-city-heading {
     font-size: 16px;
     font-weight: 700;
@@ -135,7 +135,7 @@
     margin: 0 0 20px;
 }
 
-/* Cinema List & Items */
+/* Danh sách và thẻ thông tin rạp chiếu */
 .cf-cinema-list {
     display: flex;
     flex-direction: column;
@@ -249,7 +249,7 @@
     color: #ffffff;
 }
 
-/* Empty State */
+/* Trạng thái không có dữ liệu */
 .cf-empty-state {
     padding: 44px 20px;
     text-align: center;
@@ -261,7 +261,7 @@
 }
 
 /* ==========================================================================
-   Cinema Details Page Styles (cinema/details.jsp)
+   Định dạng trang chi tiết rạp chiếu (cinema/details.jsp)
    ========================================================================== */
 .cf-detail-container {
     max-width: 900px;

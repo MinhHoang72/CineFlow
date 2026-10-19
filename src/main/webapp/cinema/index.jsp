@@ -57,7 +57,7 @@
     Map<String, Integer> activeCities = cinemaDAO.getActiveCitiesWithCount();
     List<Centre> activeCentres = cinemaDAO.getActiveCentres();
 
-    // Group centres by City from DB
+    // Nhóm các rạp chiếu theo thành phố từ cơ sở dữ liệu
     Map<String, List<Centre>> centresByCity = new LinkedHashMap<>();
     for (String cityName : activeCities.keySet()) {
         centresByCity.put(cityName, new ArrayList<>());
@@ -72,7 +72,7 @@
         }
     }
 
-    // Determine default city
+    // Xác định thành phố mặc định hiển thị
     String defaultCity = "";
     String requestedCity = request.getParameter("city");
     if (requestedCity != null && !requestedCity.trim().isEmpty()) {
@@ -107,14 +107,14 @@
 <body id="top">
 <div class="page-shell">
 
-    <!-- Common Header & Navigation -->
+    <!-- Thanh điều hướng và đầu trang chung -->
     <jsp:include page="/common/header.jsp">
         <jsp:param name="activeNav" value="cinema"/>
     </jsp:include>
 
-    <!-- Main Content Area -->
+    <!-- Khu vực nội dung chính -->
     <main class="cinema-page-wrapper">
-        <!-- Breadcrumb -->
+        <!-- Đường dẫn điều hướng phân cấp (Breadcrumb) -->
         <nav class="cf-breadcrumb-nav" aria-label="Breadcrumb">
             <a href="<%= contextPath %>/home/index.jsp">Trang chủ</a>
             <span class="cf-breadcrumb-sep">›</span>
@@ -220,12 +220,12 @@
         </div>
     </main>
 
-    <!-- Common Footer -->
+    <!-- Chân trang chung -->
     <jsp:include page="/common/footer.jsp"/>
 
 </div>
 
-<!-- Client-side City Switcher Script -->
+<!-- Script chuyển đổi thành phố phía máy khách -->
 <script>
     function selectCity(cityName) {
         if (!cityName) return;

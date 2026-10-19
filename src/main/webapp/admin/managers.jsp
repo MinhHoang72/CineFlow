@@ -1,5 +1,5 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ page import="model.User,java.util.List" %>
+<%@ page import="model.User,java.util.List,model.Centre" %>
 <%
     String authRole = (String) session.getAttribute("role");
     if (authRole == null && session.getAttribute("user") instanceof model.User) {
@@ -11,10 +11,10 @@
     }
 
     List<User> managers = (List<User>) request.getAttribute("managers");
+    List<Centre> centres = (List<Centre>) request.getAttribute("centres");
 
     request.setAttribute("activeNav", "managers");
     request.setAttribute("pageTitle", "Tài khoản Quản lý");
-    request.setAttribute("pageBreadcrumb", "Hệ thống");
 
     int totalManagers = managers != null ? managers.size() : 0;
     int activeCount = 0;
@@ -47,112 +47,22 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/tables.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/manager/shell.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin/dashboard.css">
-    <style>
-        .cf-alert {
-            padding: 12px 18px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 14px;
-        }
-        .cf-alert-success {
-            background: rgba(34, 197, 94, 0.15);
-            border: 1px solid rgba(34, 197, 94, 0.4);
-            color: #4ade80;
-        }
-        .cf-alert-danger {
-            background: rgba(239, 68, 68, 0.15);
-            border: 1px solid rgba(239, 68, 68, 0.4);
-            color: #f87171;
-        }
-        .cf-modal-backdrop {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.75);
-            backdrop-filter: blur(5px);
-            z-index: 9999;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        .cf-modal-backdrop.active { display: flex; }
-        .cf-modal {
-            background: #ffffff;
-            border: 1px solid #E2E8F0;
-            border-radius: 14px;
-            width: 100%;
-            max-width: 520px;
-            box-shadow: 0 24px 50px rgba(0, 0, 0, 0.35);
-            overflow: hidden;
-            animation: modalFadeIn 0.2s ease-out;
-        }
-        @keyframes modalFadeIn {
-            from { opacity: 0; transform: translateY(-16px) scale(0.98); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-        .cf-modal-header {
-            padding: 20px 24px;
-            border-bottom: 1px solid #E2E8F0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #ffffff;
-        }
-        .cf-modal-header h3 { margin: 0; font-size: 18px; color: #111827; font-weight: 700; }
-        .cf-modal-close {
-            background: none; border: none; color: #64748B; font-size: 24px; cursor: pointer; line-height: 1;
-        }
-        .cf-modal-close:hover { color: #111827; }
-        .cf-modal-body {
-            padding: 24px;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            background: #ffffff;
-            color: #1E293B;
-        }
-        .cf-modal-footer {
-            padding: 16px 24px;
-            border-top: 1px solid #E2E8F0;
-            display: flex;
-            justify-content: flex-end;
-            gap: 12px;
-            background: #F8FAFC;
-        }
-        .cf-form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-        .cf-form-group label {
-            font-size: 13px;
-            font-weight: 600;
-            color: #111827;
-        }
-        .cf-form-group input {
-            background: #F1F5F9;
-            border: 1px solid #CBD5E1;
-            border-radius: 8px;
-            padding: 9px 14px;
-            color: #1E293B;
-            font-size: 14px;
-            outline: none;
-            transition: all 0.2s;
-        }
-        .cf-form-group input::placeholder {
-            color: #64748B;
-            opacity: 1;
-        }
-        .cf-form-group input:focus {
-            border-color: #FF2855;
-            background: #ffffff;
-            box-shadow: 0 0 0 3px rgba(255, 40, 85, 0.2);
-        }
-    </style>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin/managers.css?v=<%= System.currentTimeMillis() %>">
 </head>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll(".cf-alert").forEach(function (alert) {
+            setTimeout(function () {
+                alert.style.transition = "opacity 0.4s ease";
+                alert.style.opacity = "0";
+
+                setTimeout(function () {
+                    alert.remove();
+                }, 400);
+            }, 3000);
+        });
+    });
+</script>
 <body>
 <div class="cf-manager-shell">
     <jsp:include page="/admin/sidebar.jsp" />
@@ -163,25 +73,24 @@
         <main class="cf-content">
             <div class="cf-page-header">
                 <div>
-                    <h1>Quản lý Tài khoản Quản lý (Manager)</h1>
-                    <p>Khởi tạo tài khoản, cập nhật thông tin cá nhân và quản lý trạng thái hoạt động của Quản lý.</p>
+                    <h1>Quản lý Tài khoản Manager</h1>
                 </div>
                 <button type="button" class="cf-btn cf-btn-primary" onclick="openCreateManagerModal()" style="display: flex; align-items: center; gap: 8px;">
-                    <span>+</span> Tạo tài khoản Manager mới
+                    <span></span> Tạo tài khoản quản lý mới
                 </button>
             </div>
 
             <% if ("created".equals(successParam)) { %>
                 <div class="cf-alert cf-alert-success">
-                    <span>✓</span> <strong>Thành công!</strong> Đã tạo mới tài khoản Quản lý (Manager). Việc phân công cụm rạp được thực hiện tại màn hình <em>Bổ nhiệm & Điều chuyển</em>.
+                    <span>✓</span> <strong>Thành công!</strong> Đã tạo mới tài khoản Quản lý và phân công phụ trách cụm rạp thành công.
                 </div>
             <% } else if ("updated".equals(successParam)) { %>
                 <div class="cf-alert cf-alert-success">
-                    <span>✓</span> <strong>Thành công!</strong> Đã cập nhật thông tin Quản lý (Manager) thành công.
+                    <span></span> <strong>Thành công!</strong> Đã cập nhật thông tin Quản lý (Manager) thành công.
                 </div>
             <% } else if ("status_updated".equals(successParam)) { %>
                 <div class="cf-alert cf-alert-success">
-                    <span>✓</span> Đã cập nhật trạng thái hoạt động của tài khoản Manager.
+                    <span></span> Đã cập nhật trạng thái hoạt động của tài khoản Manager.
                 </div>
             <% } else if ("account_exists".equals(errorParam)) { %>
                 <div class="cf-alert cf-alert-danger">
@@ -194,6 +103,38 @@
             <% } else if ("missing_fields".equals(errorParam)) { %>
                 <div class="cf-alert cf-alert-danger">
                     <span>⚠</span> <strong>Lỗi:</strong> Vui lòng điền đầy đủ các thông tin bắt buộc.
+                </div>
+            <% } else if ("invalid_name".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger">
+                    <span>⚠</span> <strong>Lỗi:</strong> Họ và tên phải từ 2 đến 100 ký tự.
+                </div>
+            <% } else if ("invalid_account".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger">
+                    <span>⚠</span> <strong>Lỗi:</strong> Tên tài khoản từ 3-30 ký tự, chỉ gồm chữ cái, số, gạch dưới, gạch ngang hoặc dấu chấm.
+                </div>
+            <% } else if ("invalid_email".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger">
+                    <span>⚠</span> <strong>Lỗi:</strong> Địa chỉ email không đúng định dạng chuẩn.
+                </div>
+            <% } else if ("disposable_email".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger">
+                    <span>⚠</span> <strong>Lỗi:</strong> Vui lòng không sử dụng địa chỉ email rác / email tạm thời.
+                </div>
+            <% } else if ("weak_password".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger">
+                    <span>⚠</span> <strong>Mật khẩu yếu:</strong> Yêu cầu tối thiểu 8 ký tự, gồm ít nhất 1 chữ hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt.
+                </div>
+            <% } else if ("invalid_phone".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger">
+                    <span>⚠</span> <strong>Lỗi:</strong> Số điện thoại không hợp lệ (yêu cầu số điện thoại di động Việt Nam 10 số).
+                </div>
+            <% } else if ("missing_centre".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger">
+                    <span>⚠</span> <strong>Lỗi:</strong> Theo quy định bắt buộc của hệ thống, tài khoản Quản lý phải được phân công một cụm rạp phụ trách.
+                </div>
+            <% } else if ("centre_has_manager".equals(errorParam) || "centre_already_has_manager".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger">
+                    <span>⚠</span> <strong>Cụm rạp đã có Quản lý:</strong> Cụm rạp được chọn hiện đã có Quản lý đang phụ trách (mỗi rạp chỉ có 1 Quản lý). Để thay thế hoặc luân chuyển Quản lý, vui lòng sử dụng chức năng Điều chuyển.
                 </div>
             <% } else if (errorParam != null) { %>
                 <div class="cf-alert cf-alert-danger">
@@ -217,7 +158,7 @@
                 </div>
             </div>
 
-            <!-- TABLE CARD -->
+            <!-- BẢNG DANH SÁCH QUẢN LÝ -->
             <section class="cf-card" style="margin-top: 24px;">
                 <div class="cf-card-header" style="display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
                     <div>
@@ -280,7 +221,7 @@
                                             <% if (hasCentre) { %>
                                                 <span style="font-weight: 500; color: #a5b4fc;">🏛 <%= centreName %></span>
                                             <% } else { %>
-                                                <span style="color: #64748b;">Chưa phân công</span>
+                                                <span class="cf-badge" style="background: rgba(148, 163, 184, 0.12); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.25);" title="Quản lý tự do, hiện chưa được phân công phụ trách cụm rạp nào.">Chưa phân công</span>
                                             <% } %>
                                         </td>
                                         <td>
@@ -304,7 +245,7 @@
                                                     <% if (isActive) { %>
                                                         <input type="hidden" name="status" value="INACTIVE">
                                                         <button type="submit" class="cf-btn cf-btn-secondary cf-btn-sm" style="color: #f59e0b;" 
-                                                                onclick="return confirm('Bạn có chắc muốn TẠM NGƯNG tài khoản Quản lý này? Lưu ý: Việc này không làm gián đoạn trạng thái hoạt động của rạp.');">
+                                                                onclick="return confirm('Bạn có chắc muốn TẠM NGƯNG tài khoản Quản lý này? Cụm rạp phụ trách (nếu có) sẽ được giải phóng để sẵn sàng bổ nhiệm Quản lý mới.');">
                                                             Tạm ngưng
                                                         </button>
                                                     <% } else { %>
@@ -337,9 +278,24 @@
         <form method="post" action="${pageContext.request.contextPath}/admin/managers">
             <input type="hidden" name="action" value="create">
             <div class="cf-modal-body">
-                <p style="font-size: 13px; color: #64748B; margin: 0 0 6px;">
-                    Tài khoản được tạo độc lập. Việc bổ nhiệm Manager vào cụm rạp được thực hiện riêng tại trang <strong>Bổ nhiệm & Điều chuyển</strong>.
-                </p>
+                <div class="cf-form-group">
+                    <label>Cụm rạp phụ trách *</label>
+                    <select name="centreId" required style="background: #F1F5F9; border: 1px solid #CBD5E1; border-radius: 8px; padding: 9px 14px; color: #1E293B; font-size: 14px;">
+                        <% if (centres == null || centres.isEmpty()) { %>
+                            <option value="">-- Hiện không có cụm rạp nào trống Quản lý --</option>
+                        <% } else { %>
+                            <option value="">-- Chọn cụm rạp phân công (chưa có Quản lý) --</option>
+                            <% for (Centre c : centres) { %>
+                                <option value="<%= c.getCentreId() %>"><%= c.getCentreName() %> (<%= c.getCity() %>)</option>
+                            <% } %>
+                        <% } %>
+                    </select>
+                    <% if (centres == null || centres.isEmpty()) { %>
+                        <small style="color: #EF4444; font-size: 12px;">⚠ Tất cả các cụm rạp hiện đã có Quản lý phụ trách. Nếu muốn thay thế Quản lý, vui lòng sử dụng chức năng Bổ nhiệm Quản lý.</small>
+                    <% } else { %>
+                        <small style="color: #64748B; font-size: 12px;">Hệ thống chỉ liệt kê các cụm rạp đang TRỐNG (chưa có Quản lý) để bảo đảm quy tắc 1 rạp - 1 Quản lý.</small>
+                    <% } %>
+                </div>
                 <div class="cf-form-group">
                     <label>Họ và tên Quản lý *</label>
                     <input type="text" name="fullName" placeholder="Ví dụ: Hoàng Tuấn Anh" required>
@@ -360,13 +316,13 @@
                 </div>
                 <div class="cf-form-group">
                     <label>Mật khẩu khởi tạo *</label>
-                    <input type="password" name="password" value="123456" required>
-                    <small style="color: #64748b; font-size: 12px;">Mặc định: 123456</small>
+                    <input type="password" name="password" value="Manager@123" required>
+                    <small style="color: #64748b; font-size: 12px;">Mặc định: Manager@123 (tối thiểu 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt)</small>
                 </div>
             </div>
             <div class="cf-modal-footer">
                 <button type="button" class="cf-btn cf-btn-secondary" onclick="closeCreateManagerModal()">Hủy</button>
-                <button type="submit" class="cf-btn cf-btn-primary">Tạo tài khoản Manager</button>
+                <button type="submit" class="cf-btn cf-btn-primary" <%= (centres == null || centres.isEmpty()) ? "disabled style='opacity: 0.5; cursor: not-allowed;'" : "" %>>Tạo tài khoản Manager</button>
             </div>
         </form>
     </div>

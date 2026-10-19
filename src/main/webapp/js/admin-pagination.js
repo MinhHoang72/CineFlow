@@ -1,6 +1,5 @@
 /**
- * CineFlow Admin Interactive Pagination & Live Filter Controller
- * Operates purely and cleanly on vertical table rows (no grid clutter)
+ * Điều khiển bộ phân trang tương tác và lọc dữ liệu trực tiếp trong trang quản trị CineFlow.
  */
 function initAdminPagination(options) {
     const tableBody = document.getElementById(options.tableBodyId);
@@ -29,21 +28,23 @@ function initAdminPagination(options) {
         const status = item.dataset.status || '';
         const id = item.dataset.movieId || '';
 
-        // Status match
+        // So khớp trạng thái
         if (currentStatus !== 'ALL' && status !== currentStatus) {
             return false;
         }
 
-        // Genre match
+        // So khớp thể loại
         if (currentGenre !== 'ALL' && !genre.includes(currentGenre.toLowerCase())) {
             return false;
         }
 
-        // Search text match
+        // So khớp chuỗi tìm kiếm
         if (currentSearch) {
             const q = currentSearch.toLowerCase();
             const textMatch = title.includes(q) || genre.includes(q) || director.includes(q) || id.includes(q);
-            if (!textMatch) return false;
+            if (!textMatch) {
+                return false;
+            }
         }
 
         return true;
@@ -53,7 +54,9 @@ function initAdminPagination(options) {
         const visibleRows = [];
 
         tableRows.forEach(row => {
-            if (filterMatches(row)) visibleRows.push(row);
+            if (filterMatches(row)) {
+                visibleRows.push(row);
+            }
             row.style.display = 'none';
         });
 
@@ -61,27 +64,41 @@ function initAdminPagination(options) {
         const actualPageSize = pageSize === 0 ? totalFiltered : pageSize;
         const totalPages = Math.ceil(totalFiltered / actualPageSize) || 1;
 
-        if (currentPage > totalPages) currentPage = totalPages;
-        if (currentPage < 1) currentPage = 1;
+        if (currentPage > totalPages) {
+            currentPage = totalPages;
+        }
+        if (currentPage < 1) {
+            currentPage = 1;
+        }
 
         const startIndex = (currentPage - 1) * actualPageSize;
         const endIndex = pageSize === 0 ? totalFiltered : Math.min(startIndex + actualPageSize, totalFiltered);
 
-        // Display current page rows
+        // Hiển thị các dòng thuộc trang hiện tại
         for (let i = startIndex; i < endIndex; i++) {
-            if (visibleRows[i]) visibleRows[i].style.display = '';
+            if (visibleRows[i]) {
+                visibleRows[i].style.display = '';
+            }
         }
 
-        // Empty state handling
+        // Xử lý trạng thái danh sách rỗng
         if (totalFiltered === 0) {
-            if (emptyState) emptyState.style.display = 'block';
-            if (tableWrapper) tableWrapper.style.display = 'none';
+            if (emptyState) {
+                emptyState.style.display = 'block';
+            }
+            if (tableWrapper) {
+                tableWrapper.style.display = 'none';
+            }
         } else {
-            if (emptyState) emptyState.style.display = 'none';
-            if (tableWrapper) tableWrapper.style.display = '';
+            if (emptyState) {
+                emptyState.style.display = 'none';
+            }
+            if (tableWrapper) {
+                tableWrapper.style.display = '';
+            }
         }
 
-        // Info text
+        // Hiển thị thông tin thống kê số lượng dòng hiển thị
         if (infoDisplay) {
             if (totalFiltered === 0) {
                 infoDisplay.innerHTML = 'Không tìm thấy kết quả phù hợp';
@@ -91,17 +108,21 @@ function initAdminPagination(options) {
             }
         }
 
-        // Render pagination controls
+        // Hiển thị các nút phân trang
         renderPaginationControls(totalPages);
     }
 
     function renderPaginationControls(totalPages) {
-        if (!paginationContainer) return;
+        if (!paginationContainer) {
+            return;
+        }
         paginationContainer.innerHTML = '';
 
-        if (totalPages <= 1) return;
+        if (totalPages <= 1) {
+            return;
+        }
 
-        // Prev Button
+        // Nút trang trước (Prev)
         const prevBtn = document.createElement('button');
         prevBtn.type = 'button';
         prevBtn.className = 'cf-page-btn';
@@ -116,17 +137,25 @@ function initAdminPagination(options) {
         });
         paginationContainer.appendChild(prevBtn);
 
-        // Page numbers with ellipsis
+        // Tạo danh sách số trang kèm dấu ba chấm
         const pages = [];
         if (totalPages <= 7) {
-            for (let i = 1; i <= totalPages; i++) pages.push(i);
+            for (let i = 1; i <= totalPages; i++) {
+                pages.push(i);
+            }
         } else {
             pages.push(1);
-            if (currentPage > 3) pages.push('...');
+            if (currentPage > 3) {
+                pages.push('...');
+            }
             const start = Math.max(2, currentPage - 1);
             const end = Math.min(totalPages - 1, currentPage + 1);
-            for (let i = start; i <= end; i++) pages.push(i);
-            if (currentPage < totalPages - 2) pages.push('...');
+            for (let i = start; i <= end; i++) {
+                pages.push(i);
+            }
+            if (currentPage < totalPages - 2) {
+                pages.push('...');
+            }
             pages.push(totalPages);
         }
 
@@ -150,7 +179,7 @@ function initAdminPagination(options) {
             }
         });
 
-        // Next Button
+        // Nút trang tiếp theo (Next)
         const nextBtn = document.createElement('button');
         nextBtn.type = 'button';
         nextBtn.className = 'cf-page-btn';
@@ -166,7 +195,7 @@ function initAdminPagination(options) {
         paginationContainer.appendChild(nextBtn);
     }
 
-    // EVENT LISTENERS
+    // Đăng ký các sự kiện lắng nghe tương tác
     if (searchInput) {
         let debounceTimer;
         searchInput.addEventListener('input', (e) => {
@@ -206,6 +235,6 @@ function initAdminPagination(options) {
         });
     }
 
-    // Initial render
+    // Khởi tạo hiển thị lần đầu
     render();
 }

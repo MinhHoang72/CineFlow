@@ -8,26 +8,47 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import model.User;
-import java.io.IOException;
 
+import java.io.IOException;
+import java.net.URLEncoder;
+
+/**
+ * Controller: Điều hướng người dùng đến bảng điều khiển tương ứng với vai trò (Admin, Manager, Staff, Customer).
+ * URL ánh xạ: /dashboard
+ */
 public class DashboardServlet extends HttpServlet {
+
     private final ReportDAO reportDAO = new ReportDAO();
     private final CinemaDAO cinemaDAO = new CinemaDAO();
 
+    /**
+     * Xử lý yêu cầu HTTP GET: Kiểm tra vai trò của người dùng hiện tại và chuyển tiếp tới Dashboard phù hợp.
+     *
+     * @param request  yêu cầu HTTP từ client
+     * @param response phản hồi HTTP gửi về client
+     * @throws ServletException nếu xảy ra lỗi servlet
+     * @throws IOException      nếu xảy ra lỗi vào/ra dữ liệu
+     */
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        // 1. Kiểm tra xác thực: Nếu chưa đăng nhập thì chuyển hướng sang trang đăng nhập
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("userId") == null) {
-            String loginUrl = request.getContextPath() + "/auth/login.jsp?redirect=" + java.net.URLEncoder.encode("/dashboard", "UTF-8");
+            String loginUrl = request.getContextPath() + "/auth/login.jsp?redirect=" + URLEncoder.encode("/dashboard", "UTF-8");
             response.sendRedirect(loginUrl);
             return;
         }
 
+        // 2. Xác định vai trò (Role) của người dùng hiện tại từ session
         String role = (String) session.getAttribute("role");
         if (role == null && session.getAttribute("user") instanceof User) {
             role = ((User) session.getAttribute("user")).getRole();
         }
 
+        // 3. Phân luồng điều hướng theo vai trò:
+        // 3.1. Vai trò Quản trị viên (ADMIN) -> Hiển thị Dashboard tổng quan số liệu doanh thu hệ thống
         if ("ADMIN".equalsIgnoreCase(role)) {
             request.setAttribute("reportSummary", reportDAO.getSummary());
             request.setAttribute("topMovies", reportDAO.revenueByMovie());
@@ -37,16 +58,24 @@ public class DashboardServlet extends HttpServlet {
             request.getRequestDispatcher("/admin/dashboard.jsp").forward(request, response);
             return;
         }
+
+        // 3.2. Vai trò Quản lý trung tâm (MANAGER) -> Dashboard vận hành cụm rạp
         if ("MANAGER".equalsIgnoreCase(role)) {
             request.getRequestDispatcher("/manager/dashboard.jsp").forward(request, response);
             return;
         }
-        if ("STAFF".equalsIgnoreCase(role)) {
+
+        // 3.3. Vai trò Nhân viên cụm rạp (Bán vé, Soát vé) -> Màn hình tác vụ nhân viên
+        if ("STAFF".equalsIgnoreCase(role)
+                || "TICKET_SALES_STAFF".equalsIgnoreCase(role)
+                || "TICKET_CHECKER_STAFF".equalsIgnoreCase(role)
+                || "TICKET_SALES".equalsIgnoreCase(role)
+                || "TICKET_CHECKER".equalsIgnoreCase(role)) {
             request.getRequestDispatcher("/staff/dashboard.jsp").forward(request, response);
             return;
         }
 
-        // CUSTOMER role
+        // 3.4. Vai trò Khách hàng (CUSTOMER) -> Điều hướng về trang chủ
         response.sendRedirect(request.getContextPath() + "/home/index.jsp");
     }
 }

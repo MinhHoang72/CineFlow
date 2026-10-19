@@ -8,10 +8,10 @@
 }
 
 /* ==========================================================================
-   Cinema Modern Dark: Home Index Styles
+   Định dạng trang chủ CineFlow (Cinema Modern Dark)
    ========================================================================== */
 
-/* Hot Section / Featured Section */
+/* Phân mục phim nổi bật / phim hot */
 .hot-section {
     background: transparent;
 }
@@ -45,7 +45,7 @@
     text-transform: uppercase;
 }
 
-/* Hero Carousel */
+/* Banner trình chiếu nổi bật (Hero Carousel) */
 .hero {
     position: relative;
     width: 100%;
@@ -237,7 +237,7 @@
     box-shadow: 0 0 10px rgba(255, 42, 84, 0.7);
 }
 
-/* Movie Catalog Section */
+/* Danh mục phim */
 .movies-section {
     width: min(var(--cf-container, 1240px), calc(100% - 40px));
     margin: 48px auto 75px;
@@ -248,7 +248,7 @@
     margin: 0 auto;
 }
 
-/* Modern Pill Tabs (Thay cho tab vuông viền vàng cũ) */
+/* Tab phân loại phim dạng viên thuốc (Pill Tabs) */
 .tabs {
     display: flex;
     justify-content: center;
@@ -284,7 +284,7 @@
     box-shadow: 0 4px 18px rgba(255, 42, 84, 0.4);
 }
 
-/* Movie Grid & Card (Cinema Modern Dark) */
+/* Lưới phim và thẻ thông tin phim */
 .movie-grid[hidden] { display: none !important; }
 .movie-card[hidden] { display: none !important; }
 
@@ -423,7 +423,7 @@
     text-align: center;
 }
 
-/* Promotions Section */
+/* Phân mục ưu đãi và sự kiện */
 .promotion-section {
     width: min(var(--cf-container, 1240px), calc(100% - 40px));
     margin: 58px auto 72px;
@@ -531,7 +531,7 @@
     color: #FF5A7A;
 }
 
-/* Search Box / Fast Filter */
+/* Khung tìm kiếm và lọc nhanh */
 .search-section {
     display: flex;
     align-items: center;
@@ -581,7 +581,7 @@
 .search-box input { width: 200px; }
 .search-box select { width: 170px; }
 
-/* Cinema / Centre Section */
+/* Phân mục hệ thống cụm rạp */
 .cinema-section {
     width: min(var(--cf-container, 1240px), calc(100% - 40px));
     margin: 60px auto;
@@ -642,7 +642,7 @@
     font-weight: 700;
 }
 
-/* Pagination */
+/* Phân trang danh sách phim */
 .movie-pagination {
     display: flex;
     align-items: center;
@@ -700,7 +700,7 @@
     box-shadow: 0 0 10px rgba(255, 42, 84, 0.7);
 }
 
-/* Quick Rail (Glassmorphism Dark) */
+/* Thanh tiện ích nhanh góc phải màn hình */
 .quick-rail {
     position: fixed;
     z-index: 99;
@@ -752,7 +752,7 @@
     color: #fff;
 }
 
-/* Responsive Media Queries */
+/* Tương thích đa thiết bị (Responsive) */
 @media (max-width: 1050px) {
     .movie-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 0 20px; }
     .quick-rail { display: none; }

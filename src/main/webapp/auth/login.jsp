@@ -21,10 +21,8 @@
         </div>
 
         <div class="container">
-
-            <!-- LEFT SIDE -->
+            <!-- CỘT GIỚI THIỆU THƯƠNG HIỆU BÊN TRÁI -->
             <div class="hero">
-
                 <a class="logo" href="${pageContext.request.contextPath}/home/index.jsp">
                     Cine<span>Flow</span>
                 </a>
@@ -40,7 +38,6 @@
                 </p>
 
                 <div class="features">
-
                     <div class="feature">
                         <div class="feature-icon">▶</div>
                         <span>Khám phá phim</span>
@@ -55,13 +52,10 @@
                         <div class="feature-icon">★</div>
                         <span>Tận hưởng điện ảnh</span>
                     </div>
-
                 </div>
-
             </div>
 
-
-            <!-- LOGIN CARD -->
+            <!-- KHỐI FORM ĐĂNG NHẬP -->
             <div class="login-card">
 
                 <h2>Chào mừng bạn trở lại</h2>
@@ -81,12 +75,19 @@
                     <p class="form-error" role="alert">Tài khoản/email hoặc mật khẩu không chính xác.</p>
                 <% } else if ("locked".equals(errorParam)) { %>
                     <p class="form-error" role="alert">Tài khoản này đã bị tạm khóa bởi Quản trị viên.</p>
+                <% } else if ("inactive".equals(errorParam)) { %>
+                    <p class="form-error" role="alert">Tài khoản này đang tạm ngưng hoạt động. Vui lòng liên hệ Quản trị viên.</p>
                 <% } else if ("unverified".equals(errorParam)) { %>
                     <div style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); color: #F59E0B; padding: 12px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 18px; line-height: 1.5;">
                         ⚠ Tài khoản của bạn chưa được kích hoạt qua email.<br>
                         <a href="${pageContext.request.contextPath}/verify-otp?action=resend&email=<%= unverifiedEmail != null ? java.net.URLEncoder.encode(unverifiedEmail, "UTF-8") : "" %>&type=register" style="color: #FF2A54; font-weight: 700; text-decoration: underline;">
                             Nhận mã OTP và kích hoạt ngay ›
                         </a>
+                    </div>
+                <% } %>
+                <% if ("password_reset".equals(request.getParameter("success"))) { %>
+                    <div style="background: rgba(52, 211, 153, 0.12); border: 1px solid rgba(52, 211, 153, 0.3); color: #34D399; padding: 12px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 18px;">
+                        ✓ Đặt lại mật khẩu thành công! Bạn có thể đăng nhập bằng mật khẩu mới.
                     </div>
                 <% } %>
                 <% if ("true".equals(verifiedParam)) { %>
@@ -150,81 +151,47 @@
                     </div>
 
 
-                    <!-- Options -->
+                    <!-- TÙY CHỌN BỔ SUNG -->
                     <div class="options">
-
                         <label class="remember">
-
                             <input type="checkbox">
-
                             <span>Ghi nhớ đăng nhập</span>
-
                         </label>
 
-                        <a
-                            class="forgot"
-                            href="${pageContext.request.contextPath}/auth/forgot-password.jsp">
+                        <a class="forgot" href="${pageContext.request.contextPath}/auth/forgot-password.jsp">
                             Quên mật khẩu?
                         </a>
-
                     </div>
 
-
-                    <!-- Login -->
-                    <button
-                        type="submit"
-                        class="login-btn">
+                    <!-- NÚT ĐĂNG NHẬP -->
+                    <button type="submit" class="login-btn">
                         Đăng nhập
                     </button>
-
                 </form>
 
-
-
-                <!-- Register -->
+                <!-- ĐIỀU HƯỚNG ĐĂNG KÝ -->
                 <div class="register">
-
                     Chưa có tài khoản?
-
                     <a href="${pageContext.request.contextPath}/auth/register.jsp<%= redirectUrl != null && !redirectUrl.trim().isEmpty() ? ("?redirect=" + java.net.URLEncoder.encode(redirectUrl, "UTF-8")) : "" %>">
                         Tạo tài khoản
                     </a>
-
                 </div>
-
             </div>
-
         </div>
 
-
         <script>
-
             function togglePassword() {
-
-                const password =
-                        document.getElementById("password");
-
-                const toggle =
-                        document.querySelector(".password-toggle");
+                const password = document.getElementById("password");
+                const toggle = document.querySelector(".password-toggle");
 
                 if (password.type === "password") {
-
                     password.type = "text";
                     toggle.textContent = "Ẩn";
-
                 } else {
-
                     password.type = "password";
                     toggle.textContent = "Hiện";
-
                 }
             }
-
         </script>
-
     </body>
 </html>
-
-
-
-
