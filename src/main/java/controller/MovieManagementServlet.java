@@ -176,14 +176,32 @@ public class MovieManagementServlet extends HttpServlet {
             // 2.7. Kiểm tra khoảng thời gian chiếu (Ngày kết thúc phải lớn hơn hoặc bằng ngày khởi chiếu)
             Date releaseDate = parseDate(releaseDateStr);
             Date endDate = parseDate(endDateStr);
+            Date today = new Date(System.currentTimeMillis());
+
+            // Nghiệp vụ: Nếu trạng thái được set là ENDED, tự động gán ngày kết thúc (EndDate) là hôm nay nếu chưa có hoặc đang ở tương lai
+            if ("ENDED".equals(status)) {
+                if (endDate == null || endDate.after(today)) {
+                    endDate = today;
+                }
+            }
+
             if (!ValidationUtils.isValidDateRange(releaseDate, endDate)) {
                 response.sendRedirect(redirectTarget + sep + "error=invalid_date_range");
+                return;
+            }
+
+            // Nghiệp vụ trạng thái theo ngày phát hành (COMING_SOON không được ở quá khứ, NOW_SHOWING không được ở tương lai)
+            String dateConsistencyError = ValidationUtils.validateMovieStatusDateConsistency(status, releaseDate, today);
+            if (dateConsistencyError != null) {
+                response.sendRedirect(redirectTarget + sep + "error=" + dateConsistencyError);
                 return;
             }
 
             try {
                 // 2.8. Đóng gói thông tin form vào đối tượng Movie POJO
                 Movie movie = readMovie(request);
+                movie.setReleaseDate(releaseDate);
+                movie.setEndDate(endDate);
 
                 // 2.9. Xử lý lưu trữ tệp tin Poster và Trailer tải lên thư mục máy chủ nếu có
                 String posterUrl = saveUpload(request, "posterFile", "poster");
@@ -221,7 +239,11 @@ public class MovieManagementServlet extends HttpServlet {
                     int movieId = Integer.parseInt(movieIdParam.trim());
                     String targetStatus = newStatus.trim().toUpperCase();
                     if (ValidationUtils.isValidMovieStatus(targetStatus)) {
-                        dao.updateMovieStatus(movieId, targetStatus);
+                        if ("ENDED".equals(targetStatus)) {
+                            dao.endMovie(movieId);
+                        } else {
+                            dao.updateMovieStatus(movieId, targetStatus);
+                        }
                         response.sendRedirect(request.getContextPath() + "/admin/movies?success=statusUpdated");
                         return;
                     }

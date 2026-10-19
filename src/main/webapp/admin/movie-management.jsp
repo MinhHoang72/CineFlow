@@ -86,6 +86,14 @@
                 <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
                     <span>⚠</span> <strong>Lỗi:</strong> Khoảng thời gian phát hành không hợp lệ: Ngày kết thúc phải sau hoặc bằng ngày khởi chiếu.
                 </div>
+            <% } else if ("coming_soon_in_past".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
+                    <span>⚠</span> <strong>Lỗi ngày phát hành:</strong> Không thể đặt trạng thái "Sắp khởi chiếu" khi ngày khởi chiếu ở trong quá khứ. Vui lòng chọn ngày tương lai hoặc đổi trạng thái sang "Đang chiếu".
+                </div>
+            <% } else if ("now_showing_in_future".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
+                    <span>⚠</span> <strong>Lỗi ngày phát hành:</strong> Phim có ngày khởi chiếu ở tương lai chưa thể đặt trạng thái "Đang chiếu". Vui lòng chọn trạng thái "Sắp khởi chiếu".
+                </div>
             <% } else if ("invalid_poster_file".equals(errorParam)) { %>
                 <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
                     <span>⚠</span> <strong>Lỗi tệp:</strong> Áp phích (poster) phải là tệp hình ảnh (.jpg, .jpeg, .png, .webp).
@@ -463,8 +471,46 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Tự động gán ngày kết thúc khi chọn trạng thái "Đã kết thúc" (ENDED)
+    const statusSelect = document.querySelector('select[name="status"]');
+    const releaseDateInput = document.querySelector('input[name="releaseDate"]');
+    const endDateInput = document.querySelector('input[name="endDate"]');
+    if (statusSelect && endDateInput) {
+        statusSelect.addEventListener('change', function() {
+            if (this.value === 'ENDED') {
+                const todayStr = new Date().toISOString().split('T')[0];
+                if (!endDateInput.value || endDateInput.value > todayStr) {
+                    endDateInput.value = todayStr;
+                }
+            }
+        });
+    }
+
     if (movieForm && btnSubmitMovie) {
-        movieForm.addEventListener('submit', function() {
+        movieForm.addEventListener('submit', function(e) {
+            const status = statusSelect ? statusSelect.value : '';
+            const relVal = releaseDateInput ? releaseDateInput.value : '';
+            const endVal = endDateInput ? endDateInput.value : '';
+            const todayStr = new Date().toISOString().split('T')[0];
+
+            if (relVal && endVal && endVal < relVal) {
+                alert('Ngày kết thúc phải lớn hơn hoặc bằng ngày khởi chiếu.');
+                e.preventDefault();
+                return;
+            }
+
+            if (status === 'COMING_SOON' && relVal && relVal < todayStr) {
+                alert('Phim có ngày khởi chiếu trong quá khứ không thể đặt trạng thái "Sắp khởi chiếu". Vui lòng chọn ngày tương lai hoặc đổi sang "Đang chiếu".');
+                e.preventDefault();
+                return;
+            }
+
+            if (status === 'NOW_SHOWING' && relVal && relVal > todayStr) {
+                alert('Phim có ngày khởi chiếu ở tương lai chưa thể đặt trạng thái "Đang chiếu". Vui lòng chọn trạng thái "Sắp khởi chiếu".');
+                e.preventDefault();
+                return;
+            }
+
             btnSubmitMovie.classList.add('is-submitting');
             btnSubmitMovie.textContent = 'Đang lưu phim...';
         });

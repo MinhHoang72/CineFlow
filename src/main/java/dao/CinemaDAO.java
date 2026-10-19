@@ -446,7 +446,7 @@ public class CinemaDAO {
     }
 
 
-    private static final String DYNAMIC_PRICE_SELECT = "(COALESCE(bp.BasePrice, 80000) + COALESCE(tsp.Surcharge, 0)) AS BaseTicketPrice ";
+    private static final String DYNAMIC_PRICE_SELECT = "(COALESCE(bp.BasePrice, 80000) + COALESCE(tsp.Surcharge, 0) + COALESCE(sur.Amount, 0)) AS BaseTicketPrice ";
     private static final String DYNAMIC_PRICE_APPLY = "OUTER APPLY ( "
             + "    SELECT TOP 1 bp.BasePrice FROM BranchPricing bp "
             + "    WHERE bp.BranchID = b.CentreID AND s.StartTime >= bp.EffectiveFrom "
@@ -461,7 +461,14 @@ public class CinemaDAO {
             + "      AND s.StartTime >= tsp.EffectiveFrom "
             + "      AND (tsp.EffectiveTo IS NULL OR s.StartTime <= tsp.EffectiveTo) "
             + "    ORDER BY tsp.EffectiveFrom DESC "
-            + ") tsp ";
+            + ") tsp "
+            + "OUTER APPLY ( "
+            + "    SELECT TOP 1 sur.Amount FROM Surcharges sur "
+            + "    WHERE sur.SurchargeType = 'HALL' AND sur.TargetValue = h.HallType "
+            + "      AND s.StartTime >= sur.EffectiveFrom "
+            + "      AND (sur.EffectiveTo IS NULL OR s.StartTime <= sur.EffectiveTo) "
+            + "    ORDER BY sur.EffectiveFrom DESC "
+            + ") sur ";
 
     /**
      * Lấy tất cả các suất chiếu đã lên lịch của những phim đang chiếu hoặc sắp chiếu.
@@ -477,7 +484,7 @@ public class CinemaDAO {
                 + "JOIN Halls h ON h.HallID = s.HallID "
                 + "JOIN Centres b ON b.CentreID = h.CentreID "
                 + DYNAMIC_PRICE_APPLY
-                + "WHERE s.Status = 'SCHEDULED' AND m.Status IN ('NOW_SHOWING', 'COMING_SOON') "
+                + "WHERE s.Status = 'SCHEDULED' AND s.StartTime > SYSDATETIME() AND m.Status IN ('NOW_SHOWING', 'COMING_SOON') "
                 + "ORDER BY s.StartTime";
         List<ShowtimeView> showtimes = new ArrayList<>();
 
@@ -519,12 +526,12 @@ public class CinemaDAO {
                 + "JOIN Halls h ON h.HallID = s.HallID "
                 + "JOIN Centres b ON b.CentreID = h.CentreID "
                 + DYNAMIC_PRICE_APPLY
-                + "WHERE s.Status = 'SCHEDULED' AND s.MovieID = ? "
+                + "WHERE s.Status = 'SCHEDULED' AND s.StartTime > SYSDATETIME() AND s.MovieID = ? "
                 + "ORDER BY s.StartTime";
         List<ShowtimeView> showtimes = new ArrayList<>();
 
         try (Connection connection = DBContext.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+             PreparedStatement statement = connection.prepareStatement(sql);) {
             statement.setInt(1, movieId);
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
@@ -563,7 +570,7 @@ public class CinemaDAO {
                 + "JOIN Halls h ON h.HallID = s.HallID "
                 + "JOIN Centres b ON b.CentreID = h.CentreID "
                 + DYNAMIC_PRICE_APPLY
-                + "WHERE s.Status = 'SCHEDULED' AND m.Status IN ('NOW_SHOWING', 'COMING_SOON') AND b.CentreID = ? "
+                + "WHERE s.Status = 'SCHEDULED' AND s.StartTime > SYSDATETIME() AND m.Status IN ('NOW_SHOWING', 'COMING_SOON') AND b.CentreID = ? "
                 + "ORDER BY s.StartTime";
         List<ShowtimeView> showtimes = new ArrayList<>();
 
@@ -697,6 +704,24 @@ public class CinemaDAO {
              PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, status);
             ps.setInt(2, movieId);
+            return ps.executeUpdate() > 0;
+        } catch (Exception exception) {
+            exception.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * Kết thúc chiếu phim ngay thời điểm hiện tại: Cập nhật Status = 'ENDED' và gán EndDate = ngày hôm nay.
+     *
+     * @param movieId mã định danh phim
+     * @return true nếu cập nhật thành công, ngược lại false
+     */
+    public boolean endMovie(int movieId) {
+        String sql = "UPDATE Movies SET Status = 'ENDED', EndDate = CASE WHEN EndDate IS NULL OR EndDate > CAST(GETDATE() AS DATE) THEN CAST(GETDATE() AS DATE) ELSE EndDate END, UpdatedAt = GETDATE() WHERE MovieID = ?";
+        try (Connection connection = DBContext.getConnection();
+             PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, movieId);
             return ps.executeUpdate() > 0;
         } catch (Exception exception) {
             exception.printStackTrace();

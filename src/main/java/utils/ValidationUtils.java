@@ -178,6 +178,30 @@ public final class ValidationUtils {
     }
 
     /**
+     * Kiểm tra tính nhất quán giữa trạng thái phát hành phim và ngày khởi chiếu.
+     * - COMING_SOON: Ngày khởi chiếu không được trước ngày hôm nay.
+     * - NOW_SHOWING: Ngày khởi chiếu không được sau ngày hôm nay.
+     *
+     * @param status trạng thái phim (COMING_SOON, NOW_SHOWING, ENDED, ARCHIVED)
+     * @param releaseDate ngày khởi chiếu
+     * @param today ngày hiện tại
+     * @return null nếu hợp lệ, hoặc mã lỗi ("coming_soon_in_past", "now_showing_in_future")
+     */
+    public static String validateMovieStatusDateConsistency(String status, Date releaseDate, Date today) {
+        if (isBlank(status) || releaseDate == null || today == null) {
+            return null;
+        }
+        String st = status.trim().toUpperCase();
+        if ("COMING_SOON".equals(st) && releaseDate.before(today)) {
+            return "coming_soon_in_past";
+        }
+        if ("NOW_SHOWING".equals(st) && releaseDate.after(today)) {
+            return "now_showing_in_future";
+        }
+        return null;
+    }
+
+    /**
      * Kiểm tra trạng thái tài khoản người dùng có hợp lệ hay không.
      */
     public static boolean isValidUserStatus(String status) {

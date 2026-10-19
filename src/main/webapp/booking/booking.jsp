@@ -385,6 +385,13 @@
                         <div class="showtime-action-info">
                             <span id="bookingMessage">Chọn một suất chiếu để tiếp tục.</span>
                         </div>
+                        <div class="showtime-action-buttons">
+                            <a id="bookingLoginLink" class="btn-proceed" href="#" hidden>Đăng nhập để đặt vé</a>
+                            <a id="bookingCinemaLoginLink" class="btn-proceed" href="#" hidden>Đăng nhập để đặt vé</a>
+                            <button id="btnProceedBooking" class="btn-proceed" type="button" style="display: none;">
+                                Tiếp tục chọn ghế &rarr;
+                            </button>
+                        </div>
                     </div>
                 </section>
             </main>
@@ -671,18 +678,14 @@
                         });
                     });
 
-                    // 8. Nút Tiếp tục đặt vé
+                    // 8. Nút Tiếp tục đặt vé: chuyển sang bước chọn ghế
                     if (btnProceed) {
                         btnProceed.addEventListener("click", function () {
                             if (!selectedShowtimeId) {
                                 alert("Vui lòng chọn một suất chiếu!");
                                 return;
                             }
-                            const activeShowtime = showtimeButtons.find((b) => b.dataset.showtimeId === selectedShowtimeId);
-                            const time = activeShowtime ? activeShowtime.dataset.time : "";
-                            const hall = activeShowtime ? activeShowtime.dataset.hall : "";
-                            const price = activeShowtime ? activeShowtime.dataset.price : "";
-                            alert("Bạn đã chọn suất chiếu: " + time + " (" + hall + ") - Giá vé: " + price + ".\nHệ thống đang chuẩn bị mở sơ đồ ghế ngồi!");
+                            window.location.href = "<%= contextPath %>/booking?action=select-seats&showtimeId=" + encodeURIComponent(selectedShowtimeId);
                         });
                     }
 
