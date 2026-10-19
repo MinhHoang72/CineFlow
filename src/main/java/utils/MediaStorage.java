@@ -11,7 +11,7 @@ public final class MediaStorage {
     private MediaStorage() { }
 
     public static Path uploadDirectory(ServletContext context, String category) throws IOException {
-        if (!"avatars".equals(category) && !"movies".equals(category)) {
+        if (!"avatars".equals(category) && !"movies".equals(category) && !"fnb".equals(category)) {
             throw new IllegalArgumentException("Unsupported media category.");
         }
         String configuredRoot = context.getInitParameter("media.root");
