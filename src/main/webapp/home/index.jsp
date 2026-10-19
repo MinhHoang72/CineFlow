@@ -172,7 +172,6 @@
                                 <span class="age-badge<%= "T18".equalsIgnoreCase(movie.getAgeRating()) ? " restricted" : ("T13".equalsIgnoreCase(movie.getAgeRating()) || "P".equalsIgnoreCase(movie.getAgeRating()) ? " general" : "") %>"><%= escapeHtml(movie.getAgeRating()) %></span>
                                 <div class="poster-actions">
                                     <a class="poster-hover-link detail" href="<%= contextPath %>/movie/details?movieId=<%= movie.getMovieId() %>">Chi tiết</a>
-                                    <a class="poster-hover-link book" href="<%= contextPath %>/booking/booking.jsp?movieId=<%= movie.getMovieId() %>">Mua vé</a>
                                 </div>
                             </div>
                             <div class="movie-info">
