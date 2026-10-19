@@ -282,7 +282,7 @@ public class MovieManagementServlet extends HttpServlet {
     }
 
     /**
-     * Lưu trữ tệp tin tải lên (poster hoặc trailer) vào thư mục uploads/poster hoặc uploads/video_trailer trên máy chủ.
+     * Lưu trữ tệp tin tải lên (poster hoặc trailer) vào thư mục uploads/movies trên máy chủ.
      * Sử dụng UUID ngẫu nhiên để đảm bảo tên tệp không bao giờ bị trùng lặp.
      *
      * @param request  đối tượng yêu cầu HTTP chứa multipart data
@@ -325,15 +325,14 @@ public class MovieManagementServlet extends HttpServlet {
             return null;
         }
 
-        // 5. Xác định thư mục lưu trữ trên máy chủ theo danh mục (poster hoặc video_trailer)
-        String category = "trailer".equals(prefix) ? "video_trailer" : "poster";
-        Path directory = MediaStorage.uploadDirectory(getServletContext(), category);
+        // 5. Xác định thư mục lưu trữ trên máy chủ và tạo tên tệp ngẫu nhiên bằng UUID
+        Path directory = MediaStorage.uploadDirectory(getServletContext(), "movies");
         String fileName = prefix + "-" + UUID.randomUUID() + extension;
 
         // 6. Ghi dữ liệu nhị phân xuống đĩa cứng máy chủ
         part.write(directory.resolve(fileName).toString());
 
         // 7. Trả về đường dẫn truy cập phục vụ hiển thị trên giao diện web
-        return request.getContextPath() + "/uploads/" + category + "/" + fileName;
+        return request.getContextPath() + "/uploads/movies/" + fileName;
     }
 }

@@ -14,19 +14,17 @@ import java.nio.file.Path;
 import java.util.Set;
 
 /**
- * Controller: Phục vụ các tài nguyên đa phương tiện tĩnh (ảnh đại diện avatar,
- * poster phim, trailer video)
+ * Controller: Phục vụ các tài nguyên đa phương tiện tĩnh (ảnh đại diện avatar, poster phim, trailer video)
  * đã được tải lên máy chủ, ngăn chặn tấn công Path Traversal.
  * URL ánh xạ: /uploads/*
  */
 public class MediaResourceServlet extends HttpServlet {
 
-    private static final Set<String> CATEGORIES = Set.of("avatars", "movies", "poster", "video_trailer");
+    private static final Set<String> CATEGORIES = Set.of("avatars", "movies");
     private static final Set<String> EXTENSIONS = Set.of("jpg", "jpeg", "png", "webp", "mp4", "webm", "ogg");
 
     /**
-     * Xử lý yêu cầu HTTP GET: Xác thực đường dẫn tài nguyên an toàn và truyền phát
-     * dữ liệu file nhị phân về client.
+     * Xử lý yêu cầu HTTP GET: Xác thực đường dẫn tài nguyên an toàn và truyền phát dữ liệu file nhị phân về client.
      *
      * @param request  yêu cầu HTTP từ client
      * @param response phản hồi HTTP gửi về client
@@ -43,8 +41,7 @@ public class MediaResourceServlet extends HttpServlet {
             return;
         }
 
-        // 2. Tách và kiểm tra các đoạn thư mục (phòng chống tấn công Path Traversal:
-        // .., \, %)
+        // 2. Tách và kiểm tra các đoạn thư mục (phòng chống tấn công Path Traversal: .., \, %)
         String[] segments = pathInfo.substring(1).split("/", -1);
         if (segments.length != 2 || !CATEGORIES.contains(segments[0])
                 || segments[1].isBlank() || segments[1].contains("..")
@@ -53,8 +50,7 @@ public class MediaResourceServlet extends HttpServlet {
             return;
         }
 
-        // 3. Kiểm tra định dạng phần mở rộng (extension) có nằm trong danh sách cho
-        // phép hay không
+        // 3. Kiểm tra định dạng phần mở rộng (extension) có nằm trong danh sách cho phép hay không
         String filename = segments[1];
         int dot = filename.lastIndexOf('.');
         String extension = dot < 0 ? "" : filename.substring(dot + 1).toLowerCase();
@@ -63,32 +59,15 @@ public class MediaResourceServlet extends HttpServlet {
             return;
         }
 
-        // 4. Xác định đường dẫn file vật lý trên máy chủ và kiểm tra file có tồn tại
-        // hay không
+        // 4. Xác định đường dẫn file vật lý trên máy chủ và kiểm tra file có tồn tại hay không
         Path root = MediaStorage.resourcesRoot(getServletContext()).toAbsolutePath().normalize();
         Path file = root.resolve("uploads").resolve(segments[0]).resolve(filename).normalize();
-
-        // Hỗ trợ tương thích ngược: nếu yêu cầu đến movies mà file đã chuyển sang
-        // poster hoặc video_trailer
-        if (!Files.isRegularFile(file) && "movies".equals(segments[0])) {
-            Path posterFile = root.resolve("uploads").resolve("poster").resolve(filename).normalize();
-            if (Files.isRegularFile(posterFile)) {
-                file = posterFile;
-            } else {
-                Path trailerFile = root.resolve("uploads").resolve("video_trailer").resolve(filename).normalize();
-                if (Files.isRegularFile(trailerFile)) {
-                    file = trailerFile;
-                }
-            }
-        }
-
         if (!file.startsWith(root) || !Files.isRegularFile(file)) {
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;
         }
 
-        // 5. Cấu hình header phản hồi HTTP (Content-Type, Content-Length,
-        // Cache-Control)
+        // 5. Cấu hình header phản hồi HTTP (Content-Type, Content-Length, Cache-Control)
         String contentType = Files.probeContentType(file);
         response.setContentType(contentType == null ? "application/octet-stream" : contentType);
         response.setContentLengthLong(Files.size(file));
@@ -97,7 +76,7 @@ public class MediaResourceServlet extends HttpServlet {
 
         // 6. Truyền phát luồng dữ liệu nhị phân của tệp tin về trình duyệt client
         try (InputStream input = Files.newInputStream(file);
-                OutputStream output = response.getOutputStream()) {
+             OutputStream output = response.getOutputStream()) {
             input.transferTo(output);
         }
     }
