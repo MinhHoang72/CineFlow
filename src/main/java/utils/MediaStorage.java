@@ -7,19 +7,31 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 /**
- * Quản lý thư mục lưu trữ tệp tin đa phương tiện (avatar, poster phim) bên ngoài thư mục build tạm thời.
+ * Tiện ích: Quản lý thư mục lưu trữ tệp tin đa phương tiện vật lý (avatar, poster phim, trailer)
+ * bên ngoài thư mục build tạm thời để đảm bảo không bị mất file khi redeploy hoặc rebuild server.
  */
 public final class MediaStorage {
+
     private MediaStorage() {
+        // Constructor riêng tư ngăn chặn việc khởi tạo đối tượng tiện ích tĩnh
     }
 
     /**
      * Xác định và tạo thư mục tải lên theo danh mục tương ứng (avatars, movies).
+     *
+     * @param context  ngữ cảnh ServletContext của ứng dụng
+     * @param category danh mục file ("avatars" hoặc "movies")
+     * @return đường dẫn Path tới thư mục lưu trữ
+     * @throws IOException              nếu không thể giải quyết thư mục hoặc tạo thư mục thất bại
+     * @throws IllegalArgumentException nếu danh mục không được hỗ trợ
      */
     public static Path uploadDirectory(ServletContext context, String category) throws IOException {
+        // 1. Kiểm tra danh mục hợp lệ (chỉ hỗ trợ avatars và movies)
         if (!"avatars".equals(category) && !"movies".equals(category)) {
             throw new IllegalArgumentException("Unsupported media category.");
         }
+
+        // 2. Xác định thư mục gốc lưu trữ từ cấu hình init-param hoặc tự động dò tìm thư mục resources của dự án
         String configuredRoot = context.getInitParameter("media.root");
         Path resourcesRoot;
         if (configuredRoot != null && !configuredRoot.isBlank()) {
@@ -36,14 +48,25 @@ public final class MediaStorage {
             }
             resourcesRoot = projectRoot.resolve("resources");
         }
+
+        // 3. Chuẩn hóa đường dẫn thư mục lưu trữ uploads/{category} và phòng chống Path Traversal
         Path directory = resourcesRoot.resolve("uploads").resolve(category).normalize();
         if (!directory.startsWith(resourcesRoot)) {
             throw new IOException("Invalid media directory.");
         }
+
+        // 4. Tự động tạo thư mục trên ổ đĩa nếu chưa tồn tại
         Files.createDirectories(directory);
         return directory;
     }
 
+    /**
+     * Lấy đường dẫn thư mục gốc resources lưu trữ toàn bộ file uploads.
+     *
+     * @param context ngữ cảnh ServletContext
+     * @return đường dẫn Path thư mục gốc resources
+     * @throws IOException nếu không thể giải quyết thư mục
+     */
     public static Path resourcesRoot(ServletContext context) throws IOException {
         uploadDirectory(context, "avatars");
         return uploadDirectory(context, "avatars").getParent().getParent();

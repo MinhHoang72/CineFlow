@@ -22,11 +22,22 @@ public class VerifyOtpServlet extends HttpServlet {
 
     private UserDAO userDAO;
 
+    /**
+     * Khởi tạo Servlet và đối tượng DAO truy xuất cơ sở dữ liệu.
+     */
     @Override
     public void init() {
         userDAO = new UserDAO();
     }
 
+    /**
+     * Xử lý yêu cầu HTTP POST: Xác thực mã OTP cho các luồng kích hoạt tài khoản, đổi mật khẩu hoặc đổi email.
+     *
+     * @param request  yêu cầu HTTP từ client
+     * @param response phản hồi HTTP gửi về client
+     * @throws ServletException nếu xảy ra lỗi servlet
+     * @throws IOException      nếu xảy ra lỗi vào/ra dữ liệu
+     */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -117,6 +128,14 @@ public class VerifyOtpServlet extends HttpServlet {
         response.sendRedirect(request.getContextPath() + "/reset-password");
     }
 
+    /**
+     * Xử lý yêu cầu HTTP GET: Gửi lại mã OTP (resend) khi người dùng yêu cầu hoặc chuyển tiếp tới trang verify-otp.jsp.
+     *
+     * @param request  yêu cầu HTTP từ client
+     * @param response phản hồi HTTP gửi về client
+     * @throws ServletException nếu xảy ra lỗi servlet
+     * @throws IOException      nếu xảy ra lỗi vào/ra dữ liệu
+     */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {

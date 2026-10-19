@@ -23,11 +23,22 @@ public class ForgotPasswordServlet extends HttpServlet {
 
     private UserDAO userDAO;
 
+    /**
+     * Khởi tạo Servlet và đối tượng DAO truy xuất cơ sở dữ liệu.
+     */
     @Override
     public void init() {
         userDAO = new UserDAO();
     }
 
+    /**
+     * Xử lý yêu cầu HTTP POST: Tạo mã OTP đặt lại mật khẩu và gửi qua email cho người dùng.
+     *
+     * @param request  yêu cầu HTTP từ client
+     * @param response phản hồi HTTP gửi về client
+     * @throws ServletException nếu xảy ra lỗi servlet
+     * @throws IOException      nếu xảy ra lỗi vào/ra dữ liệu
+     */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -79,6 +90,14 @@ public class ForgotPasswordServlet extends HttpServlet {
         response.sendRedirect(request.getContextPath() + "/auth/verify-otp.jsp?email=" + encodedEmail + "&action=reset");
     }
 
+    /**
+     * Xử lý yêu cầu HTTP GET: Chặn truy cập trực tiếp bằng phương thức GET vào endpoint xử lý quên mật khẩu.
+     *
+     * @param request  yêu cầu HTTP từ client
+     * @param response phản hồi HTTP gửi về client
+     * @throws ServletException nếu xảy ra lỗi servlet
+     * @throws IOException      nếu xảy ra lỗi vào/ra dữ liệu
+     */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {

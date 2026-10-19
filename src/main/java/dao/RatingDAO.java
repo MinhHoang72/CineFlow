@@ -7,7 +7,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
 /**
- * Xử lý truy vấn và lưu trữ điểm đánh giá phim của người dùng.
+ * DAO: Xử lý truy vấn và lưu trữ điểm đánh giá phim của người dùng.
  */
 public class RatingDAO {
 
@@ -54,6 +54,7 @@ public class RatingDAO {
      * @return true nếu lưu thành công, ngược lại false
      */
     public boolean saveOrUpdateRating(int movieId, int userId, int score) {
+        // 1. Chuẩn hóa khoảng điểm sao từ 1 đến 5
         if (score < 1) {
             score = 1;
         }
@@ -65,7 +66,7 @@ public class RatingDAO {
         String insertSql = "INSERT INTO MovieRatings (MovieID, UserID, Score, CreatedAt) VALUES (?, ?, ?, GETDATE())";
 
         try (Connection con = DBContext.getConnection()) {
-            // Thử cập nhật đánh giá đã tồn tại trước đó
+            // 2. Thử cập nhật đánh giá nếu người dùng đã từng đánh giá trước đó
             try (PreparedStatement updatePs = con.prepareStatement(updateSql)) {
                 updatePs.setInt(1, score);
                 updatePs.setInt(2, movieId);
@@ -76,7 +77,7 @@ public class RatingDAO {
                 }
             }
 
-            // Nếu người dùng chưa từng đánh giá thì tạo mới bản ghi
+            // 3. Nếu chưa từng đánh giá thì thực hiện thêm mới bản ghi đánh giá
             try (PreparedStatement insertPs = con.prepareStatement(insertSql)) {
                 insertPs.setInt(1, movieId);
                 insertPs.setInt(2, userId);
@@ -97,6 +98,7 @@ public class RatingDAO {
      * @return đối tượng tổng hợp đánh giá
      */
     public MovieRatingSummary getRatingSummary(int movieId, Integer currentUserId) {
+        // 1. Truy vấn tính toán điểm sao trung bình và tổng số lượt đánh giá
         String sql = "SELECT AVG(CAST(Score AS FLOAT)) AS AvgStar, COUNT(RatingID) AS TotalCount "
                 + "FROM MovieRatings WHERE MovieID = ?";
         double avgStars = 0.0;
@@ -117,6 +119,7 @@ public class RatingDAO {
             e.printStackTrace();
         }
 
+        // 2. Truy vấn số sao mà người dùng hiện tại đã chấm cho phim (nếu đã đăng nhập)
         int userScore = 0;
         if (currentUserId != null && currentUserId > 0) {
             String userSql = "SELECT Score FROM MovieRatings WHERE MovieID = ? AND UserID = ?";
@@ -134,7 +137,7 @@ public class RatingDAO {
             }
         }
 
-        // Quy đổi sao sang thang điểm 10 và làm tròn đến 1 chữ số thập phân
+        // 3. Quy đổi sao sang thang điểm 10 và làm tròn đến 1 chữ số thập phân
         double avgScore10 = Math.round(avgStars * 2.0 * 10.0) / 10.0;
         double roundedAvgStars5 = Math.round(avgStars * 10.0) / 10.0;
         return new MovieRatingSummary(avgScore10, roundedAvgStars5, count, userScore);

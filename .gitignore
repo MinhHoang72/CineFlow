@@ -26,4 +26,6 @@ out/
 # OS generated files
 Thumbs.db
 Desktop.ini
-.DS_Store
+# Local & AI tools
+run.bat
+.specify/

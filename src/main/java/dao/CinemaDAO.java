@@ -402,17 +402,23 @@ public class CinemaDAO {
                 + "WHEN MATCHED THEN UPDATE SET IsActive = 1, UpdatedAt = GETDATE() "
                 + "WHEN NOT MATCHED THEN INSERT (CentreID, MovieID, IsActive) VALUES (source.CentreID, source.MovieID, 1);";
 
+        // 1. Mở kết nối và bắt đầu khối Transaction
         try (Connection connection = DBContext.getConnection()) {
             connection.setAutoCommit(false);
             try {
+                // 2. Vô hiệu hóa phân phối đối với các trung tâm không còn ở trạng thái ACTIVE
                 try (PreparedStatement inactive = connection.prepareStatement(disableInactiveSql)) {
                     inactive.setInt(1, movieId);
                     inactive.executeUpdate();
                 }
+
+                // 3. Tạm thời vô hiệu hóa tất cả phân phối cũ của bộ phim này
                 try (PreparedStatement disable = connection.prepareStatement(disableAllSql)) {
                     disable.setInt(1, movieId);
                     disable.executeUpdate();
                 }
+
+                // 4. Thực thi câu lệnh MERGE theo Batch để cập nhật/thêm mới các rạp được chọn
                 if (selectedCentreIDs != null && !selectedCentreIDs.isEmpty()) {
                     try (PreparedStatement merge = connection.prepareStatement(mergeSql)) {
                         for (Integer centreId : selectedCentreIDs) {
@@ -424,9 +430,12 @@ public class CinemaDAO {
                         merge.executeBatch();
                     }
                 }
+
+                // 5. Xác nhận thành công (Commit Transaction)
                 connection.commit();
                 return true;
             } catch (Exception exception) {
+                // 6. Hoàn tác thay đổi nếu xảy ra lỗi trong Transaction
                 connection.rollback();
                 throw exception;
             }
@@ -624,10 +633,14 @@ public class CinemaDAO {
         String sql = "INSERT INTO Movies (Title, Description, Duration, Genre, Director, Cast, Language, "
                 + "ReleaseDate, EndDate, PosterURL, TrailerURL, AgeRating, Status) "
                 + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        // 1. Mở kết nối và chuẩn bị PreparedStatement với cờ trả về khóa tự sinh
         try (Connection connection = DBContext.getConnection();
              PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            // 2. Thiết lập các tham số thông tin phim vào câu lệnh SQL
             setMovieParams(ps, movie, false);
             ps.executeUpdate();
+
+            // 3. Lấy mã MovieID mới sinh từ cơ sở dữ liệu
             try (ResultSet keys = ps.getGeneratedKeys()) {
                 if (keys.next()) {
                     return keys.getInt(1);
@@ -649,8 +662,10 @@ public class CinemaDAO {
         String sql = "UPDATE Movies SET Title = ?, Description = ?, Duration = ?, Genre = ?, Director = ?, "
                 + "Cast = ?, Language = ?, ReleaseDate = ?, EndDate = ?, PosterURL = ?, TrailerURL = ?, "
                 + "AgeRating = ?, Status = ?, UpdatedAt = GETDATE() WHERE MovieID = ?";
+        // 1. Mở kết nối và chuẩn bị câu lệnh cập nhật phim
         try (Connection connection = DBContext.getConnection();
              PreparedStatement ps = connection.prepareStatement(sql)) {
+            // 2. Điền các tham số và cập nhật thông tin
             setMovieParams(ps, movie, true);
             return ps.executeUpdate() > 0;
         } catch (Exception exception) {
@@ -697,6 +712,7 @@ public class CinemaDAO {
      */
     public boolean deleteMovie(int movieId) {
         String sql = "DELETE FROM Movies WHERE MovieID = ?";
+        // 1. Mở kết nối và thực thi lệnh xóa phim theo MovieID
         try (Connection connection = DBContext.getConnection();
              PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, movieId);

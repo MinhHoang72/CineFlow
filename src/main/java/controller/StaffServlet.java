@@ -19,7 +19,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Điều khiển trang quản lý nhân sự cấp cơ sở (STAFF) dành cho Quản lý trung tâm (Manager) và Quản trị viên (Admin).
+ * Controller điều khiển trang quản lý nhân sự cấp cơ sở (STAFF).
+ * Phân quyền:
+ * - Quản lý trung tâm (Manager): Quản lý nhân viên thuộc rạp mình phụ trách.
+ * - Quản trị viên (Admin): Quản lý nhân viên trên toàn hệ thống hoặc lọc theo từng rạp.
+ * URL ánh xạ: /staff
  */
 public class StaffServlet extends HttpServlet {
 
@@ -28,6 +32,9 @@ public class StaffServlet extends HttpServlet {
 
     /**
      * Kiểm tra người dùng có quyền quản lý nhân sự (MANAGER hoặc ADMIN) hay không.
+     *
+     * @param session phiên làm việc HttpSession
+     * @return true nếu có quyền, ngược lại false
      */
     private boolean canManage(HttpSession session) {
         if (session == null) {
@@ -42,6 +49,9 @@ public class StaffServlet extends HttpServlet {
 
     /**
      * Kiểm tra người dùng có phải Quản trị viên cấp cao (ADMIN) hay không.
+     *
+     * @param session phiên làm việc HttpSession
+     * @return true nếu là Admin, ngược lại false
      */
     private boolean isAdmin(HttpSession session) {
         if (session == null) {
@@ -55,7 +65,10 @@ public class StaffServlet extends HttpServlet {
     }
 
     /**
-     * Kiểm tra yêu cầu gửi đến có phải là AJAX hay không.
+     * Kiểm tra yêu cầu gửi đến có phải là AJAX request hay không.
+     *
+     * @param request yêu cầu HTTP
+     * @return true nếu là AJAX request, ngược lại false
      */
     private boolean isAjax(HttpServletRequest request) {
         String xrw = request.getHeader("X-Requested-With");
@@ -66,9 +79,18 @@ public class StaffServlet extends HttpServlet {
                 || "1".equals(ajaxParam) || "true".equalsIgnoreCase(ajaxParam);
     }
 
+    /**
+     * Xử lý yêu cầu HTTP GET: Tải danh bạ nhân sự theo rạp hoặc theo toàn hệ thống và hiển thị giao diện.
+     *
+     * @param request  yêu cầu HTTP từ client
+     * @param response phản hồi HTTP gửi về client
+     * @throws ServletException nếu xảy ra lỗi servlet
+     * @throws IOException      nếu xảy ra lỗi vào/ra dữ liệu
+     */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        // 1. Kiểm tra xác thực (nếu chưa đăng nhập thì chuyển hướng sang trang Login)
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("userId") == null) {
             String loginUrl = request.getContextPath() + "/auth/login.jsp?redirect="
@@ -76,11 +98,14 @@ public class StaffServlet extends HttpServlet {
             response.sendRedirect(loginUrl);
             return;
         }
+
+        // 2. Kiểm tra quyền hạn (chỉ Admin hoặc Manager mới được truy cập)
         if (!canManage(session)) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN, "Bạn không có quyền truy cập quản lý nhân sự.");
             return;
         }
 
+        // 3. Tải thông tin người dùng đăng nhập hiện tại từ cơ sở dữ liệu để đảm bảo dữ liệu mới nhất
         int sessionUserId = (int) session.getAttribute("userId");
         User currentUser = userDAO.getUserById(sessionUserId);
         if (currentUser == null) {
@@ -92,11 +117,12 @@ public class StaffServlet extends HttpServlet {
         boolean adminRole = isAdmin(session);
         Integer centreId = null;
 
+        // 4. Phân loại phạm vi dữ liệu theo vai trò
         if (!adminRole) {
-            // Manager: Chỉ xem nhân viên rạp mình phụ trách
+            // Đối với Manager: Chỉ được xem nhân viên thuộc cụm rạp mà mình đang phụ trách
             centreId = currentUser.getCentreId();
         } else {
-            // Admin: Xem theo bộ lọc trung tâm hoặc toàn bộ hệ thống
+            // Đối với Admin: Có thể xem toàn bộ hoặc lọc theo một cụm rạp được chọn
             String cp = request.getParameter("centreId");
             if (cp != null && !cp.trim().isEmpty()) {
                 try {
@@ -106,13 +132,17 @@ public class StaffServlet extends HttpServlet {
             }
         }
 
+        // 5. Đọc từ khóa tìm kiếm và bộ lọc vai trò (Ticket Sales / Ticket Checker)
         String searchParam = request.getParameter("search");
         String roleFilter = request.getParameter("role");
+
+        // 6. Truy vấn danh sách nhân viên từ UserDAO theo điều kiện rạp và bộ lọc
         List<User> staffList = new ArrayList<>();
         if (adminRole || centreId != null) {
             staffList = userDAO.getStaffDirectory(centreId, searchParam, roleFilter);
         }
 
+        // 7. Lấy danh sách các rạp đang hoạt động để Admin chọn rạp hoặc hiển thị tên rạp cho Manager
         List<Centre> centres = cinemaDAO.getActiveCentres();
         Centre assignedCentre = null;
         if (centreId != null) {
@@ -124,18 +154,31 @@ public class StaffServlet extends HttpServlet {
             }
         }
 
+        // 8. Đưa các thuộc tính cần thiết vào request
         request.setAttribute("staff", staffList);
         request.setAttribute("centres", centres);
         request.setAttribute("assignedCentre", assignedCentre);
         request.setAttribute("selectedCentreId", centreId);
         request.setAttribute("selectedRole", roleFilter);
         request.setAttribute("isAdmin", adminRole);
+
+        // 9. Forward tới giao diện danh bạ nhân sự directory.jsp
         request.getRequestDispatcher("/staff/directory.jsp").forward(request, response);
     }
 
+    /**
+     * Xử lý yêu cầu HTTP POST: Tiếp nhận thao tác tạo mới nhân viên, cập nhật thông tin hoặc chuyển trạng thái hoạt động.
+     *
+     * @param request  yêu cầu HTTP từ client
+     * @param response phản hồi HTTP gửi về client
+     * @throws IOException nếu xảy ra lỗi vào/ra dữ liệu
+     */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        // 1. Thiết lập encoding UTF-8
         request.setCharacterEncoding("UTF-8");
+
+        // 2. Kiểm tra xác thực phiên và quyền quản lý (Admin hoặc Manager)
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("userId") == null || !canManage(session)) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN, "Bạn không có quyền cập nhật nhân sự.");
@@ -151,18 +194,19 @@ public class StaffServlet extends HttpServlet {
 
         String action = request.getParameter("action");
 
-        // 1. TẠO TÀI KHOẢN NHÂN VIÊN MỚI
+        // 3. Xử lý tạo mới tài khoản nhân viên (action = "create")
         if ("create".equalsIgnoreCase(action)) {
+            // 3.1. Xác định rạp trực thuộc cho nhân viên mới
             Integer targetCentreId = null;
             if (!adminRole) {
-                // Manager chỉ được tạo nhân viên thuộc rạp mình phụ trách
+                // Nếu là Manager: Bắt buộc nhân viên mới phải thuộc rạp của chính Manager đó
                 if (currentUser.getCentreId() == null || currentUser.getCentreId() <= 0) {
                     response.sendRedirect(request.getContextPath() + "/staff?error=unassigned_manager");
                     return;
                 }
                 targetCentreId = currentUser.getCentreId();
             } else {
-                // Admin chọn trung tâm trực thuộc cho nhân viên
+                // Nếu là Admin: Phải chọn cụm rạp từ danh sách
                 String cp = request.getParameter("centreId");
                 if (ValidationUtils.isBlank(cp)) {
                     response.sendRedirect(request.getContextPath() + "/staff?error=missing_centre");
@@ -181,12 +225,14 @@ public class StaffServlet extends HttpServlet {
                 }
             }
 
+            // 3.2. Đọc các trường thông tin từ form
             String fullName = request.getParameter("fullName");
             String account = request.getParameter("account");
             String email = request.getParameter("email");
             String password = request.getParameter("password");
             String phone = request.getParameter("phone");
 
+            // 3.3. Kiểm tra các trường bắt buộc không để trống
             if (ValidationUtils.isBlank(fullName)
                     || ValidationUtils.isBlank(account)
                     || ValidationUtils.isBlank(email)
@@ -200,46 +246,55 @@ public class StaffServlet extends HttpServlet {
             email = email.trim();
             phone = phone != null ? phone.trim() : "";
 
+            // 3.4. Validate định dạng Họ tên
             if (!ValidationUtils.isValidFullName(fullName)) {
                 response.sendRedirect(request.getContextPath() + "/staff?error=invalid_name");
                 return;
             }
 
+            // 3.5. Validate định dạng Tên tài khoản
             if (!ValidationUtils.isValidAccount(account)) {
                 response.sendRedirect(request.getContextPath() + "/staff?error=invalid_account");
                 return;
             }
 
+            // 3.6. Validate định dạng Email
             if (!ValidationUtils.isValidEmail(email)) {
                 response.sendRedirect(request.getContextPath() + "/staff?error=invalid_email");
                 return;
             }
 
+            // 3.7. Kiểm tra email rác dùng 1 lần
             if (ValidationUtils.isDisposableEmail(email)) {
                 response.sendRedirect(request.getContextPath() + "/staff?error=disposable_email");
                 return;
             }
 
+            // 3.8. Kiểm tra mật khẩu đạt chuẩn bảo mật
             if (!ValidationUtils.isValidPassword(password)) {
                 response.sendRedirect(request.getContextPath() + "/staff?error=weak_password");
                 return;
             }
 
+            // 3.9. Validate định dạng Số điện thoại
             if (!ValidationUtils.isValidPhone(phone, false)) {
                 response.sendRedirect(request.getContextPath() + "/staff?error=invalid_phone");
                 return;
             }
 
+            // 3.10. Kiểm tra tài khoản đã tồn tại chưa
             if (userDAO.isAccountExists(account)) {
                 response.sendRedirect(request.getContextPath() + "/staff?error=account_exists");
                 return;
             }
 
+            // 3.11. Kiểm tra email đã được người dùng khác đăng ký chưa
             if (userDAO.isEmailExists(email)) {
                 response.sendRedirect(request.getContextPath() + "/staff?error=email_exists");
                 return;
             }
 
+            // 3.12. Xác định vai trò nhân sự: Bán vé (TICKET_SALES_STAFF) hoặc Soát vé (TICKET_CHECKER_STAFF)
             String role = request.getParameter("role");
             if (role == null || role.isBlank() || !ValidationUtils.isStaffRole(role)) {
                 role = User.ROLE_TICKET_SALES;
@@ -247,6 +302,7 @@ public class StaffServlet extends HttpServlet {
                 role = role.trim().toUpperCase();
             }
 
+            // 3.13. Đóng gói đối tượng User và băm mật khẩu bảo mật
             User newStaff = new User();
             newStaff.setFullName(fullName);
             newStaff.setAccount(account);
@@ -256,6 +312,7 @@ public class StaffServlet extends HttpServlet {
             newStaff.setRole(role);
             newStaff.setCentreId(targetCentreId);
 
+            // 3.14. Ghi nhận thông tin nhân viên vào DB thông qua UserDAO
             boolean created = userDAO.createStaff(newStaff);
             if (created) {
                 response.sendRedirect(request.getContextPath() + "/staff?success=created");
@@ -265,15 +322,17 @@ public class StaffServlet extends HttpServlet {
             return;
         }
 
-        // 2. CHỈNH SỬA THÔNG TIN NHÂN VIÊN (FullName, Phone, Email, Role)
+        // 4. Xử lý cập nhật thông tin nhân viên (action = "update")
         if ("update".equalsIgnoreCase(action)) {
             try {
+                // 4.1. Đọc dữ liệu cập nhật từ request
                 int userId = Integer.parseInt(request.getParameter("userId"));
                 String fullName = request.getParameter("fullName");
                 String phone = request.getParameter("phone");
                 String email = request.getParameter("email");
                 String role = request.getParameter("role");
 
+                // 4.2. Kiểm tra các trường bắt buộc
                 if (ValidationUtils.isBlank(fullName) || ValidationUtils.isBlank(email)) {
                     response.sendRedirect(request.getContextPath() + "/staff?error=missing_fields");
                     return;
@@ -283,6 +342,7 @@ public class StaffServlet extends HttpServlet {
                 email = email.trim();
                 phone = phone != null ? phone.trim() : "";
 
+                // 4.3. Validate định dạng Họ tên, Email, Phone
                 if (!ValidationUtils.isValidFullName(fullName)) {
                     response.sendRedirect(request.getContextPath() + "/staff?error=invalid_name");
                     return;
@@ -303,13 +363,14 @@ public class StaffServlet extends HttpServlet {
                     return;
                 }
 
+                // 4.4. Kiểm tra tài khoản nhân viên cần sửa có tồn tại không
                 User targetUser = userDAO.getUserById(userId);
                 if (targetUser == null) {
                     response.sendError(HttpServletResponse.SC_NOT_FOUND, "Không tìm thấy tài khoản nhân viên.");
                     return;
                 }
 
-                // Manager chỉ được sửa nhân viên cấp rạp (STAFF, TICKET_SALES_STAFF, TICKET_CHECKER_STAFF)
+                // 4.5. Chỉ cho phép chỉnh sửa nhân viên cấp cơ sở (Staff bán vé/soát vé)
                 if (!targetUser.isStaff()) {
                     response.sendError(HttpServletResponse.SC_FORBIDDEN, "Chỉ được chỉnh sửa nhân viên cấp rạp.");
                     return;
@@ -321,7 +382,7 @@ public class StaffServlet extends HttpServlet {
                     role = role.trim().toUpperCase();
                 }
 
-                // Manager không được quản lý Staff thuộc rạp khác
+                // 4.6. Kiểm tra quyền hạn: Manager không được sửa nhân viên của rạp khác
                 if (!adminRole) {
                     if (currentUser.getCentreId() == null || targetUser.getCentreId() == null
                             || !currentUser.getCentreId().equals(targetUser.getCentreId())) {
@@ -330,11 +391,13 @@ public class StaffServlet extends HttpServlet {
                     }
                 }
 
+                // 4.7. Kiểm tra email mới có bị trùng với tài khoản khác không
                 if (userDAO.isEmailExistsForOtherUser(email, userId)) {
                     response.sendRedirect(request.getContextPath() + "/staff?error=email_exists");
                     return;
                 }
 
+                // 4.8. Thực hiện cập nhật thông tin qua UserDAO
                 boolean updated = userDAO.updateStaffBasicInfo(userId, fullName, phone, email, role);
                 if (updated) {
                     response.sendRedirect(request.getContextPath() + "/staff?success=updated");
@@ -348,15 +411,17 @@ public class StaffServlet extends HttpServlet {
             }
         }
 
-        // 3. KÍCH HOẠT HOẶC NGỪNG HOẠT ĐỘNG (STATUS) NHÂN VIÊN
+        // 5. Xử lý kích hoạt hoặc tạm ngưng nhân viên (action = "status")
         if ("status".equalsIgnoreCase(action) || request.getParameter("status") != null) {
             try {
+                // 5.1. Đọc ID nhân viên và trạng thái mới (ACTIVE / INACTIVE / LOCKED)
                 int userId = Integer.parseInt(request.getParameter("userId"));
                 String status = request.getParameter("status");
                 if (!"ACTIVE".equals(status) && !"INACTIVE".equals(status) && !"LOCKED".equals(status)) {
                     status = "ACTIVE";
                 }
 
+                // 5.2. Kiểm tra tài khoản nhân viên mục tiêu
                 User targetUser = userDAO.getUserById(userId);
                 if (targetUser == null) {
                     if (isAjax(request)) {
@@ -369,7 +434,7 @@ public class StaffServlet extends HttpServlet {
                     return;
                 }
 
-                // Manager chỉ được đổi trạng thái tài khoản nhân viên cấp rạp
+                // 5.3. Đảm bảo chỉ thao tác trên nhân viên cấp rạp
                 if (!targetUser.isStaff()) {
                     if (isAjax(request)) {
                         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
@@ -381,7 +446,7 @@ public class StaffServlet extends HttpServlet {
                     return;
                 }
 
-                // Manager không được quản lý Staff thuộc rạp khác
+                // 5.4. Manager chỉ có quyền đổi trạng thái nhân viên rạp mình
                 if (!adminRole) {
                     if (currentUser.getCentreId() == null || targetUser.getCentreId() == null
                             || !currentUser.getCentreId().equals(targetUser.getCentreId())) {
@@ -396,7 +461,10 @@ public class StaffServlet extends HttpServlet {
                     }
                 }
 
+                // 5.5. Cập nhật trạng thái người dùng trong DB
                 userDAO.updateUserStatus(userId, status);
+
+                // 5.6. Trả về phản hồi JSON nếu là AJAX request hoặc redirect nếu là form thông thường
                 if (isAjax(request)) {
                     response.setContentType("application/json;charset=UTF-8");
                     response.getWriter().write("{\"success\":true,\"userId\":" + userId + ",\"status\":\"" + status + "\",\"message\":\"Đã cập nhật trạng thái thành công.\"}");
@@ -416,6 +484,7 @@ public class StaffServlet extends HttpServlet {
             }
         }
 
+        // 6. Nếu không khớp hành động nào, chuyển hướng về danh bạ nhân sự
         response.sendRedirect(request.getContextPath() + "/staff");
     }
 }

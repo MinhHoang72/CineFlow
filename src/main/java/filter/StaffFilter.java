@@ -15,13 +15,20 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
 /**
- * Filter bảo vệ không gian nhân viên (/staff/dashboard.jsp).
+ * Filter: Bảo vệ không gian nhân viên (/staff/dashboard.jsp).
+ * Quy tắc:
  * - Chưa đăng nhập: chuyển hướng về trang đăng nhập.
- * - CUSTOMER: chặn truy cập với HTTP 403 Forbidden.
- * - STAFF, MANAGER, ADMIN: cho phép truy cập.
+ * - Khách hàng (CUSTOMER): chặn truy cập với HTTP 403 Forbidden.
+ * - Nhân viên hoặc cấp trên (STAFF, MANAGER, ADMIN): cho phép truy cập.
  */
 public class StaffFilter implements Filter {
 
+    /**
+     * Kiểm tra phiên hiện tại đã đăng nhập tài khoản hay chưa.
+     *
+     * @param session phiên làm việc HttpSession
+     * @return true nếu đã đăng nhập, ngược lại false
+     */
     private boolean isLoggedIn(HttpSession session) {
         if (session == null) {
             return false;
@@ -33,6 +40,12 @@ public class StaffFilter implements Filter {
         return userObj instanceof User && ((User) userObj).getUserId() > 0;
     }
 
+    /**
+     * Kiểm tra người dùng đăng nhập có vai trò nhân viên cấp cơ sở hoặc quản lý trở lên hay không.
+     *
+     * @param session phiên làm việc HttpSession
+     * @return true nếu có quyền, ngược lại false
+     */
     private boolean isStaffOrAbove(HttpSession session) {
         if (session == null) {
             return false;
@@ -50,6 +63,15 @@ public class StaffFilter implements Filter {
                 || "ADMIN".equalsIgnoreCase(role);
     }
 
+    /**
+     * Thực thi lọc request: Kiểm tra trạng thái đăng nhập và phân quyền truy cập cho nhân viên.
+     *
+     * @param request  yêu cầu servlet
+     * @param response phản hồi servlet
+     * @param chain    chuỗi FilterChain
+     * @throws IOException      nếu xảy ra lỗi vào/ra dữ liệu
+     * @throws ServletException nếu xảy ra lỗi servlet
+     */
     @Override
     public void doFilter(ServletRequest request,
                          ServletResponse response,
@@ -61,7 +83,7 @@ public class StaffFilter implements Filter {
 
         HttpSession session = httpRequest.getSession(false);
 
-        // 1. Kiểm tra đăng nhập
+        // 1. Kiểm tra trạng thái đăng nhập (nếu chưa đăng nhập chuyển về trang login kèm redirect URL)
         if (!isLoggedIn(session)) {
             String uri = httpRequest.getRequestURI();
             String qs = httpRequest.getQueryString();
@@ -75,12 +97,13 @@ public class StaffFilter implements Filter {
             return;
         }
 
-        // 2. Chặn CUSTOMER
+        // 2. Chặn các tài khoản khách hàng (CUSTOMER) truy cập vào khu vực nội bộ nhân viên
         if (!isStaffOrAbove(session)) {
             httpResponse.sendError(HttpServletResponse.SC_FORBIDDEN, "Khách hàng không có quyền truy cập không gian nhân viên.");
             return;
         }
 
+        // 3. Đã xác thực vai trò nhân sự hợp lệ -> Cho phép đi tiếp
         chain.doFilter(request, response);
     }
 }

@@ -20,11 +20,22 @@ public class ResetPasswordServlet extends HttpServlet {
 
     private UserDAO userDAO;
 
+    /**
+     * Khởi tạo Servlet và đối tượng DAO truy xuất cơ sở dữ liệu.
+     */
     @Override
     public void init() {
         userDAO = new UserDAO();
     }
 
+    /**
+     * Xử lý yêu cầu HTTP POST: Đặt lại mật khẩu mới cho người dùng sau khi đã qua bước xác thực OTP.
+     *
+     * @param request  yêu cầu HTTP từ client
+     * @param response phản hồi HTTP gửi về client
+     * @throws ServletException nếu xảy ra lỗi servlet
+     * @throws IOException      nếu xảy ra lỗi vào/ra dữ liệu
+     */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -85,6 +96,14 @@ public class ResetPasswordServlet extends HttpServlet {
         response.sendRedirect(request.getContextPath() + "/auth/login.jsp?success=password_reset");
     }
 
+    /**
+     * Xử lý yêu cầu HTTP GET: Kiểm tra cờ xác thực OTP và hiển thị giao diện đặt lại mật khẩu mới.
+     *
+     * @param request  yêu cầu HTTP từ client
+     * @param response phản hồi HTTP gửi về client
+     * @throws ServletException nếu xảy ra lỗi servlet
+     * @throws IOException      nếu xảy ra lỗi vào/ra dữ liệu
+     */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
