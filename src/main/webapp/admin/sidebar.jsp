@@ -30,6 +30,20 @@
         </a>
     </nav>
 
+    <div class="cf-sidebar-section">BẮP NƯỚC</div>
+    <nav class="cf-sidebar-nav">
+        <a class="<%= "fnb".equals(activeNav) ? "active" : "" %>" href="<%= cfPath %>/fnb">
+            <span class="icon">🍿</span>Món &amp; Combo
+        </a>
+    </nav>
+
+    <div class="cf-sidebar-section">KHUYẾN MÃI</div>
+    <nav class="cf-sidebar-nav">
+        <a class="<%= "vouchers".equals(activeNav) || cfUri.contains("/admin/vouchers") ? "active" : "" %>" href="<%= cfPath %>/admin/vouchers">
+            <span class="icon">🎟</span>Voucher
+        </a>
+    </nav>
+
     <div class="cf-sidebar-section">QUẢN LÝ NGƯỜI DÙNG</div>
     <nav class="cf-sidebar-nav">
         <a class="<%= "customers".equals(activeNav) || cfUri.contains("/admin/customers") ? "active" : "" %>" href="<%= cfPath %>/admin/customers">
@@ -49,8 +63,14 @@
 
     <div class="cf-sidebar-section">BÁO CÁO & PHÂN TÍCH</div>
     <nav class="cf-sidebar-nav">
-        <a class="<%= "reports".equals(activeNav) || cfUri.contains("/reports") ? "active" : "" %>" href="<%= cfPath %>/reports">
-            <span class="icon">📊</span>Báo cáo doanh thu
+        <a class="<%= cfUri.contains("/report/chain") ? "active" : "" %>" href="<%= cfPath %>/report/chain">
+            <span class="icon">📈</span>Dashboard chuỗi
+        </a>
+        <a class="<%= cfUri.contains("/report/sales") ? "active" : "" %>" href="<%= cfPath %>/report/sales">
+            <span class="icon">💰</span>Doanh thu &amp; bán hàng
+        </a>
+        <a class="<%= cfUri.contains("/report/operations") ? "active" : "" %>" href="<%= cfPath %>/report/operations">
+            <span class="icon">⚙</span>Chỉ số vận hành
         </a>
     </nav>
 
