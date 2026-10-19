@@ -2,20 +2,30 @@ package model;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
 
 public class FnbCombo {
     private int comboId;
     private Integer centreId;
     private String centreName;
-    private String comboName;
-    private String description;
+    private String comboName = "";
+    private String description = "";
     private BigDecimal price;
     private String imageUrl;
-    private String status; // ACTIVE / INACTIVE
+    private String status = "ACTIVE"; // ACTIVE / INACTIVE
     private Timestamp createdAt;
     private Timestamp updatedAt;
+    private List<ComboLine> lines = new ArrayList<>();
 
     public FnbCombo() {
+    }
+
+    public FnbCombo(int comboId, BigDecimal price, String imageUrl, int centreId) {
+        this.comboId = comboId;
+        this.price = price;
+        this.imageUrl = imageUrl;
+        this.centreId = centreId;
     }
 
     public int getComboId() {
@@ -96,5 +106,18 @@ public class FnbCombo {
 
     public void setUpdatedAt(Timestamp updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public List<ComboLine> getLines() {
+        return lines;
+    }
+
+    public void setLines(List<ComboLine> lines) {
+        this.lines = lines;
+    }
+
+    @Override
+    public String toString() {
+        return "FnbCombo{" + "comboId=" + comboId + ", comboName=" + comboName + ", description=" + description + ", price=" + price + ", imageUrl=" + imageUrl + ", status=" + status + ", centreId=" + centreId + ", lines=" + lines + '}';
     }
 }

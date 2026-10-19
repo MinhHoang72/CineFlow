@@ -9,15 +9,23 @@ public class FnbItem {
     private String categoryName;
     private Integer centreId;
     private String centreName;
-    private String itemName;
-    private String description;
+    private String itemName = "";
+    private String description = "";
     private BigDecimal price;
     private String imageUrl;
-    private String status; // ACTIVE / INACTIVE
+    private String status = "ACTIVE"; // ACTIVE / INACTIVE
     private Timestamp createdAt;
     private Timestamp updatedAt;
 
     public FnbItem() {
+    }
+
+    public FnbItem(int fnbItemId, int categoryId, BigDecimal price, String imageUrl, int centreId) {
+        this.fnbItemId = fnbItemId;
+        this.categoryId = categoryId;
+        this.price = price;
+        this.imageUrl = imageUrl;
+        this.centreId = centreId;
     }
 
     public int getFnbItemId() {
@@ -49,6 +57,10 @@ public class FnbItem {
     }
 
     public void setCentreId(Integer centreId) {
+        this.centreId = centreId;
+    }
+
+    public void setCentreId(int centreId) {
         this.centreId = centreId;
     }
 
@@ -114,5 +126,10 @@ public class FnbItem {
 
     public void setUpdatedAt(Timestamp updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    @Override
+    public String toString() {
+        return "FnbItem{" + "fnbItemId=" + fnbItemId + ", categoryId=" + categoryId + ", itemName=" + itemName + ", description=" + description + ", price=" + price + ", imageUrl=" + imageUrl + ", status=" + status + ", centreId=" + centreId + '}';
     }
 }
