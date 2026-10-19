@@ -13,23 +13,48 @@ import java.util.List;
 
 public class ShowtimeDAO {
 
+    /** Gia goc cua rap (BranchPricing) dang hieu luc tai gio chieu; NULL neu rap chua co bang gia. */
+    private static final String CENTRE_BASE_PRICE =
+            "(SELECT TOP 1 bp.BasePrice FROM BranchPricing bp "
+          + " WHERE bp.BranchID = b.CentreID AND bp.EffectiveFrom <= s.StartTime "
+          + "   AND (bp.EffectiveTo IS NULL OR bp.EffectiveTo > s.StartTime) "
+          + " ORDER BY bp.EffectiveFrom DESC)";
+
+    /**
+     * Gia ve ghe thuong cua suat = gia goc rap + phu thu khung gio (TimeSlotPricing) + phu thu phong (Surcharges HALL).
+     * Phu thu loai ghe (Surcharges SEAT) duoc cong them trong SeatDAO.
+     * Moc gio trung giua 2 khung (vd 12:00) tinh vao khung bat dau muon hon.
+     */
+    private static final String TICKET_PRICE =
+            CENTRE_BASE_PRICE
+          + " + ISNULL((SELECT TOP 1 tp.Surcharge FROM TimeSlotPricing tp "
+          + "     WHERE tp.BranchID = b.CentreID "
+          + "       AND CAST(s.StartTime AS TIME) BETWEEN tp.StartTime AND tp.EndTime "
+          + "       AND tp.EffectiveFrom <= s.StartTime AND (tp.EffectiveTo IS NULL OR tp.EffectiveTo > s.StartTime) "
+          + "     ORDER BY tp.StartTime DESC), 0)"
+          + " + ISNULL((SELECT SUM(sc.Amount) FROM Surcharges sc "
+          + "     WHERE sc.SurchargeType = 'HALL' AND sc.TargetValue = h.HallType "
+          + "       AND sc.EffectiveFrom <= s.StartTime AND (sc.EffectiveTo IS NULL OR sc.EffectiveTo > s.StartTime)), 0)";
+
     static final String SELECT =
             "SELECT s.ShowtimeID, s.MovieID, m.Title, b.CentreID, b.CentreName, h.HallID, h.HallName, "
-          + "       h.HallType, s.StartTime, s.EndTime, s.BaseTicketPrice "
+          + "       h.HallType, s.StartTime, s.EndTime, " + TICKET_PRICE + " AS TicketPrice "
           + "FROM Showtimes s "
           + "JOIN Movies m ON m.MovieID = s.MovieID "
           + "JOIN Halls h ON h.HallID = s.HallID "
           + "JOIN Centres b ON b.CentreID = h.CentreID ";
 
+    /** Suat con mo ban: chua chieu, phim dang chieu, phong va rap hoat dong, rap da co bang gia. */
     private static final String BOOKABLE =
             "s.Status = 'SCHEDULED' AND s.StartTime > SYSDATETIME() AND m.Status = 'NOW_SHOWING' "
-          + "AND h.Status = 'AVAILABLE' AND b.Status = 'ACTIVE' ";
+          + "AND h.Status = 'AVAILABLE' AND b.Status = 'ACTIVE' "
+          + "AND " + CENTRE_BASE_PRICE + " IS NOT NULL ";
 
     static Showtime map(ResultSet rs) throws SQLException {
         return new Showtime(rs.getInt("ShowtimeID"), rs.getInt("MovieID"), rs.getString("Title"),
                 rs.getInt("CentreID"), rs.getString("CentreName"), rs.getInt("HallID"),
                 rs.getString("HallName"), rs.getString("HallType"), rs.getTimestamp("StartTime"),
-                rs.getTimestamp("EndTime"), rs.getBigDecimal("BaseTicketPrice"));
+                rs.getTimestamp("EndTime"), rs.getBigDecimal("TicketPrice"));
     }
 
     /** Cac ngay con suat chieu cua phim tai chi nhanh. */

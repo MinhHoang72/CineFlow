@@ -30,7 +30,7 @@ public class SeatDAO {
                    + "              OR (bs.SeatStatus = 'HELD' AND bs.HoldUntil > SYSDATETIME()))) "
                    + "  THEN 1 ELSE 0 END AS Taken "
                    + "FROM Seats se WHERE se.HallID = ? ORDER BY se.SeatRow, se.SeatNumber";
-        Map<String, BigDecimal[]> surcharges = loadSurcharges(conn);
+        Map<String, BigDecimal> surcharges = loadSeatSurcharges(conn, showtime);
         List<Seat> seats = new ArrayList<>();
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, showtime.getId());
@@ -47,27 +47,24 @@ public class SeatDAO {
         return seats;
     }
 
-    /** SeatType -> {tong phu thu co dinh, tong phan tram phu thu}. */
-    private static Map<String, BigDecimal[]> loadSurcharges(Connection conn) throws SQLException {
-        Map<String, BigDecimal[]> map = new HashMap<>();
+    /** Loai ghe (TargetValue) -> tong phu thu ghe (Surcharges SEAT) dang hieu luc tai gio chieu. */
+    private static Map<String, BigDecimal> loadSeatSurcharges(Connection conn, Showtime showtime) throws SQLException {
+        Map<String, BigDecimal> map = new HashMap<>();
         try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT SeatType, Amount, Percentage FROM Surcharges WHERE IsActive = 1");
-             ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) {
-                BigDecimal[] v = map.computeIfAbsent(rs.getString("SeatType"),
-                        k -> new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO});
-                v[0] = v[0].add(rs.getBigDecimal("Amount"));
-                BigDecimal pct = rs.getBigDecimal("Percentage");
-                if (pct != null) v[1] = v[1].add(pct);
+                "SELECT TargetValue, SUM(Amount) AS Amount FROM Surcharges "
+              + "WHERE SurchargeType = 'SEAT' AND EffectiveFrom <= ? AND (EffectiveTo IS NULL OR EffectiveTo > ?) "
+              + "GROUP BY TargetValue")) {
+            ps.setTimestamp(1, showtime.getStartTime());
+            ps.setTimestamp(2, showtime.getStartTime());
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) map.put(rs.getString("TargetValue"), rs.getBigDecimal("Amount"));
             }
         }
         return map;
     }
 
-    private static BigDecimal priceFor(BigDecimal base, String seatType, Map<String, BigDecimal[]> surcharges) {
-        BigDecimal[] s = surcharges.get(seatType);
-        if (s == null) return base;
-        BigDecimal percentPart = base.multiply(s[1]).divide(BigDecimal.valueOf(100));
-        return base.add(s[0]).add(percentPart);
+    /** Gia ghe = gia ve ghe thuong cua suat + phu thu theo loai ghe. */
+    private static BigDecimal priceFor(BigDecimal base, String seatType, Map<String, BigDecimal> surcharges) {
+        return base.add(surcharges.getOrDefault(seatType, BigDecimal.ZERO));
     }
 }

@@ -289,11 +289,11 @@ public class CounterController extends HttpServlet {
         return booking;
     }
 
-    /** Chi STAFF da duoc gan chi nhanh moi ban ve tai quay. */
+    /** Chi nhan vien ban ve (TICKET_SALES_STAFF) da duoc gan chi nhanh moi ban ve tai quay. */
     private static User requireCounterStaff(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         User user = WebUtil.requireUser(req, resp);
         if (user == null) return null;
-        if (!"STAFF".equals(user.getRole()) || user.getBranchId() == null) {
+        if (!user.isSalesStaff() || user.getBranchId() == null) {
             resp.sendError(HttpServletResponse.SC_FORBIDDEN, "Chỉ nhân viên quầy vé mới được bán vé tại quầy.");
             return null;
         }

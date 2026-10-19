@@ -31,7 +31,13 @@ public class User implements Serializable {
     public String getRole() { return role; }
     public Integer getBranchId() { return branchId; }
 
+    /** Nhan vien ban ve (Ticket Sales Staff). STAFF giu lai cho du lieu cu. */
+    public boolean isSalesStaff() {
+        return "TICKET_SALES_STAFF".equals(role) || "STAFF".equals(role);
+    }
+
+    /** Duoc doi soat / xac nhan thanh toan: nhan vien ban ve, quan ly, admin (khong gom nhan vien soat ve). */
     public boolean isStaff() {
-        return "STAFF".equals(role) || "MANAGER".equals(role) || "ADMIN".equals(role);
+        return isSalesStaff() || "MANAGER".equals(role) || "ADMIN".equals(role);
     }
 }

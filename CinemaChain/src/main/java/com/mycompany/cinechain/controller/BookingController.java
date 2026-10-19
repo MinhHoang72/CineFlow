@@ -235,19 +235,14 @@ public class BookingController extends HttpServlet {
         req.getRequestDispatcher(VIEW_DIR + "booking-detail.jsp").forward(req, resp);
     }
 
-    /** Khach xem don cua minh; STAFF/MANAGER xem don cua chi nhanh minh (MANAGER chua gan chi nhanh: tat ca); ADMIN tat ca. */
+    /** Khach xem don cua minh; nhan vien ban ve/MANAGER xem don cua chi nhanh minh (MANAGER chua gan chi nhanh: tat ca); ADMIN tat ca. */
     private static boolean canView(User user, Booking booking) {
         if (booking.getUserId() != null && booking.getUserId() == user.getId()) return true;
-        switch (user.getRole()) {
-            case "ADMIN":
-                return true;
-            case "MANAGER":
-                return user.getBranchId() == null || user.getBranchId() == booking.getShowtime().getBranchId();
-            case "STAFF":
-                return user.getBranchId() != null && user.getBranchId() == booking.getShowtime().getBranchId();
-            default:
-                return false;
-        }
+        int centreId = booking.getShowtime().getBranchId();
+        if ("ADMIN".equals(user.getRole())) return true;
+        if ("MANAGER".equals(user.getRole())) return user.getBranchId() == null || user.getBranchId() == centreId;
+        if (user.isSalesStaff()) return user.getBranchId() != null && user.getBranchId() == centreId;
+        return false;
     }
 
     private Booking loadOwnBooking(HttpServletRequest req, User user) throws SQLException {

@@ -72,9 +72,9 @@ public class StaffPaymentController extends HttpServlet {
         resp.sendRedirect(req.getContextPath() + "/staff/payments");
     }
 
-    /** null = moi chi nhanh. STAFF chua duoc gan chi nhanh thi khong thay giao dich nao (-1). */
+    /** null = moi chi nhanh. Nhan vien ban ve chua duoc gan chi nhanh thi khong thay giao dich nao (-1). */
     private static Integer branchScope(User staff) {
-        if (!"STAFF".equals(staff.getRole())) return null;
+        if (!staff.isSalesStaff()) return null;
         return staff.getBranchId() != null ? staff.getBranchId() : -1;
     }
 
