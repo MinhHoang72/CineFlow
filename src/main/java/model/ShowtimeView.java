@@ -7,13 +7,13 @@ public class ShowtimeView {
 
     private int showtimeId;
     private int movieId;
-    private int branchId;
+    private int centreId;
     private String movieTitle;
     private String posterUrl;
     private String ageRating;
     private int duration;
     private String genre;
-    private String branchName;
+    private String centreName;
     private String city;
     private String hallName;
     private Timestamp startTime;
@@ -35,12 +35,20 @@ public class ShowtimeView {
         this.movieId = movieId;
     }
 
-    public int getBranchId() {
-        return branchId;
+    public int getCentreId() {
+        return centreId;
     }
 
-    public void setBranchId(int branchId) {
-        this.branchId = branchId;
+    public void setCentreId(int centreId) {
+        this.centreId = centreId;
+    }
+
+    public int getCentreID() {
+        return centreId;
+    }
+
+    public void setCentreID(int centreId) {
+        this.centreId = centreId;
     }
 
     public String getMovieTitle() {
@@ -83,12 +91,12 @@ public class ShowtimeView {
         this.genre = genre;
     }
 
-    public String getBranchName() {
-        return branchName;
+    public String getCentreName() {
+        return centreName;
     }
 
-    public void setBranchName(String branchName) {
-        this.branchName = branchName;
+    public void setCentreName(String centreName) {
+        this.centreName = centreName;
     }
 
     public String getCity() {

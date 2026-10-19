@@ -6,7 +6,7 @@
 @import url("../common/tables.css");
 @import url("../common/alerts.css");
 @import url("../manager/shell.css");
-@import url("../manager/movies.css");
+@import url("movies.css");
 @import url("../manager/profile.css");
 
 /* ==========================================================================

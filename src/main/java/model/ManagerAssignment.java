@@ -4,9 +4,9 @@ import java.sql.Timestamp;
 
 public class ManagerAssignment {
     private int assignmentId;
-    private int branchId;
-    private String branchName;
-    private String branchCity;
+    private int centreId;
+    private String centreName;
+    private String centreCity;
     private int managerId;
     private String managerName;
     private String managerAccount;
@@ -30,28 +30,36 @@ public class ManagerAssignment {
         this.assignmentId = assignmentId;
     }
 
-    public int getBranchId() {
-        return branchId;
+    public int getCentreId() {
+        return centreId;
     }
 
-    public void setBranchId(int branchId) {
-        this.branchId = branchId;
+    public void setCentreId(int centreId) {
+        this.centreId = centreId;
     }
 
-    public String getBranchName() {
-        return branchName;
+    public int getCentreID() {
+        return centreId;
     }
 
-    public void setBranchName(String branchName) {
-        this.branchName = branchName;
+    public void setCentreID(int centreId) {
+        this.centreId = centreId;
     }
 
-    public String getBranchCity() {
-        return branchCity;
+    public String getCentreName() {
+        return centreName;
     }
 
-    public void setBranchCity(String branchCity) {
-        this.branchCity = branchCity;
+    public void setCentreName(String centreName) {
+        this.centreName = centreName;
+    }
+
+    public String getCentreCity() {
+        return centreCity;
+    }
+
+    public void setCentreCity(String centreCity) {
+        this.centreCity = centreCity;
     }
 
     public int getManagerId() {
@@ -60,10 +68,6 @@ public class ManagerAssignment {
 
     public void setManagerId(int managerId) {
         this.managerId = managerId;
-    }
-
-    public String getManagerCode() {
-        return String.format("QL%05d", managerId);
     }
 
     public String getManagerName() {
@@ -144,9 +148,5 @@ public class ManagerAssignment {
 
     public void setCreatedAt(Timestamp createdAt) {
         this.createdAt = createdAt;
-    }
-
-    public boolean isCurrent() {
-        return endDate == null;
     }
 }

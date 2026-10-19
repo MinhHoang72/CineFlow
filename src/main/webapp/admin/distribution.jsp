@@ -1,5 +1,5 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ page import="model.Movie,model.Branch,java.util.List,java.util.Map,java.util.LinkedHashMap" %>
+<%@ page import="model.Movie,model.Centre,java.util.List,java.util.Map,java.util.LinkedHashMap" %>
 <%
     String authRole = (String) session.getAttribute("role");
     if (authRole == null && session.getAttribute("user") instanceof model.User) {
@@ -29,20 +29,20 @@
         response.sendRedirect(request.getContextPath() + "/admin/movies");
         return;
     }
-    List<Branch> branches = (List<Branch>) request.getAttribute("branches");
-    if (branches == null) branches = java.util.Collections.emptyList();
+    List<Centre> centres = (List<Centre>) request.getAttribute("centres");
+    if (centres == null) centres = java.util.Collections.emptyList();
 
-    int totalActiveBranches = 0;
+    int totalActiveCentres = 0;
     int totalDistributed = 0;
     Map<String, Integer> cityActiveCounts = new LinkedHashMap<>();
     Map<String, Integer> cityDistributedCounts = new LinkedHashMap<>();
 
-    for (Branch branch : branches) {
-        String city = cityKey(branch.getCity());
-        if ("ACTIVE".equalsIgnoreCase(branch.getStatus())) {
-            totalActiveBranches++;
+    for (Centre centre : centres) {
+        String city = cityKey(centre.getCity());
+        if ("ACTIVE".equalsIgnoreCase(centre.getStatus())) {
+            totalActiveCentres++;
             cityActiveCounts.put(city, cityActiveCounts.getOrDefault(city, 0) + 1);
-            if (branch.isDistributed()) {
+            if (centre.isDistributed()) {
                 totalDistributed++;
                 cityDistributedCounts.put(city, cityDistributedCounts.getOrDefault(city, 0) + 1);
             }
@@ -82,8 +82,8 @@
             <div class="cf-page-header">
                 <div>
                     <p class="cf-breadcrumb">Quản trị nội dung / Phân phối phim</p>
-                    <h1>Thiết lập phân phối rạp chiếu</h1>
-                    <p>Cấp phép phát hành phim cho các cụm rạp hoạt động trên toàn hệ thống.</p>
+                    <h1>Thiết lập phân phối trung tâm chiếu</h1>
+                    <p>Cấp phép phát hành phim cho các trung tâm hoạt động trên toàn hệ thống.</p>
                 </div>
                 <a href="${pageContext.request.contextPath}/admin/movies" class="cf-btn cf-btn-secondary cf-btn-sm">
                     Quay lại danh mục
@@ -93,7 +93,7 @@
             <!-- SUCCESS ALERT -->
             <% if ("1".equals(request.getParameter("saved"))) { %>
                 <div class="cf-alert cf-alert-success">
-                    Đã lưu cấu hình phân phối rạp chiếu thành công.
+                    Đã lưu cấu hình phân phối trung tâm chiếu thành công.
                 </div>
             <% } %>
 
@@ -163,7 +163,7 @@
                             <div class="cf-filter-pills" id="cityTabsContainer">
                                 <button type="button" class="cf-pill active" data-city="all">
                                     <span>Tất cả cụm rạp</span>
-                                    <span class="cf-pill-count" id="badgeCity-all"><%= totalDistributed %>/<%= totalActiveBranches %></span>
+                                    <span class="cf-pill-count" id="badgeCity-all"><%= totalDistributed %>/<%= totalActiveCentres %></span>
                                 </button>
                                 <% 
                                     for (Map.Entry<String, Integer> entry : cityActiveCounts.entrySet()) {
@@ -181,14 +181,14 @@
 
                         <div class="cf-dist-toolbar-right">
                             <div class="cf-search-box">
-                                <input type="text" id="inputSearchBranch" placeholder="Tìm kiếm rạp, địa chỉ..." autocomplete="off">
+                                <input type="text" id="inputSearchCentre" placeholder="Tìm kiếm trung tâm, địa chỉ..." autocomplete="off">
                             </div>
                             <div class="cf-dist-btn-group">
-                                <button type="button" class="cf-btn cf-btn-secondary cf-btn-sm" id="btnSelectAll" title="Chọn tất cả rạp đang hiển thị">
+                                <button type="button" class="cf-btn cf-btn-secondary cf-btn-sm" id="btnSelectAll" title="Chọn tất cả trung tâm đang hiển thị">
                                     <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                                     <span>Chọn tất cả</span>
                                 </button>
-                                <button type="button" class="cf-btn cf-btn-ghost cf-btn-sm" id="btnDeselectAll" title="Bỏ chọn tất cả rạp đang hiển thị">
+                                <button type="button" class="cf-btn cf-btn-ghost cf-btn-sm" id="btnDeselectAll" title="Bỏ chọn tất cả trung tâm đang hiển thị">
                                     <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                                     <span>Bỏ chọn</span>
                                 </button>
@@ -197,51 +197,51 @@
                     </div>
 
                     <!-- TIÊU ĐỀ CÁC CỘT -->
-                    <div class="cf-branch-list-header">
-                        <div class="cf-col-header col-left">Cụm rạp chiếu</div>
-                        <div class="cf-col-header col-center">Trạng thái rạp</div>
+                    <div class="cf-centre-list-header">
+                        <div class="cf-col-header col-left">Trung tâm chiếu</div>
+                        <div class="cf-col-header col-center">Trạng thái trung tâm</div>
                         <div class="cf-col-header col-right">Phân phối phim</div>
                     </div>
 
-                    <!-- DANH SÁCH RẠP CHIẾU -->
-                    <div id="branchListWrapper">
+                    <!-- DANH SÁCH TRUNG TÂM CHIẾU -->
+                    <div id="centreListWrapper">
                         <%
-                            for (Branch b : branches) {
-                                boolean isActive = "ACTIVE".equalsIgnoreCase(b.getStatus());
-                                boolean isDistributed = b.isDistributed();
-                                String cKey = cityKey(b.getCity());
+                            for (Centre c : centres) {
+                                boolean isActive = "ACTIVE".equalsIgnoreCase(c.getStatus());
+                                boolean isDistributed = c.isDistributed();
+                                String cKey = cityKey(c.getCity());
                         %>
-                        <div class="cf-branch-item branch-row <%= !isActive ? "is-disabled" : "" %>"
+                        <div class="cf-centre-item centre-row <%= !isActive ? "is-disabled" : "" %>"
                              data-city="<%= esc(cKey) %>"
-                             data-name="<%= esc(b.getBranchName().toLowerCase()) %>"
-                             data-address="<%= esc((b.getAddress() != null ? b.getAddress() : "").toLowerCase()) %>"
+                             data-name="<%= esc(c.getCentreName().toLowerCase()) %>"
+                             data-address="<%= esc((c.getAddress() != null ? c.getAddress() : "").toLowerCase()) %>"
                              data-active="<%= isActive ? "1" : "0" %>">
-                            <!-- BÊN TRÁI: Checkbox + Tên rạp + Địa chỉ -->
-                            <div class="cf-branch-left">
+                            <!-- BÊN TRÁI: Checkbox + Tên trung tâm + Địa chỉ -->
+                            <div class="cf-centre-left">
                                 <% if (isActive) { %>
-                                    <label class="cf-branch-label">
-                                        <input type="checkbox" name="branchIds" value="<%= b.getBranchId() %>"
-                                               class="cf-branch-checkbox branch-check"
+                                    <label class="cf-centre-label">
+                                        <input type="checkbox" name="centreIds" value="<%= c.getCentreId() %>"
+                                               class="cf-centre-checkbox centre-check"
                                                data-city="<%= esc(cKey) %>"
                                                <%= isDistributed ? "checked" : "" %>>
-                                        <span class="cf-branch-info">
-                                            <span class="cf-branch-title"><%= esc(b.getBranchName()) %></span>
-                                            <span class="cf-branch-sub"><%= esc(cityLabel(b.getCity())) %> · <%= esc(b.getAddress()) %></span>
+                                        <span class="cf-centre-info">
+                                            <span class="cf-centre-title"><%= esc(c.getCentreName()) %></span>
+                                            <span class="cf-centre-sub"><%= esc(cityLabel(c.getCity())) %> · <%= esc(c.getAddress()) %></span>
                                         </span>
                                     </label>
                                 <% } else { %>
-                                    <div class="cf-branch-label" style="cursor: not-allowed;">
-                                        <input type="checkbox" disabled class="cf-branch-checkbox">
-                                        <span class="cf-branch-info">
-                                            <span class="cf-branch-title"><%= esc(b.getBranchName()) %></span>
-                                            <span class="cf-branch-sub"><%= esc(cityLabel(b.getCity())) %> · <%= esc(b.getAddress()) %></span>
+                                    <div class="cf-centre-label" style="cursor: not-allowed;">
+                                        <input type="checkbox" disabled class="cf-centre-checkbox">
+                                        <span class="cf-centre-info">
+                                            <span class="cf-centre-title"><%= esc(c.getCentreName()) %></span>
+                                            <span class="cf-centre-sub"><%= esc(cityLabel(c.getCity())) %> · <%= esc(c.getAddress()) %></span>
                                         </span>
                                     </div>
                                 <% } %>
                             </div>
 
-                            <!-- Ở GIỮA: Trạng thái vận hành của cụm rạp -->
-                            <div class="cf-branch-center">
+                            <!-- Ở GIỮA: Trạng thái vận hành của trung tâm -->
+                            <div class="cf-centre-center">
                                 <% if (isActive) { %>
                                     <span class="cf-op-status active">
                                         <span class="cf-dot"></span> Hoạt động
@@ -254,7 +254,7 @@
                             </div>
 
                             <!-- BÊN PHẢI: Trạng thái phân phối phim -->
-                            <div class="cf-branch-right">
+                            <div class="cf-centre-right">
                                 <% if (isActive) { %>
                                     <span class="cf-dist-state <%= isDistributed ? "state-showing" : "state-none" %> item-dist-badge">
                                         <%= isDistributed ? "Được chiếu" : "Không chiếu" %>
@@ -268,14 +268,14 @@
 
                         <!-- DÒNG THÔNG BÁO KHI KHÔNG TÌM THẤY KẾT QUẢ -->
                         <div id="noMatchRow" style="display: none; padding: 40px 20px; text-align: center; color: var(--cf-muted); font-size: 13.5px;">
-                            Không tìm thấy cụm rạp nào phù hợp với từ khóa hoặc bộ lọc đã chọn.
+                            Không tìm thấy trung tâm nào phù hợp với từ khóa hoặc bộ lọc đã chọn.
                         </div>
                     </div>
 
                     <!-- 3. THANH TÓM TẮT & NÚT LƯU (STICKY FOOTER) -->
                     <div class="cf-dist-sticky-bar">
                         <div class="cf-dist-summary-line">
-                            Đã phân phối: <strong id="footerCount"><%= totalDistributed %>/<%= totalActiveBranches %></strong> cụm rạp đang hoạt động trên toàn hệ thống
+                            Đã phân phối: <strong id="footerCount"><%= totalDistributed %>/<%= totalActiveCentres %></strong> trung tâm đang hoạt động trên toàn hệ thống
                         </div>
 
                         <div class="cf-dist-actions">
@@ -300,10 +300,10 @@ document.addEventListener('DOMContentLoaded', function() {
     let searchQuery = '';
 
     const cityPills = document.querySelectorAll('#cityTabsContainer .cf-pill');
-    const inputSearch = document.getElementById('inputSearchBranch');
+    const inputSearch = document.getElementById('inputSearchCentre');
     const btnSelectAll = document.getElementById('btnSelectAll');
     const btnDeselectAll = document.getElementById('btnDeselectAll');
-    const rows = document.querySelectorAll('.branch-row');
+    const rows = document.querySelectorAll('.centre-row');
     const noMatchRow = document.getElementById('noMatchRow');
     const footerCount = document.getElementById('footerCount');
     const badgeAll = document.getElementById('badgeCity-all');
@@ -353,7 +353,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 4. Đồng bộ nhãn hiển thị khi thay đổi checkbox
     function updateRowVisual(checkbox) {
-        const row = checkbox.closest('.branch-row');
+        const row = checkbox.closest('.centre-row');
         const badge = row ? row.querySelector('.item-dist-badge') : null;
         if (badge) {
             if (checkbox.checked) {
@@ -379,7 +379,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (!cityStats[c]) cityStats[c] = { active: 0, distributed: 0 };
                 cityStats[c].active++;
 
-                const chk = row.querySelector('.branch-check');
+                const chk = row.querySelector('.centre-check');
                 if (chk && chk.checked) {
                     totalDistributed++;
                     cityStats[c].distributed++;
@@ -404,7 +404,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Lắng nghe sự kiện click checkbox của từng rạp
-    document.querySelectorAll('.branch-check').forEach(chk => {
+    document.querySelectorAll('.centre-check').forEach(chk => {
         chk.addEventListener('change', function() {
             updateRowVisual(this);
             recalculateCounters();
@@ -416,7 +416,7 @@ document.addEventListener('DOMContentLoaded', function() {
         btnSelectAll.addEventListener('click', function() {
             rows.forEach(row => {
                 if (row.style.display !== 'none' && row.dataset.active === '1') {
-                    const chk = row.querySelector('.branch-check');
+                    const chk = row.querySelector('.centre-check');
                     if (chk && !chk.checked) {
                         chk.checked = true;
                         updateRowVisual(chk);
@@ -432,7 +432,7 @@ document.addEventListener('DOMContentLoaded', function() {
         btnDeselectAll.addEventListener('click', function() {
             rows.forEach(row => {
                 if (row.style.display !== 'none' && row.dataset.active === '1') {
-                    const chk = row.querySelector('.branch-check');
+                    const chk = row.querySelector('.centre-check');
                     if (chk && chk.checked) {
                         chk.checked = false;
                         updateRowVisual(chk);

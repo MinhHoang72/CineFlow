@@ -87,7 +87,7 @@ public class EmailUtils {
                 + "<div style='background:#e50914; padding:25px; text-align:center;'>"
                 + "<h1 style='margin:0; color:white; font-size:28px;'>CineFlow</h1>"
                 + "<p style='margin:8px 0 0; color:white; font-size:14px;'>"
-                + "Multi-Branch Cinema Management System"
+                + "Multi-Centre Cinema Management System"
                 + "</p>"
                 + "</div>"
                 + "<div style='padding:35px;'>"
@@ -162,7 +162,7 @@ public class EmailUtils {
         Message message = new MimeMessage(session);
         message.setFrom(new InternetAddress(FROM_EMAIL));
         message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(toEmail));
-        message.setSubject("CineFlow - Mã kích hoạt tài khoản thành viên");
+        message.setSubject("CineFlow - Mã kích hoạt tài khoản");
 
         String recipientName = (fullName != null && !fullName.isBlank()) ? fullName : "Quý khách";
 
@@ -191,7 +191,7 @@ public class EmailUtils {
                 + "</div>"
                 + "<p style='color:#94A3B8; font-size:13px; line-height:1.6;'>"
                 + "Mã xác thực có hiệu lực trong vòng <strong style='color:#F8FAFC;'>15 phút</strong>. "
-                + "Tuyệt đối không chia sẻ mã này cho bất kỳ ai để bảo vệ quyền lợi thành viên của bạn."
+                + "Tuyệt đối không chia sẻ mã này cho bất kỳ ai để bảo vệ quyền lợi tài khoản của bạn."
                 + "</p>"
                 + "<div style='background:rgba(255,42,84,0.08); border-left:4px solid #FF2A54; "
                 + "padding:12px 16px; margin-top:24px; border-radius:4px;'>"

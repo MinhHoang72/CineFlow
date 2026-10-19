@@ -11,7 +11,7 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import model.Branch;
+import model.Centre;
 import model.ManagerAssignment;
 import model.StaffTransfer;
 import model.User;
@@ -43,30 +43,31 @@ public class StaffTransferServlet extends HttpServlet {
             return;
         }
 
-        Integer branchFilter = null;
-        String branchParam = request.getParameter("branchId");
-        if (branchParam != null && !branchParam.trim().isEmpty()) {
+        Integer centreFilter = null;
+        String centreParam = request.getParameter("centreId");
+        if (centreParam != null && !centreParam.trim().isEmpty()) {
             try {
-                branchFilter = Integer.parseInt(branchParam.trim());
+                centreFilter = Integer.parseInt(centreParam.trim());
             } catch (NumberFormatException ignored) {}
         }
 
         String searchParam = request.getParameter("search");
-        List<Branch> branchesWithManager = cinemaDAO.getAllBranchesWithManager();
-        List<Branch> activeBranches = cinemaDAO.getActiveBranches();
+        List<Centre> centresWithManager = cinemaDAO.getAllCentresWithManager();
+        List<Centre> activeCentres = cinemaDAO.getActiveCentres();
         List<User> managers = userDAO.getManagers();
-        List<ManagerAssignment> managerAssignments = userDAO.getManagerAssignmentHistory(branchFilter, null);
+        List<ManagerAssignment> managerAssignments = userDAO.getManagerAssignmentHistory(centreFilter, null);
 
-        List<User> staffList = userDAO.getStaffDirectory(branchFilter, searchParam);
-        List<StaffTransfer> transferHistory = userDAO.getTransferHistory(branchFilter, null);
+        List<User> staffList = userDAO.getStaffDirectory(centreFilter, searchParam);
+        List<StaffTransfer> transferHistory = userDAO.getTransferHistory(centreFilter, null);
 
-        request.setAttribute("branchesWithManager", branchesWithManager);
-        request.setAttribute("activeBranches", activeBranches);
+        request.setAttribute("centresWithManager", centresWithManager);
+        request.setAttribute("activeCentres", activeCentres);
+        request.setAttribute("selectedCentreId", centreFilter);
+
         request.setAttribute("managers", managers);
         request.setAttribute("managerAssignments", managerAssignments);
         request.setAttribute("staffList", staffList);
         request.setAttribute("transferHistory", transferHistory);
-        request.setAttribute("selectedBranchId", branchFilter);
         request.setAttribute("searchParam", searchParam);
         request.setAttribute("activeNav", "transfers");
 
@@ -86,10 +87,11 @@ public class StaffTransferServlet extends HttpServlet {
         int adminId = adminUser != null ? adminUser.getUserId() : (int) session.getAttribute("userId");
         String action = request.getParameter("action");
 
-        // 1. NGHIỆP VỤ: BỔ NHIỆM / THAY THẾ MANAGER CHI NHÁNH
+        // 1. NGHIỆP VỤ: BỔ NHIỆM / THAY THẾ MANAGER TRUNG TÂM (CENTRE)
         if ("assign_manager".equalsIgnoreCase(action)) {
             try {
-                int branchId = Integer.parseInt(request.getParameter("branchId"));
+                String cParam = request.getParameter("centreId");
+                int centreId = Integer.parseInt(cParam);
                 int managerId = Integer.parseInt(request.getParameter("managerId"));
                 String notes = request.getParameter("notes");
 
@@ -103,7 +105,7 @@ public class StaffTransferServlet extends HttpServlet {
                     return;
                 }
 
-                boolean ok = userDAO.assignManagerToBranchWithHistory(branchId, managerId, adminId, notes);
+                boolean ok = userDAO.assignManagerToCentreWithHistory(centreId, managerId, adminId, notes);
                 if (ok) {
                     response.sendRedirect(request.getContextPath() + "/admin/transfers?success=manager_assigned&tab=manager");
                 } else {
@@ -119,7 +121,8 @@ public class StaffTransferServlet extends HttpServlet {
         // 2. NGHIỆP VỤ: MIỄN NHIỆM MANAGER
         if ("unassign_manager".equalsIgnoreCase(action)) {
             try {
-                int branchId = Integer.parseInt(request.getParameter("branchId"));
+                String cParam = request.getParameter("centreId");
+                int centreId = Integer.parseInt(cParam);
                 int managerId = Integer.parseInt(request.getParameter("managerId"));
                 String reason = request.getParameter("reason");
 
@@ -129,7 +132,7 @@ public class StaffTransferServlet extends HttpServlet {
                     return;
                 }
 
-                boolean ok = userDAO.unassignManager(branchId, managerId, adminId, reason);
+                boolean ok = userDAO.unassignManager(centreId, managerId, adminId, reason);
                 if (ok) {
                     response.sendRedirect(request.getContextPath() + "/admin/transfers?success=manager_unassigned&tab=manager");
                 } else {
@@ -142,11 +145,12 @@ public class StaffTransferServlet extends HttpServlet {
             }
         }
 
-        // 3. NGHIỆP VỤ: ĐIỀU CHUYỂN STAFF GIỮA CÁC CHI NHÁNH
+        // 3. NGHIỆP VỤ: ĐIỀU CHUYỂN STAFF GIỮA CÁC TRUNG TÂM (CENTRES)
         if ("transfer_staff".equalsIgnoreCase(action) || "transfer".equalsIgnoreCase(action)) {
             try {
                 int userId = Integer.parseInt(request.getParameter("userId"));
-                int toBranchId = Integer.parseInt(request.getParameter("toBranchId"));
+                String toParam = request.getParameter("toCentreId");
+                int toCentreId = Integer.parseInt(toParam);
                 String reason = request.getParameter("reason");
                 String notes = request.getParameter("notes");
 
@@ -166,12 +170,12 @@ public class StaffTransferServlet extends HttpServlet {
                     return;
                 }
 
-                if (targetUser.getBranchId() != null && targetUser.getBranchId() == toBranchId) {
-                    response.sendRedirect(request.getContextPath() + "/admin/transfers?error=same_branch&tab=staff");
+                if (targetUser.getCentreId() != null && targetUser.getCentreId() == toCentreId) {
+                    response.sendRedirect(request.getContextPath() + "/admin/transfers?error=same_centre&tab=staff");
                     return;
                 }
 
-                boolean ok = userDAO.transferStaff(userId, targetUser.getBranchId(), toBranchId, adminId, reason.trim(), notes != null ? notes.trim() : "");
+                boolean ok = userDAO.transferStaff(userId, targetUser.getCentreId(), toCentreId, adminId, reason.trim(), notes != null ? notes.trim() : "");
                 if (ok) {
                     response.sendRedirect(request.getContextPath() + "/admin/transfers?success=transferred&tab=staff");
                 } else {

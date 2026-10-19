@@ -6,7 +6,7 @@ import java.sql.Timestamp;
 public class BookingHistory {
     private String bookingCode;
     private String movieTitle;
-    private String branchName;
+    private String centreName;
     private Timestamp startTime;
     private String bookingStatus;
     private BigDecimal totalAmount;
@@ -16,8 +16,10 @@ public class BookingHistory {
     public void setBookingCode(String bookingCode) { this.bookingCode = bookingCode; }
     public String getMovieTitle() { return movieTitle; }
     public void setMovieTitle(String movieTitle) { this.movieTitle = movieTitle; }
-    public String getBranchName() { return branchName; }
-    public void setBranchName(String branchName) { this.branchName = branchName; }
+
+    public String getCentreName() { return centreName; }
+    public void setCentreName(String centreName) { this.centreName = centreName; }
+
     public Timestamp getStartTime() { return startTime; }
     public void setStartTime(Timestamp startTime) { this.startTime = startTime; }
     public String getBookingStatus() { return bookingStatus; }

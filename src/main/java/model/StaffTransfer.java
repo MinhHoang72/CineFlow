@@ -9,10 +9,10 @@ public class StaffTransfer {
     private String userAccount;
     private String userEmail;
     private String userRole;
-    private Integer fromBranchId;
-    private String fromBranchName;
-    private int toBranchId;
-    private String toBranchName;
+    private Integer fromCentreId;
+    private String fromCentreName;
+    private int toCentreId;
+    private String toCentreName;
     private int transferredBy;
     private String transferredByName;
     private Timestamp transferDate;
@@ -77,36 +77,52 @@ public class StaffTransfer {
         this.userRole = userRole;
     }
 
-    public Integer getFromBranchId() {
-        return fromBranchId;
+    public Integer getFromCentreId() {
+        return fromCentreId;
     }
 
-    public void setFromBranchId(Integer fromBranchId) {
-        this.fromBranchId = fromBranchId;
+    public void setFromCentreId(Integer fromCentreId) {
+        this.fromCentreId = fromCentreId;
     }
 
-    public String getFromBranchName() {
-        return fromBranchName;
+    public Integer getFromCentreID() {
+        return fromCentreId;
     }
 
-    public void setFromBranchName(String fromBranchName) {
-        this.fromBranchName = fromBranchName;
+    public void setFromCentreID(Integer fromCentreId) {
+        this.fromCentreId = fromCentreId;
     }
 
-    public int getToBranchId() {
-        return toBranchId;
+    public String getFromCentreName() {
+        return fromCentreName;
     }
 
-    public void setToBranchId(int toBranchId) {
-        this.toBranchId = toBranchId;
+    public void setFromCentreName(String fromCentreName) {
+        this.fromCentreName = fromCentreName;
     }
 
-    public String getToBranchName() {
-        return toBranchName;
+    public int getToCentreId() {
+        return toCentreId;
     }
 
-    public void setToBranchName(String toBranchName) {
-        this.toBranchName = toBranchName;
+    public void setToCentreId(int toCentreId) {
+        this.toCentreId = toCentreId;
+    }
+
+    public int getToCentreID() {
+        return toCentreId;
+    }
+
+    public void setToCentreID(int toCentreId) {
+        this.toCentreId = toCentreId;
+    }
+
+    public String getToCentreName() {
+        return toCentreName;
+    }
+
+    public void setToCentreName(String toCentreName) {
+        this.toCentreName = toCentreName;
     }
 
     public int getTransferredBy() {

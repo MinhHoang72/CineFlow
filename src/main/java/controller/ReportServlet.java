@@ -35,7 +35,7 @@ public class ReportServlet extends HttpServlet {
         }
 
         request.setAttribute("reportSummary", reportDAO.getSummary());
-        request.setAttribute("branchRevenue", reportDAO.revenueByBranch());
+        request.setAttribute("centreRevenue", reportDAO.revenueByCentre());
         request.setAttribute("movieRevenue", reportDAO.revenueByMovie());
         request.setAttribute("showtimeMetrics", reportDAO.occupancyByShowtime());
 
@@ -43,7 +43,7 @@ public class ReportServlet extends HttpServlet {
         if (role == null && session.getAttribute("user") instanceof User) {
             role = ((User) session.getAttribute("user")).getRole();
         }
-        request.getRequestDispatcher("ADMIN".equalsIgnoreCase(role) ? "/admin/reports.jsp" : "/manager/reports.jsp").forward(request, response);
+        request.getRequestDispatcher("/admin/reports.jsp").forward(request, response);
     }
 }
 

@@ -13,7 +13,7 @@ public class User {
     private String avatar;
     private String role;
     private String status;
-    private Integer branchId;
+    private Integer centreId;
     private Timestamp createdAt;
     private Timestamp updatedAt;
 
@@ -110,8 +110,10 @@ public class User {
         this.status = status;
     }
 
-    public Integer getBranchId() { return branchId; }
-    public void setBranchId(Integer branchId) { this.branchId = branchId; }
+    public Integer getCentreId() { return centreId; }
+    public void setCentreId(Integer centreId) { this.centreId = centreId; }
+    public Integer getCentreID() { return centreId; }
+    public void setCentreID(Integer centreId) { this.centreId = centreId; }
 
     public Timestamp getCreatedAt() {
         return createdAt;
@@ -170,13 +172,36 @@ public class User {
         this.resetTokenExpiry = resetTokenExpiry;
     }
 
-    private String branchName;
+    private String centreName;
 
-    public String getBranchName() {
-        return branchName;
+    public String getCentreName() {
+        return centreName;
     }
 
-    public void setBranchName(String branchName) {
-        this.branchName = branchName;
+    public void setCentreName(String centreName) {
+        this.centreName = centreName;
+    }
+
+    private int bookingCount;
+    private java.math.BigDecimal totalSpent;
+
+    public int getBookingCount() {
+        return bookingCount;
+    }
+
+    public void setBookingCount(int bookingCount) {
+        this.bookingCount = bookingCount;
+    }
+
+    public java.math.BigDecimal getTotalSpent() {
+        return totalSpent != null ? totalSpent : java.math.BigDecimal.ZERO;
+    }
+
+    public void setTotalSpent(java.math.BigDecimal totalSpent) {
+        this.totalSpent = totalSpent;
+    }
+
+    public String getCustomerCode() {
+        return String.format("KH%05d", userId);
     }
 }
