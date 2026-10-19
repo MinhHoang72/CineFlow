@@ -26,6 +26,18 @@
     Integer inactiveHalls = (Integer) request.getAttribute("inactiveHalls");
     Integer totalCapacity = (Integer) request.getAttribute("totalCapacity");
 
+    Integer currentPage = (Integer) request.getAttribute("currentPage");
+    if (currentPage == null) currentPage = 1;
+    Integer pageSize = (Integer) request.getAttribute("pageSize");
+    if (pageSize == null) pageSize = 6;
+    Integer totalPages = (Integer) request.getAttribute("totalPages");
+    if (totalPages == null) totalPages = 1;
+    Integer totalFilteredHalls = (Integer) request.getAttribute("totalFilteredHalls");
+    if (totalFilteredHalls == null) totalFilteredHalls = 0;
+
+    String currentSearch = (String) request.getAttribute("currentSearch");
+    String currentStatus = (String) request.getAttribute("currentStatus");
+
     String successParam = request.getParameter("success");
     String errorParam = request.getParameter("error");
 %>
@@ -178,6 +190,34 @@
                     </div>
                 </div>
 
+                <!-- Thanh tìm kiếm & bộ lọc phòng chiếu -->
+                <div class="cf-filter-card">
+                    <form class="cf-filter-form" method="GET" action="${pageContext.request.contextPath}/manager/halls">
+                        <% if (isAdmin && targetCentreId != null) { %>
+                            <input type="hidden" name="centreId" value="<%= targetCentreId %>">
+                        <% } %>
+                        <div class="cf-search-box">
+                            <span class="icon">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                            </span>
+                            <input type="text" name="search" placeholder="Tìm theo tên phòng (VD: Hall 01)..." value="<%= currentSearch != null ? currentSearch : "" %>">
+                        </div>
+
+                        <select name="status" class="cf-select">
+                            <option value="ALL" <%= "ALL".equalsIgnoreCase(currentStatus) ? "selected" : "" %>>Tất cả trạng thái & định dạng</option>
+                            <option value="ACTIVE" <%= "ACTIVE".equalsIgnoreCase(currentStatus) ? "selected" : "" %>>Đang hoạt động (Active)</option>
+                            <option value="INACTIVE" <%= "INACTIVE".equalsIgnoreCase(currentStatus) ? "selected" : "" %>>Tạm ngưng (Inactive)</option>
+                            <option value="2D" <%= "2D".equalsIgnoreCase(currentStatus) ? "selected" : "" %>>Định dạng Standard 2D</option>
+                            <option value="3D" <%= "3D".equalsIgnoreCase(currentStatus) ? "selected" : "" %>>Định dạng 3D</option>
+                        </select>
+
+                        <button type="submit" class="cf-btn cf-btn-primary">Lọc</button>
+                        <% if ((currentSearch != null && !currentSearch.isEmpty()) || (currentStatus != null && !"ALL".equalsIgnoreCase(currentStatus))) { %>
+                            <a href="${pageContext.request.contextPath}/manager/halls<%= isAdmin ? ("?centreId=" + targetCentreId) : "" %>" class="cf-btn cf-btn-secondary">Xóa lọc</a>
+                        <% } %>
+                    </form>
+                </div>
+
                 <!-- Bảng danh sách phòng chiếu -->
                 <div class="cf-table-container">
                     <table class="cf-table">
@@ -241,6 +281,9 @@
                                             <input type="hidden" name="action" value="toggleStatus">
                                             <input type="hidden" name="hallId" value="<%= h.getHallId() %>">
                                             <input type="hidden" name="centreId" value="<%= targetCentreId %>">
+                                            <input type="hidden" name="search" value="<%= currentSearch != null ? currentSearch : "" %>">
+                                            <input type="hidden" name="status" value="<%= currentStatus != null ? currentStatus : "ALL" %>">
+                                            <input type="hidden" name="page" value="<%= currentPage %>">
 
                                             <% if (isActive) { %>
                                                 <button type="submit" class="cf-btn cf-btn-danger cf-btn-sm" title="Vô hiệu hóa phòng chiếu">
@@ -261,12 +304,73 @@
                             %>
                             <tr>
                                 <td colspan="6" style="text-align: center; padding: 40px; color: #64748B;">
-                                    Cụm rạp này hiện chưa có phòng chiếu nào. Bấm nút <strong>"Thêm phòng chiếu mới"</strong> để khởi tạo phòng đầu tiên.
+                                    Không tìm thấy phòng chiếu nào phù hợp. Bấm nút <strong>"Thêm phòng chiếu mới"</strong> để khởi tạo phòng.
                                 </td>
                             </tr>
                             <% } %>
                         </tbody>
                     </table>
+
+                    <% if (totalFilteredHalls != null && totalFilteredHalls > 0) { 
+                        int startItem = (currentPage - 1) * pageSize + 1;
+                        int endItem = Math.min(currentPage * pageSize, totalFilteredHalls);
+
+                        String baseParams = "";
+                        if (isAdmin && targetCentreId != null) {
+                            baseParams += "&centreId=" + targetCentreId;
+                        }
+                        if (currentSearch != null && !currentSearch.trim().isEmpty()) {
+                            baseParams += "&search=" + java.net.URLEncoder.encode(currentSearch.trim(), "UTF-8");
+                        }
+                        if (currentStatus != null && !currentStatus.trim().isEmpty()) {
+                            baseParams += "&status=" + java.net.URLEncoder.encode(currentStatus.trim(), "UTF-8");
+                        }
+                    %>
+                    <!-- THANH PHÂN TRANG (PAGINATION) -->
+                    <div class="cf-pagination-bar">
+                        <div class="cf-pagination-info">
+                            Hiển thị <strong><%= startItem %> - <%= endItem %></strong> trên tổng số <strong><%= totalFilteredHalls %></strong> phòng chiếu
+                        </div>
+                        <% if (totalPages > 1) { %>
+                        <div class="cf-pagination-controls">
+                            <!-- Nút trang trước (Previous) -->
+                            <% if (currentPage > 1) { %>
+                                <a href="${pageContext.request.contextPath}/manager/halls?page=<%= currentPage - 1 %><%= baseParams %>" 
+                                   class="cf-page-btn" title="Trang trước">«</a>
+                            <% } else { %>
+                                <span class="cf-page-btn disabled" title="Trang trước">«</span>
+                            <% } %>
+
+                            <!-- Danh sách các số trang -->
+                            <% for (int i = 1; i <= totalPages; i++) { 
+                                if (i == 1 || i == totalPages || Math.abs(i - currentPage) <= 2) {
+                            %>
+                                <% if (i == currentPage) { %>
+                                    <span class="cf-page-btn active"><%= i %></span>
+                                <% } else { %>
+                                    <a href="${pageContext.request.contextPath}/manager/halls?page=<%= i %><%= baseParams %>" 
+                                       class="cf-page-btn"><%= i %></a>
+                                <% } %>
+                            <% 
+                                } else if (i == currentPage - 3 || i == currentPage + 3) { 
+                            %>
+                                <span class="cf-page-ellipsis">...</span>
+                            <% 
+                                }
+                            } 
+                            %>
+
+                            <!-- Nút trang sau (Next) -->
+                            <% if (currentPage < totalPages) { %>
+                                <a href="${pageContext.request.contextPath}/manager/halls?page=<%= currentPage + 1 %><%= baseParams %>" 
+                                   class="cf-page-btn" title="Trang sau">»</a>
+                            <% } else { %>
+                                <span class="cf-page-btn disabled" title="Trang sau">»</span>
+                            <% } %>
+                        </div>
+                        <% } %>
+                    </div>
+                    <% } %>
                 </div>
             <% } %>
         </main>
@@ -285,6 +389,9 @@
         <form method="POST" action="${pageContext.request.contextPath}/manager/halls">
             <input type="hidden" name="action" value="create">
             <input type="hidden" name="centreId" value="<%= targetCentreId != null ? targetCentreId : 0 %>">
+            <input type="hidden" name="search" value="<%= currentSearch != null ? currentSearch : "" %>">
+            <input type="hidden" name="status" value="<%= currentStatus != null ? currentStatus : "ALL" %>">
+            <input type="hidden" name="page" value="1">
 
             <div class="cf-modal-body">
                 <div class="cf-form-group">
@@ -335,6 +442,9 @@
             <input type="hidden" name="action" value="update">
             <input type="hidden" name="hallId" id="editHallId">
             <input type="hidden" name="centreId" value="<%= targetCentreId != null ? targetCentreId : 0 %>">
+            <input type="hidden" name="search" value="<%= currentSearch != null ? currentSearch : "" %>">
+            <input type="hidden" name="status" value="<%= currentStatus != null ? currentStatus : "ALL" %>">
+            <input type="hidden" name="page" value="<%= currentPage %>">
 
             <div class="cf-modal-body">
                 <div class="cf-form-group">
