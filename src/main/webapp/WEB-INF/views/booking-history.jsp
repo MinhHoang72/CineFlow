@@ -33,7 +33,7 @@
                             <td class="text-end">
                                 <c:choose>
                                     <c:when test="${b.holdActive}">
-                                        <a href="${ctx}/payment/qr?bookingId=${b.id}" class="btn btn-warning btn-sm">Thanh toán</a>
+                                        <a href="${ctx}/booking?action=checkout&bookingId=${b.id}" class="btn btn-warning btn-sm">Thanh toán</a>
                                     </c:when>
                                     <c:otherwise>
                                         <a href="${ctx}/booking?action=detail&bookingId=${b.id}" class="btn btn-outline-primary btn-sm">Chi tiết</a>

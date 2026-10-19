@@ -33,7 +33,7 @@ public class WebUtil {
         return "TICKET_SALES_STAFF".equals(user.getRole()) || "STAFF".equals(user.getRole());
     }
 
-    /** Duoc doi soat / xac nhan thanh toan: nhan vien ban ve, quan ly, admin (khong gom nhan vien soat ve). */
+    /** Duoc xem trang theo doi giao dich: nhan vien ban ve, quan ly, admin (khong gom nhan vien soat ve). */
     public static boolean canConfirmPayments(User user) {
         return isSalesStaff(user) || "MANAGER".equals(user.getRole()) || "ADMIN".equals(user.getRole());
     }

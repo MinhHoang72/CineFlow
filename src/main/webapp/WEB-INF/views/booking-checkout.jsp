@@ -34,9 +34,12 @@
 
                 <c:choose>
                     <c:when test="${booking.holdActive}">
-                        <a href="${ctx}/payment/qr?bookingId=${booking.id}" class="btn btn-primary w-100 btn-lg mb-2">
-                            Thanh toán bằng QR chuyển khoản
-                        </a>
+                        <form method="post" action="${ctx}/payment/vnpay" class="mb-2">
+                            <input type="hidden" name="bookingId" value="${booking.id}">
+                            <button type="submit" class="btn btn-primary w-100 btn-lg">Thanh toán qua VNPay</button>
+                            <div class="form-text text-center">Quét mã QR bằng app ngân hàng hoặc dùng thẻ ATM/Visa.
+                                Vé được xuất ngay khi VNPay xác nhận.</div>
+                        </form>
                         <form method="post" action="${ctx}/booking"
                               onsubmit="return confirm('Huỷ đơn và nhả ghế?');">
                             <input type="hidden" name="action" value="cancel">

@@ -39,7 +39,7 @@
                 <tr class="border-top fw-bold"><td>Tổng cộng</td>
                     <td class="text-end"><fmt:formatNumber value="${booking.totalAmount}" pattern="#,##0"/> đ</td></tr>
                 <tr><td>Hình thức</td>
-                    <td class="text-end">${paidTransaction.method == 'CASH' ? 'Tiền mặt' : 'Chuyển khoản QR'}</td></tr>
+                    <td class="text-end">${paidTransaction.method == 'CASH' ? 'Tiền mặt' : 'VNPay'}</td></tr>
                 <c:if test="${not empty paidTransaction.cashReceived}">
                     <tr><td>Tiền khách đưa</td>
                         <td class="text-end"><fmt:formatNumber value="${paidTransaction.cashReceived}" pattern="#,##0"/> đ</td></tr>

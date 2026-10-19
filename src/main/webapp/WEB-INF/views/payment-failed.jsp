@@ -14,7 +14,7 @@
                 <div class="d-flex justify-content-between align-items-start mb-2">
                     <h5 class="text-danger mb-0">
                         <c:choose>
-                            <c:when test="${reason == 'PAYMENT_FAILED'}">Chưa nhận được thanh toán</c:when>
+                            <c:when test="${reason == 'PAYMENT_FAILED'}">Thanh toán VNPay không thành công</c:when>
                             <c:when test="${reason == 'EXPIRED'}">Đã hết thời gian giữ ghế</c:when>
                             <c:otherwise>Đơn đã bị huỷ</c:otherwise>
                         </c:choose>
@@ -27,13 +27,12 @@
                 <p class="mb-3">
                     <c:choose>
                         <c:when test="${reason == 'PAYMENT_FAILED'}">
-                            Nhân viên chưa thấy khoản chuyển khoản cho đơn <strong><c:out value="${booking.code}"/></strong>.
-                            Có thể bạn chưa chuyển, chuyển sai số tiền hoặc sai nội dung. Ghế vẫn đang được giữ:
-                            bạn có thể tạo giao dịch mới và chuyển khoản lại, hoặc huỷ đơn.
+                            VNPay báo giao dịch cho đơn <strong><c:out value="${booking.code}"/></strong> không thành công
+                            và bạn chưa bị trừ tiền. Ghế vẫn đang được giữ: bạn có thể thanh toán lại hoặc huỷ đơn.
                         </c:when>
                         <c:when test="${reason == 'EXPIRED'}">
                             Đơn <strong><c:out value="${booking.code}"/></strong> chưa được thanh toán trong thời gian giữ ghế
-                            nên ghế đã được nhả cho người khác. Nếu bạn đã chuyển khoản, vui lòng liên hệ quầy vé để được hỗ trợ.
+                            nên ghế đã được nhả cho người khác. Nếu tài khoản của bạn đã bị trừ tiền, vui lòng liên hệ quầy vé để được hỗ trợ.
                         </c:when>
                         <c:otherwise>
                             Đơn <strong><c:out value="${booking.code}"/></strong> đã được huỷ, ghế đã được nhả.
@@ -49,9 +48,9 @@
 
                 <c:choose>
                     <c:when test="${reason == 'PAYMENT_FAILED' and booking.holdActive}">
-                        <form method="post" action="${ctx}/payment/retry" class="mb-2">
+                        <form method="post" action="${ctx}/payment/vnpay" class="mb-2">
                             <input type="hidden" name="bookingId" value="${booking.id}">
-                            <button type="submit" class="btn btn-primary w-100 btn-lg">Thanh toán lại</button>
+                            <button type="submit" class="btn btn-primary w-100 btn-lg">Thanh toán lại qua VNPay</button>
                         </form>
                         <form method="post" action="${ctx}/booking" onsubmit="return confirm('Huỷ đơn và nhả ghế?');">
                             <input type="hidden" name="action" value="cancel">

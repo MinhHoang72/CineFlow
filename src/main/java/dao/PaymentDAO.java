@@ -26,25 +26,53 @@ public class PaymentDAO {
 
     public record Outcome(Status status, Integer bookingId) {}
 
+    /** Giao dich VNPay (PaymentMethod = 'QR', TransactionCode = vnp_TxnRef). */
+    public record VnpayRef(int paymentId, int bookingId, BigDecimal amount, String status) {}
+
     /**
-     * Lay giao dich chuyen khoan dang cho cua booking, chua co thi tao moi.
-     * @return PaymentID
+     * Tao giao dich VNPay moi cho booking, huy giao dich VNPay dang cho truoc do (khach bam thanh toan lai).
+     * @return TransactionCode, dung lam vnp_TxnRef
      */
-    public int getOrCreatePendingQr(int bookingId, String bookingCode, BigDecimal amount) throws SQLException {
+    public String createVnpayPayment(int bookingId, String bookingCode, BigDecimal amount) throws SQLException {
+        String txnRef = bookingCode + System.currentTimeMillis();
         try (Connection conn = DBContext.getConnection()) {
-            try (PreparedStatement ps = conn.prepareStatement(
-                    "SELECT TOP 1 PaymentID FROM Payments WHERE BookingID = ? AND PaymentMethod = 'QR' "
-                  + "AND PaymentStatus = 'PENDING' ORDER BY PaymentID DESC")) {
-                ps.setInt(1, bookingId);
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) return rs.getInt(1);
-                }
+            conn.setAutoCommit(false);
+            try {
+                update(conn, "UPDATE Payments SET PaymentStatus = 'CANCELLED' "
+                           + "WHERE BookingID = ? AND PaymentMethod = 'QR' AND PaymentStatus = 'PENDING'", bookingId);
+                insertPending(conn, bookingId, txnRef, "QR", amount, null);
+                conn.commit();
+                return txnRef;
+            } catch (SQLException | RuntimeException e) {
+                conn.rollback();
+                throw e;
             }
-            return insertPending(conn, bookingId, bookingCode, "QR", amount, null);
         }
     }
 
-    /** Trang thai giao dich QR moi nhat cua booking (PENDING/FAILED/...), null neu chua co. */
+    /** Giao dich VNPay theo vnp_TxnRef, null neu khong co. */
+    public VnpayRef findVnpay(String txnRef) throws SQLException {
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(
+                     "SELECT PaymentID, BookingID, Amount, PaymentStatus FROM Payments "
+                   + "WHERE TransactionCode = ? AND PaymentMethod = 'QR' AND BookingID IS NOT NULL")) {
+            ps.setString(1, txnRef);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? new VnpayRef(rs.getInt("PaymentID"), rs.getInt("BookingID"),
+                        rs.getBigDecimal("Amount"), rs.getString("PaymentStatus")) : null;
+            }
+        }
+    }
+
+    /** VNPay bao giao dich khong thanh cong: PENDING -> FAILED. Don van giu ghe de khach thanh toan lai. */
+    public void markFailed(int paymentId) throws SQLException {
+        try (Connection conn = DBContext.getConnection()) {
+            update(conn, "UPDATE Payments SET PaymentStatus = 'FAILED' WHERE PaymentID = ? AND PaymentStatus = 'PENDING'",
+                    paymentId);
+        }
+    }
+
+    /** Trang thai giao dich VNPay moi nhat cua booking (PENDING/FAILED/...), null neu chua co. */
     public String latestQrStatus(int bookingId) throws SQLException {
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(
@@ -54,41 +82,6 @@ public class PaymentDAO {
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next() ? rs.getString(1) : null;
             }
-        }
-    }
-
-    /** Thanh toan lai: huy giao dich QR dang cho (neu co) va tao giao dich QR moi. @return PaymentID moi */
-    public int retryQr(int bookingId, String bookingCode, BigDecimal amount) throws SQLException {
-        try (Connection conn = DBContext.getConnection()) {
-            conn.setAutoCommit(false);
-            try {
-                update(conn, "UPDATE Payments SET PaymentStatus = 'CANCELLED' "
-                           + "WHERE BookingID = ? AND PaymentMethod = 'QR' AND PaymentStatus = 'PENDING'", bookingId);
-                int id = insertPending(conn, bookingId, bookingCode, "QR", amount, null);
-                conn.commit();
-                return id;
-            } catch (SQLException | RuntimeException e) {
-                conn.rollback();
-                throw e;
-            }
-        }
-    }
-
-    /**
-     * Nhan vien bao khong nhan duoc tien: giao dich PENDING -> FAILED. Don van giu ghe de khach thanh toan lai.
-     * @param branchId chi nhanh cua nhan vien; null = moi chi nhanh
-     */
-    public boolean rejectQr(int paymentId, Integer branchId) throws SQLException {
-        String sql = "UPDATE p SET p.PaymentStatus = 'FAILED' FROM Payments p "
-                   + "JOIN Bookings b ON b.BookingID = p.BookingID "
-                   + "JOIN Showtimes s ON s.ShowtimeID = b.ShowtimeID JOIN Halls h ON h.HallID = s.HallID "
-                   + "WHERE p.PaymentID = ? AND p.PaymentStatus = 'PENDING' AND (? IS NULL OR h.CentreID = ?)";
-        try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, paymentId);
-            setNullableInt(ps, 2, branchId);
-            setNullableInt(ps, 3, branchId);
-            return ps.executeUpdate() > 0;
         }
     }
 
@@ -111,19 +104,6 @@ public class PaymentDAO {
         return list;
     }
 
-    /** Giao dich QR chua xac nhan gan nhat cua booking (ke ca da het han giu ghe), null neu khong co. */
-    public Integer findLatestUnconfirmedQr(int bookingId) throws SQLException {
-        try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(
-                     "SELECT TOP 1 PaymentID FROM Payments WHERE BookingID = ? AND PaymentMethod = 'QR' "
-                   + "AND PaymentStatus IN ('PENDING', 'TIMEOUT') ORDER BY PaymentID DESC")) {
-            ps.setInt(1, bookingId);
-            try (ResultSet rs = ps.executeQuery()) {
-                return rs.next() ? rs.getInt(1) : null;
-            }
-        }
-    }
-
     /**
      * Tao giao dich tien mat (ban tai quay); nhan vien xac nhan ngay bang confirmPaid.
      * @param cashReceived so tien khach dua (>= amount), dung de tinh tien thoi va in hoa don
@@ -132,17 +112,18 @@ public class PaymentDAO {
     public int createCashPayment(int bookingId, String bookingCode, BigDecimal amount, BigDecimal cashReceived)
             throws SQLException {
         try (Connection conn = DBContext.getConnection()) {
-            return insertPending(conn, bookingId, bookingCode, "CASH", amount, cashReceived);
+            return insertPending(conn, bookingId, bookingCode + "-CASH-" + System.currentTimeMillis(), "CASH",
+                    amount, cashReceived);
         }
     }
 
-    private static int insertPending(Connection conn, int bookingId, String bookingCode, String method,
+    private static int insertPending(Connection conn, int bookingId, String transactionCode, String method,
             BigDecimal amount, BigDecimal cashReceived) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
                 "INSERT INTO Payments (BookingID, TransactionCode, PaymentMethod, Amount, PaymentStatus, CashReceived) "
               + "VALUES (?, ?, ?, ?, 'PENDING', ?)", Statement.RETURN_GENERATED_KEYS)) {
             ps.setInt(1, bookingId);
-            ps.setString(2, bookingCode + "-" + method + "-" + System.currentTimeMillis());
+            ps.setString(2, transactionCode);
             ps.setString(3, method);
             ps.setBigDecimal(4, amount);
             ps.setBigDecimal(5, cashReceived);
@@ -155,8 +136,8 @@ public class PaymentDAO {
     }
 
     /**
-     * Nhan vien xac nhan da nhan tien. Goi lap lai van an toan.
-     * @param branchId chi nhanh cua nhan vien; null = duoc xac nhan moi chi nhanh
+     * Ghi nhan da nhan tien (tien mat tai quay, hoac VNPay bao thanh cong) va xuat ve. Goi lap lai van an toan.
+     * @param branchId chi nhanh cua nhan vien; null = moi chi nhanh (VNPay)
      */
     public Outcome confirmPaid(int paymentId, Integer branchId) throws SQLException {
         try (Connection conn = DBContext.getConnection()) {
@@ -194,7 +175,7 @@ public class PaymentDAO {
         update(conn, "UPDATE Payments SET PaymentStatus = 'PAID', PaidAt = SYSDATETIME() WHERE PaymentID = ?", paymentId);
 
         try {
-            // Thuong la HELD; RELEASED khi nhan vien xac nhan sau khi don da het han giu ghe.
+            // Thuong la HELD; RELEASED khi VNPay bao thanh cong sau khi don da het han giu ghe.
             update(conn, "UPDATE BookingSeats SET SeatStatus = 'CONFIRMED', HoldUntil = NULL "
                        + "WHERE BookingID = ? AND SeatStatus IN ('HELD', 'RELEASED', 'CANCELLED')", bookingId);
         } catch (SQLException e) {
@@ -215,11 +196,17 @@ public class PaymentDAO {
         return new Outcome(Status.SUCCESS, bookingId);
     }
 
-    /** Giao dich chuyen khoan chua xac nhan trong 24h qua (ca da het han giu ghe, de xu ly khach chuyen muon). */
-    public List<Payment> getUnconfirmedQr(Integer branchId) throws SQLException {
-        String sql = "SELECT p.PaymentID, p.TransactionCode, p.Amount, p.PaymentStatus, p.CreatedAt, "
-                   + "  b.BookingID, b.BookingCode, b.BookingStatus, u.FullName, u.Phone, br.CentreName, m.Title, "
-                   + "  (SELECT MIN(HoldUntil) FROM BookingSeats WHERE BookingID = b.BookingID AND SeatStatus = 'HELD') AS HoldUntil "
+    /**
+     * Theo doi giao dich thanh toan ve (VNPay + tien mat), moi nhat truoc.
+     * @param branchId null = moi chi nhanh
+     * @param status null = moi trang thai
+     * @param method null = moi phuong thuc (QR = VNPay, CASH = tien mat)
+     */
+    public List<Payment> getTransactionsForTracking(Integer branchId, String status, String method, int days)
+            throws SQLException {
+        String sql = "SELECT TOP 300 p.PaymentID, p.TransactionCode, p.PaymentMethod, p.Amount, p.PaymentStatus, "
+                   + "  p.CreatedAt, p.PaidAt, b.BookingID, b.BookingCode, b.BookingType, b.BookingStatus, "
+                   + "  u.FullName, u.Phone, br.CentreName, m.Title "
                    + "FROM Payments p "
                    + "JOIN Bookings b ON b.BookingID = p.BookingID "
                    + "LEFT JOIN Users u ON u.UserID = b.UserID "
@@ -227,22 +214,29 @@ public class PaymentDAO {
                    + "JOIN Movies m ON m.MovieID = s.MovieID "
                    + "JOIN Halls h ON h.HallID = s.HallID "
                    + "JOIN Centres br ON br.CentreID = h.CentreID "
-                   + "WHERE p.PaymentMethod = 'QR' AND p.PaymentStatus IN ('PENDING', 'TIMEOUT') "
-                   + "  AND p.CreatedAt > DATEADD(DAY, -1, SYSDATETIME()) "
+                   + "WHERE p.CreatedAt > DATEADD(DAY, ?, SYSDATETIME()) "
                    + "  AND (? IS NULL OR br.CentreID = ?) "
-                   + "ORDER BY CASE p.PaymentStatus WHEN 'PENDING' THEN 0 ELSE 1 END, p.CreatedAt DESC";
+                   + "  AND (? IS NULL OR p.PaymentStatus = ?) "
+                   + "  AND (? IS NULL OR p.PaymentMethod = ?) "
+                   + "ORDER BY p.CreatedAt DESC, p.PaymentID DESC";
         List<Payment> list = new ArrayList<>();
         try (Connection conn = DBContext.getConnection()) {
             BookingDAO.releaseExpiredHolds(conn);
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                setNullableInt(ps, 1, branchId);
+                ps.setInt(1, -days);
                 setNullableInt(ps, 2, branchId);
+                setNullableInt(ps, 3, branchId);
+                ps.setString(4, status);
+                ps.setString(5, status);
+                ps.setString(6, method);
+                ps.setString(7, method);
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
                         list.add(new Payment(rs.getInt("PaymentID"), rs.getString("TransactionCode"),
-                                rs.getBigDecimal("Amount"), rs.getString("PaymentStatus"), rs.getTimestamp("CreatedAt"),
-                                rs.getInt("BookingID"), rs.getString("BookingCode"), rs.getString("BookingStatus"),
-                                rs.getTimestamp("HoldUntil"), rs.getString("FullName"), rs.getString("Phone"),
+                                rs.getString("PaymentMethod"), rs.getBigDecimal("Amount"), rs.getString("PaymentStatus"),
+                                rs.getTimestamp("CreatedAt"), rs.getTimestamp("PaidAt"),
+                                rs.getInt("BookingID"), rs.getString("BookingCode"), rs.getString("BookingType"),
+                                rs.getString("BookingStatus"), rs.getString("FullName"), rs.getString("Phone"),
                                 rs.getString("CentreName"), rs.getString("Title")));
                     }
                 }

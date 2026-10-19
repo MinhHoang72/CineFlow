@@ -13,7 +13,6 @@ import model.Showtime;
 import model.Ticket;
 import model.User;
 import utils.QrUtil;
-import utils.VietQrUtil;
 import utils.WebUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -38,9 +37,8 @@ import java.util.TreeMap;
  *   GET  /staff/counter?action=seats          so do ghe
  *   POST /staff/counter?action=hold           giu ghe 5 phut
  *   GET  /staff/counter?action=checkout       tom tat don + chon cach thu tien
- *   GET  /staff/counter?action=qr             hien VietQR cho khach quet
+ *   POST /staff/counter?action=vnpay          chuyen sang VNPay de khach quet QR / the, VNPay tu xac nhan
  *   POST /staff/counter?action=cash           thu tien mat -> xuat ve
- *   POST /staff/counter?action=confirm-qr     da nhan chuyen khoan -> xuat ve
  *   POST /staff/counter?action=cancel         huy don
  *   GET  /staff/counter?action=ticket         in ve
  */
@@ -65,8 +63,8 @@ public class CounterController extends HttpServlet {
                 showtimes(req, resp, staff);
             } else if ("seats".equals(action)) {
                 seats(req, resp, staff);
-            } else if ("checkout".equals(action) || "qr".equals(action)) {
-                checkout(req, resp, staff, "qr".equals(action));
+            } else if ("checkout".equals(action)) {
+                checkout(req, resp, staff);
             } else if ("ticket".equals(action)) {
                 ticket(req, resp, staff);
             } else {
@@ -86,7 +84,7 @@ public class CounterController extends HttpServlet {
             switch (action == null ? "" : action) {
                 case "hold" -> hold(req, resp, staff);
                 case "cash" -> payCash(req, resp, staff);
-                case "confirm-qr" -> confirmQr(req, resp, staff);
+                case "vnpay" -> payVnpay(req, resp, staff);
                 case "cancel" -> cancel(req, resp, staff);
                 default -> resp.sendError(HttpServletResponse.SC_NOT_FOUND);
             }
@@ -166,7 +164,7 @@ public class CounterController extends HttpServlet {
         }
     }
 
-    private void checkout(HttpServletRequest req, HttpServletResponse resp, User staff, boolean showQr)
+    private void checkout(HttpServletRequest req, HttpServletResponse resp, User staff)
             throws SQLException, ServletException, IOException {
         Booking booking = loadCounterBooking(req, staff);
         if (booking == null) {
@@ -177,19 +175,6 @@ public class CounterController extends HttpServlet {
         if ("CONFIRMED".equals(booking.getStatus())) {
             resp.sendRedirect(ctx + "/staff/counter?action=ticket&bookingId=" + booking.getId());
             return;
-        }
-        if (showQr && booking.isHoldActive()) {
-            if (!VietQrUtil.isConfigured()) {
-                WebUtil.flash(req, "danger", "Chưa cấu hình tài khoản nhận tiền trong bank.properties.");
-                resp.sendRedirect(ctx + "/staff/counter?action=checkout&bookingId=" + booking.getId());
-                return;
-            }
-            paymentDAO.getOrCreatePendingQr(booking.getId(), booking.getCode(), booking.getTotalAmount());
-            long amount = booking.getTotalAmount().longValue();
-            req.setAttribute("qrImage", QrUtil.toDataUri(VietQrUtil.buildPayload(amount, booking.getCode())));
-            req.setAttribute("bankName", VietQrUtil.bankName());
-            req.setAttribute("accountNo", VietQrUtil.accountNo());
-            req.setAttribute("accountName", VietQrUtil.accountName());
         }
         req.setAttribute("booking", booking);
         req.getRequestDispatcher(VIEW_DIR + "counter-checkout.jsp").forward(req, resp);
@@ -216,19 +201,21 @@ public class CounterController extends HttpServlet {
         finishPayment(req, resp, staff, booking, paymentDAO.confirmPaid(paymentId, staff.getCentreId()));
     }
 
-    private void confirmQr(HttpServletRequest req, HttpServletResponse resp, User staff) throws SQLException, IOException {
+    /** Khach quet QR / nhap the tren trang VNPay; VNPay chuyen ve /payment/vnpay-return -> in ve. */
+    private void payVnpay(HttpServletRequest req, HttpServletResponse resp, User staff) throws SQLException, IOException {
         Booking booking = loadCounterBooking(req, staff);
         if (booking == null) {
             resp.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;
         }
-        Integer paymentId = paymentDAO.findLatestUnconfirmedQr(booking.getId());
-        if (paymentId == null) {
-            WebUtil.flash(req, "warning", "Đơn chưa có giao dịch chuyển khoản nào.");
-            resp.sendRedirect(req.getContextPath() + "/staff/counter?action=checkout&bookingId=" + booking.getId());
+        String checkoutUrl = req.getContextPath() + "/staff/counter?action=checkout&bookingId=" + booking.getId();
+        if (!booking.isHoldActive()) {
+            WebUtil.flash(req, "warning", "Đơn đã hết thời gian giữ ghế, vui lòng chọn ghế lại.");
+            resp.sendRedirect(checkoutUrl);
             return;
         }
-        finishPayment(req, resp, staff, booking, paymentDAO.confirmPaid(paymentId, staff.getCentreId()));
+        String payUrl = PaymentController.startVnpay(req, booking);
+        resp.sendRedirect(payUrl == null ? checkoutUrl : payUrl);
     }
 
     private void finishPayment(HttpServletRequest req, HttpServletResponse resp, User staff, Booking booking,

@@ -49,8 +49,13 @@
                                 <button type="submit" class="btn btn-success w-100" id="cashBtn" disabled>Xác nhận thu tiền mặt</button>
                             </form>
                         </div>
-                        <a href="${ctx}/staff/counter?action=qr&bookingId=${booking.id}"
-                           class="btn btn-primary w-100 mb-2">📱 Thanh toán QR chuyển khoản</a>
+                        <form method="post" action="${ctx}/staff/counter" class="mb-2">
+                            <input type="hidden" name="action" value="vnpay">
+                            <input type="hidden" name="bookingId" value="${booking.id}">
+                            <button type="submit" class="btn btn-primary w-100">📱 Thanh toán qua VNPay (QR / thẻ)</button>
+                            <div class="form-text">Mở trang VNPay cho khách quét mã QR bằng app ngân hàng;
+                                VNPay xác nhận xong sẽ tự chuyển về trang in vé.</div>
+                        </form>
                         <form method="post" action="${ctx}/staff/counter" onsubmit="return confirm('Huỷ đơn và nhả ghế?');">
                             <input type="hidden" name="action" value="cancel">
                             <input type="hidden" name="bookingId" value="${booking.id}">
@@ -71,28 +76,6 @@
         </div>
     </div>
 
-    <c:if test="${not empty qrImage}">
-        <div class="col-lg-5">
-            <div class="card">
-                <div class="card-body text-center">
-                    <h6>Khách quét mã để chuyển khoản</h6>
-                    <img src="${qrImage}" alt="Mã QR chuyển khoản" class="img-fluid border rounded p-2 my-2" style="max-width: 280px">
-                    <table class="table table-sm text-start">
-                        <tr><th>Ngân hàng</th><td><c:out value="${bankName}"/></td></tr>
-                        <tr><th>Số tài khoản</th><td class="fw-bold"><c:out value="${accountNo}"/></td></tr>
-                        <tr><th>Chủ tài khoản</th><td><c:out value="${accountName}"/></td></tr>
-                        <tr><th>Nội dung</th><td class="fw-bold"><c:out value="${booking.code}"/></td></tr>
-                    </table>
-                    <form method="post" action="${ctx}/staff/counter"
-                          onsubmit="return confirm('Đã thấy tiền vào tài khoản cho đơn ${booking.code}?');">
-                        <input type="hidden" name="action" value="confirm-qr">
-                        <input type="hidden" name="bookingId" value="${booking.id}">
-                        <button type="submit" class="btn btn-success w-100">Xác nhận đã nhận tiền</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </c:if>
 </div>
 
 <c:if test="${booking.holdActive}">

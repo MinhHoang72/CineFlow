@@ -14,7 +14,7 @@
     </h5>
     <div class="d-flex gap-2 no-print">
         <c:if test="${isOwner and booking.holdActive}">
-            <a href="${ctx}/payment/qr?bookingId=${booking.id}" class="btn btn-warning">Tiếp tục thanh toán</a>
+            <a href="${ctx}/booking?action=checkout&bookingId=${booking.id}" class="btn btn-warning">Tiếp tục thanh toán</a>
         </c:if>
         <c:if test="${isOwner}">
             <a href="${ctx}/booking?action=history" class="btn btn-outline-primary">← Lịch sử đặt vé</a>
@@ -66,7 +66,7 @@
                         <c:forEach var="p" items="${transactions}">
                             <tr>
                                 <td><code><c:out value="${p.transactionCode}"/></code></td>
-                                <td>${p.method == 'CASH' ? 'Tiền mặt' : 'QR chuyển khoản'}
+                                <td>${p.method == 'CASH' ? 'Tiền mặt' : 'VNPay'}
                                     <c:if test="${not empty p.cashReceived}">
                                         <br><small class="text-muted">Khách đưa <fmt:formatNumber value="${p.cashReceived}" pattern="#,##0"/> đ,
                                         thối <fmt:formatNumber value="${p.change}" pattern="#,##0"/> đ</small>

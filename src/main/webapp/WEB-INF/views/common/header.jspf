@@ -32,7 +32,7 @@
                     <a class="link-warning me-3" href="${pageContext.request.contextPath}/staff/counter">Bán vé tại quầy</a>
                 </c:if>
                 <c:if test="${cfSales or cfRole == 'MANAGER' or cfRole == 'ADMIN'}">
-                    <a class="link-warning me-3" href="${pageContext.request.contextPath}/staff/payments">Xác nhận chuyển khoản</a>
+                    <a class="link-warning me-3" href="${pageContext.request.contextPath}/staff/payments">Theo dõi giao dịch</a>
                 </c:if>
                 Xin chào, <c:out value="${sessionScope.user.fullName}"/>
                 · <a class="link-light" href="${pageContext.request.contextPath}/logout">Đăng xuất</a></span>
