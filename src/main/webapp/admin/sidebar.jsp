@@ -6,6 +6,8 @@
     if (activeNav == null) {
         if (cfUri.contains("/admin/distribution")) {
             activeNav = "distribution";
+        } else if (cfUri.contains("/admin/centres") || cfUri.contains("/admin/centre")) {
+            activeNav = "centres";
         } else if (cfUri.contains("/admin/movies") || cfUri.contains("/admin/movie")) {
             activeNav = "movies";
         } else if (cfUri.contains("/admin/customers")) {
@@ -41,6 +43,11 @@
 
     <div class="cf-sidebar-section">QUẢN TRỊ NỘI DUNG</div>
     <nav class="cf-sidebar-nav">
+        <a class="<%= "centres".equals(activeNav) ? "active" : "" %>" href="<%= cfPath %>/admin/centres">
+            <span class="icon">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M3 7v14M21 7v14M6 7V3h12v4M9 11h2M13 11h2M9 15h2M13 15h2"/></svg>
+            </span>Quản lý Cụm rạp
+        </a>
         <a class="<%= "movies".equals(activeNav) ? "active" : "" %>" href="<%= cfPath %>/admin/movies">
             <span class="icon">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line><line x1="2" y1="7" x2="7" y2="7"></line><line x1="2" y1="17" x2="7" y2="17"></line><line x1="17" y1="17" x2="22" y2="17"></line><line x1="17" y1="7" x2="22" y2="7"></line></svg>

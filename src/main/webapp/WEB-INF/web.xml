@@ -98,6 +98,21 @@
     </servlet-mapping>
 
     <servlet>
+        <servlet-name>CentreManagementServlet</servlet-name>
+        <servlet-class>controller.CentreManagementServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>CentreManagementServlet</servlet-name>
+        <url-pattern>/admin/centres</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>CentreManagementServlet</servlet-name>
+        <url-pattern>/admin/centre</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
         <servlet-name>ReportServlet</servlet-name>
         <servlet-class>controller.ReportServlet</servlet-class>
     </servlet>

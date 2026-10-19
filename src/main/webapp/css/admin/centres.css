@@ -1,0 +1,435 @@
+/* =====================================================
+   CineFlow - Admin Centre Management Styles (centres.css)
+   ===================================================== */
+
+.cf-page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.cf-page-header h1 {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-color, #111827);
+    margin: 0;
+}
+
+.cf-page-header p {
+    font-size: 14px;
+    color: var(--text-muted, #64748B);
+    margin: 4px 0 0 0;
+}
+
+/* Thống kê (Stat Cards) */
+.cf-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.cf-stat-card {
+    background: #ffffff;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    padding: 18px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.cf-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.cf-stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    background: #F1F5F9;
+    color: #475569;
+    flex-shrink: 0;
+}
+
+.cf-stat-icon.primary {
+    background: rgba(255, 40, 85, 0.1);
+    color: #FF2855;
+}
+
+.cf-stat-icon.success {
+    background: rgba(34, 197, 94, 0.12);
+    color: #16A34A;
+}
+
+.cf-stat-icon.warning {
+    background: rgba(245, 158, 11, 0.12);
+    color: #D97706;
+}
+
+.cf-stat-icon.info {
+    background: rgba(59, 130, 246, 0.12);
+    color: #2563EB;
+}
+
+.cf-stat-info h3 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #0F172A;
+    margin: 0;
+    line-height: 1.2;
+}
+
+.cf-stat-info p {
+    font-size: 13px;
+    color: #64748B;
+    margin: 4px 0 0 0;
+}
+
+/* Thanh tìm kiếm & bộ lọc */
+.cf-filter-card {
+    background: #ffffff;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.cf-filter-form {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    flex-wrap: wrap;
+}
+
+.cf-search-box {
+    position: relative;
+    flex: 1;
+    min-width: 240px;
+}
+
+.cf-search-box input {
+    width: 100%;
+    padding: 9px 14px 9px 38px;
+    background: #F8FAFC;
+    border: 1px solid #CBD5E1;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #1E293B;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.cf-search-box input:focus {
+    border-color: #FF2855;
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(255, 40, 85, 0.12);
+}
+
+.cf-search-box .icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94A3B8;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+}
+
+.cf-select {
+    padding: 9px 14px;
+    background: #F8FAFC;
+    border: 1px solid #CBD5E1;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #1E293B;
+    outline: none;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.cf-select:focus {
+    border-color: #FF2855;
+    background: #ffffff;
+}
+
+/* Bảng hiển thị danh sách Centre */
+.cf-table-container {
+    background: #ffffff;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.cf-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.cf-table th {
+    background: #F8FAFC;
+    padding: 14px 18px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #475569;
+    border-bottom: 1px solid #E2E8F0;
+}
+
+.cf-table td {
+    padding: 16px 18px;
+    font-size: 14px;
+    color: #1E293B;
+    border-bottom: 1px solid #F1F5F9;
+    vertical-align: middle;
+}
+
+.cf-table tr:hover td {
+    background: #F8FAFC;
+}
+
+.cf-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* Badge trạng thái */
+.cf-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.cf-badge-active {
+    background: rgba(34, 197, 94, 0.12);
+    color: #16A34A;
+    border: 1px solid rgba(34, 197, 94, 0.25);
+}
+
+.cf-badge-inactive {
+    background: rgba(239, 68, 68, 0.12);
+    color: #DC2626;
+    border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.cf-badge-halls {
+    background: rgba(59, 130, 246, 0.1);
+    color: #1D4ED8;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.cf-badge-halls:hover {
+    background: rgba(59, 130, 246, 0.18);
+    transform: scale(1.03);
+}
+
+/* Actions column */
+.cf-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cf-btn-sm {
+    padding: 6px 12px;
+    font-size: 13px;
+    border-radius: 6px;
+}
+
+/* Alert notifications */
+.cf-alert {
+    padding: 12px 18px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+}
+
+.cf-alert-success {
+    background: rgba(34, 197, 94, 0.15);
+    border: 1px solid rgba(34, 197, 94, 0.4);
+    color: #15803D;
+}
+
+.cf-alert-danger {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    color: #B91C1C;
+}
+
+/* Modals */
+.cf-modal-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(4px);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.cf-modal-backdrop.active {
+    display: flex;
+}
+
+.cf-modal {
+    background: #ffffff;
+    border: 1px solid #E2E8F0;
+    border-radius: 14px;
+    width: 100%;
+    max-width: 540px;
+    box-shadow: 0 24px 50px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+    animation: modalFadeIn 0.2s ease-out;
+}
+
+.cf-modal-lg {
+    max-width: 720px;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-16px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.cf-modal-header {
+    padding: 18px 24px;
+    border-bottom: 1px solid #E2E8F0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #ffffff;
+}
+
+.cf-modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    color: #111827;
+    font-weight: 700;
+}
+
+.cf-modal-close {
+    background: none;
+    border: none;
+    color: #64748B;
+    font-size: 24px;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.cf-modal-close:hover {
+    color: #111827;
+}
+
+.cf-modal-body {
+    padding: 22px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    background: #ffffff;
+    color: #1E293B;
+    max-height: 75vh;
+    overflow-y: auto;
+}
+
+.cf-modal-footer {
+    padding: 16px 24px;
+    border-top: 1px solid #E2E8F0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    background: #F8FAFC;
+}
+
+.cf-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.cf-form-group label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1E293B;
+}
+
+.cf-form-group input,
+.cf-form-group select {
+    background: #F8FAFC;
+    border: 1px solid #CBD5E1;
+    border-radius: 8px;
+    padding: 9px 14px;
+    color: #1E293B;
+    font-size: 14px;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.cf-form-group input:focus,
+.cf-form-group select:focus {
+    border-color: #FF2855;
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(255, 40, 85, 0.12);
+}
+
+.cf-form-hint {
+    font-size: 12px;
+    color: #64748B;
+    margin-top: 2px;
+}
+
+/* Hall modal list styling (BR-HS-01) */
+.cf-halls-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.cf-halls-table th {
+    background: #F1F5F9;
+    padding: 10px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #475569;
+    text-transform: uppercase;
+}
+
+.cf-halls-table td {
+    padding: 12px 14px;
+    font-size: 13px;
+    border-bottom: 1px solid #E2E8F0;
+}
