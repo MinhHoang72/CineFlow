@@ -115,7 +115,7 @@ public class DistributionServlet extends HttpServlet {
         request.setAttribute("movie", selectedMovie);
         request.setAttribute("allMovies", allMovies != null ? allMovies : java.util.Collections.emptyList());
         request.setAttribute("centres", centres);
-        request.getRequestDispatcher("/admin/distribution.jsp").forward(request, response);
+        request.getRequestDispatcher("/WEB-INF/views/admin/movieDistribution.jsp").forward(request, response);
     }
 
     /**

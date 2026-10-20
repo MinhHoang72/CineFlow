@@ -111,7 +111,7 @@ public class CustomerManagementServlet extends HttpServlet {
         request.setAttribute("currentStatus", status);
 
         // 7. Chuyển tiếp tới giao diện quản lý khách hàng
-        request.getRequestDispatcher("/admin/customers.jsp").forward(request, response);
+        request.getRequestDispatcher("/WEB-INF/views/customer/customerList.jsp").forward(request, response);
     }
 
     /**

@@ -59,21 +59,21 @@ public class ResetPasswordServlet extends HttpServlet {
 
         if (ValidationUtils.isBlank(newPassword) || ValidationUtils.isBlank(confirmPassword)) {
             request.setAttribute("error", "missing_fields");
-            request.getRequestDispatcher("/auth/reset-password.jsp").forward(request, response);
+            request.getRequestDispatcher("/WEB-INF/views/auth/resetPassword.jsp").forward(request, response);
             return;
         }
 
         // 2. Kiểm tra mật khẩu xác nhận
         if (!newPassword.equals(confirmPassword)) {
             request.setAttribute("error", "password_mismatch");
-            request.getRequestDispatcher("/auth/reset-password.jsp").forward(request, response);
+            request.getRequestDispatcher("/WEB-INF/views/auth/resetPassword.jsp").forward(request, response);
             return;
         }
 
         // 3. Kiểm tra độ mạnh mật khẩu
         if (!ValidationUtils.isValidPassword(newPassword)) {
             request.setAttribute("error", "weak_password");
-            request.getRequestDispatcher("/auth/reset-password.jsp").forward(request, response);
+            request.getRequestDispatcher("/WEB-INF/views/auth/resetPassword.jsp").forward(request, response);
             return;
         }
 
@@ -83,7 +83,7 @@ public class ResetPasswordServlet extends HttpServlet {
 
         if (!success) {
             request.setAttribute("error", "reset_failed");
-            request.getRequestDispatcher("/auth/reset-password.jsp").forward(request, response);
+            request.getRequestDispatcher("/WEB-INF/views/auth/resetPassword.jsp").forward(request, response);
             return;
         }
 
@@ -115,6 +115,6 @@ public class ResetPasswordServlet extends HttpServlet {
             return;
         }
 
-        request.getRequestDispatcher("/auth/reset-password.jsp").forward(request, response);
+        request.getRequestDispatcher("/WEB-INF/views/auth/resetPassword.jsp").forward(request, response);
     }
 }

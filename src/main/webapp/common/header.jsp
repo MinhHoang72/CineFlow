@@ -1,5 +1,5 @@
 <%@ page pageEncoding="UTF-8" %>
-<%@ page import="model.User" %>
+<%@ page import="model.entity.User" %>
 <%!
     private User safeSessionUser(Object value) {
         if (value instanceof User) {
@@ -83,8 +83,8 @@
         <!-- Khu vực tài khoản và xác thực bên phải -->
         <div class="cf-header-right">
             <% if (headerUser == null) { %>
-                <a class="cf-auth-link" href="<%= ctx %>/auth/login.jsp">Đăng nhập</a>
-                <a class="cf-auth-btn" href="<%= ctx %>/auth/register.jsp">Đăng ký</a>
+                <a class="cf-auth-link" href="<%= ctx %>/login">Đăng nhập</a>
+                <a class="cf-auth-btn" href="<%= ctx %>/register">Đăng ký</a>
             <% } else { %>
                 <% if ("ADMIN".equals(headerRole)) { %>
                     <a class="cf-badge-role admin" href="<%= ctx %>/admin/movies" title="Bảng quản trị hệ thống">Admin</a>

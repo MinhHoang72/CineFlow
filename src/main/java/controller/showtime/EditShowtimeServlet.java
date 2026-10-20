@@ -95,7 +95,7 @@ public class EditShowtimeServlet
             );
 
             request.getRequestDispatcher(
-                    "/showtime/edit-showtime.jsp"
+                    "/WEB-INF/views/showtime/showtimeEdit.jsp"
             ).forward(
                     request,
                     response

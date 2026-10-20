@@ -1,5 +1,5 @@
 <%@ page pageEncoding="UTF-8" %>
-<%@ page import="model.User" %>
+<%@ page import="model.entity.User" %>
 <%!
     static String esc(Object value) {
         if (value == null) {
@@ -118,9 +118,9 @@
 </head>
 <body>
 <div class="cf-manager-shell">
-    <jsp:include page="<%= adminUser ? \"/admin/sidebar.jsp\" : \"/manager/sidebar.jsp\" %>" />
+    <jsp:include page="<%= adminUser ? \"/WEB-INF/views/admin/adminSidebar.jspf\" : \"/WEB-INF/views/manager/managerSidebar.jspf\" %>" />
     <div class="cf-manager-main">
-        <jsp:include page="/admin/topbar.jsp" />
+        <jsp:include page="/WEB-INF/views/admin/adminTopbar.jspf" />
         <main class="cf-content">
             <% if (flashMessage != null) { %>
                 <div class="rp-flash <%= "success".equals(flashType) ? "success" : "error" %>"><%= esc(flashMessage) %></div>

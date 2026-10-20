@@ -89,7 +89,7 @@ public class ManagerAccountServlet extends HttpServlet {
         request.setAttribute("activeNav", "managers");
 
         // 7. Chuyển tiếp tới giao diện managers.jsp
-        request.getRequestDispatcher("/admin/managers.jsp").forward(request, response);
+        request.getRequestDispatcher("/WEB-INF/views/admin/managerList.jsp").forward(request, response);
     }
 
     /**

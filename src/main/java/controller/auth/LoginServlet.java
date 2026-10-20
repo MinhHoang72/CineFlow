@@ -101,18 +101,18 @@ public class LoginServlet extends HttpServlet {
             // Trường hợp khách hàng mới đăng ký nhưng chưa kích hoạt OTP email
             if (isCustomer && !user.isEmailVerified()) {
                 String encodedEmail = URLEncoder.encode(user.getEmail(), StandardCharsets.UTF_8);
-                response.sendRedirect(request.getContextPath() + "/auth/login.jsp?error=unverified&email=" + encodedEmail);
+                response.sendRedirect(request.getContextPath() + "/login?error=unverified&email=" + encodedEmail);
                 return;
             }
             // Trường hợp nhân viên/khách hàng bị Admin tạm ngừng hoạt động
-            response.sendRedirect(request.getContextPath() + "/auth/login.jsp?error=inactive");
+            response.sendRedirect(request.getContextPath() + "/login?error=inactive");
             return;
         }
 
         // 6.3. Khách hàng chưa xác thực email (dù status có thể là ACTIVE)
         if (isCustomer && !user.isEmailVerified()) {
             String encodedEmail = URLEncoder.encode(user.getEmail(), StandardCharsets.UTF_8);
-            response.sendRedirect(request.getContextPath() + "/auth/login.jsp?error=unverified&email=" + encodedEmail);
+            response.sendRedirect(request.getContextPath() + "/login?error=unverified&email=" + encodedEmail);
             return;
         }
 
@@ -163,6 +163,6 @@ public class LoginServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, "GET method is not allowed.");
+        request.getRequestDispatcher("/WEB-INF/views/auth/authLogin.jsp").forward(request, response);
     }
 }

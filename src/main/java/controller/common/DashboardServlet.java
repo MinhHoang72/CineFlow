@@ -59,7 +59,7 @@ public class DashboardServlet extends HttpServlet {
 
         // 3.2. Vai trò Quản lý trung tâm (MANAGER) -> Dashboard vận hành cụm rạp
         if ("MANAGER".equalsIgnoreCase(role)) {
-            request.getRequestDispatcher("/manager/dashboard.jsp").forward(request, response);
+            request.getRequestDispatcher("/WEB-INF/views/manager/managerDashboard.jsp").forward(request, response);
             return;
         }
 
@@ -69,7 +69,7 @@ public class DashboardServlet extends HttpServlet {
                 || "TICKET_CHECKER_STAFF".equalsIgnoreCase(role)
                 || "TICKET_SALES".equalsIgnoreCase(role)
                 || "TICKET_CHECKER".equalsIgnoreCase(role)) {
-            request.getRequestDispatcher("/staff/dashboard.jsp").forward(request, response);
+            request.getRequestDispatcher("/WEB-INF/views/staff/staffDashboard.jsp").forward(request, response);
             return;
         }
 

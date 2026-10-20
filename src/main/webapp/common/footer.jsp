@@ -1,5 +1,5 @@
 <%@ page pageEncoding="UTF-8" %>
-<%@ page import="model.User" %>
+<%@ page import="model.entity.User" %>
 <%
     User footerUser = (User) session.getAttribute("user");
     String fCtx = request.getContextPath();
@@ -29,11 +29,11 @@
         <div>
             <h4>TÀI KHOẢN</h4>
             <% if (footerUser == null) { %>
-                <a href="<%= fCtx %>/auth/login.jsp">Đăng nhập</a>
-                <a href="<%= fCtx %>/auth/register.jsp">Tạo tài khoản</a>
+                <a href="<%= fCtx %>/login">Đăng nhập</a>
+                <a href="<%= fCtx %>/register">Tạo tài khoản</a>
             <% } else { %>
                 <a href="<%= fCtx %>/account">Tài khoản của tôi</a>
-                <a href="<%= fCtx %>/auth/change-password.jsp">Đổi mật khẩu</a>
+                <a href="<%= fCtx %>/change-password">Đổi mật khẩu</a>
             <% } %>
         </div>
     </div>

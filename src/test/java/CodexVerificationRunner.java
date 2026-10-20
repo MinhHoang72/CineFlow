@@ -1,7 +1,7 @@
 import dao.CinemaDAO;
 import dao.UserDAO;
-import model.Centre;
-import model.User;
+import model.entity.Centre;
+import model.entity.User;
 import utils.DBContext;
 
 import java.sql.Connection;

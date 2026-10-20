@@ -148,7 +148,7 @@ public class VoucherServlet extends HttpServlet {
         request.setAttribute("pageTitle", "Voucher");
         request.setAttribute("pageBreadcrumb", "Khuyến mãi");
         showFlash(request);
-        request.getRequestDispatcher("/WEB-INF/views/voucher/list.jsp").forward(request, response);
+        request.getRequestDispatcher("/WEB-INF/views/voucher/voucherList.jsp").forward(request, response);
     }
 
     private void showForm(HttpServletRequest request, HttpServletResponse response)
@@ -179,7 +179,7 @@ public class VoucherServlet extends HttpServlet {
         request.setAttribute("csrf", csrfToken(request));
         request.setAttribute("pageTitle", voucher.getVoucherId() == 0 ? "Thêm voucher" : "Sửa voucher");
         request.setAttribute("pageBreadcrumb", "Khuyến mãi");
-        request.getRequestDispatcher("/WEB-INF/views/voucher/form.jsp").forward(request, response);
+        request.getRequestDispatcher("/WEB-INF/views/voucher/voucherForm.jsp").forward(request, response);
     }
 
     private String param(HttpServletRequest request, String name) {

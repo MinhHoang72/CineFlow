@@ -50,7 +50,7 @@ public class ForgotPasswordServlet extends HttpServlet {
         String email = request.getParameter("email");
         if (ValidationUtils.isBlank(email) || !ValidationUtils.isValidEmail(email)) {
             String encodedEmail = email != null ? URLEncoder.encode(email.trim(), StandardCharsets.UTF_8) : "";
-            response.sendRedirect(request.getContextPath() + "/auth/forgot-password.jsp?error=invalid_email&email=" + encodedEmail);
+            response.sendRedirect(request.getContextPath() + "/forgot-password?error=invalid_email&email=" + encodedEmail);
             return;
         }
 
@@ -60,7 +60,7 @@ public class ForgotPasswordServlet extends HttpServlet {
         User user = userDAO.getUserByEmail(email);
         if (user == null) {
             String encodedEmail = URLEncoder.encode(email, StandardCharsets.UTF_8);
-            response.sendRedirect(request.getContextPath() + "/auth/forgot-password.jsp?error=email&email=" + encodedEmail);
+            response.sendRedirect(request.getContextPath() + "/forgot-password?error=email&email=" + encodedEmail);
             return;
         }
 
@@ -89,7 +89,7 @@ public class ForgotPasswordServlet extends HttpServlet {
 
         // 7. Chuyển hướng người dùng sang trang nhập mã OTP
         String encodedEmail = URLEncoder.encode(email, StandardCharsets.UTF_8);
-        response.sendRedirect(request.getContextPath() + "/auth/verify-otp.jsp?email=" + encodedEmail + "&action=reset");
+        response.sendRedirect(request.getContextPath() + "/verify-otp?email=" + encodedEmail + "&action=reset");
     }
 
     /**
@@ -103,6 +103,6 @@ public class ForgotPasswordServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, "GET method is not allowed.");
+        request.getRequestDispatcher("/WEB-INF/views/auth/forgotPassword.jsp").forward(request, response);
     }
 }

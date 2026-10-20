@@ -77,7 +77,7 @@ public class MovieManagementServlet extends HttpServlet {
         // 2. Nếu là URL /admin/movies: Lấy toàn bộ danh sách phim và hiển thị trang danh mục
         if ("/admin/movies".equals(request.getServletPath())) {
             request.setAttribute("movies", dao.getAllMovies());
-            request.getRequestDispatcher("/admin/movies.jsp").forward(request, response);
+            request.getRequestDispatcher("/WEB-INF/views/movie/movieList.jsp").forward(request, response);
             return;
         }
 
@@ -100,7 +100,7 @@ public class MovieManagementServlet extends HttpServlet {
         }
 
         // 4. Chuyển tiếp (forward) sang giao diện form nhập liệu (movie-management.jsp)
-        request.getRequestDispatcher("/admin/movie-management.jsp").forward(request, response);
+        request.getRequestDispatcher("/WEB-INF/views/movie/movieForm.jsp").forward(request, response);
     }
 
     /**

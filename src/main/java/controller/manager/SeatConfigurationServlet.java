@@ -174,7 +174,7 @@ public class SeatConfigurationServlet extends HttpServlet {
         request.setAttribute("activeNav", "halls");
         request.setAttribute("pageTitle", "Cấu hình Sơ đồ ghế - " + hall.getHallName());
 
-        request.getRequestDispatcher("/manager/seat-config.jsp").forward(request, response);
+        request.getRequestDispatcher("/WEB-INF/views/manager/seatConfig.jsp").forward(request, response);
     }
 
     @Override

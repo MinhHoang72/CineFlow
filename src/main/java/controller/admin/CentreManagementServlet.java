@@ -149,7 +149,7 @@ public class CentreManagementServlet extends HttpServlet {
         request.setAttribute("pageTitle", "Quản lý Cụm rạp");
 
         // 10. Chuyển tiếp tới giao diện admin/centres.jsp
-        request.getRequestDispatcher("/admin/centres.jsp").forward(request, response);
+        request.getRequestDispatcher("/WEB-INF/views/admin/centreList.jsp").forward(request, response);
     }
 
     /**

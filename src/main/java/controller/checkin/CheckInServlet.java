@@ -122,6 +122,6 @@ public class CheckInServlet extends HttpServlet {
         request.setAttribute("logs", dao.recent(user.getCentreId(), HISTORY_SIZE));
         request.setAttribute("pageTitle", "Soát vé");
         request.setAttribute("pageBreadcrumb", crumb(user, "Vận hành"));
-        request.getRequestDispatcher("/WEB-INF/views/checkin/index.jsp").forward(request, response);
+        request.getRequestDispatcher("/WEB-INF/views/checkin/ticketCheckIn.jsp").forward(request, response);
     }
 }

@@ -52,7 +52,7 @@ public class VerifyOtpServlet extends HttpServlet {
         // Kiểm tra tính hợp lệ của tham số đầu vào (mã OTP phải gồm đúng 6 chữ số)
         if (email == null || email.trim().isEmpty() || otp == null || !otp.matches("\\d{6}")) {
             String actionParam = (action != null && !action.isEmpty()) ? "&action=" + action : "";
-            response.sendRedirect(request.getContextPath() + "/auth/verify-otp.jsp?error=invalid&email="
+            response.sendRedirect(request.getContextPath() + "/verify-otp?error=invalid&email="
                     + (email == null ? "" : URLEncoder.encode(email.trim(), StandardCharsets.UTF_8)) + actionParam);
             return;
         }
@@ -80,7 +80,7 @@ public class VerifyOtpServlet extends HttpServlet {
             User user = userDAO.getUserById(currentUserId);
             if (user == null || user.getResetToken() == null || !otp.equals(user.getResetToken())
                     || (user.getResetTokenExpiry() != null && user.getResetTokenExpiry().before(new Timestamp(System.currentTimeMillis())))) {
-                response.sendRedirect(request.getContextPath() + "/auth/verify-otp.jsp?error=invalid&email="
+                response.sendRedirect(request.getContextPath() + "/verify-otp?error=invalid&email="
                         + URLEncoder.encode(pendingNewEmail, StandardCharsets.UTF_8) + "&action=changeEmail");
                 return;
             }
@@ -112,7 +112,7 @@ public class VerifyOtpServlet extends HttpServlet {
         // Kiểm tra OTP có khớp với tài khoản sở hữu email đó hay không
         if (otpUser == null || user == null || otpUser.getUserId() != user.getUserId()) {
             String actionParam = (action != null && !action.isEmpty()) ? "&action=" + action : "";
-            response.sendRedirect(request.getContextPath() + "/auth/verify-otp.jsp?error=invalid&email="
+            response.sendRedirect(request.getContextPath() + "/verify-otp?error=invalid&email="
                     + URLEncoder.encode(email, StandardCharsets.UTF_8) + actionParam);
             return;
         }
@@ -120,7 +120,7 @@ public class VerifyOtpServlet extends HttpServlet {
         // 1. Luồng kích hoạt tài khoản đăng ký mới
         if ("register".equalsIgnoreCase(action)) {
             userDAO.activateUser(user.getUserId());
-            response.sendRedirect(request.getContextPath() + "/auth/login.jsp?verified=true");
+            response.sendRedirect(request.getContextPath() + "/login?verified=true");
             return;
         }
 
@@ -165,7 +165,7 @@ public class VerifyOtpServlet extends HttpServlet {
                         }
                     }
                 }
-                response.sendRedirect(request.getContextPath() + "/auth/verify-otp.jsp?email="
+                response.sendRedirect(request.getContextPath() + "/verify-otp?email="
                         + URLEncoder.encode(email, StandardCharsets.UTF_8) + "&action=changeEmail&resent=true");
                 return;
             }
@@ -186,11 +186,11 @@ public class VerifyOtpServlet extends HttpServlet {
                 }
             }
             String typeParam = (type != null && !type.isEmpty()) ? "&action=" + type : "";
-            response.sendRedirect(request.getContextPath() + "/auth/verify-otp.jsp?email="
+            response.sendRedirect(request.getContextPath() + "/verify-otp?email="
                     + URLEncoder.encode(email, StandardCharsets.UTF_8) + typeParam + "&resent=true");
             return;
         }
 
-        response.sendRedirect(request.getContextPath() + "/auth/verify-otp.jsp");
+        request.getRequestDispatcher("/WEB-INF/views/auth/verifyOtp.jsp").forward(request, response);
     }
 }

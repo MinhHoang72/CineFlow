@@ -219,7 +219,7 @@ public class PaymentController extends HttpServlet {
         }
         req.setAttribute("booking", booking);
         req.setAttribute("reason", reason);
-        req.getRequestDispatcher(VIEW_DIR + "payment/failed.jsp").forward(req, resp);
+        req.getRequestDispatcher(VIEW_DIR + "payment/paymentFailed.jsp").forward(req, resp);
     }
 
     private Booking loadOwnBooking(HttpServletRequest req, User user) throws SQLException {

@@ -343,7 +343,7 @@ public class FnbServlet extends HttpServlet {
         request.setAttribute("pageTitle", "Món & Combo");
         request.setAttribute("pageBreadcrumb", crumb(user, "Bắp nước"));
         showFlash(request);
-        request.getRequestDispatcher("/WEB-INF/views/fnb/list.jsp").forward(request, response);
+        request.getRequestDispatcher("/WEB-INF/views/fnb/fnbItemList.jsp").forward(request, response);
     }
 
     private void showItemForm(HttpServletRequest request, HttpServletResponse response, User user)
@@ -372,7 +372,7 @@ public class FnbServlet extends HttpServlet {
         request.setAttribute("csrf", csrfToken(request));
         request.setAttribute("pageTitle", item.getFnbItemId() == 0 ? "Thêm món" : "Sửa món");
         request.setAttribute("pageBreadcrumb", crumb(user, "Bắp nước"));
-        request.getRequestDispatcher("/WEB-INF/views/fnb/item-form.jsp").forward(request, response);
+        request.getRequestDispatcher("/WEB-INF/views/fnb/fnbItemForm.jsp").forward(request, response);
     }
 
     private void saveItem(HttpServletRequest request, HttpServletResponse response, User user)
@@ -455,7 +455,7 @@ public class FnbServlet extends HttpServlet {
             request.setAttribute("csrf", csrfToken(request));
             request.setAttribute("pageTitle", item.getFnbItemId() == 0 ? "Thêm món" : "Sửa món");
             request.setAttribute("pageBreadcrumb", crumb(user, "Bắp nước"));
-            request.getRequestDispatcher("/WEB-INF/views/fnb/item-form.jsp").forward(request, response);
+            request.getRequestDispatcher("/WEB-INF/views/fnb/fnbItemForm.jsp").forward(request, response);
             return;
         }
 
@@ -514,7 +514,7 @@ public class FnbServlet extends HttpServlet {
         request.setAttribute("csrf", csrfToken(request));
         request.setAttribute("pageTitle", combo.getComboId() == 0 ? "Tạo combo" : "Sửa combo");
         request.setAttribute("pageBreadcrumb", crumb(user, "Bắp nước"));
-        request.getRequestDispatcher("/WEB-INF/views/fnb/combo-form.jsp").forward(request, response);
+        request.getRequestDispatcher("/WEB-INF/views/fnb/fnbComboForm.jsp").forward(request, response);
     }
 
     private void saveCombo(HttpServletRequest request, HttpServletResponse response, User user)
@@ -616,7 +616,7 @@ public class FnbServlet extends HttpServlet {
             request.setAttribute("csrf", csrfToken(request));
             request.setAttribute("pageTitle", combo.getComboId() == 0 ? "Tạo combo" : "Sửa combo");
             request.setAttribute("pageBreadcrumb", crumb(user, "Bắp nước"));
-            request.getRequestDispatcher("/WEB-INF/views/fnb/combo-form.jsp").forward(request, response);
+            request.getRequestDispatcher("/WEB-INF/views/fnb/fnbComboForm.jsp").forward(request, response);
             return;
         }
 
@@ -715,7 +715,7 @@ public class FnbServlet extends HttpServlet {
         request.setAttribute("pageTitle", "Kho theo Centre");
         request.setAttribute("pageBreadcrumb", crumb(user, "Bắp nước"));
         showFlash(request);
-        request.getRequestDispatcher("/WEB-INF/views/fnb/stock.jsp").forward(request, response);
+        request.getRequestDispatcher("/WEB-INF/views/fnb/fnbInventory.jsp").forward(request, response);
     }
 
     private void toggleStock(HttpServletRequest request, HttpServletResponse response, User user)

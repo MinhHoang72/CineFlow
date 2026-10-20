@@ -1,7 +1,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ page import="model.User" %>
-<%@ page import="model.Movie" %>
-<%@ page import="model.Centre" %>
+<%@ page import="model.entity.User" %>
+<%@ page import="model.entity.Movie" %>
+<%@ page import="model.entity.Centre" %>
 <%@ page import="dao.CinemaDAO" %>
 <%@ page import="java.text.SimpleDateFormat" %>
 <%@ page import="java.util.List" %>
@@ -10,7 +10,7 @@
         if (value instanceof User) {
             return (User) value;
         }
-        // Tương thích với các phiên làm việc cũ lưu model.user.User, tránh ngoại lệ ClassCastException.
+        // Tương thích với các phiên làm việc cũ lưu model.entity.User.User, tránh ngoại lệ ClassCastException.
         if (value == null) {
             return null;
         }

@@ -165,7 +165,7 @@ public class StaffServlet extends HttpServlet {
         request.setAttribute("isAdmin", adminRole);
 
         // 9. Forward tới giao diện danh bạ nhân sự directory.jsp
-        request.getRequestDispatcher("/staff/directory.jsp").forward(request, response);
+        request.getRequestDispatcher("/WEB-INF/views/staff/staffDirectory.jsp").forward(request, response);
     }
 
     /**

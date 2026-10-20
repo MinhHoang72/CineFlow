@@ -49,7 +49,7 @@ public class ShowtimeListServlet
         );
 
         request.getRequestDispatcher(
-                "/showtime/showtime-list.jsp"
+                "/WEB-INF/views/showtime/showtimeList.jsp"
         ).forward(
                 request,
                 response

@@ -58,7 +58,7 @@ public class AccountServlet extends HttpServlet {
         request.setAttribute("bookingHistory", userDAO.getBookingHistory(userId));
 
         // 3. Chuyển tiếp tới giao diện trang hồ sơ cá nhân profile.jsp
-        request.getRequestDispatcher("/account/profile.jsp").forward(request, response);
+        request.getRequestDispatcher("/WEB-INF/views/auth/userProfile.jsp").forward(request, response);
     }
 
     /**

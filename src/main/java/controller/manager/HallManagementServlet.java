@@ -126,7 +126,7 @@ public class HallManagementServlet extends HttpServlet {
             request.setAttribute("noCentreAssigned", true);
             request.setAttribute("activeNav", "halls");
             request.setAttribute("pageTitle", "Quản lý Phòng chiếu");
-            request.getRequestDispatcher("/manager/halls.jsp").forward(request, response);
+            request.getRequestDispatcher("/WEB-INF/views/manager/hallList.jsp").forward(request, response);
             return;
         }
 
@@ -193,7 +193,7 @@ public class HallManagementServlet extends HttpServlet {
         request.setAttribute("pageTitle", "Quản lý Phòng chiếu");
 
         // 11. Chuyển tiếp tới giao diện JSP
-        request.getRequestDispatcher("/manager/halls.jsp").forward(request, response);
+        request.getRequestDispatcher("/WEB-INF/views/manager/hallList.jsp").forward(request, response);
     }
 
     /**

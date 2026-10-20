@@ -46,7 +46,7 @@ public class EditTimeSlotPricingServlet
             );
 
             request.getRequestDispatcher(
-                    "/pricing/edit-time-slot-pricing.jsp"
+                    "/WEB-INF/views/pricing/timeSlotEdit.jsp"
             ).forward(
                     request,
                     response

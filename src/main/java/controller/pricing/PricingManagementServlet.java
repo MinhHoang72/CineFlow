@@ -58,7 +58,7 @@ public class PricingManagementServlet
         );
 
         request.getRequestDispatcher(
-                "/pricing/pricing-management.jsp"
+                "/WEB-INF/views/pricing/pricingOverview.jsp"
         ).forward(
                 request,
                 response

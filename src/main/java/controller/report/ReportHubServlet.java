@@ -144,7 +144,7 @@ public class ReportHubServlet extends HttpServlet {
         request.setAttribute("centreRows", sales.byCentre(from, toExclusive, centreId));
         request.setAttribute("fnbTop", sales.topFnb(from, toExclusive, centreId, 10));
         request.setAttribute("pageTitle", "Doanh thu & bán hàng");
-        request.getRequestDispatcher("/WEB-INF/views/report/sales.jsp").forward(request, response);
+        request.getRequestDispatcher("/WEB-INF/views/report/reportSales.jsp").forward(request, response);
     }
 
     private void exportSales(HttpServletResponse response, LocalDate from, LocalDate toExclusive, Integer centreId)
@@ -175,7 +175,7 @@ public class ReportHubServlet extends HttpServlet {
         request.setAttribute("scans", operations.scansByStaff(from, toExclusive, centreId));
         request.setAttribute("pagerBase", "/report/operations?" + filters + "&page=");
         request.setAttribute("pageTitle", "Chỉ số vận hành");
-        request.getRequestDispatcher("/WEB-INF/views/report/operations.jsp").forward(request, response);
+        request.getRequestDispatcher("/WEB-INF/views/report/reportOperations.jsp").forward(request, response);
     }
 
     private void showChain(HttpServletRequest request, HttpServletResponse response,
@@ -198,6 +198,6 @@ public class ReportHubServlet extends HttpServlet {
         request.setAttribute("activeCentres", operations.activeCentres());
         request.setAttribute("customers", operations.activeCustomers());
         request.setAttribute("pageTitle", "Dashboard");
-        request.getRequestDispatcher("/WEB-INF/views/report/chain.jsp").forward(request, response);
+        request.getRequestDispatcher("/WEB-INF/views/report/reportChain.jsp").forward(request, response);
     }
 }

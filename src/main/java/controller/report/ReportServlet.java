@@ -71,6 +71,6 @@ public class ReportServlet extends HttpServlet {
         request.setAttribute("showtimeMetrics", reportDAO.occupancyByShowtime());
 
         // 4. Chuyển tiếp tới giao diện báo cáo reports.jsp
-        request.getRequestDispatcher("/admin/reports.jsp").forward(request, response);
+        request.getRequestDispatcher("/WEB-INF/views/admin/adminReport.jsp").forward(request, response);
     }
 }

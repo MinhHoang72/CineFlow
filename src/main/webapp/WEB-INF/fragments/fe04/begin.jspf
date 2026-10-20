@@ -3,7 +3,7 @@
 <%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 <%
     String fe04Role = (String) session.getAttribute("role");
-    if (fe04Role == null && session.getAttribute("user") instanceof model.User) fe04Role = ((model.User) session.getAttribute("user")).getRole();
+    if (fe04Role == null && session.getAttribute("user") instanceof model.entity.User) fe04Role = ((model.entity.User) session.getAttribute("user")).getRole();
     boolean fe04Admin = "ADMIN".equalsIgnoreCase(fe04Role);
     request.setAttribute("activeNav", "showtimes".equals(request.getAttribute("fe04Tab")) ? "showtimes" : "pricing");
     request.setAttribute("pageTitle", request.getAttribute("fe04Title"));
@@ -15,8 +15,8 @@
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/showtime-pricing/showtimes.css">
 <script src="${pageContext.request.contextPath}/js/pricing.js" defer></script>
 </head><body><div class="cf-manager-shell">
-<jsp:include page='<%= fe04Admin ? "/admin/sidebar.jsp" : "/manager/sidebar.jsp" %>' />
-<div class="cf-manager-main"><jsp:include page="/admin/topbar.jsp" /><main class="cf-content st-page">
+<jsp:include page='<%= fe04Admin ? "/WEB-INF/views/admin/adminSidebar.jspf" : "/WEB-INF/views/manager/managerSidebar.jspf" %>' />
+<div class="cf-manager-main"><jsp:include page="/WEB-INF/views/admin/adminTopbar.jspf" /><main class="cf-content st-page">
 <header class="st-heading"><div><span class="st-eyebrow">ĐIỀU HÀNH RẠP CHIẾU</span><h1><c:out value="${fe04Title}" /></h1><p><c:out value="${fe04Description}" /></p></div></header>
 <%@ include file="navigation.jspf" %>
 <c:if test="${not empty sessionScope.message}"><div class="st-notice st-success" role="status"><c:out value="${sessionScope.message}" /></div><c:remove var="message" scope="session" /></c:if>

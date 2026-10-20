@@ -76,6 +76,6 @@ public class MovieDetailsServlet extends HttpServlet {
         request.setAttribute("nowShowingMovies", cinemaDAO.getNowShowingMovies());
 
         // 6. Chuyển tiếp tới giao diện chi tiết phim details.jsp
-        request.getRequestDispatcher("/movie/details.jsp").forward(request, response);
+        request.getRequestDispatcher("/WEB-INF/views/movie/movieDetail.jsp").forward(request, response);
     }
 }

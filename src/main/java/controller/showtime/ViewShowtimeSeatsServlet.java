@@ -47,7 +47,7 @@ public class ViewShowtimeSeatsServlet
             );
 
             request.getRequestDispatcher(
-                    "/showtime/showtime-seats.jsp"
+                    "/WEB-INF/views/showtime/showtimeSeatMatrix.jsp"
             ).forward(
                     request,
                     response

@@ -137,7 +137,7 @@ public class StaffTransferServlet extends HttpServlet {
         request.setAttribute("activeNav", "transfers");
 
         // 8. Chuyển tiếp tới giao diện transfers.jsp
-        request.getRequestDispatcher("/admin/transfers.jsp").forward(request, response);
+        request.getRequestDispatcher("/WEB-INF/views/admin/staffTransfer.jsp").forward(request, response);
     }
 
     /**

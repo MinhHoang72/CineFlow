@@ -61,7 +61,7 @@ public class RegisterServlet extends HttpServlet {
             if (ValidationUtils.isBlank(fullName) || ValidationUtils.isBlank(account)
                     || ValidationUtils.isBlank(email) || ValidationUtils.isBlank(password)
                     || ValidationUtils.isBlank(confirmPassword)) {
-                response.sendRedirect(request.getContextPath() + "/auth/register.jsp?error=missing_fields");
+                response.sendRedirect(request.getContextPath() + "/register?error=missing_fields");
                 return;
             }
 
@@ -71,7 +71,7 @@ public class RegisterServlet extends HttpServlet {
 
             // 3. Kiểm tra định dạng Họ và tên (chỉ chứa chữ cái và khoảng trắng)
             if (!ValidationUtils.isValidFullName(fullName)) {
-                response.sendRedirect(request.getContextPath() + "/auth/register.jsp?error=invalid_name&account="
+                response.sendRedirect(request.getContextPath() + "/register?error=invalid_name&account="
                         + URLEncoder.encode(account, StandardCharsets.UTF_8)
                         + "&email=" + URLEncoder.encode(email, StandardCharsets.UTF_8));
                 return;
@@ -79,28 +79,28 @@ public class RegisterServlet extends HttpServlet {
 
             // 4. Kiểm tra định dạng Tài khoản (3-50 ký tự, không chứa ký tự đặc biệt nguy hiểm)
             if (!ValidationUtils.isValidAccount(account)) {
-                response.sendRedirect(request.getContextPath() + "/auth/register.jsp?error=invalid_account&email="
+                response.sendRedirect(request.getContextPath() + "/register?error=invalid_account&email="
                         + URLEncoder.encode(email, StandardCharsets.UTF_8));
                 return;
             }
 
             // 5. Kiểm tra định dạng Email hợp lệ theo chuẩn RFC 5322
             if (!ValidationUtils.isValidEmail(email)) {
-                response.sendRedirect(request.getContextPath() + "/auth/register.jsp?error=invalid_email&account="
+                response.sendRedirect(request.getContextPath() + "/register?error=invalid_email&account="
                         + URLEncoder.encode(account, StandardCharsets.UTF_8));
                 return;
             }
 
             // 6. Chặn các hòm thư rác tạm thời dùng 1 lần (10minutemail, mailinator...)
             if (ValidationUtils.isDisposableEmail(email)) {
-                response.sendRedirect(request.getContextPath() + "/auth/register.jsp?error=tempmail&account="
+                response.sendRedirect(request.getContextPath() + "/register?error=tempmail&account="
                         + URLEncoder.encode(account, StandardCharsets.UTF_8));
                 return;
             }
 
             // 7. Kiểm tra xác nhận mật khẩu có khớp hoàn toàn với mật khẩu đã nhập không
             if (!password.equals(confirmPassword)) {
-                response.sendRedirect(request.getContextPath() + "/auth/register.jsp?error=password_mismatch&account="
+                response.sendRedirect(request.getContextPath() + "/register?error=password_mismatch&account="
                         + URLEncoder.encode(account, StandardCharsets.UTF_8)
                         + "&email=" + URLEncoder.encode(email, StandardCharsets.UTF_8));
                 return;
@@ -108,7 +108,7 @@ public class RegisterServlet extends HttpServlet {
 
             // 8. Kiểm tra độ mạnh của mật khẩu (tối thiểu 8 ký tự, gồm chữ hoa, chữ thường, số, ký tự đặc biệt)
             if (!ValidationUtils.isValidPassword(password)) {
-                response.sendRedirect(request.getContextPath() + "/auth/register.jsp?error=weak_password&account="
+                response.sendRedirect(request.getContextPath() + "/register?error=weak_password&account="
                         + URLEncoder.encode(account, StandardCharsets.UTF_8)
                         + "&email=" + URLEncoder.encode(email, StandardCharsets.UTF_8));
                 return;
@@ -120,7 +120,7 @@ public class RegisterServlet extends HttpServlet {
                 String encodedAccount = URLEncoder.encode(account, StandardCharsets.UTF_8);
                 String encodedEmail = URLEncoder.encode(email, StandardCharsets.UTF_8);
                 response.sendRedirect(request.getContextPath()
-                        + "/auth/register.jsp?error=account&account=" + encodedAccount
+                        + "/register?error=account&account=" + encodedAccount
                         + "&email=" + encodedEmail);
                 return;
             }
@@ -140,7 +140,7 @@ public class RegisterServlet extends HttpServlet {
                     }
                     String encodedEmail = URLEncoder.encode(email, StandardCharsets.UTF_8);
                     response.sendRedirect(request.getContextPath()
-                            + "/auth/verify-otp.jsp?email=" + encodedEmail + "&action=register&resent=true");
+                            + "/verify-otp?email=" + encodedEmail + "&action=register&resent=true");
                     return;
                 }
 
@@ -148,7 +148,7 @@ public class RegisterServlet extends HttpServlet {
                 String encodedAccount = URLEncoder.encode(account, StandardCharsets.UTF_8);
                 String encodedEmail = URLEncoder.encode(email, StandardCharsets.UTF_8);
                 response.sendRedirect(request.getContextPath()
-                        + "/auth/register.jsp?error=email&account=" + encodedAccount
+                        + "/register?error=email&account=" + encodedAccount
                         + "&email=" + encodedEmail);
                 return;
             }
@@ -184,7 +184,7 @@ public class RegisterServlet extends HttpServlet {
             // 15. Chuyển hướng người dùng sang trang nhập mã OTP để hoàn tất kích hoạt
             String encodedEmail = URLEncoder.encode(email, StandardCharsets.UTF_8);
             response.sendRedirect(request.getContextPath()
-                    + "/auth/verify-otp.jsp?email=" + encodedEmail + "&action=register");
+                    + "/verify-otp?email=" + encodedEmail + "&action=register");
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -203,6 +203,6 @@ public class RegisterServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, "GET method is not allowed.");
+        request.getRequestDispatcher("/WEB-INF/views/auth/authRegister.jsp").forward(request, response);
     }
 }
