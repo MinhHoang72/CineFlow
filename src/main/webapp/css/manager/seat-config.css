@@ -1,0 +1,718 @@
+/* =====================================================
+   CineFlow - Seat Configuration Styles (seat-config.css)
+   CineFlow Dark Obsidian Theme (Unified Design System)
+   ===================================================== */
+
+body, button, input, select, textarea, table, th, td, h1, h2, h3, h4, p, span, a, label {
+    font-family: var(--cf-font, "Be Vietnam Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.cf-page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.cf-page-header h1 {
+    font-family: var(--cf-font, "Be Vietnam Pro", sans-serif);
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--cf-text, #F8FAFC) !important;
+    margin: 0;
+    letter-spacing: -0.01em;
+}
+
+.cf-page-header p {
+    font-family: var(--cf-font, "Be Vietnam Pro", sans-serif);
+    font-size: 14px;
+    color: var(--cf-muted, #94A3B8) !important;
+    margin: 6px 0 0 0;
+    line-height: 1.5;
+}
+
+/* Banner thông tin phòng chiếu */
+.cf-hall-banner {
+    background: var(--cf-surface, #161B26);
+    border: 1px solid var(--cf-border, rgba(255, 255, 255, 0.08));
+    border-radius: 12px;
+    padding: 18px 22px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+.cf-hall-meta {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.cf-hall-badge-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 10px;
+    background: rgba(59, 130, 246, 0.15);
+    color: #60A5FA;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+}
+
+.cf-hall-meta h2 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--cf-text, #F8FAFC);
+    margin: 0 0 4px 0;
+}
+
+.cf-hall-meta p {
+    font-size: 13px;
+    color: var(--cf-muted, #94A3B8);
+    margin: 0;
+}
+
+/* Khu vực điều khiển: Khởi tạo lưới & Palette công cụ */
+.cf-canvas-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+@media (max-width: 900px) {
+    .cf-canvas-controls {
+        grid-template-columns: 1fr;
+    }
+}
+
+.cf-panel {
+    background: var(--cf-surface, #161B26);
+    border: 1px solid var(--cf-border, rgba(255, 255, 255, 0.08));
+    border-radius: 12px;
+    padding: 18px 22px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+.cf-panel h3 {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--cf-text, #F8FAFC);
+    margin: 0 0 14px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Form sinh lưới */
+.cf-grid-form {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.cf-form-inline {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.cf-form-inline label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--cf-muted, #94A3B8);
+}
+
+.cf-form-inline input {
+    width: 90px;
+    padding: 7px 10px;
+    background: #111622;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 6px;
+    font-size: 14px;
+    color: var(--cf-text, #F8FAFC);
+    outline: none;
+    transition: all 0.2s;
+}
+
+.cf-form-inline input:focus {
+    border-color: #FF2855;
+    background: #141A26;
+    box-shadow: 0 0 0 3px rgba(255, 40, 85, 0.2);
+}
+
+/* Palette thanh công cụ phân hạng ghế */
+.cf-tool-palette {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.cf-tool-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: #1E293B;
+    color: var(--cf-text, #F8FAFC);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+}
+
+.cf-tool-btn:hover {
+    border-color: rgba(255, 255, 255, 0.3);
+    background: #253348;
+}
+
+.cf-tool-btn.active {
+    border-color: #FF2855;
+    background: rgba(255, 40, 85, 0.15);
+    color: #FFFFFF;
+    box-shadow: 0 0 0 2px rgba(255, 40, 85, 0.35);
+}
+
+.cf-tool-swatch {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.cf-tool-swatch.standard {
+    background: #334155;
+    border-color: #64748B;
+}
+
+.cf-tool-swatch.vip {
+    background: rgba(245, 158, 11, 0.4);
+    border-color: #F59E0B;
+}
+
+.cf-tool-swatch.sweetbox {
+    background: rgba(236, 72, 153, 0.4);
+    border-color: #EC4899;
+}
+
+.cf-tool-swatch.maintenance {
+    background: rgba(239, 68, 68, 0.4);
+    border-color: #EF4444;
+}
+
+.cf-tool-swatch.empty {
+    background: transparent;
+    border-color: #64748B;
+    border-style: dashed;
+}
+
+/* Thống kê sức chứa (Live Capacity Bar) */
+.cf-capacity-summary {
+    background: var(--cf-surface, #161B26);
+    border: 1px solid var(--cf-border, rgba(255, 255, 255, 0.08));
+    border-radius: 12px;
+    padding: 16px 22px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+.cf-capacity-stats {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    font-size: 13px;
+    color: var(--cf-muted, #94A3B8);
+}
+
+.cf-stat-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.cf-stat-pill {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 12px;
+}
+
+.cf-stat-pill.standard { background: #1E293B; color: #E2E8F0; border: 1px solid #334155; }
+.cf-stat-pill.vip { background: rgba(245, 158, 11, 0.15); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.35); }
+.cf-stat-pill.sweetbox { background: rgba(236, 72, 153, 0.15); color: #F472B6; border: 1px solid rgba(236, 72, 153, 0.35); }
+.cf-stat-pill.maintenance { background: rgba(239, 68, 68, 0.15); color: #F87171; border: 1px solid rgba(239, 68, 68, 0.35); }
+.cf-stat-pill.empty { background: rgba(255, 255, 255, 0.06); color: #94A3B8; border: 1px dashed rgba(255, 255, 255, 0.14); }
+
+.cf-capacity-highlight {
+    font-size: 14px;
+    color: var(--cf-muted, #94A3B8);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cf-capacity-highlight strong {
+    font-size: 22px;
+    font-weight: 800;
+    color: #4ADE80;
+}
+
+/* Vùng Canvas sơ đồ ghế */
+.cf-seat-canvas-wrapper {
+    background: #0D121B;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 34px 20px;
+    margin-bottom: 24px;
+    overflow-x: auto;
+    text-align: center;
+    box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.4), 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+/* Màn hình chiếu (Screen) */
+.cf-screen {
+    width: 65%;
+    max-width: 600px;
+    height: 10px;
+    margin: 0 auto 35px auto;
+    background: linear-gradient(to bottom, #60A5FA, #2563EB);
+    border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+    box-shadow: 0 10px 30px rgba(37, 99, 235, 0.45);
+    position: relative;
+}
+
+.cf-screen-label {
+    position: absolute;
+    top: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--cf-muted, #94A3B8);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+/* Lưới ghế */
+.cf-seat-grid {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 15px;
+}
+
+.cf-grid-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.cf-row-label {
+    width: 28px;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--cf-muted, #94A3B8);
+    text-align: center;
+    user-select: none;
+}
+
+/* Từng ô ghế: Đồng nhất kích thước 38px x 34px, chỉ đổi màu khi chọn, không làm lệch hình */
+.cf-seat-box {
+    width: 38px;
+    min-width: 38px;
+    max-width: 38px;
+    height: 34px;
+    min-height: 34px;
+    max-height: 34px;
+    box-sizing: border-box;
+    flex-shrink: 0;
+    line-height: 32px;
+    text-align: center;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cf-seat-box:hover {
+    z-index: 2;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.25), 0 2px 8px rgba(0, 0, 0, 0.4);
+    filter: brightness(1.15);
+}
+
+/* Phân loại Standard */
+.cf-seat-box.STANDARD {
+    background: #1E293B;
+    color: var(--cf-text, #F8FAFC);
+    border: 1px solid #475569;
+}
+
+.cf-seat-box.STANDARD:hover {
+    border-color: #94A3B8;
+}
+
+/* Phân loại VIP */
+.cf-seat-box.VIP {
+    background: rgba(245, 158, 11, 0.22);
+    color: #FDE68A;
+    border: 1px solid #F59E0B;
+}
+
+.cf-seat-box.VIP:hover {
+    background: rgba(245, 158, 11, 0.35);
+    border-color: #FBBF24;
+}
+
+/* Phân loại Sweetbox: CHỈ ĐỔI MÀU HỒNG, giữ đúng chuẩn 38px, không làm lệch hình */
+.cf-seat-box.SWEETBOX {
+    background: rgba(236, 72, 153, 0.22);
+    color: #FBCFE8;
+    border: 1px solid #EC4899;
+}
+
+.cf-seat-box.SWEETBOX:hover {
+    background: rgba(236, 72, 153, 0.35);
+    border-color: #F472B6;
+}
+
+/* Trạng thái Bảo trì (Maintenance) */
+.cf-seat-box.MAINTENANCE {
+    background: rgba(239, 68, 68, 0.22) !important;
+    color: #FCA5A5 !important;
+    border: 1px solid #EF4444 !important;
+    position: relative;
+    text-decoration: line-through;
+}
+
+.cf-seat-box.MAINTENANCE::after {
+    content: "🔧";
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    font-size: 9px;
+    line-height: 1;
+    pointer-events: none;
+}
+
+/* Ô Trống / Lối đi (Empty / Aisle): Giữ đúng 38px để các cột trong hàng luôn thẳng tắp */
+.cf-seat-box.EMPTY {
+    background: transparent;
+    color: #64748B;
+    border: 1px dashed rgba(255, 255, 255, 0.16);
+    opacity: 0.5;
+}
+
+.cf-seat-box.EMPTY:hover {
+    opacity: 0.9;
+    border-color: #94A3B8;
+    color: #94A3B8;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+/* Chú giải (Legend) */
+.cf-legend {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 25px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    flex-wrap: wrap;
+    font-size: 12px;
+    color: var(--cf-muted, #94A3B8);
+}
+
+.cf-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.cf-legend-box {
+    width: 20px;
+    height: 18px;
+    border-radius: 4px;
+}
+
+.cf-legend-box.standard { background: #1E293B; border: 1px solid #475569; }
+.cf-legend-box.vip { background: rgba(245, 158, 11, 0.22); border: 1px solid #F59E0B; }
+.cf-legend-box.sweetbox { background: rgba(236, 72, 153, 0.22); border: 1px solid #EC4899; }
+.cf-legend-box.maintenance { background: rgba(239, 68, 68, 0.22); border: 1px solid #EF4444; }
+.cf-legend-box.empty { background: transparent; border: 1px dashed rgba(255, 255, 255, 0.16); }
+
+/* Thanh thao tác dưới cùng */
+.cf-footer-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+/* Alert notifications */
+.cf-alert {
+    padding: 12px 18px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+}
+
+.cf-alert-success {
+    background: rgba(34, 197, 94, 0.15);
+    border: 1px solid rgba(34, 197, 94, 0.4);
+    color: #4ADE80;
+}
+
+.cf-alert-danger {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    color: #F87171;
+}
+
+/* =====================================================
+   Bảng danh sách chi tiết ghế ngồi & Quản lý bảo trì
+   ===================================================== */
+.cf-seats-table-card {
+    background: var(--cf-surface, #161B26);
+    border: 1px solid var(--cf-border, rgba(255, 255, 255, 0.08));
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+.cf-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+/* Thanh tìm kiếm & bộ lọc */
+.cf-filter-card {
+    background: #111622;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.cf-filter-form {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    flex-wrap: wrap;
+}
+
+.cf-search-box {
+    position: relative;
+    flex: 1;
+    min-width: 220px;
+}
+
+.cf-search-box input {
+    width: 100%;
+    padding: 8px 14px 8px 36px;
+    background: #161B26;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 8px;
+    font-size: 14px;
+    color: var(--cf-text, #F8FAFC);
+    outline: none;
+    transition: all 0.2s;
+}
+
+.cf-search-box input::placeholder {
+    color: #64748B;
+}
+
+.cf-search-box input:focus {
+    border-color: #FF2855;
+    background: #1A2130;
+    box-shadow: 0 0 0 3px rgba(255, 40, 85, 0.2);
+}
+
+.cf-search-box .icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94A3B8;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+}
+
+.cf-select {
+    padding: 8px 12px;
+    background: #161B26;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 8px;
+    font-size: 13.5px;
+    color: var(--cf-text, #F8FAFC);
+    outline: none;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.cf-select:focus {
+    border-color: #FF2855;
+    background: #1A2130;
+}
+
+.cf-select option {
+    background: #161B26;
+    color: #F8FAFC;
+}
+
+/* Bảng danh sách ghế */
+.cf-table-container {
+    background: var(--cf-surface, #161B26);
+    border: 1px solid var(--cf-border, rgba(255, 255, 255, 0.08));
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+.cf-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    background: var(--cf-surface, #161B26);
+}
+
+.cf-table th {
+    background: rgba(11, 15, 23, 0.7);
+    padding: 12px 16px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--cf-muted, #94A3B8);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.cf-table td {
+    padding: 14px 16px;
+    font-size: 13.5px;
+    color: var(--cf-text, #F8FAFC);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    vertical-align: middle;
+}
+
+.cf-table tr:hover td {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.cf-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* Thanh phân trang */
+.cf-pagination-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 14px 18px;
+    background: rgba(11, 15, 23, 0.5);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.cf-pagination-info {
+    font-size: 13px;
+    color: var(--cf-muted, #94A3B8);
+}
+
+.cf-pagination-info strong {
+    color: var(--cf-text, #F8FAFC);
+    font-weight: 700;
+}
+
+.cf-pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.cf-page-btn {
+    min-width: 32px;
+    height: 32px;
+    padding: 0 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 6px;
+    background: #1E293B;
+    color: var(--cf-text, #F8FAFC);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s ease;
+}
+
+.cf-page-btn:hover:not(.disabled):not(.active) {
+    border-color: #FF2855;
+    color: #FF2855;
+    background: rgba(255, 40, 85, 0.12);
+}
+
+.cf-page-btn.active {
+    background: #FF2855;
+    border-color: #FF2855;
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(255, 40, 85, 0.35);
+}
+
+.cf-page-btn.disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    background: transparent;
+    color: #64748B;
+    border-color: rgba(255, 255, 255, 0.06);
+    pointer-events: none;
+}
+
+.cf-page-ellipsis {
+    padding: 0 4px;
+    color: #64748B;
+    font-size: 13px;
+    user-select: none;
+}

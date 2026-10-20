@@ -1,0 +1,455 @@
+@import url("../common/layout.css");
+
+/* ==========================================================================
+   Định dạng giao diện cụm rạp CineFlow (Phong cách Modern Dark)
+   ========================================================================== */
+
+:root {
+    --cf-ink: #F8FAFC;
+    --cf-ink-soft: #1E2433;
+    --cf-ink-hover: #2D3748;
+    --cf-gold: var(--cf-gold, #F59E0B);
+    --cf-gold-dark: #D97706;
+    --cf-gold-light: rgba(245, 158, 11, 0.15);
+    --cf-cream: #141A24;
+    --cf-page-bg: var(--cf-bg-page, #0B0F17);
+    --cf-card-bg: var(--cf-surface, #161B26);
+    --cf-border: rgba(255, 255, 255, 0.08);
+    --cf-border-light: rgba(255, 255, 255, 0.05);
+    --cf-text-main: #F8FAFC;
+    --cf-text-muted: #94A3B8;
+    --cf-text-sub: #64748B;
+    --cf-radius-sm: 6px;
+    --cf-radius-md: 10px;
+    --cf-radius-pill: 999px;
+    --cf-shadow-sm: 0 4px 14px rgba(0, 0, 0, 0.35);
+    --cf-shadow-hover: 0 10px 28px rgba(0, 0, 0, 0.55);
+}
+
+/* Khung bao ngoài trang */
+.cinema-page-wrapper {
+    width: 100%;
+    margin: 0 auto;
+    background: var(--cf-page-bg);
+    min-height: 75vh;
+    padding-bottom: 60px;
+}
+
+/* Khung nội dung chính của danh sách rạp */
+.cinema-main-wrap {
+    width: min(1180px, calc(100% - 40px));
+    margin: 32px auto 0;
+}
+
+/* Tiêu đề trang */
+.cf-page-header {
+    margin-bottom: 24px;
+}
+
+.cf-page-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: #FFFFFF;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 0;
+    padding-left: 14px;
+    border-left: 4px solid var(--cf-primary, #FF2A54);
+    line-height: 1.25;
+}
+
+/* Khung thẻ danh sách rạp */
+.cinema-container {
+    width: 100%;
+    background: var(--cf-card-bg);
+    border: 1px solid var(--cf-border);
+    border-radius: var(--cf-radius-md);
+    padding: 32px 36px;
+    box-shadow: var(--cf-shadow-sm);
+}
+
+/* Bộ chọn thành phố dạng nút pill */
+.cf-city-selector {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 24px;
+}
+
+.cf-city-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 20px;
+    border-radius: var(--cf-radius-pill);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    border: 1px solid var(--cf-border);
+    background: #111622;
+    color: #CBD5E1;
+    transition: all 0.18s ease;
+    user-select: none;
+}
+
+.cf-city-pill:hover {
+    border-color: rgba(255, 255, 255, 0.25);
+    color: #ffffff;
+    background: #1A202C;
+}
+
+.cf-city-pill.active {
+    background: var(--cf-primary-gradient, linear-gradient(135deg, #FF2A54, #E11D48));
+    border-color: transparent;
+    color: #ffffff;
+    box-shadow: 0 0 14px rgba(255, 42, 84, 0.4);
+}
+
+.cf-city-pill .pill-count {
+    font-size: 11px;
+    font-weight: 700;
+    opacity: 0.85;
+}
+
+.cf-city-pill.active .pill-count {
+    color: #ffffff;
+}
+
+/* Đường phân cách phân mục */
+.cf-section-divider {
+    height: 1px;
+    background: var(--cf-border);
+    margin: 0 0 24px 0;
+    border: none;
+}
+
+/* Tiêu đề thành phố đang chọn */
+.cf-city-heading {
+    font-size: 16px;
+    font-weight: 700;
+    color: #FFFFFF;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 0 0 20px;
+}
+
+/* Danh sách và thẻ thông tin rạp chiếu */
+.cf-cinema-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.cf-cinema-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 20px 24px;
+    background: #111622;
+    border: 1px solid var(--cf-border);
+    border-radius: var(--cf-radius-sm);
+    box-shadow: var(--cf-shadow-sm);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.cf-cinema-card:hover {
+    border-color: rgba(255, 42, 84, 0.4);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 14px rgba(255, 42, 84, 0.2);
+    transform: translateY(-2px);
+}
+
+.cf-cinema-img-wrap {
+    flex-shrink: 0;
+    width: 160px;
+    height: 105px;
+    border-radius: var(--cf-radius-sm);
+    overflow: hidden;
+    background: #0E131E;
+}
+
+.cf-cinema-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.3s ease;
+}
+
+.cf-cinema-card:hover .cf-cinema-img {
+    transform: scale(1.04);
+}
+
+.cf-cinema-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.cf-cinema-name {
+    margin: 0 0 6px;
+    font-size: 17px;
+    font-weight: 700;
+    color: #FFFFFF;
+}
+
+.cf-cinema-name a {
+    color: inherit;
+    text-decoration: none;
+    transition: color 0.15s ease;
+}
+
+.cf-cinema-name a:hover {
+    color: var(--cf-primary, #FF2A54);
+}
+
+.cf-cinema-address {
+    margin: 0 0 5px;
+    font-size: 13.5px;
+    color: var(--cf-text-muted);
+    line-height: 1.5;
+}
+
+.cf-cinema-phone {
+    margin: 0;
+    font-size: 13px;
+    color: var(--cf-text-sub);
+}
+
+.cf-cinema-phone strong {
+    color: #CBD5E1;
+    font-weight: 600;
+}
+
+.cf-cinema-action {
+    flex-shrink: 0;
+}
+
+.cf-btn-detail {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 20px;
+    background: var(--cf-primary-gradient, linear-gradient(135deg, #FF2A54, #E11D48));
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 700;
+    border-radius: var(--cf-radius-sm);
+    text-decoration: none;
+    border: 0;
+    box-shadow: 0 4px 14px rgba(255, 42, 84, 0.35);
+    transition: all 0.18s ease;
+    white-space: nowrap;
+}
+
+.cf-btn-detail:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(255, 42, 84, 0.55);
+    color: #ffffff;
+}
+
+/* Trạng thái không có dữ liệu */
+.cf-empty-state {
+    padding: 44px 20px;
+    text-align: center;
+    color: var(--cf-text-muted);
+    font-size: 14px;
+    background: #111622;
+    border: 1px dashed var(--cf-border);
+    border-radius: var(--cf-radius-sm);
+}
+
+/* ==========================================================================
+   Định dạng trang chi tiết rạp chiếu (cinema/details.jsp)
+   ========================================================================== */
+.cf-detail-container {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.cf-detail-back-bar {
+    margin-bottom: 20px;
+}
+
+.cf-btn-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 18px;
+    background: #161B26;
+    border: 1px solid var(--cf-border);
+    border-radius: var(--cf-radius-sm);
+    color: var(--cf-text-muted);
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.18s ease;
+}
+
+.cf-btn-back:hover {
+    border-color: rgba(255, 255, 255, 0.25);
+    color: #ffffff;
+    background: #1E2433;
+}
+
+.cf-detail-card {
+    background: var(--cf-card-bg);
+    border: 1px solid var(--cf-border);
+    border-radius: var(--cf-radius-md);
+    overflow: hidden;
+    box-shadow: var(--cf-shadow-sm);
+}
+
+.cf-detail-img-banner {
+    position: relative;
+    height: 280px;
+    background: #0B0F17;
+    overflow: hidden;
+}
+
+.cf-detail-img-banner img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.cf-detail-img-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(11,15,23,0.2) 0%, rgba(11,15,23,0.5) 50%, rgba(11,15,23,0.92) 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 28px 32px;
+}
+
+.cf-detail-badge {
+    display: inline-block;
+    align-self: flex-start;
+    padding: 4px 10px;
+    background: var(--cf-primary, #FF2A54);
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+}
+
+.cf-detail-title {
+    margin: 0 0 4px;
+    color: #ffffff;
+    font-size: 26px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
+.cf-detail-city-tag {
+    color: var(--cf-text-muted);
+    font-size: 13px;
+}
+
+.cf-detail-body {
+    padding: 32px;
+}
+
+.cf-detail-intro {
+    font-size: 14.5px;
+    line-height: 1.65;
+    color: var(--cf-text-muted);
+    margin: 0 0 28px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--cf-border);
+}
+
+.cf-detail-info-table {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    background: #111622;
+    padding: 22px 26px;
+    border-radius: var(--cf-radius-sm);
+    border: 1px solid var(--cf-border);
+    margin-bottom: 28px;
+}
+
+.cf-detail-info-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    font-size: 13.5px;
+}
+
+.cf-detail-label {
+    flex: 0 0 130px;
+    color: var(--cf-text-sub);
+    font-weight: 600;
+}
+
+.cf-detail-value {
+    flex: 1;
+    color: #F8FAFC;
+}
+
+.cf-detail-actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.cf-btn-primary-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 26px;
+    background: var(--cf-primary-gradient, linear-gradient(135deg, #FF2A54, #E11D48));
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 700;
+    border-radius: var(--cf-radius-sm);
+    text-decoration: none;
+    box-shadow: 0 4px 14px rgba(255, 42, 84, 0.4);
+    transition: all 0.2s ease;
+}
+
+.cf-btn-primary-action:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 42, 84, 0.6);
+    color: #ffffff;
+}
+
+@media (max-width: 768px) {
+    .cinema-container {
+        padding: 20px 16px;
+    }
+    .cf-cinema-card {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .cf-cinema-img-wrap {
+        width: 100%;
+        height: 180px;
+    }
+    .cf-cinema-action {
+        width: 100%;
+    }
+    .cf-btn-detail {
+        width: 100%;
+        justify-content: center;
+    }
+    .cf-detail-body {
+        padding: 20px 16px;
+    }
+    .cf-detail-info-row {
+        flex-direction: column;
+        gap: 4px;
+    }
+    .cf-detail-label {
+        flex: auto;
+    }
+}

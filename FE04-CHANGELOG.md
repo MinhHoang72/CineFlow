@@ -1,3 +1,13 @@
+## Merge origin/main vào vietnq — 20/10/2026
+- Giữ cấu trúc Maven của main: Java trong src/main/java, JSP/CSS trong src/main/webapp.
+- Chuyển FE-04 vào cấu trúc mới; hợp nhất API HallDAO/MovieDAO/ShowtimeDAO/SeatDAO để giữ cả quản lý và đặt vé/cấu hình ghế.
+- Showtime giữ kiểu Timestamp và constructor của luồng đặt vé, bổ sung các setter và thuộc tính/định dạng cho FE-04.
+- Giữ User/UserDAO từ main vì đã hỗ trợ Centre; giữ các API/model giá FE-04 hiện dùng.
+- Maven package (bỏ chạy test database) thành công. Trên môi trường Windows này cần JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF-8 để Maven xử lý đường dẫn có dấu.
+- Chưa deploy hoặc chạy các verification runner vì chúng cần và có thể sửa dữ liệu SQL Server.
+
+Phần dưới là báo cáo trước merge; đường dẫn và nhận xét về module ngoài FE-04 phản ánh trạng thái trước khi lấy main.
+
 # FE-04 — cập nhật theo database/CineFlow.sql
 
 ## Thay đổi

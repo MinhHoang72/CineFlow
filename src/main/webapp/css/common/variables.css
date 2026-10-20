@@ -1,0 +1,95 @@
+/* ==========================================================================
+   Hệ thống biến thiết kế (Design Tokens) CineFlow Modern Dark
+   Phong cách: Điện ảnh số hiện đại (Deep Obsidian / Cyber Crimson / Violet)
+   ========================================================================== */
+:root {
+    /* Màu thương hiệu chủ đạo: Đỏ điện ảnh hiện đại */
+    --cf-red: #FF2855;
+    --cf-red-dark: #E11D48;
+    --cf-red-soft: rgba(255, 40, 85, 0.12);
+    --cf-red-border: rgba(255, 40, 85, 0.32);
+    --cf-primary: #FF2855;
+    --cf-primary-hover: #E11D48;
+    --cf-primary-gradient: linear-gradient(135deg, #FF2855 0%, #E11D48 100%);
+
+    /* Màu điểm nhấn công nghệ: Tím Violet / Indigo */
+    --cf-violet: #6366F1;
+    --cf-violet-dark: #4F46E5;
+    --cf-violet-soft: rgba(99, 102, 241, 0.14);
+    --cf-violet-border: rgba(99, 102, 241, 0.32);
+    --cf-cyan: #06B6D4;
+
+    /* Màu vàng hổ phách (Dùng cho sao đánh giá, phim nổi bật, VIP) */
+    --cf-gold: #F59E0B;
+    --cf-gold-dark: #D97706;
+    --cf-gold-light: rgba(245, 158, 11, 0.14);
+    --cf-gold-border: rgba(245, 158, 11, 0.35);
+
+    /* Màu nền chính nội dung */
+    --cf-bg-page: #0B0F16;
+    --cf-background: #0B0F16;
+    --cf-surface: #161B26;
+    --cf-bg-card: #161B26;
+    --cf-bg-card-hover: #1E2433;
+    --cf-bg-subtle: #141A24;
+    --cf-bg-input: #111622;
+    --cf-footer-bg: #070A0F;
+
+    /* Biến dùng riêng cho biểu mẫu và thẻ sáng */
+    --cf-card-white: #ffffff;
+    --cf-text-dark: #111827;
+    --cf-text-muted-dark: #64748B;
+    --cf-input-bg-light: #F1F5F9;
+    --cf-input-text-dark: #1E293B;
+    --cf-input-placeholder: #64748B;
+    --cf-input-border-light: #CBD5E1;
+
+    /* Kiểu chữ: Sắc nét, độ tương phản cao */
+    --cf-ink: #F8FAFC;
+    --cf-ink-soft: #E2E8F0;
+    --cf-ink-hover: #FFFFFF;
+    --cf-text: #F8FAFC;
+    --cf-muted: #94A3B8;
+    --cf-text-sub: #64748B;
+
+    /* Viền hiệu ứng kính mờ (Glass Borders) */
+    --cf-border: rgba(255, 255, 255, 0.08);
+    --cf-border-light: rgba(255, 255, 255, 0.05);
+    --cf-border-dark: rgba(255, 255, 255, 0.16);
+
+    /* Màu trạng thái nghiệp vụ */
+    --cf-success: #10B981;
+    --cf-success-bg: rgba(16, 185, 129, 0.12);
+    --cf-warning: #F59E0B;
+    --cf-warning-bg: rgba(245, 158, 11, 0.12);
+    --cf-danger: #EF4444;
+    --cf-danger-bg: rgba(239, 68, 68, 0.12);
+    --cf-info: #38BDF8;
+    --cf-info-bg: rgba(56, 189, 248, 0.12);
+
+    /* Bo góc, đổ bóng và hiệu ứng ánh sáng Neon */
+    --cf-radius-sm: 6px;
+    --cf-radius-md: 10px;
+    --cf-radius-lg: 16px;
+    --cf-radius-pill: 999px;
+    --cf-shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.35);
+    --cf-shadow-md: 0 10px 30px rgba(0, 0, 0, 0.55);
+    --cf-glow-primary: 0 0 22px rgba(255, 42, 84, 0.35);
+    --cf-glow-violet: 0 0 22px rgba(99, 102, 241, 0.35);
+
+    /* Hiệu ứng kính mờ (Glassmorphism) */
+    --cf-glass-bg: rgba(11, 15, 23, 0.85);
+    --cf-glass-card: rgba(22, 27, 38, 0.75);
+    --cf-glass-border: 1px solid rgba(255, 255, 255, 0.08);
+    --cf-backdrop-blur: blur(16px);
+
+    /* Kích thước bố cục */
+    --cf-container: 1240px;
+    --cf-sidebar: 250px;
+    --cf-topbar: 70px;
+
+    /* Phông chữ */
+    --cf-font: "Be Vietnam Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --cf-font-body: "Be Vietnam Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --cf-font-display: "Barlow Condensed", "Be Vietnam Pro", Impact, sans-serif;
+}

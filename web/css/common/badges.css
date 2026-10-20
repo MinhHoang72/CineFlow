@@ -1,8 +1,0 @@
-@import url("variables.css");
-
-.cf-badge { display: inline-flex; align-items: center; min-height: 24px; padding: 0 8px; border-radius: 999px; font-size: 11px; font-weight: 600; white-space: nowrap; }
-.cf-badge-success { color: var(--cf-success); background: #e9f7ef; }
-.cf-badge-warning { color: var(--cf-warning); background: #fff5df; }
-.cf-badge-danger { color: var(--cf-danger); background: #ffebe9; }
-.cf-badge-info { color: var(--cf-info); background: #e8f2fc; }
-.cf-badge-muted { color: var(--cf-muted); background: #eef1f3; }

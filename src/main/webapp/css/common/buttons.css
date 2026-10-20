@@ -1,0 +1,71 @@
+@import url("variables.css");
+
+.cf-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    gap: 7px;
+    padding: 0 16px;
+    border: 1px solid transparent;
+    border-radius: var(--cf-radius-sm, 6px);
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all .18s ease;
+    white-space: nowrap;
+}
+
+.cf-btn-primary {
+    background: #FF2855;
+    color: #ffffff !important;
+    border-color: #FF2855;
+    box-shadow: 0 4px 14px rgba(255, 40, 85, 0.35);
+}
+
+.cf-btn-primary:hover {
+    background: #E11D48;
+    color: #ffffff !important;
+    border-color: #E11D48;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(255, 40, 85, 0.55);
+}
+
+.cf-btn-secondary {
+    border: 1px solid #CBD5E1;
+    background: #ffffff;
+    color: #1E293B !important;
+}
+
+.cf-btn-secondary:hover {
+    border-color: #94A3B8;
+    background: #F1F5F9;
+    color: #0F172A !important;
+}
+
+.cf-btn-danger {
+    background: #EF4444;
+    color: #ffffff !important;
+}
+
+.cf-btn-danger:hover {
+    background: #DC2626;
+    color: #ffffff !important;
+}
+
+.cf-btn-ghost {
+    background: transparent;
+    color: #94A3B8;
+}
+
+.cf-btn-ghost:hover {
+    color: #FF2855;
+    background: rgba(255, 40, 85, 0.1);
+}
+
+.cf-btn-sm {
+    min-height: 32px;
+    padding: 0 11px;
+    font-size: 12px;
+}
