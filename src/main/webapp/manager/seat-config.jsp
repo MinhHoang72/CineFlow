@@ -336,7 +336,7 @@
                     <table class="cf-table">
                         <thead>
                             <tr>
-                                <th style="width: 80px;">Mã ghế</th>
+                                <th style="width: 80px;">STT</th>
                                 <th style="min-width: 140px;">Vị trí ghế</th>
                                 <th style="min-width: 160px;">Phân hạng ghế</th>
                                 <th style="min-width: 160px;">Trạng thái hoạt động</th>
@@ -346,13 +346,15 @@
                         <tbody>
                             <%
                                 if (pagedSeats != null && !pagedSeats.isEmpty()) {
+                                    int seatIndex = (currentPage - 1) * pageSize;
                                     for (SeatConfigDTO s : pagedSeats) {
+                                        seatIndex++;
                                         boolean isAvailable = s.isAvailable();
                                         boolean isMaint = s.isMaintenance();
                                         String type = s.getSeatType() != null ? s.getSeatType().toUpperCase() : "STANDARD";
                             %>
                             <tr>
-                                <td><strong>#<%= s.getSeatId() %></strong></td>
+                                <td><strong>#<%= seatIndex %></strong></td>
                                 <td>
                                     <div style="display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 32px; background: #1E293B; border: 1px solid rgba(255, 255, 255, 0.15); color: #F8FAFC; font-weight: 700; border-radius: 6px; font-size: 13px;">
                                         <%= s.getLabel() %>
