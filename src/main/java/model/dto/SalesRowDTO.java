@@ -1,45 +1,13 @@
 package model.dto;
-import model.entity.*;
 
 import java.math.BigDecimal;
 
-public class SalesRowDTO {
-
-    private final String label;
-    private final int bookings;
-    private final int tickets;
-    private final BigDecimal ticketRevenue;
-    private final BigDecimal fnbRevenue;
-
+/**
+ * Tương thích ngược với mã nguồn cũ.
+ * Khuyến nghị sử dụng model.dto.report.SalesRowDTO.
+ */
+public class SalesRowDTO extends model.dto.report.SalesRowDTO {
     public SalesRowDTO(String label, int bookings, int tickets, BigDecimal ticketRevenue, BigDecimal fnbRevenue) {
-        this.label = label;
-        this.bookings = bookings;
-        this.tickets = tickets;
-        this.ticketRevenue = ticketRevenue;
-        this.fnbRevenue = fnbRevenue;
-    }
-
-    public String getLabel() {
-        return label;
-    }
-
-    public int getBookings() {
-        return bookings;
-    }
-
-    public int getTickets() {
-        return tickets;
-    }
-
-    public BigDecimal getTicketRevenue() {
-        return ticketRevenue;
-    }
-
-    public BigDecimal getFnbRevenue() {
-        return fnbRevenue;
-    }
-
-    public BigDecimal getTotal() {
-        return ticketRevenue.add(fnbRevenue);
+        super(label, bookings, tickets, ticketRevenue, fnbRevenue);
     }
 }

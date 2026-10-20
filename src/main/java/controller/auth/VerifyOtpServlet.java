@@ -19,7 +19,7 @@ import java.util.concurrent.ThreadLocalRandom;
 /**
  * Xử lý xác thực mã OTP cho luồng kích hoạt tài khoản đăng ký mới và luồng quên mật khẩu.
  */
-@WebServlet(name = "VerifyOtpServlet", urlPatterns = {"/verify-otp", "/auth/verify-otp"})
+@WebServlet(name = "VerifyOtpServlet", urlPatterns = {"/verify-otp", "/auth/verify-otp", "/auth/verify-otp.jsp"})
 public class VerifyOtpServlet extends HttpServlet {
 
     private UserDAO userDAO;

@@ -42,7 +42,7 @@ import java.util.TreeMap;
  *   GET  /booking?action=history           lich su dat ve cua khach
  *   GET  /booking?action=detail            chi tiet don (khach, nhan vien, quan ly, admin)
  */
-@WebServlet(name = "BookingServlet", urlPatterns = {"/booking"})
+@WebServlet(name = "BookingServlet", urlPatterns = {"/booking", "/booking/booking.jsp"})
 public class BookingServlet extends HttpServlet {
 
     private static final String VIEW_DIR = "/WEB-INF/views/";

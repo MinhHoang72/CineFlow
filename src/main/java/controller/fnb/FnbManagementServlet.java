@@ -177,7 +177,7 @@ public class FnbManagementServlet extends HttpServlet {
         HttpSession session = request.getSession(false);
         User user = session == null ? null : (User) session.getAttribute("user");
         if (user == null) {
-            String loginUrl = request.getContextPath() + "/auth/login.jsp?redirect="
+            String loginUrl = request.getContextPath() + "/login?redirect="
                     + URLEncoder.encode("/fnb", StandardCharsets.UTF_8);
             response.sendRedirect(loginUrl);
         }

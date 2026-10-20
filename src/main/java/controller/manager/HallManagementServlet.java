@@ -81,7 +81,7 @@ public class HallManagementServlet extends HttpServlet {
         // 1. Kiểm tra xác thực đăng nhập
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("userId") == null) {
-            String redirectUrl = request.getContextPath() + "/auth/login.jsp?redirect="
+            String redirectUrl = request.getContextPath() + "/login?redirect="
                     + URLEncoder.encode("/manager/halls", StandardCharsets.UTF_8);
             response.sendRedirect(redirectUrl);
             return;
@@ -104,6 +104,7 @@ public class HallManagementServlet extends HttpServlet {
             // Admin có toàn quyền quản lý mọi rạp -> Lấy danh sách tất cả cụm rạp để chọn qua Dropdown
             allCentres = centreDAO.getAllCentres(null, "ALL");
             String centreParam = request.getParameter("centreId");
+            if (centreParam == null || centreParam.trim().isEmpty()) centreParam = request.getParameter("branchId");
             if (centreParam != null && !centreParam.trim().isEmpty()) {
                 try {
                     targetCentreId = Integer.parseInt(centreParam.trim());
@@ -221,6 +222,7 @@ public class HallManagementServlet extends HttpServlet {
         int centreId = 0;
         if (isAdmin) {
             String centreParam = request.getParameter("centreId");
+            if (centreParam == null || centreParam.trim().isEmpty()) centreParam = request.getParameter("branchId");
             try {
                 centreId = Integer.parseInt(centreParam.trim());
             } catch (Exception ignored) {

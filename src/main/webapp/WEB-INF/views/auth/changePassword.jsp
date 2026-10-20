@@ -22,7 +22,7 @@
 
     <div class="container">
         <section class="hero">
-            <a class="logo" href="${pageContext.request.contextPath}/home/index.jsp">Cine<span>Flow</span></a>
+            <a class="logo" href="${pageContext.request.contextPath}/home">Cine<span>Flow</span></a>
             <h1>Bảo vệ tài khoản.<br><span>An tâm hơn.</span></h1>
             <p>Đổi mật khẩu thường xuyên để bảo vệ tài khoản và trải nghiệm điện ảnh của bạn cùng CineFlow.</p>
             <div class="features">

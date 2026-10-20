@@ -26,7 +26,7 @@
     <div class="container">
         <!-- CỘT GIỚI THIỆU THƯƠNG HIỆU BÊN TRÁI -->
         <div class="hero">
-            <a class="logo" href="${pageContext.request.contextPath}/home/index.jsp">
+            <a class="logo" href="${pageContext.request.contextPath}/home">
                 Cine<span>Flow</span>
             </a>
 

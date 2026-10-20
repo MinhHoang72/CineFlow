@@ -1,29 +1,13 @@
 package model.dto;
-import model.entity.*;
 
 import java.math.BigDecimal;
 
-public class FnbSaleDTO {
-
-    private final String name;
-    private final int quantity;
-    private final BigDecimal revenue;
-
+/**
+ * Tương thích ngược với mã nguồn cũ.
+ * Khuyến nghị sử dụng model.dto.fnb.FnbSaleDTO.
+ */
+public class FnbSaleDTO extends model.dto.fnb.FnbSaleDTO {
     public FnbSaleDTO(String name, int quantity, BigDecimal revenue) {
-        this.name = name;
-        this.quantity = quantity;
-        this.revenue = revenue;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public int getQuantity() {
-        return quantity;
-    }
-
-    public BigDecimal getRevenue() {
-        return revenue;
+        super(name, quantity, revenue);
     }
 }

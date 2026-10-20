@@ -22,7 +22,7 @@
 </head>
 <body>
     <main class="card">
-        <a class="logo" href="${pageContext.request.contextPath}/home/index.jsp">Cine<span>Flow</span></a>
+        <a class="logo" href="${pageContext.request.contextPath}/home">Cine<span>Flow</span></a>
         <h1><%= pageTitle %></h1>
         
         <p>

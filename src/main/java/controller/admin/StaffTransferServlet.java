@@ -59,7 +59,7 @@ public class StaffTransferServlet extends HttpServlet {
         // 1. Kiểm tra xác thực (nếu chưa đăng nhập thì chuyển hướng sang trang Login)
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("userId") == null) {
-            String loginUrl = request.getContextPath() + "/auth/login.jsp?redirect="
+            String loginUrl = request.getContextPath() + "/login?redirect="
                     + URLEncoder.encode("/admin/transfers", StandardCharsets.UTF_8);
             response.sendRedirect(loginUrl);
             return;
@@ -74,6 +74,7 @@ public class StaffTransferServlet extends HttpServlet {
         // 3. Đọc các bộ lọc tìm kiếm từ request (lọc theo cụm rạp, từ khóa tên/email, vai trò nhân sự)
         Integer centreFilter = null;
         String centreParam = request.getParameter("centreId");
+        if (centreParam == null || centreParam.trim().isEmpty()) centreParam = request.getParameter("branchId");
         if (centreParam != null && !centreParam.trim().isEmpty()) {
             try {
                 centreFilter = Integer.parseInt(centreParam.trim());

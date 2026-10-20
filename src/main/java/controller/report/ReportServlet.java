@@ -15,9 +15,9 @@ import java.nio.charset.StandardCharsets;
 
 /**
  * Controller: Điều khiển màn hình báo cáo doanh thu và công suất phòng chiếu dành cho Quản lý (Manager) và Quản trị viên (Admin).
- * URL ánh xạ: /reports
+ * URL ánh xạ: /reports, /admin/reports
  */
-@WebServlet(name = "ReportServlet", urlPatterns = {"/admin/reports"})
+@WebServlet(name = "ReportServlet", urlPatterns = {"/reports", "/admin/reports"})
 public class ReportServlet extends HttpServlet {
 
     private final ReportDAO reportDAO = new ReportDAO();
@@ -52,7 +52,7 @@ public class ReportServlet extends HttpServlet {
         // 1. Kiểm tra xác thực đăng nhập
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("userId") == null) {
-            String loginUrl = request.getContextPath() + "/auth/login.jsp?redirect="
+            String loginUrl = request.getContextPath() + "/login?redirect="
                     + URLEncoder.encode("/reports", StandardCharsets.UTF_8);
             response.sendRedirect(loginUrl);
             return;

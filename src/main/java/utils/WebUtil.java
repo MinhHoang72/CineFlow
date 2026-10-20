@@ -11,7 +11,7 @@ import java.nio.charset.StandardCharsets;
 public class WebUtil {
 
     /** Trang dang nhap cua nhom (LoginServlet luu User vao session voi key "user"). */
-    private static final String LOGIN_PAGE = "/auth/login.jsp";
+    private static final String LOGIN_PAGE = "/login";
 
     /**
      * Tra ve user dang nhap; neu chua dang nhap thi redirect sang trang login va tra ve null.

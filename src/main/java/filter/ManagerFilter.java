@@ -17,7 +17,7 @@ import java.nio.charset.StandardCharsets;
 /**
  * Filter: Bảo vệ khu vực Quản lý (Manager): /manager/*, /staff, /reports.
  * Quy tắc:
- * - Chưa đăng nhập: chuyển hướng về /auth/login.jsp kèm URL redirect.
+ * - Chưa đăng nhập: chuyển hướng về /login kèm URL redirect.
  * - Đã đăng nhập nhưng không có vai trò MANAGER hoặc ADMIN: từ chối với HTTP 403 Forbidden.
  * - Có vai trò MANAGER hoặc ADMIN: cho phép tiếp tục.
  */
@@ -96,7 +96,7 @@ public class ManagerFilter implements Filter {
                 fullPath = fullPath.substring(httpRequest.getContextPath().length());
             }
             String encoded = URLEncoder.encode(fullPath, StandardCharsets.UTF_8);
-            String loginUrl = httpRequest.getContextPath() + "/auth/login.jsp?redirect=" + encoded;
+            String loginUrl = httpRequest.getContextPath() + "/login?redirect=" + encoded;
             httpResponse.sendRedirect(httpResponse.encodeRedirectURL(loginUrl));
             return;
         }

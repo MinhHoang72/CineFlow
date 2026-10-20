@@ -60,7 +60,7 @@ public class CustomerManagementServlet extends HttpServlet {
         // 1. Kiểm tra đăng nhập (nếu chưa đăng nhập thì redirect về trang login kèm redirect URL)
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("userId") == null) {
-            String loginUrl = request.getContextPath() + "/auth/login.jsp?redirect="
+            String loginUrl = request.getContextPath() + "/login?redirect="
                     + URLEncoder.encode("/admin/customers", StandardCharsets.UTF_8);
             response.sendRedirect(loginUrl);
             return;

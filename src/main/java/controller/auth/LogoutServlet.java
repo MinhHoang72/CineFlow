@@ -36,7 +36,7 @@ public class LogoutServlet extends HttpServlet {
         }
 
         // 3. Chuyển hướng người dùng về lại trang chủ của hệ thống
-        response.sendRedirect(request.getContextPath() + "/home/index.jsp");
+        response.sendRedirect(request.getContextPath() + "/home");
     }
 
     /**

@@ -23,7 +23,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * kiểm tra ràng buộc nghiệp vụ, băm mật khẩu và gửi mã OTP kích hoạt qua Email.
  * URL ánh xạ: /register
  */
-@WebServlet(name = "RegisterServlet", urlPatterns = {"/register", "/auth/register"})
+@WebServlet(name = "RegisterServlet", urlPatterns = {"/register", "/auth/register", "/auth/register.jsp"})
 public class RegisterServlet extends HttpServlet {
 
     private UserDAO userDAO;

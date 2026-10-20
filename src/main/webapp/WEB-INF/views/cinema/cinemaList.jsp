@@ -42,8 +42,9 @@
     String contextPath = request.getContextPath();
 
     String centreIdParam = request.getParameter("centreId");
+    if (centreIdParam == null || centreIdParam.trim().isEmpty()) centreIdParam = request.getParameter("branchId");
     if (centreIdParam != null && !centreIdParam.trim().isEmpty()) {
-        response.sendRedirect(contextPath + "/cinema/details.jsp?centreId=" + URLEncoder.encode(centreIdParam.trim(), "UTF-8"));
+        response.sendRedirect(contextPath + "/cinema/details?centreId=" + URLEncoder.encode(centreIdParam.trim(), "UTF-8"));
         return;
     }
 
@@ -116,7 +117,7 @@
     <main class="cinema-page-wrapper">
         <!-- Đường dẫn điều hướng phân cấp (Breadcrumb) -->
         <nav class="cf-breadcrumb-nav" aria-label="Breadcrumb">
-            <a href="<%= contextPath %>/home/index.jsp">Trang chủ</a>
+            <a href="<%= contextPath %>/home">Trang chủ</a>
             <span class="cf-breadcrumb-sep">›</span>
             <span class="cf-breadcrumb-current">Hệ thống trung tâm chiếu phim</span>
         </nav>
@@ -193,7 +194,7 @@
                                         </div>
                                         <div class="cf-cinema-body">
                                             <h3 class="cf-cinema-name">
-                                                <a href="<%= contextPath %>/cinema/details.jsp?centreId=<%= centre.getCentreId() %>">
+                                                <a href="<%= contextPath %>/cinema/details?centreId=<%= centre.getCentreId() %>">
                                                     <%= escapeHtml(centre.getCentreName()) %>
                                                 </a>
                                             </h3>
@@ -201,7 +202,7 @@
                                             <p class="cf-cinema-phone">Số điện thoại: <strong><%= escapeHtml(phone) %></strong></p>
                                         </div>
                                         <div class="cf-cinema-action">
-                                            <a href="<%= contextPath %>/cinema/details.jsp?centreId=<%= centre.getCentreId() %>" 
+                                            <a href="<%= contextPath %>/cinema/details?centreId=<%= centre.getCentreId() %>" 
                                                class="cf-btn-detail">
                                                 Chi tiết trung tâm
                                             </a>

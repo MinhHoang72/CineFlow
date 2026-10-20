@@ -95,7 +95,7 @@
                     
                     <!-- Quay lại danh sách trung tâm -->
                     <div class="cf-detail-back-bar">
-                        <a href="<%= contextPath %>/cinema/index.jsp?city=<%= URLEncoder.encode(cityName, "UTF-8") %>" 
+                        <a href="<%= contextPath %>/cinema?city=<%= URLEncoder.encode(cityName, "UTF-8") %>" 
                            class="cf-btn-back">
                             Quay lại danh sách trung tâm tại <%= escapeHtml(cityName) %>
                         </a>
@@ -169,7 +169,7 @@
                 <div class="cf-empty-state">
                     Không tìm thấy thông tin cụm rạp chiếu phim này hoặc rạp đã ngừng hoạt động.
                     <div style="margin-top: 15px;">
-                        <a href="<%= contextPath %>/cinema/index.jsp" class="cf-btn-detail">Quay lại hệ thống rạp</a>
+                        <a href="<%= contextPath %>/cinema" class="cf-btn-detail">Quay lại hệ thống rạp</a>
                     </div>
                 </div>
 

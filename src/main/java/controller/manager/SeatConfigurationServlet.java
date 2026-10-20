@@ -75,7 +75,7 @@ public class SeatConfigurationServlet extends HttpServlet {
 
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("userId") == null) {
-            String redirectUrl = request.getContextPath() + "/auth/login.jsp?redirect="
+            String redirectUrl = request.getContextPath() + "/login?redirect="
                     + URLEncoder.encode("/manager/halls", StandardCharsets.UTF_8);
             response.sendRedirect(redirectUrl);
             return;

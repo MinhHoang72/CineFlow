@@ -20,7 +20,7 @@
 <body>
 <nav class="navbar navbar-dark bg-dark">
     <div class="container">
-        <a class="navbar-brand" href="${pageContext.request.contextPath}/home/index.jsp">🎬 CineFlow</a>
+        <a class="navbar-brand" href="${pageContext.request.contextPath}/home">🎬 CineFlow</a>
         <c:if test="${not empty sessionScope.user}">
             <c:set var="cfRole" value="${sessionScope.user.role}"/>
             <c:set var="cfSales" value="${cfRole == 'TICKET_SALES_STAFF' or cfRole == 'STAFF'}"/>

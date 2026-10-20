@@ -95,7 +95,7 @@ public class StaffManagementServlet extends HttpServlet {
         // 1. Kiểm tra xác thực (nếu chưa đăng nhập thì chuyển hướng sang trang Login)
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("userId") == null) {
-            String loginUrl = request.getContextPath() + "/auth/login.jsp?redirect="
+            String loginUrl = request.getContextPath() + "/login?redirect="
                     + URLEncoder.encode("/staff", StandardCharsets.UTF_8);
             response.sendRedirect(loginUrl);
             return;
@@ -126,6 +126,7 @@ public class StaffManagementServlet extends HttpServlet {
         } else {
             // Đối với Admin: Có thể xem toàn bộ hoặc lọc theo một cụm rạp được chọn
             String cp = request.getParameter("centreId");
+            if (cp == null || cp.trim().isEmpty()) cp = request.getParameter("branchId");
             if (cp != null && !cp.trim().isEmpty()) {
                 try {
                     centreId = Integer.parseInt(cp.trim());
@@ -210,6 +211,7 @@ public class StaffManagementServlet extends HttpServlet {
             } else {
                 // Nếu là Admin: Phải chọn cụm rạp từ danh sách
                 String cp = request.getParameter("centreId");
+            if (cp == null || cp.trim().isEmpty()) cp = request.getParameter("branchId");
                 if (ValidationUtil.isBlank(cp)) {
                     response.sendRedirect(request.getContextPath() + "/staff?error=missing_centre");
                     return;

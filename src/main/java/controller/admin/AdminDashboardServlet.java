@@ -34,7 +34,7 @@ public class AdminDashboardServlet extends HttpServlet {
         // 1. Kiểm tra xác thực: Nếu chưa đăng nhập thì chuyển hướng sang trang đăng nhập
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("userId") == null) {
-            String loginUrl = request.getContextPath() + "/auth/login.jsp?redirect=" + URLEncoder.encode("/dashboard", "UTF-8");
+            String loginUrl = request.getContextPath() + "/login?redirect=" + URLEncoder.encode("/dashboard", "UTF-8");
             response.sendRedirect(loginUrl);
             return;
         }
@@ -74,6 +74,6 @@ public class AdminDashboardServlet extends HttpServlet {
         }
 
         // 3.4. Vai trò Khách hàng (CUSTOMER) -> Điều hướng về trang chủ
-        response.sendRedirect(request.getContextPath() + "/home/index.jsp");
+        response.sendRedirect(request.getContextPath() + "/home");
     }
 }

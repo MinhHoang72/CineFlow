@@ -28,7 +28,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * xem lịch sử đặt vé và cập nhật thông tin người dùng (họ tên, số điện thoại, avatar, đổi email qua OTP).
  * URL ánh xạ: /account
  */
-@WebServlet(name = "AccountProfileServlet", urlPatterns = {"/account", "/profile"})
+@WebServlet(name = "AccountProfileServlet", urlPatterns = {"/account", "/profile", "/account/profile.jsp"})
 @MultipartConfig(maxFileSize = 2 * 1024 * 1024, maxRequestSize = 3 * 1024 * 1024)
 public class AccountProfileServlet extends HttpServlet {
 
@@ -49,7 +49,7 @@ public class AccountProfileServlet extends HttpServlet {
         HttpSession session = request.getSession(false);
         Integer userId = session == null ? null : (Integer) session.getAttribute("userId");
         if (userId == null) {
-            response.sendRedirect(request.getContextPath() + "/auth/login.jsp");
+            response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
 
@@ -79,7 +79,7 @@ public class AccountProfileServlet extends HttpServlet {
         HttpSession session = request.getSession(false);
         Integer userId = session == null ? null : (Integer) session.getAttribute("userId");
         if (userId == null) {
-            response.sendRedirect(request.getContextPath() + "/auth/login.jsp");
+            response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
 
@@ -145,7 +145,7 @@ public class AccountProfileServlet extends HttpServlet {
 
         User currentUser = userDAO.getUserById(userId);
         if (currentUser == null) {
-            response.sendRedirect(request.getContextPath() + "/auth/login.jsp");
+            response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
 

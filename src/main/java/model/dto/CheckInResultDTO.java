@@ -1,27 +1,14 @@
 package model.dto;
-import model.entity.*;
 
-public class CheckInResultDTO {
+import model.dto.booking.TicketInfoDTO;
 
-    private final boolean success;
-    private final String message;
-    private final TicketInfoDTO ticket;
+/**
+ * Tương thích ngược với mã nguồn cũ.
+ * Khuyến nghị sử dụng model.dto.checkin.CheckInResultDTO.
+ */
+public class CheckInResultDTO extends model.dto.checkin.CheckInResultDTO {
 
     public CheckInResultDTO(boolean success, String message, TicketInfoDTO ticket) {
-        this.success = success;
-        this.message = message;
-        this.ticket = ticket;
-    }
-
-    public boolean isSuccess() {
-        return success;
-    }
-
-    public String getMessage() {
-        return message;
-    }
-
-    public TicketInfoDTO getTicket() {
-        return ticket;
+        super(success, message, ticket);
     }
 }

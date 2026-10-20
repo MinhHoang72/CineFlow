@@ -24,7 +24,7 @@ public class ManagerDashboardServlet extends HttpServlet {
 
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("userId") == null) {
-            String loginUrl = request.getContextPath() + "/auth/login.jsp?redirect=" + URLEncoder.encode("/manager/dashboard", "UTF-8");
+            String loginUrl = request.getContextPath() + "/login?redirect=" + URLEncoder.encode("/manager/dashboard", "UTF-8");
             response.sendRedirect(loginUrl);
             return;
         }

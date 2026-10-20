@@ -64,7 +64,7 @@ public class CentreManagementServlet extends HttpServlet {
         // 1. Kiểm tra xác thực đăng nhập
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("userId") == null) {
-            String loginUrl = request.getContextPath() + "/auth/login.jsp?redirect="
+            String loginUrl = request.getContextPath() + "/login?redirect="
                     + URLEncoder.encode("/admin/centres", StandardCharsets.UTF_8);
             response.sendRedirect(loginUrl);
             return;

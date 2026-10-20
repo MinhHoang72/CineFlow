@@ -20,7 +20,7 @@ import java.util.concurrent.ThreadLocalRandom;
 /**
  * Xử lý yêu cầu quên mật khẩu: tạo mã OTP xác thực và gửi qua email cho người dùng.
  */
-@WebServlet(name = "ForgotPasswordServlet", urlPatterns = {"/forgot-password", "/auth/forgot-password"})
+@WebServlet(name = "ForgotPasswordServlet", urlPatterns = {"/forgot-password", "/auth/forgot-password", "/auth/forgot-password.jsp"})
 public class ForgotPasswordServlet extends HttpServlet {
 
     private UserDAO userDAO;

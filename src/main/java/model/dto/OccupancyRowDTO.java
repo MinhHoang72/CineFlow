@@ -1,31 +1,11 @@
 package model.dto;
-import model.entity.*;
 
-public class OccupancyRowDTO {
-
-    private final String label;
-    private final int capacity;
-    private final int soldSeats;
-
+/**
+ * Tương thích ngược với mã nguồn cũ.
+ * Khuyến nghị sử dụng model.dto.report.OccupancyRowDTO.
+ */
+public class OccupancyRowDTO extends model.dto.report.OccupancyRowDTO {
     public OccupancyRowDTO(String label, int capacity, int soldSeats) {
-        this.label = label;
-        this.capacity = capacity;
-        this.soldSeats = soldSeats;
-    }
-
-    public String getLabel() {
-        return label;
-    }
-
-    public int getCapacity() {
-        return capacity;
-    }
-
-    public int getSoldSeats() {
-        return soldSeats;
-    }
-
-    public double getOccupancy() {
-        return capacity == 0 ? 0 : 100.0 * soldSeats / capacity;
+        super(label, capacity, soldSeats);
     }
 }

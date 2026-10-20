@@ -19,7 +19,7 @@ import java.nio.charset.StandardCharsets;
  * Controller: Xử lý xác thực đăng nhập người dùng, kiểm tra trạng thái kích hoạt tài khoản và điều hướng theo vai trò.
  * URL ánh xạ: /login
  */
-@WebServlet(name = "LoginServlet", urlPatterns = {"/login", "/auth/login"})
+@WebServlet(name = "LoginServlet", urlPatterns = {"/login", "/auth/login", "/auth/login.jsp"})
 public class LoginServlet extends HttpServlet {
 
     private UserDAO userDAO;
@@ -62,7 +62,7 @@ public class LoginServlet extends HttpServlet {
         // 4. Tìm kiếm người dùng trong cơ sở dữ liệu qua username hoặc email
         User user = userDAO.getUserByAccountOrEmail(accountOrEmail);
         if (user == null) {
-            response.sendRedirect(request.getContextPath() + "/auth/login.jsp?error=invalid");
+            response.sendRedirect(request.getContextPath() + "/login?error=invalid");
             return;
         }
 
@@ -83,14 +83,14 @@ public class LoginServlet extends HttpServlet {
 
         // 5.3. Mật khẩu không khớp -> Báo lỗi đăng nhập thất bại
         if (!passwordCorrect) {
-            response.sendRedirect(request.getContextPath() + "/auth/login.jsp?error=invalid");
+            response.sendRedirect(request.getContextPath() + "/login?error=invalid");
             return;
         }
 
         // 6. Kiểm tra trạng thái tài khoản:
         // 6.1. Nếu tài khoản bị KHÓA (LOCKED) do vi phạm chính sách -> Ngăn chặn đăng nhập
         if ("LOCKED".equalsIgnoreCase(user.getStatus())) {
-            response.sendRedirect(request.getContextPath() + "/auth/login.jsp?error=locked");
+            response.sendRedirect(request.getContextPath() + "/login?error=locked");
             return;
         }
 
@@ -140,7 +140,7 @@ public class LoginServlet extends HttpServlet {
             }
             // Phòng chống lỗ hổng Open Redirect: Chỉ chấp nhận đường dẫn nội bộ hợp lệ
             if (redirect.startsWith("/") && !redirect.startsWith("//")
-                    && !redirect.toLowerCase().contains("/auth/login.jsp")
+                    && !redirect.toLowerCase().contains("/login")
                     && !redirect.toLowerCase().contains("/login")) {
                 response.sendRedirect(request.getContextPath() + redirect);
                 return;
@@ -148,7 +148,7 @@ public class LoginServlet extends HttpServlet {
         }
 
         // 10. Điều hướng mặc định theo vai trò: Khách hàng về trang chủ, Cán bộ quản trị về Dashboard
-        String dashboard = "CUSTOMER".equalsIgnoreCase(user.getRole()) ? "/home/index.jsp" : "/dashboard";
+        String dashboard = "CUSTOMER".equalsIgnoreCase(user.getRole()) ? "/home" : "/dashboard";
         response.sendRedirect(request.getContextPath() + dashboard);
     }
 

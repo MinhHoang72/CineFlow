@@ -18,7 +18,7 @@ import java.io.IOException;
  * Controller: Xử lý yêu cầu thay đổi mật khẩu từ người dùng đã đăng nhập vào hệ thống.
  * URL ánh xạ: /change-password
  */
-@WebServlet(name = "ChangePasswordServlet", urlPatterns = {"/change-password", "/auth/change-password"})
+@WebServlet(name = "ChangePasswordServlet", urlPatterns = {"/change-password", "/auth/change-password", "/auth/change-password.jsp"})
 public class ChangePasswordServlet extends HttpServlet {
 
     private UserDAO userDAO;

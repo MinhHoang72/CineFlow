@@ -103,7 +103,7 @@
 <body style="background: #0B0F17; color: #F8FAFC; font-family: sans-serif; text-align: center; padding: 100px 20px;">
     <h2>Không tìm thấy thông tin phim</h2>
     <p style="color: #94A3B8;">Phim bạn đang tìm kiếm không tồn tại hoặc đã ngừng chiếu.</p>
-    <a href="${pageContext.request.contextPath}/home/index.jsp" style="display: inline-block; margin-top: 20px; padding: 12px 24px; background: #FF2A54; color: #fff; text-decoration: none; border-radius: 6px; font-weight: 700;">Quay lại trang chủ</a>
+    <a href="${pageContext.request.contextPath}/home" style="display: inline-block; margin-top: 20px; padding: 12px 24px; background: #FF2A54; color: #fff; text-decoration: none; border-radius: 6px; font-weight: 700;">Quay lại trang chủ</a>
 </body>
 </html>
 <%
@@ -174,9 +174,9 @@
 
         <!-- Breadcrumb: Trang chủ → Phim đang chiếu → Chi tiết phim -->
         <nav class="breadcrumb-nav" aria-label="Đường dẫn điều hướng">
-            <a href="${pageContext.request.contextPath}/home/index.jsp">Trang chủ</a>
+            <a href="${pageContext.request.contextPath}/home">Trang chủ</a>
             <span class="breadcrumb-separator">›</span>
-            <a href="${pageContext.request.contextPath}/home/index.jsp#movies">Phim đang chiếu</a>
+            <a href="${pageContext.request.contextPath}/home#movies">Phim đang chiếu</a>
             <span class="breadcrumb-separator">›</span>
             <span class="breadcrumb-current"><%= escapeHtml(movie.getTitle()) %></span>
         </nav>
@@ -387,7 +387,7 @@
     <footer class="footer">
         <div class="footer-inner">
             <div class="footer-brand">
-                <a class="logo" href="${pageContext.request.contextPath}/home/index.jsp">
+                <a class="logo" href="${pageContext.request.contextPath}/home">
                     <span class="logo-mark">C</span>
                     <span class="logo-word">Cine<span>Flow</span></span>
                 </a>
@@ -395,17 +395,17 @@
             </div>
             <div>
                 <h4>CINEFLOW</h4>
-                <a href="${pageContext.request.contextPath}/home/index.jsp#promotions">Tin mới &amp; ưu đãi</a>
-                <a href="${pageContext.request.contextPath}/cinema/index.jsp">Trung tâm chiếu phim</a>
-                <a href="${pageContext.request.contextPath}/home/index.jsp#movies">Phim đang chiếu</a>
+                <a href="${pageContext.request.contextPath}/home#promotions">Tin mới &amp; ưu đãi</a>
+                <a href="${pageContext.request.contextPath}/cinema">Trung tâm chiếu phim</a>
+                <a href="${pageContext.request.contextPath}/home#movies">Phim đang chiếu</a>
                 <a href="${pageContext.request.contextPath}/booking?view=schedule">Lịch chiếu</a>
             </div>
             <div id="support">
                 <h4>HỖ TRỢ</h4>
-                <a href="${pageContext.request.contextPath}/home/index.jsp#support">Hỗ trợ khách hàng</a>
-                <a href="${pageContext.request.contextPath}/home/index.jsp#support">Câu hỏi thường gặp</a>
-                <a href="${pageContext.request.contextPath}/home/index.jsp#support">Chính sách bảo mật</a>
-                <a href="${pageContext.request.contextPath}/home/index.jsp#support">Điều khoản sử dụng</a>
+                <a href="${pageContext.request.contextPath}/home#support">Hỗ trợ khách hàng</a>
+                <a href="${pageContext.request.contextPath}/home#support">Câu hỏi thường gặp</a>
+                <a href="${pageContext.request.contextPath}/home#support">Chính sách bảo mật</a>
+                <a href="${pageContext.request.contextPath}/home#support">Điều khoản sử dụng</a>
             </div>
             <div>
                 <h4>TÀI KHOẢN</h4>
@@ -426,7 +426,7 @@
             <span class="quick-icon">🎟</span>
             <span>Đặt vé</span>
         </a>
-        <a href="${pageContext.request.contextPath}/home/index.jsp#support" title="Hỗ trợ">
+        <a href="${pageContext.request.contextPath}/home#support" title="Hỗ trợ">
             <span class="quick-icon">❔</span>
             <span>Hỗ trợ</span>
         </a>

@@ -66,18 +66,18 @@
 <header class="cf-main-header" id="cfMainHeader">
     <div class="cf-header-container">
         <!-- Logo thương hiệu -->
-        <a class="cf-brand" href="<%= ctx %>/home/index.jsp" aria-label="CineFlow Cinema Home">
+        <a class="cf-brand" href="<%= ctx %>/home" aria-label="CineFlow Cinema Home">
             <span class="cf-brand-icon">C</span>
             <span class="cf-brand-name">Cine<span class="cf-brand-glow">Flow</span></span>
         </a>
 
         <!-- Menu điều hướng chính -->
         <nav class="cf-navbar" aria-label="Điều hướng chính">
-            <a class="cf-nav-item <%= "home".equalsIgnoreCase(activeNav) ? "active" : "" %>" href="<%= ctx %>/home/index.jsp">TRANG CHỦ</a>
+            <a class="cf-nav-item <%= "home".equalsIgnoreCase(activeNav) ? "active" : "" %>" href="<%= ctx %>/home">TRANG CHỦ</a>
             <a class="cf-nav-item <%= "booking".equalsIgnoreCase(activeNav) ? "active" : "" %>" href="<%= ctx %>/booking">MUA VÉ</a>
-            <a class="cf-nav-item <%= "promotions".equalsIgnoreCase(activeNav) ? "active" : "" %>" href="<%= ctx %>/home/index.jsp#promotions">TIN MỚI &amp; ƯU ĐÃI</a>
-            <a class="cf-nav-item <%= "cinema".equalsIgnoreCase(activeNav) ? "active" : "" %>" href="<%= ctx %>/cinema/index.jsp">RẠP CHIẾU PHIM</a>
-            <a class="cf-nav-item <%= "support".equalsIgnoreCase(activeNav) ? "active" : "" %>" href="<%= ctx %>/home/index.jsp#support">HỖ TRỢ</a>
+            <a class="cf-nav-item <%= "promotions".equalsIgnoreCase(activeNav) ? "active" : "" %>" href="<%= ctx %>/home#promotions">TIN MỚI &amp; ƯU ĐÃI</a>
+            <a class="cf-nav-item <%= "cinema".equalsIgnoreCase(activeNav) ? "active" : "" %>" href="<%= ctx %>/cinema">RẠP CHIẾU PHIM</a>
+            <a class="cf-nav-item <%= "support".equalsIgnoreCase(activeNav) ? "active" : "" %>" href="<%= ctx %>/home#support">HỖ TRỢ</a>
         </nav>
 
         <!-- Khu vực tài khoản và xác thực bên phải -->

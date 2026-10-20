@@ -17,7 +17,7 @@ import java.io.IOException;
 /**
  * Xử lý đặt lại mật khẩu mới cho người dùng sau khi đã xác thực mã OTP thành công.
  */
-@WebServlet(name = "ResetPasswordServlet", urlPatterns = {"/reset-password", "/auth/reset-password"})
+@WebServlet(name = "ResetPasswordServlet", urlPatterns = {"/reset-password", "/auth/reset-password", "/auth/reset-password.jsp"})
 public class ResetPasswordServlet extends HttpServlet {
 
     private UserDAO userDAO;
@@ -95,7 +95,7 @@ public class ResetPasswordServlet extends HttpServlet {
 
         // 5. Hủy phiên làm việc tạm và chuyển về trang đăng nhập
         session.invalidate();
-        response.sendRedirect(request.getContextPath() + "/auth/login.jsp?success=password_reset");
+        response.sendRedirect(request.getContextPath() + "/login?success=password_reset");
     }
 
     /**

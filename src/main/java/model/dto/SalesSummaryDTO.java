@@ -1,55 +1,13 @@
 package model.dto;
-import model.entity.*;
 
 import java.math.BigDecimal;
 
-public class SalesSummaryDTO {
-
-    private final BigDecimal ticketRevenue;
-    private final BigDecimal fnbRevenue;
-    private final BigDecimal discountTotal;
-    private final int bookings;
-    private final int tickets;
-    private final int voucherBookings;
-
+/**
+ * Tương thích ngược với mã nguồn cũ.
+ * Khuyến nghị sử dụng model.dto.report.SalesSummaryDTO.
+ */
+public class SalesSummaryDTO extends model.dto.report.SalesSummaryDTO {
     public SalesSummaryDTO(BigDecimal ticketRevenue, BigDecimal fnbRevenue, BigDecimal discountTotal, int bookings, int tickets, int voucherBookings) {
-        this.ticketRevenue = ticketRevenue;
-        this.fnbRevenue = fnbRevenue;
-        this.discountTotal = discountTotal;
-        this.bookings = bookings;
-        this.tickets = tickets;
-        this.voucherBookings = voucherBookings;
-    }
-
-    public BigDecimal getTicketRevenue() {
-        return ticketRevenue;
-    }
-
-    public BigDecimal getFnbRevenue() {
-        return fnbRevenue;
-    }
-
-    public BigDecimal getDiscountTotal() {
-        return discountTotal;
-    }
-
-    public int getBookings() {
-        return bookings;
-    }
-
-    public int getTickets() {
-        return tickets;
-    }
-
-    public int getVoucherBookings() {
-        return voucherBookings;
-    }
-
-    public BigDecimal getTotalRevenue() {
-        return ticketRevenue.add(fnbRevenue);
-    }
-
-    public BigDecimal getAverageOrder() {
-        return bookings == 0 ? BigDecimal.ZERO : ticketRevenue.divide(BigDecimal.valueOf(bookings), 0, java.math.RoundingMode.HALF_UP);
+        super(ticketRevenue, fnbRevenue, discountTotal, bookings, tickets, voucherBookings);
     }
 }
