@@ -176,11 +176,11 @@
                                 <span class="staff-search-icon" aria-hidden="true">⌕</span>
                                 <input type="search" name="search" id="staffFilterInput"
                                        value="<%= searchParam != null ? searchParam : "" %>"
-                                       placeholder="Tìm mã NV, họ tên, tài khoản..."
+                                       placeholder="Tìm mã, họ tên, tài khoản..."
                                        aria-label="Tìm nhân viên">
                             </div>
 
-                            <button type="submit" class="staff-control-btn">Tìm kiếm</button>
+                            <button type="submit" class="staff-control-btn">Tìm</button>
 
                             <% if (searchParam != null && !searchParam.trim().isEmpty()) { %>
                                 <a href="${pageContext.request.contextPath}/staff<%= cFilterVal != null ? "?centreId=" + cFilterVal : "" %>"
@@ -191,15 +191,15 @@
                         <div class="staff-select-wrap">
                             <select id="staffRoleFilter" aria-label="Lọc theo vị trí công việc">
                                 <option value="">Tất cả vị trí</option>
-                                <option value="role-sales">🎫 Bán vé (Ticket Sales)</option>
-                                <option value="role-checker">🔍 Soát vé (Ticket Checker)</option>
+                                <option value="role-sales">🎫 Bán vé</option>
+                                <option value="role-checker">🔍 Soát vé</option>
                             </select>
                         </div>
 
                         <div class="staff-select-wrap">
                             <select id="staffStatusFilter" aria-label="Lọc theo trạng thái">
                                 <option value="">Tất cả trạng thái</option>
-                                <option value="st-active">Đang hoạt động</option>
+                                <option value="st-active">Hoạt động</option>
                                 <option value="st-inactive">Tạm ngưng</option>
                                 <option value="st-locked">Đã khóa</option>
                             </select>
@@ -218,11 +218,11 @@
                         <table class="cf-table">
                             <thead>
                             <tr>
-                                <th class="col-code">Mã nhân sự</th>
+                                <th class="col-code">Mã NV</th>
                                 <th class="col-staff">Nhân viên</th>
-                                <th class="col-account">Tên đăng nhập</th>
-                                <th class="col-role">Vị trí công việc</th>
-                                <th class="col-phone">Số điện thoại</th>
+                                <th class="col-account">Tài khoản</th>
+                                <th class="col-role">Vị trí</th>
+                                <th class="col-phone">Số ĐT</th>
                                 <th class="col-centre">Trung tâm</th>
                                 <th class="col-status">Trạng thái</th>
                                 <th class="col-actions">Thao tác</th>
@@ -266,11 +266,11 @@
                                     <td class="col-role">
                                         <% if (isSales) { %>
                                             <span class="cf-badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); white-space: nowrap;">
-                                                🎫 Bán vé (Ticket Sales)
+                                                🎫 Bán vé 
                                             </span>
                                         <% } else if (isChecker) { %>
                                             <span class="cf-badge" style="background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.35); white-space: nowrap;">
-                                                🔍 Soát vé (Ticket Checker)
+                                                🔍 Soát vé 
                                             </span>
                                         <% } else { %>
                                             <span class="cf-badge cf-badge-info" style="white-space: nowrap;">
@@ -284,7 +284,7 @@
                                         <span id="badge-status-<%= item.getUserId() %>"
                                               class="cf-badge <%= "ACTIVE".equalsIgnoreCase(st) ? "cf-badge-success" : ("LOCKED".equalsIgnoreCase(st) ? "cf-badge-danger" : "cf-badge-warning") %>"
                                               style="white-space: nowrap;">
-                                            <%= "ACTIVE".equalsIgnoreCase(st) ? "Đang hoạt động"
+                                            <%= "ACTIVE".equalsIgnoreCase(st) ? "Hoạt động"
                                                 : ("LOCKED".equalsIgnoreCase(st) ? "Đã khóa" : "Tạm ngưng") %>
                                         </span>
                                     </td>

@@ -9,27 +9,43 @@
             --staff-radius: 12px;
         }
 
-        .cf-content { color: var(--staff-text); }
+                .cf-manager-main {
+            max-width: calc(100vw - 280px);
+            overflow-x: hidden;
+        }
 
-        .cf-page-header { margin-bottom: 26px; }
+        .cf-content {
+            color: var(--staff-text);
+            width: 100% !important;
+            max-width: calc(100% - 32px) !important;
+            margin: 0 auto !important;
+            padding: 16px 0 36px !important;
+        }
+
+        .cf-page-header { margin-bottom: 16px; }
 
         .cf-page-header h1 {
-            margin: 8px 0;
+            margin: 4px 0;
             color: #fff;
-            letter-spacing: -0.6px;
+            font-size: 22px;
+            letter-spacing: -0.5px;
         }
 
         .cf-page-header > div > p:last-child {
             color: #a5b4c8;
-            line-height: 1.7;
+            line-height: 1.6;
+            font-size: 13px;
         }
 
         .cf-card {
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
             overflow: hidden;
             border: 1px solid var(--staff-border);
-            border-radius: 16px;
+            border-radius: 14px;
             background: var(--staff-panel);
-            box-shadow: 0 12px 32px rgba(0, 0, 0, .12);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, .14);
         }
 
         .staff-card-header {
@@ -37,22 +53,22 @@
             align-items: center;
             justify-content: space-between;
             flex-wrap: wrap;
-            gap: 20px;
-            padding: 24px 28px;
+            gap: 12px;
+            padding: 14px 18px;
             border-bottom: 1px solid var(--staff-border);
         }
 
         .staff-heading h2 {
-            margin: 0 0 7px;
+            margin: 0 0 2px;
             color: #fff;
-            font-size: 19px;
+            font-size: 16px;
             font-weight: 750;
         }
 
         .staff-heading p {
             margin: 0;
             color: var(--staff-muted);
-            font-size: 13px;
+            font-size: 12px;
         }
 
         .staff-toolbar {
@@ -60,14 +76,14 @@
             align-items: center;
             justify-content: flex-end;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 8px;
         }
 
         .staff-search-form {
             display: flex;
             align-items: center;
             flex-wrap: wrap;
-            gap: 8px;
+            gap: 6px;
             margin: 0;
         }
 
@@ -79,24 +95,24 @@
 
         .staff-search-icon {
             position: absolute;
-            left: 13px;
+            left: 10px;
             color: #8492a6;
-            font-size: 15px;
+            font-size: 13px;
             pointer-events: none;
         }
 
         #staffFilterInput {
             box-sizing: border-box;
-            width: 290px;
-            height: 42px;
-            padding: 0 14px 0 38px;
+            width: 190px;
+            height: 36px;
+            padding: 0 10px 0 30px;
             border: 1px solid #303b4b;
-            border-radius: 10px;
+            border-radius: 8px;
             outline: none;
             background: var(--staff-panel-soft);
             color: #f8fafc;
             font-family: inherit;
-            font-size: 13px;
+            font-size: 12.5px;
             transition: border-color .2s, box-shadow .2s, background .2s;
         }
 
@@ -110,27 +126,27 @@
         #staffFilterInput:focus {
             border-color: var(--staff-accent);
             background: #141b26;
-            box-shadow: 0 0 0 3px rgba(255, 40, 85, .12);
+            box-shadow: 0 0 0 2.5px rgba(255, 40, 85, .15);
         }
 
         .staff-control-btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 7px;
-            height: 42px;
-            padding: 0 16px;
+            gap: 6px;
+            height: 36px;
+            padding: 0 12px;
             border: 1px solid #394456;
-            border-radius: 10px;
+            border-radius: 8px;
             background: #202735;
             color: #e5edf7;
             font-family: inherit;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 650;
             text-decoration: none;
             white-space: nowrap;
             cursor: pointer;
-            transition: background .2s, border-color .2s, transform .2s;
+            transition: background .2s, border-color .2s, transform .15s;
         }
 
         .staff-control-btn:hover {
@@ -144,7 +160,7 @@
             border-color: var(--staff-accent);
             background: var(--staff-accent);
             color: #fff;
-            box-shadow: 0 5px 15px rgba(255, 40, 85, .16);
+            box-shadow: 0 3px 10px rgba(255, 40, 85, .18);
         }
 
         .staff-control-btn-primary:hover {
@@ -154,14 +170,15 @@
 
         .staff-select-wrap {
             position: relative;
+            display: inline-block;
         }
 
         .staff-select-wrap::after {
             position: absolute;
             top: 50%;
-            right: 13px;
-            width: 7px;
-            height: 7px;
+            right: 10px;
+            width: 6px;
+            height: 6px;
             border-right: 1.5px solid #a7b3c5;
             border-bottom: 1.5px solid #a7b3c5;
             content: "";
@@ -170,139 +187,185 @@
         }
 
         #staffRoleFilter,
-        #staffStatusFilter,
-        .status-select-wrap .cf-status-select {
+        #staffStatusFilter {
             appearance: none;
             -webkit-appearance: none;
             box-sizing: border-box;
-            height: 42px;
-            padding: 0 34px 0 13px;
+            height: 36px;
+            padding: 0 26px 0 10px;
             border: 1px solid #303b4b;
-            border-radius: 10px;
+            border-radius: 8px;
             outline: none;
             background: var(--staff-panel-soft);
             color: #e2e8f0;
             font-family: inherit;
-            font-size: 13px;
+            font-size: 12px;
             cursor: pointer;
             transition: border-color .2s, background .2s, box-shadow .2s;
         }
 
-        #staffRoleFilter { min-width: 175px; }
-        #staffStatusFilter { min-width: 166px; }
+        #staffRoleFilter { min-width: 115px; }
+        #staffStatusFilter { min-width: 120px; }
 
         #staffRoleFilter:hover,
-        #staffStatusFilter:hover,
-        .status-select-wrap .cf-status-select:hover {
+        #staffStatusFilter:hover {
             border-color: #59677d;
             background-color: #19212d;
         }
 
         #staffRoleFilter:focus,
-        #staffStatusFilter:focus,
-        .status-select-wrap .cf-status-select:focus {
+        #staffStatusFilter:focus {
             border-color: var(--staff-accent);
-            box-shadow: 0 0 0 3px rgba(255, 40, 85, .18);
+            box-shadow: 0 0 0 2.5px rgba(255, 40, 85, .15);
         }
 
         #staffRoleFilter option,
-        #staffStatusFilter option,
-        .status-select-wrap .cf-status-select option {
+        #staffStatusFilter option {
             background: #151b25;
             color: #f1f5f9;
-            padding: 8px 12px;
+            padding: 6px 10px;
         }
 
-        .staff-table-body { padding: 22px 28px 28px; }
+                .staff-table-body {
+            padding: 10px 14px 16px;
+        }
 
         .cf-table-wrap {
+            width: 100%;
+            max-width: 100%;
             overflow-x: auto;
             border: 1px solid var(--staff-border);
-            border-radius: 12px;
+            border-radius: 10px;
             background: #151b25;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+            scrollbar-color: #334155 #151b25;
         }
 
         .cf-table {
             width: 100%;
             border-collapse: separate;
             border-spacing: 0;
+            table-layout: auto;
         }
 
         .cf-table thead th {
-            padding: 15px 18px;
+            padding: 9px 10px;
             border-bottom: 1px solid var(--staff-border);
             background: #10151d;
-            color: #9eacc0;
+            color: #94a3b8;
             font-size: 11px;
             font-weight: 750;
-            letter-spacing: .65px;
+            letter-spacing: .45px;
             text-align: left;
             text-transform: uppercase;
             white-space: nowrap;
         }
 
         .cf-table tbody td {
-            padding: 17px 18px;
-            border-bottom: 1px solid rgba(42, 51, 65, .78);
+            padding: 8px 10px;
+            border-bottom: 1px solid rgba(42, 51, 65, .72);
             color: #e2e8f0;
-            font-size: 13px;
+            font-size: 12px;
             vertical-align: middle;
         }
 
         .cf-table tbody tr:last-child td { border-bottom: 0; }
 
         .cf-table tbody tr {
-            transition: background .16s;
+            transition: background .14s;
         }
 
         .cf-table tbody tr:hover { background: #1a222e; }
 
-        .col-code,
-        .col-account,
-        .col-role,
-        .col-phone,
-        .col-centre,
-        .col-status,
+        .col-code {
+            width: 80px;
+            white-space: nowrap !important;
+        }
+
+        .col-staff {
+            min-width: 140px;
+            max-width: 200px;
+        }
+
+        .col-account {
+            width: 100px;
+            white-space: nowrap !important;
+        }
+
+        .col-role {
+            width: 105px;
+            white-space: nowrap !important;
+        }
+
+        .col-phone {
+            width: 95px;
+            white-space: nowrap !important;
+            font-size: 12px;
+        }
+
+        .col-centre {
+            width: 135px;
+            white-space: nowrap !important;
+        }
+
+        .col-status {
+            width: 100px;
+            white-space: nowrap !important;
+        }
+
         .col-actions {
+            width: 140px;
             white-space: nowrap !important;
         }
 
         .centre-name-tag {
             display: inline-flex;
             align-items: center;
-            gap: 6px;
+            gap: 5px;
             white-space: nowrap;
+            font-size: 12px;
+            color: #cbd5e1;
             font-weight: 500;
         }
 
         .cf-table td strong {
             display: block;
-            margin-bottom: 4px;
+            margin-bottom: 1px;
             color: #f8fafc;
-            font-size: 13px;
-            font-weight: 700;
+            font-size: 12.5px;
+            font-weight: 650;
+            line-height: 1.3;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .cf-table td small {
-            color: #94a3b8;
-            font-size: 12px;
+            display: block;
+            color: #8fa0b5;
+            font-size: 11px;
+            line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .cf-table td code:not(.cf-badge) {
-            color: #d6deeb;
-            font-size: 12px;
+            color: #cbd5e1;
+            font-size: 11.5px;
         }
 
         .cf-table .cf-badge {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            min-height: 26px;
-            padding: 4px 11px;
-            border-radius: 999px;
+            min-height: 22px;
+            padding: 2px 7px;
+            border-radius: 6px;
             font-size: 11px;
-            font-weight: 750;
-            white-space: nowrap;
+            font-weight: 650;
+            white-space: nowrap !important;
         }
 
         .cf-table .cf-badge-info {
@@ -330,7 +393,7 @@
             display: inline-flex;
             align-items: center;
             flex-wrap: nowrap !important;
-            gap: 8px;
+            gap: 6px;
             white-space: nowrap !important;
         }
 
@@ -338,40 +401,40 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            min-height: 35px;
-            padding: 0 14px;
+            min-height: 28px;
+            height: 28px;
+            padding: 0 9px;
             border: 1px solid #3b4657;
-            border-radius: 8px;
+            border-radius: 6px;
             background: #202735;
             color: #e5edf7;
             font-family: inherit;
-            font-size: 12px;
-            font-weight: 650;
+            font-size: 11.5px;
+            font-weight: 600;
             cursor: pointer;
             white-space: nowrap;
-            transition: border-color .2s, background .2s, transform .15s;
+            transition: border-color .15s, background .15s;
         }
 
         .staff-edit-btn:hover {
             border-color: #64748b;
             background: #2d3748;
             color: #ffffff;
-            transform: translateY(-1px);
         }
 
         .status-select-wrap {
             position: relative;
             display: inline-flex;
             align-items: center;
-            gap: 7px;
+            gap: 6px;
         }
 
         .status-select-wrap::after {
             position: absolute;
             top: 50%;
-            right: 11px;
-            width: 6px;
-            height: 6px;
+            right: 8px;
+            width: 5px;
+            height: 5px;
             border-right: 1.5px solid currentColor;
             border-bottom: 1.5px solid currentColor;
             content: "";
@@ -380,30 +443,26 @@
         }
 
         .status-select-wrap .cf-status-select {
-            height: 35px;
-            min-width: 112px;
-            padding: 0 27px 0 10px;
-            border-radius: 8px;
-            font-size: 12px;
-            font-weight: 650;
+            appearance: none;
+            -webkit-appearance: none;
+            box-sizing: border-box;
+            height: 28px;
+            min-height: 28px;
+            min-width: 88px;
+            padding: 0 20px 0 8px;
+            border: 1px solid #303b4b;
+            border-radius: 6px;
+            outline: none;
+            font-size: 11.5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: border-color .2s, background .2s;
         }
 
-        .status-select-wrap .val-active {
-            border-color: rgba(52, 211, 153, .35);
-            background: rgba(52, 211, 153, .08);
-            color: #6ee7b7;
-        }
-
-        .status-select-wrap .val-inactive {
-            border-color: rgba(251, 191, 36, .35);
-            background: rgba(251, 191, 36, .08);
-            color: #fcd675;
-        }
-
-        .status-select-wrap .val-locked {
-            border-color: rgba(248, 113, 113, .35);
-            background: rgba(248, 113, 113, .08);
-            color: #fca5a5;
+        .status-select-wrap .cf-status-select option {
+            background: #151b25;
+            color: #f1f5f9;
+            padding: 4px 8px;
         }
 
         .status-indicator {
