@@ -258,8 +258,8 @@ html, body {
 /* THANH ĐIỀU HƯỚNG TRÊN (TOPBAR) */
 .admin-topbar, .cf-topbar {
     height: 68px !important;
-    background: #ffffff !important;
-    border-bottom: 1px solid #E2E8F0 !important;
+    background: #151b26 !important;
+    border-bottom: 1px solid #2b3443 !important;
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
