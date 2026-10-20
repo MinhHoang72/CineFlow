@@ -1,4 +1,4 @@
-<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+﻿<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%
     String authRole = (String) session.getAttribute("role");
     if (authRole == null && session.getAttribute("user") instanceof model.entity.User) {
@@ -19,9 +19,9 @@
 </head>
 <body>
 <div class="cf-manager-shell">
-    <jsp:include page="/WEB-INF/views/manager/managerSidebar.jspf"/>
+    <jsp:include page="/WEB-INF/fragments/managerSidebar.jspf"/>
     <div class="cf-manager-main">
-        <jsp:include page="/WEB-INF/views/manager/managerTopbar.jspf"/>
+        <jsp:include page="/WEB-INF/fragments/managerTopbar.jspf"/>
         <main class="cf-content">
             <div class="cf-page-header">
                 <div>

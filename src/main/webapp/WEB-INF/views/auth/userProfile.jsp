@@ -1,4 +1,4 @@
-<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+﻿<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ page import="model.entity.User,model.dto.BookingHistory,java.util.List,java.text.SimpleDateFormat" %>
 <%
     if (session.getAttribute("userId") == null) {
@@ -75,9 +75,9 @@
 <body>
 <% if (isInternal) { %>
     <div class="cf-manager-shell">
-        <jsp:include page='<%= isAdmin ? "/WEB-INF/views/admin/adminSidebar.jspf" : "/WEB-INF/views/manager/managerSidebar.jspf" %>' />
+        <jsp:include page='<%= isAdmin ? "/WEB-INF/fragments/adminSidebar.jspf" : "/WEB-INF/fragments/managerSidebar.jspf" %>' />
         <div class="cf-manager-main">
-            <jsp:include page="/WEB-INF/views/admin/adminTopbar.jspf" />
+            <jsp:include page="/WEB-INF/fragments/adminTopbar.jspf" />
             <main class="cf-content">
                 <div class="account-page staff-account-container">
 <% } else { %>

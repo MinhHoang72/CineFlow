@@ -1,4 +1,4 @@
-<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
+﻿<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ page import="model.dto.CheckInResultDTO, model.dto.TicketInfoDTO, model.dto.CheckInLogDTO, java.util.List" %>
 <%!
     static String esc(Object value) {
@@ -48,9 +48,9 @@
 </head>
 <body>
 <div class="cf-manager-shell">
-    <jsp:include page="/WEB-INF/views/manager/managerSidebar.jspf" />
+    <jsp:include page="/WEB-INF/fragments/managerSidebar.jspf" />
     <div class="cf-manager-main">
-        <jsp:include page="/WEB-INF/views/admin/adminTopbar.jspf" />
+        <jsp:include page="/WEB-INF/fragments/adminTopbar.jspf" />
         <main class="cf-content">
             <div class="cf-page-header">
                 <div>

@@ -1,9 +1,9 @@
-<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+﻿<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <c:set var="pageTitle" value="Theo dõi giao dịch thanh toán" scope="request"/>
 <c:set var="pageStep" value="₫" scope="request"/>
-<%@ include file="/WEB-INF/views/common/header.jspf" %>
+<%@ include file="/WEB-INF/fragments/header.jspf" %>
 <c:set var="ctx" value="${pageContext.request.contextPath}"/>
 
 <form method="get" action="${ctx}/staff/payments" class="row g-2 align-items-end mb-3">
@@ -96,4 +96,4 @@
 
 <script>setTimeout(() => location.reload(), 30000);</script>
 
-<%@ include file="/WEB-INF/views/common/footer.jspf" %>
+<%@ include file="/WEB-INF/fragments/footer.jspf" %>

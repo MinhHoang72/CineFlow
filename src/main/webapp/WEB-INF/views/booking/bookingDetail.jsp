@@ -1,9 +1,9 @@
-<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+﻿<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <c:set var="pageTitle" value="Chi tiết đơn" scope="request"/>
 <c:set var="pageStep" value="📄" scope="request"/>
-<%@ include file="/WEB-INF/views/common/header.jspf" %>
+<%@ include file="/WEB-INF/fragments/header.jspf" %>
 <c:set var="ctx" value="${pageContext.request.contextPath}"/>
 <c:set var="st" value="${booking.showtime}"/>
 
@@ -96,4 +96,4 @@
 
 <a href="${ctx}/booking" class="btn btn-link mt-3 no-print">Đặt vé khác</a>
 
-<%@ include file="/WEB-INF/views/common/footer.jspf" %>
+<%@ include file="/WEB-INF/fragments/footer.jspf" %>

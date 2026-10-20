@@ -1,4 +1,4 @@
-<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+﻿<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ page import="model.entity.Movie" %>
 <%
     String authRole = (String) session.getAttribute("role");
@@ -47,10 +47,10 @@
 </head>
 <body>
 <div class="cf-manager-shell">
-    <jsp:include page="/WEB-INF/views/admin/adminSidebar.jspf" />
+    <jsp:include page="/WEB-INF/fragments/adminSidebar.jspf" />
 
     <div class="cf-manager-main">
-        <jsp:include page="/WEB-INF/views/admin/adminTopbar.jspf" />
+        <jsp:include page="/WEB-INF/fragments/adminTopbar.jspf" />
 
         <main class="cf-content">
             <!-- TIÊU ĐỀ TRANG -->

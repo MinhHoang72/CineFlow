@@ -1,4 +1,4 @@
-<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+﻿<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ page import="model.entity.Hall,model.entity.Centre,model.dto.SeatConfigDTO,java.util.List" %>
 <%
     String authRole = (String) session.getAttribute("role");
@@ -66,11 +66,11 @@
 <body>
 <div class="cf-manager-shell">
     <!-- Sidebar -->
-    <jsp:include page="<%= isAdmin ? \"/WEB-INF/views/admin/adminSidebar.jspf\" : \"/WEB-INF/views/manager/managerSidebar.jspf\" %>" />
+    <jsp:include page="<%= isAdmin ? \"/WEB-INF/fragments/adminSidebar.jspf\" : \"/WEB-INF/fragments/managerSidebar.jspf\" %>" />
 
     <div class="cf-manager-main">
         <!-- Topbar -->
-        <jsp:include page="/WEB-INF/views/admin/adminTopbar.jspf" />
+        <jsp:include page="/WEB-INF/fragments/adminTopbar.jspf" />
 
         <main class="cf-content">
             <!-- Header trang -->

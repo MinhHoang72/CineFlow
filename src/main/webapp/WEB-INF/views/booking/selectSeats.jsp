@@ -1,9 +1,9 @@
-<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+﻿<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <c:if test="${empty pageTitle}"><c:set var="pageTitle" value="Chọn ghế" scope="request"/></c:if>
 <c:set var="pageStep" value="2" scope="request"/>
-<%@ include file="/WEB-INF/views/common/header.jspf" %>
+<%@ include file="/WEB-INF/fragments/header.jspf" %>
 <c:set var="ctx" value="${pageContext.request.contextPath}"/>
 <%-- Ban tai quay truyen seatFormAction/seatBackUrl; dat ve online dung mac dinh --%>
 <c:if test="${empty seatFormAction}"><c:set var="seatFormAction" value="${ctx}/booking"/></c:if>
@@ -110,4 +110,4 @@
     })();
 </script>
 
-<%@ include file="/WEB-INF/views/common/footer.jspf" %>
+<%@ include file="/WEB-INF/fragments/footer.jspf" %>

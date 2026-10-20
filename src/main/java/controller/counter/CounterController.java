@@ -262,7 +262,7 @@ public class CounterController extends HttpServlet {
         req.setAttribute("tickets", tickets);
         req.setAttribute("paidTransaction", paid);
         if (!tickets.isEmpty()) req.setAttribute("bookingQr", QrUtil.toDataUri(booking.getQrContent()));
-        req.getRequestDispatcher(VIEW_DIR + "counter/counterTicket.jsp").forward(req, resp);
+        req.getRequestDispatcher(VIEW_DIR + "counter/counterTicketPrint.jsp").forward(req, resp);
     }
 
     /** Don tai quay thuoc chi nhanh cua nhan vien, null neu khong hop le. */

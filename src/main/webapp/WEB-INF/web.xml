@@ -83,11 +83,6 @@
 
     <filter-mapping>
         <filter-name>ManagerFilter</filter-name>
-        <url-pattern>/staff/directory.jsp</url-pattern>
-    </filter-mapping>
-
-    <filter-mapping>
-        <filter-name>ManagerFilter</filter-name>
         <url-pattern>/reports</url-pattern>
     </filter-mapping>
 
@@ -106,4 +101,3 @@
     </filter-mapping>
 
 </web-app>
-

@@ -1,4 +1,4 @@
-<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+﻿<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ page import="model.entity.User,model.entity.Centre,java.util.List" %>
 <%
     String authRole = (String) session.getAttribute("role");
@@ -55,16 +55,16 @@
 <body>
 <div class="cf-manager-shell">
     <% if (isAdminRole) { %>
-        <jsp:include page="/WEB-INF/views/admin/adminSidebar.jspf"/>
+        <jsp:include page="/WEB-INF/fragments/adminSidebar.jspf"/>
     <% } else { %>
-        <jsp:include page="/WEB-INF/views/manager/managerSidebar.jspf"/>
+        <jsp:include page="/WEB-INF/fragments/managerSidebar.jspf"/>
     <% } %>
 
     <div class="cf-manager-main">
         <% if (isAdminRole) { %>
-            <jsp:include page="/WEB-INF/views/admin/adminTopbar.jspf"/>
+            <jsp:include page="/WEB-INF/fragments/adminTopbar.jspf"/>
         <% } else { %>
-            <jsp:include page="/WEB-INF/views/manager/managerTopbar.jspf"/>
+            <jsp:include page="/WEB-INF/fragments/managerTopbar.jspf"/>
         <% } %>
 
         <main class="cf-content">

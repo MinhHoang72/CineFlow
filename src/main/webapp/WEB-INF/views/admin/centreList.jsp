@@ -1,4 +1,4 @@
-<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+﻿<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ page import="model.entity.Centre,model.entity.Hall,java.util.List" %>
 <%
     // 1. Kiểm tra quyền hạn Admin (RBAC)
@@ -62,11 +62,11 @@
 <body>
 <div class="cf-manager-shell">
     <!-- Menu bên trái (Sidebar) -->
-    <jsp:include page="/WEB-INF/views/admin/adminSidebar.jspf" />
+    <jsp:include page="/WEB-INF/fragments/adminSidebar.jspf" />
 
     <div class="cf-manager-main">
         <!-- Thanh tiêu đề trên (Topbar) -->
-        <jsp:include page="/WEB-INF/views/admin/adminTopbar.jspf" />
+        <jsp:include page="/WEB-INF/fragments/adminTopbar.jspf" />
 
         <main class="cf-content">
             <!-- Header trang -->

@@ -1,4 +1,4 @@
-<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+﻿<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ page import="model.dto.ReportSummary,model.dto.RevenueReport,model.dto.ShowtimeMetric,java.util.List,java.math.BigDecimal" %>
 <%
     String authRole = (String) session.getAttribute("role");
@@ -43,10 +43,10 @@
 </head>
 <body>
 <div class="admin-layout">
-    <jsp:include page='<%= isAdmin ? "/WEB-INF/views/admin/adminSidebar.jspf" : "/WEB-INF/views/manager/managerSidebar.jspf" %>' />
+    <jsp:include page='<%= isAdmin ? "/WEB-INF/fragments/adminSidebar.jspf" : "/WEB-INF/fragments/managerSidebar.jspf" %>' />
 
     <div class="admin-main">
-        <jsp:include page='<%= isAdmin ? "/WEB-INF/views/admin/adminTopbar.jspf" : "/WEB-INF/views/manager/managerTopbar.jspf" %>' />
+        <jsp:include page='<%= isAdmin ? "/WEB-INF/fragments/adminTopbar.jspf" : "/WEB-INF/fragments/managerTopbar.jspf" %>' />
 
         <main class="admin-content">
             <!-- TIÊU ĐỀ TRANG VÀ NÚT TÁC VỤ -->

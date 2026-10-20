@@ -1,2 +1,0 @@
-<%@ page pageEncoding="UTF-8" %>
-<jsp:include page="/WEB-INF/views/admin/adminTopbar.jspf" />

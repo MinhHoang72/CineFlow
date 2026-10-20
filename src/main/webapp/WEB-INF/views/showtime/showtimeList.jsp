@@ -1,4 +1,4 @@
-<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+﻿<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 <%
@@ -24,9 +24,9 @@
 </head>
 <body>
 <div class="cf-manager-shell">
-    <jsp:include page='<%= showtimeAdmin ? "/WEB-INF/views/admin/adminSidebar.jspf" : "/WEB-INF/views/manager/managerSidebar.jspf" %>' />
+    <jsp:include page='<%= showtimeAdmin ? "/WEB-INF/fragments/adminSidebar.jspf" : "/WEB-INF/fragments/managerSidebar.jspf" %>' />
     <div class="cf-manager-main">
-        <jsp:include page="/WEB-INF/views/admin/adminTopbar.jspf" />
+        <jsp:include page="/WEB-INF/fragments/adminTopbar.jspf" />
         <main class="cf-content st-page">
             <header class="st-heading">
                 <div><span class="st-eyebrow">ĐIỀU HÀNH RẠP CHIẾU</span><h1>Quản lý suất chiếu</h1><p>Sắp xếp lịch chiếu, theo dõi phòng và quản lý từng suất phim.</p></div>
