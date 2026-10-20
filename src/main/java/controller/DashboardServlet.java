@@ -50,12 +50,8 @@ public class DashboardServlet extends HttpServlet {
         // 3. Phân luồng điều hướng theo vai trò:
         // 3.1. Vai trò Quản trị viên (ADMIN) -> Hiển thị Dashboard tổng quan số liệu doanh thu hệ thống
         if ("ADMIN".equalsIgnoreCase(role)) {
-            request.setAttribute("reportSummary", reportDAO.getSummary());
-            request.setAttribute("topMovies", reportDAO.revenueByMovie());
-            request.setAttribute("centreRevenue", reportDAO.revenueByCentre());
-            request.setAttribute("movies", cinemaDAO.getAllMovies());
-            request.setAttribute("centres", cinemaDAO.getActiveCentres());
-            request.getRequestDispatcher("/admin/dashboard.jsp").forward(request, response);
+            // Admin vào thẳng Dashboard toàn chuỗi (báo cáo tổng hợp doanh thu, vận hành)
+            response.sendRedirect(request.getContextPath() + "/report/chain");
             return;
         }
 

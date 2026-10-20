@@ -36,14 +36,14 @@
 
     <div class="cf-sidebar-section">TỔNG QUAN</div>
     <nav class="cf-sidebar-nav">
-        <a class="<%= "dashboard".equals(activeNav) || cfUri.endsWith("/dashboard") || cfUri.contains("/dashboard.jsp") ? "active" : "" %>" href="<%= cfPath %>/dashboard">
+        <a class="<%= "dashboard".equals(activeNav) || cfUri.endsWith("/dashboard") || cfUri.contains("/dashboard.jsp") || cfUri.contains("/report/chain") ? "active" : "" %>" href="<%= cfPath %>/dashboard">
             <span class="icon">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
             </span>Dashboard
         </a>
     </nav>
 
-    <div class="cf-sidebar-section">QUẢN TRỊ NỘI DUNG</div>
+    <div class="cf-sidebar-section">HỆ THỐNG CỤM RẠP</div>
     <nav class="cf-sidebar-nav">
         <a class="<%= "centres".equals(activeNav) ? "active" : "" %>" href="<%= cfPath %>/admin/centres">
             <span class="icon">
@@ -53,8 +53,12 @@
         <a class="<%= "halls".equals(activeNav) ? "active" : "" %>" href="<%= cfPath %>/manager/halls">
             <span class="icon">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
-            </span>Quản lý Phòng chiếu
+            </span>Quản lý Phòng chiếu &amp; Ghế
         </a>
+    </nav>
+
+    <div class="cf-sidebar-section">QUẢN LÝ PHIM</div>
+    <nav class="cf-sidebar-nav">
         <a class="<%= "movies".equals(activeNav) ? "active" : "" %>" href="<%= cfPath %>/admin/movies">
             <span class="icon">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line><line x1="2" y1="7" x2="7" y2="7"></line><line x1="2" y1="17" x2="7" y2="17"></line><line x1="17" y1="17" x2="22" y2="17"></line><line x1="17" y1="7" x2="22" y2="7"></line></svg>
@@ -102,9 +106,6 @@
 
     <div class="cf-sidebar-section">BÁO CÁO & PHÂN TÍCH</div>
     <nav class="cf-sidebar-nav">
-        <a class="<%= cfUri.contains("/report/chain") ? "active" : "" %>" href="<%= cfPath %>/report/chain">
-            <span class="icon">📈</span>Dashboard chuỗi
-        </a>
         <a class="<%= cfUri.contains("/report/sales") ? "active" : "" %>" href="<%= cfPath %>/report/sales">
             <span class="icon">💰</span>Doanh thu &amp; bán hàng
         </a>

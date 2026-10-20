@@ -1,0 +1,181 @@
+@import url("../common/variables.css");
+
+
+/* =========================================================
+   MANAGEMENT PAGE
+   ========================================================= */
+
+.cf-management-page {
+    width: min(var(--cf-container), calc(100% - 40px));
+    margin: 32px auto 70px;
+}
+
+
+/* =========================================================
+   PAGE HEADING
+   ========================================================= */
+
+.cf-page-heading {
+    margin-bottom: 26px;
+}
+
+.cf-page-title {
+    min-height: 52px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 22px;
+
+    border-top: 1px solid var(--cf-border);
+    border-bottom: 1px solid var(--cf-border);
+
+    background: var(--cf-surface);
+}
+
+.cf-page-title::before,
+.cf-page-title::after {
+    content: "";
+
+    width: 80px;
+    height: 1px;
+
+    background: var(--cf-gold);
+}
+
+.cf-page-title h1 {
+    margin: 0;
+
+    color: var(--cf-ink);
+
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.cf-page-description {
+    margin: 10px 0 0;
+
+    color: var(--cf-text-sub);
+
+    font-size: 13px;
+
+    text-align: center;
+}
+
+
+/* =========================================================
+   CARD
+   ========================================================= */
+
+.cf-card {
+    margin-bottom: 22px;
+
+    border: 1px solid var(--cf-border);
+    border-radius: var(--cf-radius-md);
+
+    background: var(--cf-bg-card);
+
+    box-shadow: var(--cf-shadow-sm);
+}
+
+.cf-card-header {
+    min-height: 56px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 15px;
+
+    padding: 12px 18px;
+
+    border-bottom: 1px solid var(--cf-border);
+
+    background: var(--cf-bg-subtle);
+}
+
+.cf-card-title {
+    margin: 0;
+
+    color: var(--cf-text);
+
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.cf-card-subtitle {
+    margin: 3px 0 0;
+
+    color: var(--cf-text-sub);
+
+    font-size: 12px;
+}
+
+.cf-card-body {
+    padding: 20px;
+}
+
+
+/* =========================================================
+   ACTIONS
+   ========================================================= */
+
+.cf-action-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+
+    gap: 8px;
+}
+
+.cf-action-row form {
+    margin: 0;
+}
+
+
+/* =========================================================
+   EMPTY STATE
+   ========================================================= */
+
+.cf-empty-state {
+    padding: 45px 20px;
+
+    border: 1px dashed var(--cf-border-dark);
+    border-radius: var(--cf-radius-md);
+
+    color: var(--cf-text-sub);
+
+    text-align: center;
+}
+
+.cf-empty-state strong {
+    display: block;
+
+    margin-bottom: 5px;
+
+    color: var(--cf-text);
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 700px) {
+
+    .cf-management-page {
+        width: calc(100% - 24px);
+        margin-top: 22px;
+    }
+
+    .cf-page-title::before,
+    .cf-page-title::after {
+        width: 35px;
+    }
+
+    .cf-card-body {
+        padding: 14px;
+    }
+
+}
