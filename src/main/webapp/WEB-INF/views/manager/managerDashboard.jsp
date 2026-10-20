@@ -15,13 +15,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Bảng điều khiển quản lý | CineFlow</title>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/reset.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/variables.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/buttons.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/badges.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/manager/shell.css">
 </head>
 <body>
 <div class="cf-manager-shell">
-    <jsp:include page="/WEB-INF/fragments/managerSidebar.jspf"/>
+    <jsp:include page="/WEB-INF/fragments/managerSidebar.jsp"/>
     <div class="cf-manager-main">
-        <jsp:include page="/WEB-INF/fragments/managerTopbar.jspf"/>
+        <jsp:include page="/WEB-INF/fragments/managerTopbar.jsp"/>
         <main class="cf-content">
             <div class="cf-page-header">
                 <div>

@@ -1,7 +1,7 @@
 ﻿<%@ page pageEncoding="UTF-8" %>
-<% request.setAttribute("pageTitle", "Phụ thu theo khung giờ"); request.setAttribute("pageDescription", "Thiết lập mức phụ thu cho từng khung giờ chiếu tại chi nhánh."); request.setAttribute("activeTab", "time"); %>
+<% request.setAttribute("pageTitle", "Phụ thu theo khung giờ"); request.setAttribute("pageDescription", "Thiết lập mức phụ thu cho từng khung giờ chiếu tại cụm rạp."); request.setAttribute("activeTab", "time"); %>
 <%@ include file="/WEB-INF/fragments/cinemaBegin.jspf" %>
-<section class="st-panel"><div class="st-panel-heading"><div><h2>Thêm khung giờ</h2><p>Nhập thời gian bắt đầu, kết thúc và mức phụ thu.</p></div><span class="st-step">CHI NHÁNH #${centreId}</span></div>
+<section class="st-panel"><div class="st-panel-heading"><div><h2>Thêm khung giờ</h2><p>Nhập thời gian bắt đầu, kết thúc và mức phụ thu.</p></div><span class="st-step">CỤM RẠP #${centreId}</span></div>
 <form class="st-create-form" action="${pageContext.request.contextPath}/pricing/time-slots/save" method="post"><input type="hidden" name="centreId" value="${centreId}"><div class="st-fields st-fields-four">
 <div class="st-field"><label for="slot-name">Tên khung giờ <span>*</span></label><input id="slot-name" name="slotName" type="text" required placeholder="Ví dụ: Suất tối"></div>
 <div class="st-field"><label for="slot-start">Bắt đầu <span>*</span></label><input id="slot-start" type="time" name="startTime" required></div><div class="st-field"><label for="slot-end">Kết thúc <span>*</span></label><input id="slot-end" type="time" name="endTime" required></div>

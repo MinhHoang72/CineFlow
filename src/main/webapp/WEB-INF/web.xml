@@ -101,4 +101,28 @@
         <url-pattern>/staff/dashboard.jsp</url-pattern>
     </filter-mapping>
 
+    <!-- ===================================================== -->
+    <!-- 5. JSP SERVLET MAPPING FOR JSPF FRAGMENTS            -->
+    <!-- ===================================================== -->
+    <servlet-mapping>
+        <servlet-name>jsp</servlet-name>
+        <url-pattern>*.jspf</url-pattern>
+    </servlet-mapping>
+
+    <!-- ===================================================== -->
+    <!-- 6. JSP CONFIGURATION (UTF-8 & SCRIPTLET COMPILATION) -->
+    <!-- ===================================================== -->
+    <jsp-config>
+        <jsp-property-group>
+            <url-pattern>*.jsp</url-pattern>
+            <page-encoding>UTF-8</page-encoding>
+            <is-xml>false</is-xml>
+        </jsp-property-group>
+        <jsp-property-group>
+            <url-pattern>*.jspf</url-pattern>
+            <page-encoding>UTF-8</page-encoding>
+            <is-xml>false</is-xml>
+        </jsp-property-group>
+    </jsp-config>
+
 </web-app>

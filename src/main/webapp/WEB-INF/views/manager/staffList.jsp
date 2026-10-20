@@ -55,16 +55,16 @@
 <body>
 <div class="cf-manager-shell">
     <% if (isAdminRole) { %>
-        <jsp:include page="/WEB-INF/fragments/adminSidebar.jspf"/>
+        <jsp:include page="/WEB-INF/fragments/adminSidebar.jsp"/>
     <% } else { %>
-        <jsp:include page="/WEB-INF/fragments/managerSidebar.jspf"/>
+        <jsp:include page="/WEB-INF/fragments/managerSidebar.jsp"/>
     <% } %>
 
     <div class="cf-manager-main">
         <% if (isAdminRole) { %>
-            <jsp:include page="/WEB-INF/fragments/adminTopbar.jspf"/>
+            <jsp:include page="/WEB-INF/fragments/adminTopbar.jsp"/>
         <% } else { %>
-            <jsp:include page="/WEB-INF/fragments/managerTopbar.jspf"/>
+            <jsp:include page="/WEB-INF/fragments/managerTopbar.jsp"/>
         <% } %>
 
         <main class="cf-content">

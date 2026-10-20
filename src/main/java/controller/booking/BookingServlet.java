@@ -2,6 +2,7 @@ package controller.booking;
 
 import dao.BookingDAO;
 import dao.BookingDAO.SeatUnavailableException;
+import service.BookingService;
 import dao.ShowtimeDAO.CityOption;
 import dao.MovieDAO;
 import dao.PaymentDAO;
@@ -52,6 +53,7 @@ public class BookingServlet extends HttpServlet {
     private final ShowtimeDAO showtimeDAO = new ShowtimeDAO();
     private final SeatDAO seatDAO = new SeatDAO();
     private final BookingDAO bookingDAO = new BookingDAO();
+    private final BookingService bookingService = new BookingService();
     private final PaymentDAO paymentDAO = new PaymentDAO();
 
     @Override
@@ -193,7 +195,7 @@ public class BookingServlet extends HttpServlet {
         }
 
         try {
-            int bookingId = bookingDAO.holdSeats(user.getUserId(), showtimeId, seatIds);
+            int bookingId = bookingService.holdSeatsForOnlineCustomer(user.getUserId(), showtimeId, seatIds);
             resp.sendRedirect(req.getContextPath() + "/booking?action=checkout&bookingId=" + bookingId);
         } catch (SeatUnavailableException e) {
             WebUtil.flash(req, "warning", e.getMessage());
@@ -228,7 +230,7 @@ public class BookingServlet extends HttpServlet {
             resp.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;
         }
-        if (bookingDAO.cancelPending(booking.getId(), user.getUserId())) {
+        if (bookingService.cancelPendingBooking(booking.getId(), user.getUserId())) {
             WebUtil.flash(req, "info", "Đã huỷ đơn " + booking.getCode() + ", ghế đã được nhả.");
         }
         resp.sendRedirect(req.getContextPath() + "/booking?action=select-seats&showtimeId="
@@ -240,7 +242,7 @@ public class BookingServlet extends HttpServlet {
             throws SQLException, ServletException, IOException {
         User user = WebUtil.requireUser(req, resp);
         if (user == null) return;
-        req.setAttribute("bookings", bookingDAO.getUserBookings(user.getUserId()));
+        req.setAttribute("bookings", bookingService.getUserBookings(user.getUserId()));
         req.getRequestDispatcher(VIEW_DIR + "booking/bookingHistory.jsp").forward(req, resp);
     }
 
@@ -250,7 +252,7 @@ public class BookingServlet extends HttpServlet {
         User user = WebUtil.requireUser(req, resp);
         if (user == null) return;
         Integer bookingId = WebUtil.parseInt(req.getParameter("bookingId"));
-        Booking booking = bookingId == null ? null : bookingDAO.getBooking(bookingId);
+        Booking booking = bookingId == null ? null : bookingService.getBooking(bookingId);
         if (booking == null || !canView(user, booking)) {
             resp.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;
@@ -277,7 +279,7 @@ public class BookingServlet extends HttpServlet {
     private Booking loadOwnBooking(HttpServletRequest req, User user) throws SQLException {
         Integer bookingId = WebUtil.parseInt(req.getParameter("bookingId"));
         if (bookingId == null) return null;
-        Booking booking = bookingDAO.getBooking(bookingId);
+        Booking booking = bookingService.getBooking(bookingId);
         if (booking == null || booking.getUserId() == null || booking.getUserId() != user.getUserId()) return null;
         return booking;
     }

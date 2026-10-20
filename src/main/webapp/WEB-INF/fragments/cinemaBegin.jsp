@@ -1,0 +1,43 @@
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
+<%
+    String cinemaRole = (String) session.getAttribute("role");
+    if (cinemaRole == null && session.getAttribute("user") instanceof model.entity.User) {
+        cinemaRole = ((model.entity.User) session.getAttribute("user")).getRole();
+    }
+    boolean isAdmin = "ADMIN".equalsIgnoreCase(cinemaRole);
+
+    Object activeTabObj = request.getAttribute("activeTab");
+    if (activeTabObj == null) activeTabObj = request.getAttribute("cinemaTab");
+    
+    String activeTab = activeTabObj != null ? activeTabObj.toString() : "showtimes";
+
+    Object pageTitleObj = request.getAttribute("pageTitle");
+    if (pageTitleObj == null) pageTitleObj = request.getAttribute("cinemaTitle");
+    
+    String pageTitle = pageTitleObj != null ? pageTitleObj.toString() : "CineFlow";
+
+    Object pageDescObj = request.getAttribute("pageDescription");
+    if (pageDescObj == null) pageDescObj = request.getAttribute("cinemaDescription");
+    
+    String pageDescription = pageDescObj != null ? pageDescObj.toString() : "";
+
+    request.setAttribute("activeNav", "showtimes".equals(activeTab) ? "showtimes" : "pricing");
+    request.setAttribute("pageTitle", pageTitle);
+    request.setAttribute("pageDescription", pageDescription);
+    request.setAttribute("activeTab", activeTab);
+    request.setAttribute("pageBreadcrumb", "Suất chiếu & giá vé");
+%>
+<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title><c:out value="${pageTitle}" /> | CineFlow</title>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin/dashboard.css">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/showtime-pricing/showtimes.css">
+<script src="${pageContext.request.contextPath}/js/pricing.js" defer></script>
+</head><body><div class="cf-manager-shell">
+<jsp:include page='<%= isAdmin ? "/WEB-INF/fragments/adminSidebar.jsp" : "/WEB-INF/fragments/managerSidebar.jsp" %>' />
+<div class="cf-manager-main"><jsp:include page="/WEB-INF/fragments/adminTopbar.jsp" /><main class="cf-content st-page">
+<header class="st-heading"><div><span class="st-eyebrow">ĐIỀU HÀNH RẠP CHIẾU</span><h1><c:out value="${pageTitle}" /></h1><p><c:out value="${pageDescription}" /></p></div></header>
+<%@ include file="showtimePricingNav.jsp" %>
+<c:if test="${not empty sessionScope.message}"><div class="st-notice st-success" role="status"><c:out value="${sessionScope.message}" /></div><c:remove var="message" scope="session" /></c:if>
+<c:if test="${not empty sessionScope.error}"><div class="st-notice st-error" role="alert"><c:out value="${sessionScope.error}" /></div><c:remove var="error" scope="session" /></c:if>

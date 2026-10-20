@@ -1,4 +1,4 @@
-﻿<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 <%
@@ -24,9 +24,9 @@
 </head>
 <body>
 <div class="cf-manager-shell">
-    <jsp:include page='<%= showtimeAdmin ? "/WEB-INF/fragments/adminSidebar.jspf" : "/WEB-INF/fragments/managerSidebar.jspf" %>' />
+    <jsp:include page='<%= showtimeAdmin ? "/WEB-INF/fragments/adminSidebar.jsp" : "/WEB-INF/fragments/managerSidebar.jsp" %>' />
     <div class="cf-manager-main">
-        <jsp:include page="/WEB-INF/fragments/adminTopbar.jspf" />
+        <jsp:include page="/WEB-INF/fragments/adminTopbar.jsp" />
         <main class="cf-content st-page">
             <header class="st-heading">
                 <div><span class="st-eyebrow">ĐIỀU HÀNH RẠP CHIẾU</span><h1>Quản lý suất chiếu</h1><p>Sắp xếp lịch chiếu, theo dõi phòng và quản lý từng suất phim.</p></div>
@@ -34,11 +34,11 @@
             </header>
             <c:if test="${not empty sessionScope.message}"><div class="st-notice st-success" role="status"><c:out value="${sessionScope.message}" /></div><c:remove var="message" scope="session" /></c:if>
             <c:if test="${not empty sessionScope.error}"><div class="st-notice st-error" role="alert"><c:out value="${sessionScope.error}" /></div><c:remove var="error" scope="session" /></c:if>
-            <%@ include file="/WEB-INF/fragments/showtimePricingNav.jspf" %>
+            <%@ include file="/WEB-INF/fragments/showtimePricingNav.jsp" %>
             <div class="st-stats" aria-label="Tổng quan lịch chiếu">
-                <div><span>Tổng suất chiếu</span><strong>${fn:length(showtimes)}</strong><small>Trong danh sách của chi nhánh</small></div>
+                <div><span>Tổng suất chiếu</span><strong>${fn:length(showtimes)}</strong><small>Trong danh sách của cụm rạp</small></div>
                 <div><span>Phòng sẵn sàng</span><strong>${fn:length(halls)}</strong><small>Có thể sắp xếp lịch chiếu</small></div>
-                <div><span>Phim có thể lên lịch</span><strong>${fn:length(movies)}</strong><small>Được phân phối tại chi nhánh</small></div>
+                <div><span>Phim có thể lên lịch</span><strong>${fn:length(movies)}</strong><small>Được phân phối tại cụm rạp</small></div>
             </div>
             <section class="st-panel" id="create-showtime" aria-labelledby="create-title">
                 <div class="st-panel-heading"><div><h2 id="create-title">Tạo suất chiếu mới</h2><p>Chọn phim, phòng chiếu và thời gian bắt đầu.</p></div><span class="st-step">01 / LÊN LỊCH</span></div>
@@ -78,7 +78,7 @@
                     </table>
                 </div>
                 <div class="st-empty" id="st-empty" ${not empty showtimes ? 'hidden' : ''}><span class="st-empty-icon" aria-hidden="true">▤</span><h3>${empty showtimes ? 'Chưa có suất chiếu' : 'Không tìm thấy suất chiếu'}</h3><p>${empty showtimes ? 'Tạo suất chiếu đầu tiên bằng biểu mẫu phía trên.' : 'Thử đổi từ khóa hoặc xóa bộ lọc để xem lại danh sách.'}</p></div>
-                <footer class="st-list-footer"><span id="st-result-count" role="status" aria-live="polite">Hiển thị ${fn:length(showtimes)} suất chiếu</span><span>Lịch chiếu theo chi nhánh hiện tại</span></footer>
+                <footer class="st-list-footer"><span id="st-result-count" role="status" aria-live="polite">Hiển thị ${fn:length(showtimes)} suất chiếu</span><span>Lịch chiếu theo cụm rạp hiện tại</span></footer>
             </section>
         </main>
     </div>

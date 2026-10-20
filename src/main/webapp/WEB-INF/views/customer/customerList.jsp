@@ -111,10 +111,10 @@
 
     <body>
         <div class="cf-manager-shell">
-            <jsp:include page="/WEB-INF/fragments/adminSidebar.jspf" />
+            <jsp:include page="/WEB-INF/fragments/adminSidebar.jsp" />
 
             <div class="cf-manager-main">
-                <jsp:include page="/WEB-INF/fragments/adminTopbar.jspf" />
+                <jsp:include page="/WEB-INF/fragments/adminTopbar.jsp" />
 
                 <main class="cf-content">
 

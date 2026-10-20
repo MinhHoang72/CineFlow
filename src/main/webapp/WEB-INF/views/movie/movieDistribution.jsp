@@ -51,10 +51,10 @@
 </head>
 <body>
 <div class="cf-manager-shell">
-    <jsp:include page="/WEB-INF/fragments/adminSidebar.jspf" />
+    <jsp:include page="/WEB-INF/fragments/adminSidebar.jsp" />
 
     <div class="cf-manager-main">
-        <jsp:include page="/WEB-INF/fragments/adminTopbar.jspf" />
+        <jsp:include page="/WEB-INF/fragments/adminTopbar.jsp" />
 
         <main class="cf-content">
             <!-- TIÊU ĐỀ TRANG -->
@@ -70,7 +70,7 @@
                     <div>
                         <h1 style="margin: 0; font-size: 22px; font-weight: 700; color: #ffffff;">Phân phối rạp chiếu</h1>
                         <p style="margin: 4px 0 0; color: var(--cf-muted, #94a3b8); font-size: 13px;">
-                            Chọn phim và cấu hình các chi nhánh được phép chiếu. Việc phân phối giúp kiểm soát phạm vi phát hành theo từng phim và từng chi nhánh.
+                            Chọn phim và cấu hình các cụm rạp được phép chiếu. Việc phân phối giúp kiểm soát phạm vi phát hành theo từng phim và từng cụm rạp.
                         </p>
                     </div>
                 </div>
@@ -236,18 +236,18 @@
                             <h2 class="cf-step-title">Cấu hình phân phối</h2>
                         </div>
                         <div class="cf-step-counter" id="selectedCounterText">
-                            Đã chọn <strong id="selectedCountNum" style="color: #ffffff;"><%= totalDistributed %></strong>/<%= totalActiveCentres %> chi nhánh
+                            Đã chọn <strong id="selectedCountNum" style="color: #ffffff;"><%= totalDistributed %></strong>/<%= totalActiveCentres %> cụm rạp
                         </div>
                     </div>
 
-                    <!-- BỘ LỌC CHI NHÁNH -->
+                    <!-- BỘ LỌC CỤM RẠP -->
                     <div class="cf-dist-toolbar">
                         <div class="cf-search-input-wrap">
                             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
                                 <circle cx="11" cy="11" r="8"></circle>
                                 <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                             </svg>
-                            <input type="text" id="centreSearchInput" placeholder="Tìm chi nhánh theo tên hoặc thành phố...">
+                            <input type="text" id="centreSearchInput" placeholder="Tìm cụm rạp theo tên hoặc thành phố...">
                         </div>
 
                         <select id="cityFilterSelect" class="cf-filter-select">
@@ -271,7 +271,7 @@
                         </button>
                     </div>
 
-                    <!-- BẢNG DANH SÁCH CHI NHÁNH -->
+                    <!-- BẢNG DANH SÁCH CỤM RẠP -->
                     <div class="cf-dist-table-wrap">
                         <table class="cf-dist-table">
                             <thead>
@@ -279,9 +279,9 @@
                                     <th style="width: 44px; text-align: center;">
                                         <input type="checkbox" id="masterCheckbox" title="Chọn / Bỏ chọn tất cả rạp đang hoạt động" style="cursor: pointer; width: 16px; height: 16px;">
                                     </th>
-                                    <th>Chi nhánh</th>
+                                    <th>Cụm rạp</th>
                                     <th>Thành phố</th>
-                                    <th>Trạng thái chi nhánh</th>
+                                    <th>Trạng thái cụm rạp</th>
                                     <th style="width: 120px;">Cho phép chiếu</th>
                                 </tr>
                             </thead>
@@ -341,7 +341,7 @@
                                     <td>
                                         <div class="cf-switch-cell-wrap">
                                             <label class="cf-switch <%= !isActive ? "is-disabled" : "" %>"
-                                                   title="<%= !isActive ? "Chi nhánh đang tạm đóng, không thể phân phối" : "Bật/Tắt phân phối" %>">
+                                                   title="<%= !isActive ? "Cụm rạp đang tạm đóng, không thể phân phối" : "Bật/Tắt phân phối" %>">
                                                 <input type="checkbox"
                                                        class="cf-switch-input"
                                                        data-target-check="check-<%= c.getCentreId() %>"
@@ -373,8 +373,8 @@
                             </svg>
                         </div>
                         <div>
-                            <strong>Lưu ý:</strong> Chỉ các chi nhánh đang hoạt động mới được chọn. Phim đã kết thúc hoặc lưu trữ không được phân phối để chiếu mới.
-                            Nếu bỏ chọn chi nhánh đã có lịch chiếu tương lai, hệ thống sẽ yêu cầu xác nhận để tránh ảnh hưởng đến vé đã đặt.
+                            <strong>Lưu ý:</strong> Chỉ các cụm rạp đang hoạt động mới được chọn. Phim đã kết thúc hoặc lưu trữ không được phân phối để chiếu mới.
+                            Nếu bỏ chọn cụm rạp đã có lịch chiếu tương lai, hệ thống sẽ yêu cầu xác nhận để tránh ảnh hưởng đến vé đã đặt.
                         </div>
                     </div>
 
@@ -508,7 +508,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // === 2. XỬ LÝ CẤU HÌNH PHÂN PHỐI CHI NHÁNH ===
+    // === 2. XỬ LÝ CẤU HÌNH PHÂN PHỐI CỤM RẠP ===
     const tableBody = document.getElementById('centreTableBody');
     if (!tableBody) return;
 
@@ -573,7 +573,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (switchInput && checkInput) {
             switchInput.addEventListener('change', function () {
                 if (!this.checked && futureCount > 0) {
-                    const confirmMsg = "Cảnh báo nghiệp vụ:\nChi nhánh này đang có " + futureCount + " suất chiếu trong tương lai của phim này.\n\nBỏ phân phối có thể gây ảnh hưởng đến lịch chiếu và vé khán giả đã đặt. Bạn có chắc chắn muốn bỏ chọn?";
+                    const confirmMsg = "Cảnh báo nghiệp vụ:\nCụm rạp này đang có " + futureCount + " suất chiếu trong tương lai của phim này.\n\nBỏ phân phối có thể gây ảnh hưởng đến lịch chiếu và vé khán giả đã đặt. Bạn có chắc chắn muốn bỏ chọn?";
                     if (!confirm(confirmMsg)) {
                         this.checked = true;
                         return;
@@ -585,7 +585,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             checkInput.addEventListener('change', function () {
                 if (!this.checked && futureCount > 0) {
-                    const confirmMsg = "Cảnh báo nghiệp vụ:\nChi nhánh này đang có " + futureCount + " suất chiếu trong tương lai của phim này.\n\nBỏ phân phối có thể gây ảnh hưởng đến lịch chiếu và vé khán giả đã đặt. Bạn có chắc chắn muốn bỏ chọn?";
+                    const confirmMsg = "Cảnh báo nghiệp vụ:\nCụm rạp này đang có " + futureCount + " suất chiếu trong tương lai của phim này.\n\nBỏ phân phối có thể gây ảnh hưởng đến lịch chiếu và vé khán giả đã đặt. Bạn có chắc chắn muốn bỏ chọn?";
                     if (!confirm(confirmMsg)) {
                         this.checked = true;
                         return;

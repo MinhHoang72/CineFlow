@@ -89,8 +89,6 @@ public class ShowtimeService {
                     request.getSession().setAttribute("centreId", centre);
                     request.setAttribute("cinemaCentres", centres);
                     request.setAttribute("cinemaCentreId", centre);
-                    request.setAttribute("fe04Centres", centres);
-                    request.setAttribute("fe04CentreId", centre);
                     return centre;
                 }
             } else {

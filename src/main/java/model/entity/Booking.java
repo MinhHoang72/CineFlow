@@ -30,7 +30,9 @@ public class Booking {
     }
 
     public int getId() { return id; }
+    public int getBookingId() { return id; }
     public String getCode() { return code; }
+    public String getBookingCode() { return code; }
     public Integer getUserId() { return userId; }
     public String getType() { return type; }
     public boolean isCounter() { return "COUNTER".equals(type); }

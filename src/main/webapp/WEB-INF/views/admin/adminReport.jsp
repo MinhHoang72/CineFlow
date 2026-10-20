@@ -1,4 +1,4 @@
-﻿<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ page import="model.dto.ReportSummary,model.dto.RevenueReport,model.dto.ShowtimeMetric,java.util.List,java.math.BigDecimal" %>
 <%
     String authRole = (String) session.getAttribute("role");
@@ -38,15 +38,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= isAdmin ? "Báo cáo toàn hệ thống | CineFlow Admin" : "Báo cáo hoạt động | CineFlow Manager" %></title>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/reset.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/variables.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/buttons.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/badges.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/forms.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/tables.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/alerts.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/manager/shell.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin/dashboard.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin/admin-style.css?v=<%= System.currentTimeMillis() %>">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin/reports.css?v=<%= System.currentTimeMillis() %>">
 </head>
 <body>
 <div class="admin-layout">
-    <jsp:include page='<%= isAdmin ? "/WEB-INF/fragments/adminSidebar.jspf" : "/WEB-INF/fragments/managerSidebar.jspf" %>' />
+    <jsp:include page='<%= isAdmin ? "/WEB-INF/fragments/adminSidebar.jsp" : "/WEB-INF/fragments/managerSidebar.jsp" %>' />
 
     <div class="admin-main">
-        <jsp:include page='<%= isAdmin ? "/WEB-INF/fragments/adminTopbar.jspf" : "/WEB-INF/fragments/managerTopbar.jspf" %>' />
+        <jsp:include page='<%= isAdmin ? "/WEB-INF/fragments/adminTopbar.jsp" : "/WEB-INF/fragments/managerTopbar.jsp" %>' />
 
         <main class="admin-content">
             <!-- TIÊU ĐỀ TRANG VÀ NÚT TÁC VỤ -->

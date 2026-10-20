@@ -1,4 +1,4 @@
-<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+ï»¿<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ page import="model.entity.User,model.dto.BookingHistory,java.util.List,java.text.SimpleDateFormat" %>
 <%
     if (session.getAttribute("userId") == null) {
@@ -37,18 +37,18 @@
     if (user != null && user.getCentreId() != null && user.getCentreId() > 0) {
         userCentre = cinemaDAO.getCentreById(user.getCentreId());
     }
-    String centreDisplayName = "Toàn b? h? th?ng CineFlow";
+    String centreDisplayName = "Toï¿½n b? h? th?ng CineFlow";
     if (userCentre != null) {
         centreDisplayName = userCentre.getCentreName() + " (" + userCentre.getCity() + ")";
     } else if (isCustomer) {
-        centreDisplayName = "Toàn b? h? th?ng CineFlow";
+        centreDisplayName = "Toï¿½n b? h? th?ng CineFlow";
     } else if (!isAdmin) {
-        centreDisplayName = "Chua phân công c?m r?p";
+        centreDisplayName = "Chua phï¿½n cï¿½ng c?m r?p";
     }
 
     if (isInternal) {
-        request.setAttribute("pageTitle", "H? so c?a tôi");
-        request.setAttribute("pageBreadcrumb", "Tài kho?n");
+        request.setAttribute("pageTitle", "H? so c?a tï¿½i");
+        request.setAttribute("pageBreadcrumb", "Tï¿½i kho?n");
     }
 %>
 <!DOCTYPE html>
@@ -56,7 +56,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>H? so c?a tôi | CineFlow</title>
+    <title>H? so c?a tï¿½i | CineFlow</title>
 
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/reset.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/variables.css">
@@ -75,9 +75,9 @@
 <body>
 <% if (isInternal) { %>
     <div class="cf-manager-shell">
-        <jsp:include page='<%= isAdmin ? "/WEB-INF/fragments/adminSidebar.jspf" : "/WEB-INF/fragments/managerSidebar.jspf" %>' />
+        <jsp:include page='<%= isAdmin ? "/WEB-INF/fragments/adminSidebar.jsp" : "/WEB-INF/fragments/managerSidebar.jsp" %>' />
         <div class="cf-manager-main">
-            <jsp:include page="/WEB-INF/fragments/adminTopbar.jspf" />
+            <jsp:include page="/WEB-INF/fragments/adminTopbar.jsp" />
             <main class="cf-content">
                 <div class="account-page staff-account-container">
 <% } else { %>
@@ -86,39 +86,39 @@
         <main class="account-page">
 <% } %>
 
-        <!-- THÔNG BÁO H? TH?NG -->
+        <!-- THï¿½NG Bï¿½O H? TH?NG -->
         <% if ("emailVerified".equals(updated)) { %>
-            <div class="notice success">? Ð?a ch? email m?i dã du?c xác th?c thành công và c?p nh?t vào tài kho?n c?a b?n.</div>
+            <div class="notice success">? ï¿½?a ch? email m?i dï¿½ du?c xï¿½c th?c thï¿½nh cï¿½ng vï¿½ c?p nh?t vï¿½o tï¿½i kho?n c?a b?n.</div>
         <% } else if ("true".equals(updated)) { %>
-            <div class="notice success">? Thông tin cá nhân dã du?c c?p nh?t thành công.</div>
+            <div class="notice success">? Thï¿½ng tin cï¿½ nhï¿½n dï¿½ du?c c?p nh?t thï¿½nh cï¿½ng.</div>
         <% } %>
         <% if ("email".equals(error)) { %>
-            <div class="notice error">? Ð?a ch? email này dã du?c s? d?ng b?i m?t tài kho?n khác trong h? th?ng.</div>
+            <div class="notice error">? ï¿½?a ch? email nï¿½y dï¿½ du?c s? d?ng b?i m?t tï¿½i kho?n khï¿½c trong h? th?ng.</div>
         <% } %>
         <% if ("sessionExpired".equals(error)) { %>
-            <div class="notice error">? Phiên làm vi?c xác th?c email dã h?t h?n. Vui lòng th?c hi?n l?i.</div>
+            <div class="notice error">? Phiï¿½n lï¿½m vi?c xï¿½c th?c email dï¿½ h?t h?n. Vui lï¿½ng th?c hi?n l?i.</div>
         <% } %>
         <% if ("updateFailed".equals(error)) { %>
-            <div class="notice error">? Không th? c?p nh?t d?a ch? email. Vui lòng th? l?i.</div>
+            <div class="notice error">? Khï¿½ng th? c?p nh?t d?a ch? email. Vui lï¿½ng th? l?i.</div>
         <% } %>
         <% if ("required".equals(error)) { %>
-            <div class="notice error">? H? tên và email là thông tin b?t bu?c.</div>
+            <div class="notice error">? H? tï¿½n vï¿½ email lï¿½ thï¿½ng tin b?t bu?c.</div>
         <% } %>
         <% if ("invalidName".equals(error)) { %>
-            <div class="notice error">? H? và tên ch? ch?a ch? cái và không du?c quá ng?n.</div>
+            <div class="notice error">? H? vï¿½ tï¿½n ch? ch?a ch? cï¿½i vï¿½ khï¿½ng du?c quï¿½ ng?n.</div>
         <% } %>
         <% if ("invalidEmail".equals(error)) { %>
-            <div class="notice error">? Ð?nh d?ng email không h?p l?.</div>
+            <div class="notice error">? ï¿½?nh d?ng email khï¿½ng h?p l?.</div>
         <% } %>
         <% if ("invalidPhone".equals(error)) { %>
-            <div class="notice error">? S? di?n tho?i không h?p l? (c?n 10 ch? s?).</div>
+            <div class="notice error">? S? di?n tho?i khï¿½ng h?p l? (c?n 10 ch? s?).</div>
         <% } %>
         <% if ("avatarType".equals(error)) { %>
             <div class="notice error">? ?nh d?i di?n ch? h? tr? d?nh d?ng PNG, JPG ho?c WEBP.</div>
         <% } %>
 
         <!-- ===================================================================
-             1. KHÁI QUÁT THÔNG TIN CÁ NHÂN (HERO CARD)
+             1. KHï¿½I QUï¿½T THï¿½NG TIN Cï¿½ NHï¿½N (HERO CARD)
              =================================================================== -->
         <section class="profile-overview">
             <div class="overview-left">
@@ -130,7 +130,7 @@
                             <span id="avatarInitial"><%= user != null && user.getFullName() != null && !user.getFullName().isBlank() ? esc(user.getFullName().substring(0,1).toUpperCase()) : "C" %></span>
                         <% } %>
                     </div>
-                    <label class="avatar-camera" for="avatarUpload" aria-label="Ð?i ?nh d?i di?n" title="Ð?i ?nh d?i di?n">
+                    <label class="avatar-camera" for="avatarUpload" aria-label="ï¿½?i ?nh d?i di?n" title="ï¿½?i ?nh d?i di?n">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
                             <circle cx="12" cy="13" r="4"></circle>
@@ -141,28 +141,28 @@
                 <div class="overview-info">
                     <div class="overview-name-row">
                         <h2><%= user != null ? esc(user.getFullName()) : "" %></h2>
-                        <span class="role-badge"><%= user != null ? (isCustomer ? "Khách hàng" : esc(user.getRoleDisplayName())) : "Thành viên" %></span>
+                        <span class="role-badge"><%= user != null ? (isCustomer ? "Khï¿½ch hï¿½ng" : esc(user.getRoleDisplayName())) : "Thï¿½nh viï¿½n" %></span>
                         <% if (user != null && user.isEmailVerified()) { %>
-                            <span class="verified-badge">? Ðã xác th?c email</span>
+                            <span class="verified-badge">? ï¿½ï¿½ xï¿½c th?c email</span>
                         <% } else { %>
-                            <span class="unverified-badge">? Chua xác th?c</span>
+                            <span class="unverified-badge">? Chua xï¿½c th?c</span>
                         <% } %>
                     </div>
 
                     <div class="overview-details">
                         <span class="detail-item">? <%= user != null ? esc(user.getEmail()) : "" %></span>
-                        <span class="detail-dot">•</span>
-                        <span class="detail-item">?? <%= user != null && user.getPhone() != null && !user.getPhone().isBlank() ? esc(user.getPhone()) : "Chua có SÐT" %></span>
+                        <span class="detail-dot">ï¿½</span>
+                        <span class="detail-item">?? <%= user != null && user.getPhone() != null && !user.getPhone().isBlank() ? esc(user.getPhone()) : "Chua cï¿½ Sï¿½T" %></span>
                         <% if (!isCustomer) { %>
-                            <span class="detail-dot">•</span>
+                            <span class="detail-dot">ï¿½</span>
                             <span class="detail-item">?? <%= esc(centreDisplayName) %></span>
                         <% } %>
                     </div>
 
                     <div class="overview-dates">
-                        <span>Tham gia: <%= user != null && user.getCreatedAt() != null ? dateOnly.format(user.getCreatedAt()) : "—" %></span>
-                        <span class="detail-dot">•</span>
-                        <span>C?p nh?t: <%= user != null && user.getUpdatedAt() != null ? dateOnly.format(user.getUpdatedAt()) : "—" %></span>
+                        <span>Tham gia: <%= user != null && user.getCreatedAt() != null ? dateOnly.format(user.getCreatedAt()) : "ï¿½" %></span>
+                        <span class="detail-dot">ï¿½</span>
+                        <span>C?p nh?t: <%= user != null && user.getUpdatedAt() != null ? dateOnly.format(user.getUpdatedAt()) : "ï¿½" %></span>
                     </div>
                 </div>
             </div>
@@ -171,51 +171,51 @@
                 <% if (isCustomer) { %>
                     <div class="stat-card">
                         <span class="stat-number"><%= history == null ? 0 : history.size() %></span>
-                        <span class="stat-label">Vé dã d?t</span>
+                        <span class="stat-label">Vï¿½ dï¿½ d?t</span>
                     </div>
                 <% } else { %>
                     <div class="stat-card">
                         <span class="stat-number" style="font-size: 19px; letter-spacing: 0.5px;"><%= user != null ? user.getEmployeeCode() : "NV00000" %></span>
-                        <span class="stat-label">Mã nhân s?</span>
+                        <span class="stat-label">Mï¿½ nhï¿½n s?</span>
                     </div>
                 <% } %>
                 <div class="stat-card">
                     <span class="stat-badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3);">? <%= user != null ? esc(user.getStatus()) : "ACTIVE" %></span>
-                    <span class="stat-label">Tr?ng thái</span>
+                    <span class="stat-label">Tr?ng thï¿½i</span>
                 </div>
             </div>
         </section>
 
         <!-- ===================================================================
-             2. LU?I THÔNG TIN TÀI KHO?N (BI?U M?U + B?O M?T + T?NG K?T)
+             2. LU?I THï¿½NG TIN Tï¿½I KHO?N (BI?U M?U + B?O M?T + T?NG K?T)
              =================================================================== -->
         <section class="account-grid">
-            <!-- C?T TRÁI: FORM C?P NH?T THÔNG TIN -->
+            <!-- C?T TRï¿½I: FORM C?P NH?T THï¿½NG TIN -->
             <article class="panel profile-panel">
                 <div class="panel-heading">
                     <div class="heading-title-group">
                         <span class="heading-icon">??</span>
                         <div>
-                            <h2>Thông tin cá nhân</h2>
-                            <p class="panel-desc"><%= isCustomer ? "C?p nh?t h? tên và thông tin liên l?c c?a b?n d? s? d?ng d?ch v? t?t nh?t." : "C?p nh?t h? tên và thông tin liên l?c ph?c v? công tác di?u hành và ph?i h?p t?i CineFlow." %></p>
+                            <h2>Thï¿½ng tin cï¿½ nhï¿½n</h2>
+                            <p class="panel-desc"><%= isCustomer ? "C?p nh?t h? tï¿½n vï¿½ thï¿½ng tin liï¿½n l?c c?a b?n d? s? d?ng d?ch v? t?t nh?t." : "C?p nh?t h? tï¿½n vï¿½ thï¿½ng tin liï¿½n l?c ph?c v? cï¿½ng tï¿½c di?u hï¿½nh vï¿½ ph?i h?p t?i CineFlow." %></p>
                         </div>
                     </div>
                 </div>
 
                 <form method="post" enctype="multipart/form-data" action="${pageContext.request.contextPath}/account" class="profile-form">
                     <div class="form-group full-width">
-                        <label for="fullName">H? và tên <span class="required">*</span></label>
-                        <input id="fullName" name="fullName" value="<%= user != null ? esc(user.getFullName()) : "" %>" placeholder="Nh?p h? và tên d?y d?" required>
+                        <label for="fullName">H? vï¿½ tï¿½n <span class="required">*</span></label>
+                        <input id="fullName" name="fullName" value="<%= user != null ? esc(user.getFullName()) : "" %>" placeholder="Nh?p h? vï¿½ tï¿½n d?y d?" required>
                     </div>
 
                     <div class="form-group">
-                        <label for="account">Tên tài kho?n</label>
-                        <input id="account" value="<%= user != null ? esc(user.getAccount()) : "" %>" disabled title="Tên tài kho?n c? d?nh">
+                        <label for="account">Tï¿½n tï¿½i kho?n</label>
+                        <input id="account" value="<%= user != null ? esc(user.getAccount()) : "" %>" disabled title="Tï¿½n tï¿½i kho?n c? d?nh">
                     </div>
 
                     <% if (!isCustomer) { %>
                     <div class="form-group">
-                        <label for="roleDisplay">Vai trò h? th?ng</label>
+                        <label for="roleDisplay">Vai trï¿½ h? th?ng</label>
                         <input id="roleDisplay" value="<%= user != null ? esc(user.getRoleDisplayName()) : "" %>" disabled style="font-weight: 700; color: #38bdf8;">
                     </div>
 
@@ -226,13 +226,13 @@
                     <% } %>
 
                     <div class="form-group">
-                        <label for="email">Ð?a ch? Email <span class="required">*</span></label>
+                        <label for="email">ï¿½?a ch? Email <span class="required">*</span></label>
                         <input id="email" type="email" name="email" value="<%= user != null ? esc(user.getEmail()) : "" %>" placeholder="name@example.com" required>
                     </div>
 
                     <div class="form-group">
-                        <label for="phone">S? di?n tho?i liên h?</label>
-                        <input id="phone" name="phone" value="<%= user != null && user.getPhone() != null ? esc(user.getPhone()) : "" %>" placeholder="<%= isCustomer ? "Nh?p s? di?n tho?i (dùng d? nh?n vé t?i qu?y & Kiosk)" : "09xxxxxxxx" %>">
+                        <label for="phone">S? di?n tho?i liï¿½n h?</label>
+                        <input id="phone" name="phone" value="<%= user != null && user.getPhone() != null ? esc(user.getPhone()) : "" %>" placeholder="<%= isCustomer ? "Nh?p s? di?n tho?i (dï¿½ng d? nh?n vï¿½ t?i qu?y & Kiosk)" : "09xxxxxxxx" %>">
                     </div>
 
                     <input id="avatarValue" type="hidden" name="avatar" value="<%= esc(avatarUrl) %>">
@@ -251,13 +251,13 @@
 
             <!-- C?T PH?I: B?O M?T & T?NG QUAN -->
             <div class="account-side">
-                <!-- T?NG QUAN TÀI KHO?N -->
+                <!-- T?NG QUAN Tï¿½I KHO?N -->
                 <article class="panel account-summary">
                     <div class="panel-heading">
                         <div class="heading-title-group">
                             <span class="heading-icon">??</span>
                             <div>
-                                <h2>T?ng quan tài kho?n</h2>
+                                <h2>T?ng quan tï¿½i kho?n</h2>
                             </div>
                         </div>
                     </div>
@@ -265,64 +265,64 @@
                     <div class="summary-list">
                         <% if (isCustomer) { %>
                             <div class="summary-row">
-                                <span class="row-label">Lo?i tài kho?n</span>
-                                <strong class="row-value">Khách hàng</strong>
+                                <span class="row-label">Lo?i tï¿½i kho?n</span>
+                                <strong class="row-value">Khï¿½ch hï¿½ng</strong>
                             </div>
                         <% } else { %>
                             <div class="summary-row">
-                                <span class="row-label">Mã nhân s?</span>
+                                <span class="row-label">Mï¿½ nhï¿½n s?</span>
                                 <strong class="row-value highlight"><%= user != null ? user.getEmployeeCode() : "NV00000" %></strong>
                             </div>
                             <div class="summary-row">
-                                <span class="row-label">Vai trò ch?c v?</span>
-                                <strong class="row-value"><%= user != null ? esc(user.getRoleDisplayName()) : "Nhân viên" %></strong>
+                                <span class="row-label">Vai trï¿½ ch?c v?</span>
+                                <strong class="row-value"><%= user != null ? esc(user.getRoleDisplayName()) : "Nhï¿½n viï¿½n" %></strong>
                             </div>
                             <div class="summary-row">
-                                <span class="row-label">C?m r?p làm vi?c</span>
+                                <span class="row-label">C?m r?p lï¿½m vi?c</span>
                                 <strong class="row-value"><%= esc(centreDisplayName) %></strong>
                             </div>
                         <% } %>
 
                         <div class="summary-row">
-                            <span class="row-label">Tr?ng thái</span>
+                            <span class="row-label">Tr?ng thï¿½i</span>
                             <span class="status-pill active">? <%= user != null ? esc(user.getStatus()) : "ACTIVE" %></span>
                         </div>
 
                         <div class="summary-row">
-                            <span class="row-label">Xác th?c Email</span>
+                            <span class="row-label">Xï¿½c th?c Email</span>
                             <% if (user != null && user.isEmailVerified()) { %>
-                                <span class="status-pill verified">? Ðã xác th?c</span>
+                                <span class="status-pill verified">? ï¿½ï¿½ xï¿½c th?c</span>
                             <% } else { %>
                                 <span class="status-pill unverified">
-                                    ? Chua xác th?c
+                                    ? Chua xï¿½c th?c
                                     <% if (isCustomer && user != null && user.getEmail() != null) { %>
-                                        <a href="${pageContext.request.contextPath}/verify-otp?action=resend&email=<%= java.net.URLEncoder.encode(user.getEmail(), "UTF-8") %>&type=register" class="verify-action-link">[Xác minh ngay]</a>
+                                        <a href="${pageContext.request.contextPath}/verify-otp?action=resend&email=<%= java.net.URLEncoder.encode(user.getEmail(), "UTF-8") %>&type=register" class="verify-action-link">[Xï¿½c minh ngay]</a>
                                     <% } %>
                                 </span>
                             <% } %>
                         </div>
 
                         <div class="summary-row">
-                            <span class="row-label">Ngày tham gia</span>
-                            <strong class="row-value"><%= user != null && user.getCreatedAt() != null ? dateOnly.format(user.getCreatedAt()) : "—" %></strong>
+                            <span class="row-label">Ngï¿½y tham gia</span>
+                            <strong class="row-value"><%= user != null && user.getCreatedAt() != null ? dateOnly.format(user.getCreatedAt()) : "ï¿½" %></strong>
                         </div>
 
                         <% if (isCustomer) { %>
                             <div class="summary-row">
-                                <span class="row-label">T?ng vé dã d?t</span>
-                                <strong class="row-value highlight"><%= history == null ? 0 : history.size() %> vé</strong>
+                                <span class="row-label">T?ng vï¿½ dï¿½ d?t</span>
+                                <strong class="row-value highlight"><%= history == null ? 0 : history.size() %> vï¿½</strong>
                             </div>
                         <% } %>
                     </div>
                 </article>
 
-                <!-- B?O M?T TÀI KHO?N -->
+                <!-- B?O M?T Tï¿½I KHO?N -->
                 <article class="panel security-panel">
                     <div class="panel-heading">
                         <div class="heading-title-group">
                             <span class="heading-icon">??</span>
                             <div>
-                                <h2>B?o m?t tài kho?n</h2>
+                                <h2>B?o m?t tï¿½i kho?n</h2>
                             </div>
                         </div>
                     </div>
@@ -330,15 +330,15 @@
                     <a class="security-action-link" href="${pageContext.request.contextPath}/change-password">
                         <div class="action-icon">??</div>
                         <div class="action-text">
-                            <strong>Ð?i m?t kh?u</strong>
-                            <small>C?p nh?t m?t kh?u d?nh k? d? b?o v? tài kho?n</small>
+                            <strong>ï¿½?i m?t kh?u</strong>
+                            <small>C?p nh?t m?t kh?u d?nh k? d? b?o v? tï¿½i kho?n</small>
                         </div>
-                        <span class="action-arrow">›</span>
+                        <span class="action-arrow">ï¿½</span>
                     </a>
 
                     <div class="security-tip-box">
                         <span class="tip-icon"><%= isCustomer ? "??" : "???" %></span>
-                        <p><%= isCustomer ? "Không chia s? m?t kh?u và mã OTP cho b?t k? ai d? b?o v? tài kho?n CineFlow c?a b?n." : "Tài kho?n nhân s? và qu?n tr? có quy?n truy c?p d? li?u và v?n hành h? th?ng CineFlow. Vui lòng d?nh k? c?p nh?t m?t kh?u và không chia s? cho ngu?i khác." %></p>
+                        <p><%= isCustomer ? "Khï¿½ng chia s? m?t kh?u vï¿½ mï¿½ OTP cho b?t k? ai d? b?o v? tï¿½i kho?n CineFlow c?a b?n." : "Tï¿½i kho?n nhï¿½n s? vï¿½ qu?n tr? cï¿½ quy?n truy c?p d? li?u vï¿½ v?n hï¿½nh h? th?ng CineFlow. Vui lï¿½ng d?nh k? c?p nh?t m?t kh?u vï¿½ khï¿½ng chia s? cho ngu?i khï¿½c." %></p>
                     </div>
                 </article>
             </div>
@@ -346,28 +346,28 @@
 
         <% if (isCustomer) { %>
         <!-- ===================================================================
-             3. B?NG L?CH S? Ð?T VÉ (CH? DÀNH CHO KHÁCH HÀNG)
+             3. B?NG L?CH S? ï¿½?T Vï¿½ (CH? Dï¿½NH CHO KHï¿½CH Hï¿½NG)
              =================================================================== -->
         <section class="panel history-panel">
             <div class="panel-heading history-heading">
                 <div class="heading-title-group">
                     <span class="heading-icon">???</span>
                     <div>
-                        <h2>L?ch s? d?t vé</h2>
-                        <p class="panel-desc">Danh sách các su?t chi?u và vé xem phim b?n dã d?t g?n dây.</p>
+                        <h2>L?ch s? d?t vï¿½</h2>
+                        <p class="panel-desc">Danh sï¿½ch cï¿½c su?t chi?u vï¿½ vï¿½ xem phim b?n dï¿½ d?t g?n dï¿½y.</p>
                     </div>
                 </div>
                 <a href="${pageContext.request.contextPath}/booking" class="new-booking-btn">
-                    Ð?t vé m?i
+                    ï¿½?t vï¿½ m?i
                 </a>
             </div>
 
             <% if (history == null || history.isEmpty()) { %>
                 <div class="empty-history">
                     <div class="empty-icon">??</div>
-                    <p>B?n chua có l?n d?t vé nào.</p>
+                    <p>B?n chua cï¿½ l?n d?t vï¿½ nï¿½o.</p>
                     <a href="${pageContext.request.contextPath}/booking" class="browse-movies-btn">
-                        Khám phá phim dang chi?u
+                        Khï¿½m phï¿½ phim dang chi?u
                     </a>
                 </div>
             <% } else { %>
@@ -378,9 +378,9 @@
                                 <div class="movie-ticket-icon">??</div>
                                 <div class="history-details">
                                     <strong><%= esc(item.getMovieTitle()) %></strong>
-                                    <span class="booking-code">Mã vé: <code><%= esc(item.getBookingCode()) %></code></span>
+                                    <span class="booking-code">Mï¿½ vï¿½: <code><%= esc(item.getBookingCode()) %></code></span>
                                     <span class="booking-meta">
-                                        <%= esc(item.getCentreName()) %> · <%= item.getStartTime() == null ? "Chua có l?ch" : dateTime.format(item.getStartTime()) %>
+                                        <%= esc(item.getCentreName()) %> ï¿½ <%= item.getStartTime() == null ? "Chua cï¿½ l?ch" : dateTime.format(item.getStartTime()) %>
                                     </span>
                                 </div>
                             </div>
@@ -415,7 +415,7 @@ function previewAvatar(input) {
     if (!input.files || !input.files[0]) return;
     const file = input.files[0];
     if (file.size > 2000000) {
-        alert('?nh d?i di?n không du?c l?n hon 2MB.');
+        alert('?nh d?i di?n khï¿½ng du?c l?n hon 2MB.');
         input.value = '';
         return;
     }

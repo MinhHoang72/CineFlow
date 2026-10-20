@@ -1,4 +1,4 @@
-﻿<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ page import="model.dto.ReportSummary,model.dto.RevenueReport,model.entity.Movie,model.entity.Centre,model.entity.User,java.util.List,java.math.BigDecimal" %>
 <%
     String authRole = (String) session.getAttribute("role");
@@ -45,14 +45,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Admin | CineFlow</title>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/reset.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/variables.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/buttons.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/badges.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/forms.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/tables.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/alerts.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/manager/shell.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin/dashboard.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin/admin-style.css?v=<%= System.currentTimeMillis() %>">
 </head>
 <body>
 <div class="admin-layout">
-    <jsp:include page="/WEB-INF/fragments/adminSidebar.jspf" />
+    <jsp:include page="/WEB-INF/fragments/adminSidebar.jsp" />
 
     <div class="admin-main">
-        <jsp:include page="/WEB-INF/fragments/adminTopbar.jspf" />
+        <jsp:include page="/WEB-INF/fragments/adminTopbar.jsp" />
 
         <main class="admin-content">
             <!-- BANNER CHÀO MỪNG QUẢN TRỊ VIÊN -->
@@ -142,7 +151,7 @@
                 <a href="${pageContext.request.contextPath}/staff" class="quick-nav-card">
                     <div class="quick-nav-icon" style="background: #E0F2FE; color: #0284c7;">♙</div>
                     <div class="quick-nav-meta">
-                        <h3>Nhân sự & Chi nhánh</h3>
+                        <h3>Nhân sự & Cụm rạp</h3>
                         <p>Quản lý tài khoản quản trị</p>
                     </div>
                 </a>

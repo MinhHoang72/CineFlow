@@ -66,11 +66,11 @@
 <body>
 <div class="cf-manager-shell">
     <!-- Sidebar -->
-    <jsp:include page="<%= isAdmin ? \"/WEB-INF/fragments/adminSidebar.jspf\" : \"/WEB-INF/fragments/managerSidebar.jspf\" %>" />
+    <jsp:include page="<%= isAdmin ? \"/WEB-INF/fragments/adminSidebar.jsp\" : \"/WEB-INF/fragments/managerSidebar.jsp\" %>" />
 
     <div class="cf-manager-main">
         <!-- Topbar -->
-        <jsp:include page="/WEB-INF/fragments/adminTopbar.jspf" />
+        <jsp:include page="/WEB-INF/fragments/adminTopbar.jsp" />
 
         <main class="cf-content">
             <!-- Header trang -->

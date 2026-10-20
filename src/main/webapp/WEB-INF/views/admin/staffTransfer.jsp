@@ -50,10 +50,10 @@
 </head>
 <body>
 <div class="cf-manager-shell">
-    <jsp:include page="/WEB-INF/fragments/adminSidebar.jspf" />
+    <jsp:include page="/WEB-INF/fragments/adminSidebar.jsp" />
 
     <div class="cf-manager-main">
-        <jsp:include page="/WEB-INF/fragments/adminTopbar.jspf" />
+        <jsp:include page="/WEB-INF/fragments/adminTopbar.jsp" />
 
         <main class="cf-content">
             <div class="cf-page-header" style="margin-bottom: 24px;">
@@ -61,7 +61,7 @@
                     <div style="width: 44px; height: 44px; background: rgba(255, 40, 85, 0.12); border: 1px solid rgba(255, 40, 85, 0.25); border-radius: 10px; display: grid; place-items: center; font-size: 22px;">👥</div>
                     <div>
                         <h1 style="margin: 0; font-size: 22px; font-weight: 700; color: #ffffff;">Bổ nhiệm & Điều chuyển nhân sự</h1>
-                        <p style="margin: 4px 0 0; color: var(--cf-muted, #94a3b8); font-size: 13px;">Quản lý bổ nhiệm Quản lý trung tâm, điều chuyển nhân sự chi nhánh và phê chuẩn thăng chức toàn hệ thống CineFlow.</p>
+                        <p style="margin: 4px 0 0; color: var(--cf-muted, #94a3b8); font-size: 13px;">Quản lý bổ nhiệm Quản lý trung tâm, điều chuyển nhân sự cụm rạp và phê chuẩn thăng chức toàn hệ thống CineFlow.</p>
                     </div>
                 </div>
             </div>
@@ -314,7 +314,7 @@
                     <div class="cf-card-header" style="display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
                         <div>
                             <h2>Danh sách Nhân viên rạp (Staff Directory)</h2>
-                            <p style="margin: 3px 0 0; color: #94a3b8; font-size: 12px;">Bao gồm Nhân viên bán vé và Nhân viên soát vé tại tất cả chi nhánh.</p>
+                            <p style="margin: 3px 0 0; color: #94a3b8; font-size: 12px;">Bao gồm Nhân viên bán vé và Nhân viên soát vé tại tất cả cụm rạp.</p>
                         </div>
                         <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                             <form method="get" action="${pageContext.request.contextPath}/admin/transfers" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
@@ -411,7 +411,7 @@
                     <div class="cf-card-header">
                         <div>
                             <h2>Lịch sử điều chuyển nhân sự & phê chuẩn thăng chức</h2>
-                            <p style="margin: 3px 0 0; color: #94a3b8; font-size: 12px;">Lưu vết kiểm toán toàn diện tất cả các đợt luân chuyển chi nhánh và bổ nhiệm nhân sự trong hệ thống.</p>
+                            <p style="margin: 3px 0 0; color: #94a3b8; font-size: 12px;">Lưu vết kiểm toán toàn diện tất cả các đợt luân chuyển cụm rạp và bổ nhiệm nhân sự trong hệ thống.</p>
                         </div>
                     </div>
                     <div class="cf-card-body">

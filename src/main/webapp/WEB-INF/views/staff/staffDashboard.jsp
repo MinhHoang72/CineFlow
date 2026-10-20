@@ -1,4 +1,4 @@
-<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+ï»¿<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ page import="model.entity.User" %>
 <%
     User currentUser = (User) session.getAttribute("user");
@@ -7,7 +7,7 @@
         authRole = currentUser.getRole();
     }
     if (authRole == null || "CUSTOMER".equalsIgnoreCase(authRole)) {
-        response.sendError(HttpServletResponse.SC_FORBIDDEN, "Khách hàng không có quy?n truy c?p không gian nhân viên.");
+        response.sendError(HttpServletResponse.SC_FORBIDDEN, "Khï¿½ch hï¿½ng khï¿½ng cï¿½ quy?n truy c?p khï¿½ng gian nhï¿½n viï¿½n.");
         return;
     }
 
@@ -16,116 +16,116 @@
     boolean isGenericStaff = currentUser != null && "STAFF".equalsIgnoreCase(currentUser.getRole());
     boolean isAdminOrManager = "ADMIN".equalsIgnoreCase(authRole) || "MANAGER".equalsIgnoreCase(authRole);
 
-    // N?u là Admin/Manager ho?c Staff chung thì hi?n th? c? 2 phân h? d? ti?n ki?m tra
+    // N?u lï¿½ Admin/Manager ho?c Staff chung thï¿½ hi?n th? c? 2 phï¿½n h? d? ti?n ki?m tra
     boolean showSales = isSales || isGenericStaff || isAdminOrManager;
     boolean showChecker = isChecker || isGenericStaff || isAdminOrManager;
 
-    String fullName = currentUser != null && currentUser.getFullName() != null ? currentUser.getFullName() : "Nhân viên";
+    String fullName = currentUser != null && currentUser.getFullName() != null ? currentUser.getFullName() : "Nhï¿½n viï¿½n";
     String employeeCode = currentUser != null ? currentUser.getEmployeeCode() : "NV00000";
-    String centreName = currentUser != null && currentUser.getCentreName() != null ? currentUser.getCentreName() : "Toàn h? th?ng CineFlow";
+    String centreName = currentUser != null && currentUser.getCentreName() != null ? currentUser.getCentreName() : "Toï¿½n h? th?ng CineFlow";
 %>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Không gian nhân viên | CineFlow</title>
+    <title>Khï¿½ng gian nhï¿½n viï¿½n | CineFlow</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/manager/shell.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/staff/dashboard.css?v=<%= System.currentTimeMillis() %>">
 </head>
 <body>
     <div class="cf-manager-shell">
-        <jsp:include page="/WEB-INF/fragments/managerSidebar.jspf"/>
+        <jsp:include page="/WEB-INF/fragments/managerSidebar.jsp"/>
         <div class="cf-manager-main">
-            <jsp:include page="/WEB-INF/fragments/managerTopbar.jspf"/>
+            <jsp:include page="/WEB-INF/fragments/managerTopbar.jsp"/>
             <main class="cf-content">
                 <div class="cf-page-header">
                     <div>
-                        <h1>Xin chào, <%= fullName %>!</h1>
+                        <h1>Xin chï¿½o, <%= fullName %>!</h1>
                     </div>
                 </div>
 
-                <!-- BANNER THÔNG TIN NHÂN S? -->
+                <!-- BANNER THï¿½NG TIN NHï¿½N S? -->
                 <div class="staff-role-banner">
                     <div class="staff-role-meta">
                         <div>
-                            <span style="font-size: 12px; color: #94a3b8; display: block; margin-bottom: 2px;">Mã nhân s?:</span>
+                            <span style="font-size: 12px; color: #94a3b8; display: block; margin-bottom: 2px;">Mï¿½ nhï¿½n s?:</span>
                             <code class="cf-badge cf-badge-info" style="font-size: 13px; font-weight: 700;"><%= employeeCode %></code>
                         </div>
                         <div>
-                            <span style="font-size: 12px; color: #94a3b8; display: block; margin-bottom: 2px;">Trung tâm tr?c thu?c:</span>
+                            <span style="font-size: 12px; color: #94a3b8; display: block; margin-bottom: 2px;">Trung tï¿½m tr?c thu?c:</span>
                             <strong style="color: #f8fafc; font-size: 14px;">?? <%= centreName %></strong>
                         </div>
                     </div>
                     <div>
                         <% if (isSales) { %>
                             <span class="staff-role-badge-sales">
-                                ?? Nhân viên Bán vé & F&B (Ticket Sales Staff)
+                                ?? Nhï¿½n viï¿½n Bï¿½n vï¿½ & F&B (Ticket Sales Staff)
                             </span>
                         <% } else if (isChecker) { %>
                             <span class="staff-role-badge-checker">
-                                ?? Nhân viên Soát vé t?i c?a r?p (Ticket Checker Staff)
+                                ?? Nhï¿½n viï¿½n Soï¿½t vï¿½ t?i c?a r?p (Ticket Checker Staff)
                             </span>
                         <% } else { %>
                             <span class="staff-role-badge-sales" style="background: rgba(99, 102, 241, 0.18); color: #a5b4fc; border-color: rgba(99, 102, 241, 0.4);">
-                                ?? Nhân viên CineFlow (Staff)
+                                ?? Nhï¿½n viï¿½n CineFlow (Staff)
                             </span>
                         <% } %>
                     </div>
                 </div>
 
                 <!-- ============================================================== -->
-                <!-- PHÂN H? 1: TICKET SALES STAFF (BÁN VÉ & B?P NU?C T?I QU?Y) -->
+                <!-- PHï¿½N H? 1: TICKET SALES STAFF (Bï¿½N Vï¿½ & B?P NU?C T?I QU?Y) -->
                 <!-- ============================================================== -->
                 <% if (showSales) { %>
                 <div class="cf-card" style="margin-bottom: 24px;">
                     <div class="cf-card-header">
                         <div>
                             <div class="staff-section-title">
-                                <span>??</span> Qu?y vé & F&B (Ticket Sales Staff)
+                                <span>??</span> Qu?y vï¿½ & F&B (Ticket Sales Staff)
                             </div>
-                            <p>Quy trình ph?c v? bán vé tr?c ti?p, ch?n gh? so d? r?p, d?t combo b?p nu?c và in hóa don t?i qu?y.</p>
+                            <p>Quy trï¿½nh ph?c v? bï¿½n vï¿½ tr?c ti?p, ch?n gh? so d? r?p, d?t combo b?p nu?c vï¿½ in hï¿½a don t?i qu?y.</p>
                         </div>
                         <% if (!isSales && isAdminOrManager) { %>
-                            <span class="cf-badge cf-badge-info" style="font-size: 11px;">Ch? d? xem Qu?n lý</span>
+                            <span class="cf-badge cf-badge-info" style="font-size: 11px;">Ch? d? xem Qu?n lï¿½</span>
                         <% } %>
                     </div>
                     <div class="cf-card-body">
                         <div class="cf-dashboard-links">
-                            <a class="cf-dashboard-link cf-dashboard-link-featured" href="${pageContext.request.contextPath}/home" title="M? giao di?n d?t vé tr?c ti?p">
-                                <span class="cf-feature-tag tag-blue">Tác nghi?p qu?y</span>
-                                <strong style="color: #38bdf8; font-size: 15px;">?? Bán vé t?i qu?y (Counter Booking)</strong>
-                                <span>Tra c?u su?t chi?u dang m? bán trong ngày, ch?n gh? ng?i tr?c ti?p theo so d? r?p cho khách hàng.</span>
+                            <a class="cf-dashboard-link cf-dashboard-link-featured" href="${pageContext.request.contextPath}/home" title="M? giao di?n d?t vï¿½ tr?c ti?p">
+                                <span class="cf-feature-tag tag-blue">Tï¿½c nghi?p qu?y</span>
+                                <strong style="color: #38bdf8; font-size: 15px;">?? Bï¿½n vï¿½ t?i qu?y (Counter Booking)</strong>
+                                <span>Tra c?u su?t chi?u dang m? bï¿½n trong ngï¿½y, ch?n gh? ng?i tr?c ti?p theo so d? r?p cho khï¿½ch hï¿½ng.</span>
                             </a>
 
                             <div class="cf-dashboard-link" style="opacity: 0.95;">
                                 <span class="cf-feature-tag tag-amber">F&B Concessions</span>
-                                <strong style="color: #fbbf24; font-size: 15px;">?? Ð?t B?p nu?c & Combo F&B</strong>
-                                <span>Danh m?c combo b?p rang bo (Caramel, Phô mai), nu?c gi?i khát và snack uu dãi kèm vé xem phim.</span>
+                                <strong style="color: #fbbf24; font-size: 15px;">?? ï¿½?t B?p nu?c & Combo F&B</strong>
+                                <span>Danh m?c combo b?p rang bo (Caramel, Phï¿½ mai), nu?c gi?i khï¿½t vï¿½ snack uu dï¿½i kï¿½m vï¿½ xem phim.</span>
                             </div>
 
                             <div class="cf-dashboard-link" style="opacity: 0.95;">
-                                <span class="cf-feature-tag tag-emerald">Thu ngân</span>
-                                <strong style="color: #34d399; font-size: 15px;">?? Thanh toán & Xu?t hóa don</strong>
-                                <span>Ti?p nh?n thanh toán ti?n m?t, th? POS ho?c quét QR chuy?n kho?n. In vé xem phim và hóa don cho khách.</span>
+                                <span class="cf-feature-tag tag-emerald">Thu ngï¿½n</span>
+                                <strong style="color: #34d399; font-size: 15px;">?? Thanh toï¿½n & Xu?t hï¿½a don</strong>
+                                <span>Ti?p nh?n thanh toï¿½n ti?n m?t, th? POS ho?c quï¿½t QR chuy?n kho?n. In vï¿½ xem phim vï¿½ hï¿½a don cho khï¿½ch.</span>
                             </div>
 
                             <a class="cf-dashboard-link" href="${pageContext.request.contextPath}/home">
                                 <span class="cf-feature-tag tag-blue">Tra c?u</span>
                                 <strong>?? L?ch chi?u & Gh? tr?ng</strong>
-                                <span>Ki?m tra danh sách su?t chi?u còn vé, s? lu?ng gh? tr?ng theo t?ng phòng chi?u t?i <%= centreName %>.</span>
+                                <span>Ki?m tra danh sï¿½ch su?t chi?u cï¿½n vï¿½, s? lu?ng gh? tr?ng theo t?ng phï¿½ng chi?u t?i <%= centreName %>.</span>
                             </a>
 
                             <a class="cf-dashboard-link" href="${pageContext.request.contextPath}/account">
                                 <span class="cf-feature-tag tag-emerald">L?ch s?</span>
-                                <strong>?? L?ch s? ca bán vé</strong>
-                                <span>Xem các don hàng và vé dã xu?t trong ca làm vi?c d? th?c hi?n d?i soát cu?i ngày.</span>
+                                <strong>?? L?ch s? ca bï¿½n vï¿½</strong>
+                                <span>Xem cï¿½c don hï¿½ng vï¿½ vï¿½ dï¿½ xu?t trong ca lï¿½m vi?c d? th?c hi?n d?i soï¿½t cu?i ngï¿½y.</span>
                             </a>
 
                             <a class="cf-dashboard-link" href="${pageContext.request.contextPath}/account">
-                                <span class="cf-feature-tag tag-amber">Cá nhân</span>
-                                <strong>?? Thông tin nhân viên</strong>
-                                <span>H? so tài kho?n <%= employeeCode %>, d?i m?t kh?u và thông tin liên h?.</span>
+                                <span class="cf-feature-tag tag-amber">Cï¿½ nhï¿½n</span>
+                                <strong>?? Thï¿½ng tin nhï¿½n viï¿½n</strong>
+                                <span>H? so tï¿½i kho?n <%= employeeCode %>, d?i m?t kh?u vï¿½ thï¿½ng tin liï¿½n h?.</span>
                             </a>
                         </div>
                     </div>
@@ -133,57 +133,57 @@
                 <% } %>
 
                 <!-- ============================================================== -->
-                <!-- PHÂN H? 2: TICKET CHECKER STAFF (SOÁT VÉ C?A R?P & CHECK-IN) -->
+                <!-- PHï¿½N H? 2: TICKET CHECKER STAFF (SOï¿½T Vï¿½ C?A R?P & CHECK-IN) -->
                 <!-- ============================================================== -->
                 <% if (showChecker) { %>
                 <div class="cf-card" style="margin-bottom: 24px;">
                     <div class="cf-card-header">
                         <div>
                             <div class="staff-section-title">
-                                <span>??</span> C?a phòng chi?u & Soát vé (Ticket Checker Staff)
+                                <span>??</span> C?a phï¿½ng chi?u & Soï¿½t vï¿½ (Ticket Checker Staff)
                             </div>
-                            <p>Quy trình ki?m tra mã vé QR/Code, ch?n su?t chi?u dón khách và qu?n lý danh sách khán gi? dã check-in.</p>
+                            <p>Quy trï¿½nh ki?m tra mï¿½ vï¿½ QR/Code, ch?n su?t chi?u dï¿½n khï¿½ch vï¿½ qu?n lï¿½ danh sï¿½ch khï¿½n gi? dï¿½ check-in.</p>
                         </div>
                         <% if (!isChecker && isAdminOrManager) { %>
-                            <span class="cf-badge cf-badge-info" style="font-size: 11px;">Ch? d? xem Qu?n lý</span>
+                            <span class="cf-badge cf-badge-info" style="font-size: 11px;">Ch? d? xem Qu?n lï¿½</span>
                         <% } %>
                     </div>
                     <div class="cf-card-body">
                         <div class="cf-dashboard-links">
                             <div class="cf-dashboard-link cf-dashboard-link-purple">
-                                <span class="cf-feature-tag tag-purple">C?a ki?m soát</span>
-                                <strong style="color: #c084fc; font-size: 15px;">?? Quét mã QR & Soát vé</strong>
-                                <span>Quét mã QR t? di?n tho?i c?a khán gi? ho?c nh?p mã vé d? xác th?c tính h?p l? vào phòng chi?u.</span>
+                                <span class="cf-feature-tag tag-purple">C?a ki?m soï¿½t</span>
+                                <strong style="color: #c084fc; font-size: 15px;">?? Quï¿½t mï¿½ QR & Soï¿½t vï¿½</strong>
+                                <span>Quï¿½t mï¿½ QR t? di?n tho?i c?a khï¿½n gi? ho?c nh?p mï¿½ vï¿½ d? xï¿½c th?c tï¿½nh h?p l? vï¿½o phï¿½ng chi?u.</span>
                             </div>
 
                             <div class="cf-dashboard-link" style="opacity: 0.95;">
                                 <span class="cf-feature-tag tag-blue">Su?t chi?u</span>
-                                <strong style="color: #38bdf8; font-size: 15px;">?? Ch?n su?t chi?u dón khách</strong>
-                                <span>Kích ho?t c?ng soát vé cho su?t chi?u chu?n b? b?t d?u (m? dón khách 15-30 phút tru?c gi? chi?u).</span>
+                                <strong style="color: #38bdf8; font-size: 15px;">?? Ch?n su?t chi?u dï¿½n khï¿½ch</strong>
+                                <span>Kï¿½ch ho?t c?ng soï¿½t vï¿½ cho su?t chi?u chu?n b? b?t d?u (m? dï¿½n khï¿½ch 15-30 phï¿½t tru?c gi? chi?u).</span>
                             </div>
 
                             <div class="cf-dashboard-link" style="opacity: 0.95;">
                                 <span class="cf-feature-tag tag-emerald">Th?i gian th?c</span>
-                                <strong style="color: #34d399; font-size: 15px;">?? Danh sách dã Check-in</strong>
-                                <span>Theo dõi s? lu?ng khách dã qua c?a soát vé, s? vé chua check-in và so d? gh? khán gi? trong phòng.</span>
+                                <strong style="color: #34d399; font-size: 15px;">?? Danh sï¿½ch dï¿½ Check-in</strong>
+                                <span>Theo dï¿½i s? lu?ng khï¿½ch dï¿½ qua c?a soï¿½t vï¿½, s? vï¿½ chua check-in vï¿½ so d? gh? khï¿½n gi? trong phï¿½ng.</span>
                             </div>
 
                             <div class="cf-dashboard-link" style="opacity: 0.95;">
-                                <span class="cf-feature-tag tag-amber">Giám sát</span>
-                                <strong style="color: #fbbf24; font-size: 15px;">?? Tr?ng thái phòng chi?u</strong>
-                                <span>Ki?m tra tr?ng thái phòng chi?u t?i <%= centreName %> (Ðón khách, Ðang chi?u, K?t thúc, D?n v? sinh).</span>
+                                <span class="cf-feature-tag tag-amber">Giï¿½m sï¿½t</span>
+                                <strong style="color: #fbbf24; font-size: 15px;">?? Tr?ng thï¿½i phï¿½ng chi?u</strong>
+                                <span>Ki?m tra tr?ng thï¿½i phï¿½ng chi?u t?i <%= centreName %> (ï¿½ï¿½n khï¿½ch, ï¿½ang chi?u, K?t thï¿½c, D?n v? sinh).</span>
                             </div>
 
                             <a class="cf-dashboard-link" href="${pageContext.request.contextPath}/home">
-                                <span class="cf-feature-tag tag-blue">L?ch trình</span>
-                                <strong>?? L?ch su?t chi?u hôm nay</strong>
-                                <span>Xem toàn b? l?ch chi?u các phòng trong ngày d? s?p x?p ca tr?c c?a ki?m soát vé.</span>
+                                <span class="cf-feature-tag tag-blue">L?ch trï¿½nh</span>
+                                <strong>?? L?ch su?t chi?u hï¿½m nay</strong>
+                                <span>Xem toï¿½n b? l?ch chi?u cï¿½c phï¿½ng trong ngï¿½y d? s?p x?p ca tr?c c?a ki?m soï¿½t vï¿½.</span>
                             </a>
 
                             <a class="cf-dashboard-link" href="${pageContext.request.contextPath}/account">
-                                <span class="cf-feature-tag tag-purple">Cá nhân</span>
-                                <strong>?? H? so ki?m soát viên</strong>
-                                <span>Thông tin tài kho?n <%= employeeCode %>, d?i m?t kh?u và ca tr?c du?c phân công.</span>
+                                <span class="cf-feature-tag tag-purple">Cï¿½ nhï¿½n</span>
+                                <strong>?? H? so ki?m soï¿½t viï¿½n</strong>
+                                <span>Thï¿½ng tin tï¿½i kho?n <%= employeeCode %>, d?i m?t kh?u vï¿½ ca tr?c du?c phï¿½n cï¿½ng.</span>
                             </a>
                         </div>
                     </div>

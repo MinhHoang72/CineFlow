@@ -12,7 +12,7 @@
     }
 
     request.setAttribute("activeNav", "centres");
-    request.setAttribute("pageTitle", "Quản lý Chi nhánh");
+    request.setAttribute("pageTitle", "Quản lý Cụm rạp");
 
     List<Centre> centres = (List<Centre>) request.getAttribute("centres");
     Integer totalCentres = (Integer) request.getAttribute("totalCentres");
@@ -40,7 +40,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản lý Chi nhánh | CineFlow Admin</title>
+    <title>Quản lý Cụm rạp | CineFlow Admin</title>
 
     <!-- Phông chữ chuẩn hệ thống CineFlow -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -62,45 +62,45 @@
 <body>
 <div class="cf-manager-shell">
     <!-- Menu bên trái (Sidebar) -->
-    <jsp:include page="/WEB-INF/fragments/adminSidebar.jspf" />
+    <jsp:include page="/WEB-INF/fragments/adminSidebar.jsp" />
 
     <div class="cf-manager-main">
         <!-- Thanh tiêu đề trên (Topbar) -->
-        <jsp:include page="/WEB-INF/fragments/adminTopbar.jspf" />
+        <jsp:include page="/WEB-INF/fragments/adminTopbar.jsp" />
 
         <main class="cf-content">
             <!-- Header trang -->
             <div class="cf-page-header">
                 <div>
-                    <h1>Quản lý Chi nhánh</h1>
-                    <p>Danh sách các chi nhánh, thông tin liên hệ và trạng thái hoạt động trên toàn hệ thống</p>
+                    <h1>Quản lý Cụm rạp</h1>
+                    <p>Danh sách các cụm rạp, thông tin liên hệ và trạng thái hoạt động trên toàn hệ thống</p>
                 </div>
                 <button type="button" class="cf-btn cf-btn-primary" onclick="openCreateCentreModal()" style="display: flex; align-items: center; gap: 8px;">
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                    Thêm Chi nhánh mới
+                    Thêm Cụm rạp mới
                 </button>
             </div>
 
             <!-- Thông báo thành công / lỗi -->
             <% if ("created".equals(successParam)) { %>
                 <div class="cf-alert cf-alert-success">
-                    <span>✓</span> <strong>Thành công!</strong> Đã thêm mới chi nhánh vào hệ thống.
+                    <span>✓</span> <strong>Thành công!</strong> Đã thêm mới cụm rạp vào hệ thống.
                 </div>
             <% } else if ("updated".equals(successParam)) { %>
                 <div class="cf-alert cf-alert-success">
-                    <span>✓</span> <strong>Thành công!</strong> Đã cập nhật thông tin liên hệ và địa chỉ chi nhánh thành công.
+                    <span>✓</span> <strong>Thành công!</strong> Đã cập nhật thông tin liên hệ và địa chỉ cụm rạp thành công.
                 </div>
             <% } else if ("status_updated".equals(successParam)) { %>
                 <div class="cf-alert cf-alert-success">
-                    <span>✓</span> <strong>Thành công!</strong> Đã cập nhật trạng thái hoạt động của chi nhánh.
+                    <span>✓</span> <strong>Thành công!</strong> Đã cập nhật trạng thái hoạt động của cụm rạp.
                 </div>
             <% } else if ("duplicate_name".equals(errorParam)) { %>
                 <div class="cf-alert cf-alert-danger">
-                    <span>⚠</span> <strong>Lỗi:</strong> Tên chi nhánh đã tồn tại trong hệ thống. Vui lòng chọn tên khác!
+                    <span>⚠</span> <strong>Lỗi:</strong> Tên cụm rạp đã tồn tại trong hệ thống. Vui lòng chọn tên khác!
                 </div>
             <% } else if ("missing_fields".equals(errorParam)) { %>
                 <div class="cf-alert cf-alert-danger">
-                    <span>⚠</span> <strong>Lỗi:</strong> Vui lòng điền đầy đủ các thông tin bắt buộc (Tên chi nhánh, Địa chỉ, Hotline).
+                    <span>⚠</span> <strong>Lỗi:</strong> Vui lòng điền đầy đủ các thông tin bắt buộc (Tên cụm rạp, Địa chỉ, Hotline).
                 </div>
             <% } else if ("failed".equals(errorParam)) { %>
                 <div class="cf-alert cf-alert-danger">
@@ -114,7 +114,7 @@
                     <div class="cf-stat-icon primary">🏢</div>
                     <div class="cf-stat-info">
                         <h3><%= totalCentres != null ? totalCentres : 0 %></h3>
-                        <p>Tổng số Chi nhánh</p>
+                        <p>Tổng số Cụm rạp</p>
                     </div>
                 </div>
                 <div class="cf-stat-card">
@@ -147,7 +147,7 @@
                         <span class="icon">
                             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                         </span>
-                        <input type="text" name="search" placeholder="Tìm theo tên chi nhánh, hotline, địa chỉ, thành phố..." value="<%= currentSearch != null ? currentSearch : "" %>">
+                        <input type="text" name="search" placeholder="Tìm theo tên cụm rạp, hotline, địa chỉ, thành phố..." value="<%= currentSearch != null ? currentSearch : "" %>">
                     </div>
 
                     <select name="status" class="cf-select">
@@ -163,13 +163,13 @@
                 </form>
             </div>
 
-            <!-- Bảng danh sách Chi nhánh -->
+            <!-- Bảng danh sách Cụm rạp -->
             <div class="cf-table-container">
                 <table class="cf-table">
                     <thead>
                         <tr>
                             <th style="width: 70px;">STT</th>
-                            <th style="min-width: 180px;">Tên Chi nhánh</th>
+                            <th style="min-width: 180px;">Tên Cụm rạp</th>
                             <th style="min-width: 240px;">Địa chỉ & Thành phố</th>
                             <th style="min-width: 130px;">Hotline</th>
                             <th style="min-width: 170px;">Phòng chiếu trực thuộc</th>
@@ -233,11 +233,11 @@
                                         <input type="hidden" name="page" value="<%= currentPage %>">
 
                                         <% if (isActive) { %>
-                                            <button type="submit" class="cf-btn cf-btn-danger cf-btn-sm" title="Tạm ngưng hoạt động chi nhánh">
+                                            <button type="submit" class="cf-btn cf-btn-danger cf-btn-sm" title="Tạm ngưng hoạt động cụm rạp">
                                                 Tắt
                                             </button>
                                         <% } else { %>
-                                            <button type="submit" class="cf-btn cf-btn-primary cf-btn-sm" style="background: #16A34A; border-color: #16A34A;" title="Kích hoạt lại chi nhánh">
+                                            <button type="submit" class="cf-btn cf-btn-primary cf-btn-sm" style="background: #16A34A; border-color: #16A34A;" title="Kích hoạt lại cụm rạp">
                                                 Bật
                                             </button>
                                         <% } %>
@@ -251,7 +251,7 @@
                         %>
                         <tr>
                             <td colspan="7" style="text-align: center; padding: 40px; color: #94A3B8;">
-                                Không tìm thấy Chi nhánh nào phù hợp với điều kiện tìm kiếm.
+                                Không tìm thấy Cụm rạp nào phù hợp với điều kiện tìm kiếm.
                             </td>
                         </tr>
                         <% } %>
@@ -273,7 +273,7 @@
                 <!-- THANH PHÂN TRANG (PAGINATION) -->
                 <div class="cf-pagination-bar">
                     <div class="cf-pagination-info">
-                        Hiển thị <strong><%= startItem %> - <%= endItem %></strong> trên tổng số <strong><%= totalFilteredCentres %></strong> chi nhánh
+                        Hiển thị <strong><%= startItem %> - <%= endItem %></strong> trên tổng số <strong><%= totalFilteredCentres %></strong> cụm rạp
                     </div>
                     <% if (totalPages > 1) { %>
                     <div class="cf-pagination-controls">
@@ -321,12 +321,12 @@
 </div>
 
 <!-- ============================================================== -->
-<!-- MODAL 1: THÊM CHI NHÁNH MỚI -->
+<!-- MODAL 1: THÊM CỤM RẠP MỚI -->
 <!-- ============================================================== -->
 <div class="cf-modal-backdrop" id="createCentreModal">
     <div class="cf-modal">
         <div class="cf-modal-header">
-            <h3>Thêm Chi nhánh mới</h3>
+            <h3>Thêm Cụm rạp mới</h3>
             <button type="button" class="cf-modal-close" onclick="closeCreateCentreModal()">&times;</button>
         </div>
         <form method="POST" action="${pageContext.request.contextPath}/admin/centres">
@@ -337,9 +337,9 @@
 
             <div class="cf-modal-body">
                 <div class="cf-form-group">
-                    <label>Tên Chi nhánh *</label>
+                    <label>Tên Cụm rạp *</label>
                     <input type="text" name="centreName" placeholder="Ví dụ: CineFlow Cầu Giấy" required>
-                    <span class="cf-form-hint">Hệ thống sẽ kiểm tra đảm bảo không trùng tên với chi nhánh khác.</span>
+                    <span class="cf-form-hint">Hệ thống sẽ kiểm tra đảm bảo không trùng tên với cụm rạp khác.</span>
                 </div>
 
                 <div class="cf-form-group">
@@ -360,19 +360,19 @@
 
             <div class="cf-modal-footer">
                 <button type="button" class="cf-btn cf-btn-secondary" onclick="closeCreateCentreModal()">Hủy</button>
-                <button type="submit" class="cf-btn cf-btn-primary">Lưu Chi nhánh</button>
+                <button type="submit" class="cf-btn cf-btn-primary">Lưu Cụm rạp</button>
             </div>
         </form>
     </div>
 </div>
 
 <!-- ============================================================== -->
-<!-- MODAL 2: SỬA THÔNG TIN CHI NHÁNH -->
+<!-- MODAL 2: SỬA THÔNG TIN CỤM RẠP -->
 <!-- ============================================================== -->
 <div class="cf-modal-backdrop" id="editCentreModal">
     <div class="cf-modal">
         <div class="cf-modal-header">
-            <h3>Sửa thông tin Chi nhánh</h3>
+            <h3>Sửa thông tin Cụm rạp</h3>
             <button type="button" class="cf-modal-close" onclick="closeEditCentreModal()">&times;</button>
         </div>
         <form method="POST" action="${pageContext.request.contextPath}/admin/centres">
@@ -384,9 +384,9 @@
 
             <div class="cf-modal-body">
                 <div class="cf-form-group">
-                    <label>Tên Chi nhánh *</label>
+                    <label>Tên Cụm rạp *</label>
                     <input type="text" name="centreName" id="editCentreName" required>
-                    <span class="cf-form-hint">Kiểm tra không trùng lặp với tên của chi nhánh khác.</span>
+                    <span class="cf-form-hint">Kiểm tra không trùng lặp với tên của cụm rạp khác.</span>
                 </div>
 
                 <div class="cf-form-group">
@@ -421,7 +421,7 @@
         <div class="cf-modal-header">
             <div>
                 <h3 id="viewHallsTitle">Danh sách phòng chiếu</h3>
-                <small id="viewHallsSubtitle" style="color: #94A3B8; font-size: 13px;">Danh sách các phòng chiếu hiện có trực thuộc chi nhánh này</small>
+                <small id="viewHallsSubtitle" style="color: #94A3B8; font-size: 13px;">Danh sách các phòng chiếu hiện có trực thuộc cụm rạp này</small>
             </div>
             <button type="button" class="cf-modal-close" onclick="closeViewHallsModal()">&times;</button>
         </div>
@@ -492,9 +492,9 @@
     // Xác nhận Toggle Status
     function confirmToggleStatus(centreName, isCurrentlyActive) {
         if (isCurrentlyActive) {
-            return confirm("CẢNH BÁO: Khi tạm ngưng chi nhánh \"" + centreName + "\", tất cả các phòng chiếu và suất chiếu của chi nhánh này sẽ tạm dừng hoạt động trên luồng đặt vé.\n\nBạn có chắc chắn muốn TẮT trạng thái hoạt động của chi nhánh này không?");
+            return confirm("CẢNH BÁO: Khi tạm ngưng cụm rạp \"" + centreName + "\", tất cả các phòng chiếu và suất chiếu của cụm rạp này sẽ tạm dừng hoạt động trên luồng đặt vé.\n\nBạn có chắc chắn muốn TẮT trạng thái hoạt động của cụm rạp này không?");
         } else {
-            return confirm("Bạn có muốn KÍCH HOẠT lại chi nhánh \"" + centreName + "\" để chi nhánh hoạt động bình thường trên hệ thống?");
+            return confirm("Bạn có muốn KÍCH HOẠT lại cụm rạp \"" + centreName + "\" để cụm rạp hoạt động bình thường trên hệ thống?");
         }
     }
 
@@ -513,7 +513,7 @@
                 tbody.innerHTML = '';
 
                 if (!data || data.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 24px; color: #94A3B8;">Chi nhánh này hiện chưa có phòng chiếu nào trực thuộc.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 24px; color: #94A3B8;">Cụm rạp này hiện chưa có phòng chiếu nào trực thuộc.</td></tr>';
                 } else {
                     data.forEach(function(hall, index) {
                         var statusBadge = '';
