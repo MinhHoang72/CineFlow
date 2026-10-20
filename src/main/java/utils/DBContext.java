@@ -8,6 +8,11 @@ import java.sql.SQLException;
  * Cung cấp kết nối JDBC tới cơ sở dữ liệu Microsoft SQL Server của hệ thống CineFlow.
  */
 public class DBContext {
+    protected Connection connection;
+    public DBContext() {
+        try { connection = getConnection(); }
+        catch (SQLException e) { throw new IllegalStateException("Unable to connect to database", e); }
+    }
 
     private static final String URL =
             "jdbc:sqlserver://localhost:1433;"
