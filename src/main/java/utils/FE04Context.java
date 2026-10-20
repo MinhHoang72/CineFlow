@@ -3,6 +3,9 @@ package utils;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import java.sql.*;
+import java.util.List;
+import dao.CentreDAO;
+import model.Centre;
 import model.User;
 
 /** Resolves FE-04 actors and centres without demo IDs. */
@@ -33,13 +36,21 @@ public final class FE04Context {
                 if (rs.next()) {
                     String role = rs.getString("Role");
                     if ("ADMIN".equals(role)) {
-                        String selected = request.getParameter("centreId");
-                        if (selected == null) selected = request.getParameter("branchId");
-                        if (selected == null && request.getSession().getAttribute("centreId") != null)
-                            selected = request.getSession().getAttribute("centreId").toString();
-                        if (selected != null && Integer.parseInt(selected) > 0) {
-                            int centre = Integer.parseInt(selected);
+                        // ADMIN khong thuoc rap nao: chon rap qua o "Chi nhanh" tren trang (navigation.jspf),
+                        // chua chon thi lay rap da chon truoc do, roi den rap dang hoat dong dau tien.
+                        List<Centre> centres = new CentreDAO().getActiveCentres();
+                        Integer centre = parseCentre(request.getParameter("centreId"));
+                        if (centre == null) centre = parseCentre(request.getParameter("branchId"));
+                        if (centre == null && request.getSession().getAttribute("centreId") != null)
+                            centre = parseCentre(request.getSession().getAttribute("centreId").toString());
+                        final Integer chosen = centre;
+                        if (chosen == null || centres.stream().noneMatch(c -> c.getCentreId() == chosen)) {
+                            centre = centres.isEmpty() ? null : centres.get(0).getCentreId();
+                        }
+                        if (centre != null) {
                             request.getSession().setAttribute("centreId", centre);
+                            request.setAttribute("fe04Centres", centres);
+                            request.setAttribute("fe04CentreId", centre);
                             return centre;
                         }
                     } else {
@@ -52,5 +63,15 @@ public final class FE04Context {
             throw new IllegalStateException("Unable to resolve assigned centre.", e);
         }
         throw new IllegalStateException("Select a centre or configure an active centre assignment.");
+    }
+
+    private static Integer parseCentre(String value) {
+        if (value == null) return null;
+        try {
+            int id = Integer.parseInt(value.trim());
+            return id > 0 ? id : null;
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 }

@@ -5,3 +5,13 @@
 <a class="${fe04Tab == 'time' ? 'is-active' : ''}" href="${pageContext.request.contextPath}/pricing/time-slots" ${fe04Tab == 'time' ? 'aria-current="page"' : ''}>Phụ thu khung giờ</a>
 <a class="${fe04Tab == 'surcharge' ? 'is-active' : ''}" href="${pageContext.request.contextPath}/pricing/seat-surcharges" ${fe04Tab == 'surcharge' ? 'aria-current="page"' : ''}>Phụ thu ghế & phòng</a>
 </nav>
+<%-- ADMIN chon chi nhanh (FE04Context.requireCentreId dat fe04Centres / fe04CentreId) --%>
+<c:if test="${not empty fe04Centres}">
+<form class="st-create-form" method="get" style="margin-bottom:16px"
+      action="${pageContext.request.contextPath}${fe04Tab == 'showtimes' ? '/showtimes' : (fe04Tab == 'time' ? '/pricing/time-slots' : '/pricing')}">
+<div class="st-field"><label for="fe04-centre">Chi nhánh</label>
+<select id="fe04-centre" name="centreId" onchange="this.form.submit()">
+<c:forEach var="ce" items="${fe04Centres}"><option value="${ce.centreId}" ${ce.centreId == fe04CentreId ? 'selected' : ''}><c:out value="${ce.centreName}" /> · <c:out value="${ce.city}" /></option></c:forEach>
+</select></div>
+</form>
+</c:if>
