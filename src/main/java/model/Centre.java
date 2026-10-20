@@ -1,5 +1,8 @@
 package model;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Đại diện cho một trung tâm chiếu phim trong hệ thống CineFlow.
  */
@@ -19,6 +22,7 @@ public class Centre {
     private String managerName;
     private String managerEmail;
     private String managerStatus;
+    private List<Hall> halls = new ArrayList<>();
 
     public String getManagerStatus() {
         return managerStatus;
@@ -153,5 +157,13 @@ public class Centre {
 
     public void setCentreID(int centreId) {
         this.centreId = centreId;
+    }
+
+    public List<Hall> getHalls() {
+        return halls;
+    }
+
+    public void setHalls(List<Hall> halls) {
+        this.halls = halls;
     }
 }

@@ -1,20 +1,11 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package model;
 
 import java.math.BigDecimal;
 
-/**
- *
- * @author ADM
- */
-//list -1 dòng 1 item hoặc 1 combo
 public class FnbRowDTO {
 
     private String kind;
-    private int id; //id items or id combo
+    private int id;
     private String name;
     private String categoryName;
     private BigDecimal price;
@@ -109,12 +100,10 @@ public class FnbRowDTO {
     public void setCentreName(String centreName) {
         this.centreName = centreName;
     }
-    //check combo
 
     public boolean isCombo() {
         return "COMBO".equals(kind);
     }
-    //check có đang bán k 
    public boolean  isActive(){
    return  "ACTIVE".equals(status);
    }

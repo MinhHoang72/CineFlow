@@ -26,8 +26,8 @@ public final class MediaStorage {
      * @throws IllegalArgumentException nếu danh mục không được hỗ trợ
      */
     public static Path uploadDirectory(ServletContext context, String category) throws IOException {
-        // 1. Kiểm tra danh mục hợp lệ (chỉ hỗ trợ avatars và movies)
-        if (!"avatars".equals(category) && !"movies".equals(category)) {
+        // 1. Kiểm tra danh mục hợp lệ (chỉ hỗ trợ avatars, movies và fnb)
+        if (!"avatars".equals(category) && !"movies".equals(category) && !"fnb".equals(category)) {
             throw new IllegalArgumentException("Unsupported media category.");
         }
 

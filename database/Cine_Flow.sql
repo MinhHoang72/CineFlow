@@ -1166,7 +1166,6 @@ ON CentreManagerAssignments(CentreID)
 WHERE Status = 'ACTIVE' AND EndDate IS NULL;
 GO
 
-/* ====================================================================================
 
 /* ====================================================================================
    BỘ DỮ LIỆU MẪU CHUẨN HÓA TOÀN DIỆN (COMPREHENSIVE MASTER & SAMPLE SEED DATA)
@@ -1350,24 +1349,24 @@ INSERT INTO Halls (HallID, CentreID, HallName, HallType, Capacity, Status, Creat
 (7, 4, N'Phòng Premium 01', N'2D', 90, N'AVAILABLE', '2026-10-03 23:08:31'),
 (8, 5, N'Phòng 01', N'2D', 70, N'AVAILABLE', '2026-10-03 23:08:31'),
 (9, 6, N'Phòng 01', N'2D', 70, N'AVAILABLE', '2026-10-03 23:08:31'),
-(19, 5, N'PhÃ²ng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:56:37'),
-(20, 5, N'PhÃ²ng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:56:37'),
-(21, 5, N'PhÃ²ng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:56:37'),
-(22, 1, N'PhÃ²ng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:56:37'),
-(23, 1, N'PhÃ²ng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:56:37'),
-(24, 1, N'PhÃ²ng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:56:37'),
-(25, 2, N'PhÃ²ng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:56:37'),
-(26, 2, N'PhÃ²ng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:56:37'),
-(27, 2, N'PhÃ²ng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:56:37'),
-(28, 3, N'PhÃ²ng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:56:37'),
-(29, 3, N'PhÃ²ng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:56:37'),
-(30, 3, N'PhÃ²ng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:56:37'),
-(40, 6, N'PhÃ²ng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:56:37'),
-(41, 6, N'PhÃ²ng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:56:37'),
-(42, 6, N'PhÃ²ng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:56:37'),
-(58, 4, N'PhÃ²ng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:56:37'),
-(59, 4, N'PhÃ²ng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:56:37'),
-(60, 4, N'PhÃ²ng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:56:37'),
+(19, 5, N'Phòng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:56:37'),
+(20, 5, N'Phòng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:56:37'),
+(21, 5, N'Phòng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:56:37'),
+(22, 1, N'Phòng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:56:37'),
+(23, 1, N'Phòng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:56:37'),
+(24, 1, N'Phòng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:56:37'),
+(25, 2, N'Phòng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:56:37'),
+(26, 2, N'Phòng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:56:37'),
+(27, 2, N'Phòng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:56:37'),
+(28, 3, N'Phòng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:56:37'),
+(29, 3, N'Phòng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:56:37'),
+(30, 3, N'Phòng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:56:37'),
+(40, 6, N'Phòng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:56:37'),
+(41, 6, N'Phòng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:56:37'),
+(42, 6, N'Phòng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:56:37'),
+(58, 4, N'Phòng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:56:37'),
+(59, 4, N'Phòng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:56:37'),
+(60, 4, N'Phòng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:56:37'),
 (61, 1, N'Phòng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:59:54'),
 (62, 1, N'Phòng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:59:54'),
 (63, 1, N'Phòng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:59:54'),
@@ -24469,4 +24468,92 @@ UNION ALL SELECT 'CheckInLogs', COUNT(*) FROM CheckInLogs
 UNION ALL SELECT 'VoucherUsages', COUNT(*) FROM VoucherUsages
 UNION ALL SELECT 'MovieRatings', COUNT(*) FROM MovieRatings
 ORDER BY SoBanGhi DESC;
+GO
+
+
+/* =========================================================
+   F&B: nhân bản danh mục món/combo mẫu cho TỪNG Centre
+   (xem giải thích trong database/fnb_seed_per_centre.sql)
+   ========================================================= */
+SET XACT_ABORT ON;
+BEGIN TRANSACTION;
+
+/* 1) Bổ sung dòng combo cho combo gốc 3, 4, 5 (nếu chưa có) */
+INSERT INTO ComboItems (ComboID, FnbItemID, Quantity)
+SELECT v.ComboID, v.FnbItemID, v.Quantity
+FROM (VALUES
+    (3, 6, 1), (3, 3, 1), (3, 4, 1),   -- Combo Movie Night: 1 bắp phô mai + 2 nước ngọt
+    (4, 2, 1), (4, 3, 1),              -- Combo Solo: 1 bắp caramel + 1 nước ngọt
+    (5, 1, 2), (5, 3, 4), (5, 5, 1)    -- Combo Premium: 2 bắp + 4 nước + 1 snack
+) AS v(ComboID, FnbItemID, Quantity)
+WHERE EXISTS (SELECT 1 FROM FnbCombos WHERE ComboID = v.ComboID AND CentreID IS NULL)
+  AND EXISTS (SELECT 1 FROM FnbItems WHERE FnbItemID = v.FnbItemID AND CentreID IS NULL)
+  AND NOT EXISTS (SELECT 1 FROM ComboItems ci WHERE ci.ComboID = v.ComboID AND ci.FnbItemID = v.FnbItemID);
+
+/* 2) Nhân bản cho từng Centre */
+DECLARE @centreId INT;
+DECLARE centre_cursor CURSOR LOCAL FAST_FORWARD FOR
+    SELECT CentreID FROM Centres ORDER BY CentreID;
+OPEN centre_cursor;
+FETCH NEXT FROM centre_cursor INTO @centreId;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM FnbItems WHERE CentreID = @centreId)
+       AND NOT EXISTS (SELECT 1 FROM FnbCombos WHERE CentreID = @centreId)
+    BEGIN
+        DECLARE @itemMap TABLE (OldId INT PRIMARY KEY, NewId INT);
+        DECLARE @comboMap TABLE (OldId INT PRIMARY KEY, NewId INT);
+        DELETE FROM @itemMap;
+        DELETE FROM @comboMap;
+
+        /* Món: MERGE ... ON 1 = 0 để chèn mọi dòng và lấy lại ID mới */
+        MERGE FnbItems AS target
+        USING (SELECT FnbItemID, CategoryID, ItemName, Description, Price, ImageURL, Status
+               FROM FnbItems WHERE CentreID IS NULL) AS source
+        ON 1 = 0
+        WHEN NOT MATCHED THEN
+            INSERT (CategoryID, CentreID, ItemName, Description, Price, ImageURL, Status)
+            VALUES (source.CategoryID, @centreId, source.ItemName, source.Description,
+                    source.Price, source.ImageURL, source.Status)
+        OUTPUT source.FnbItemID, inserted.FnbItemID INTO @itemMap (OldId, NewId);
+
+        /* Combo */
+        MERGE FnbCombos AS target
+        USING (SELECT ComboID, ComboName, Description, Price, ImageURL, Status
+               FROM FnbCombos WHERE CentreID IS NULL) AS source
+        ON 1 = 0
+        WHEN NOT MATCHED THEN
+            INSERT (CentreID, ComboName, Description, Price, ImageURL, Status)
+            VALUES (@centreId, source.ComboName, source.Description,
+                    source.Price, source.ImageURL, source.Status)
+        OUTPUT source.ComboID, inserted.ComboID INTO @comboMap (OldId, NewId);
+
+        /* Dòng combo: đổi ID cũ sang ID mới của Centre này */
+        INSERT INTO ComboItems (ComboID, FnbItemID, Quantity)
+        SELECT cm.NewId, im.NewId, ci.Quantity
+        FROM ComboItems ci
+        JOIN @comboMap cm ON cm.OldId = ci.ComboID
+        JOIN @itemMap im ON im.OldId = ci.FnbItemID;
+
+        /* Tồn kho: mỗi món mới có sẵn 100 */
+        INSERT INTO CentreFnbInventory (CentreID, FnbItemID, StockQuantity, IsAvailable)
+        SELECT @centreId, NewId, 100, 1 FROM @itemMap;
+    END
+
+    FETCH NEXT FROM centre_cursor INTO @centreId;
+END
+
+CLOSE centre_cursor;
+DEALLOCATE centre_cursor;
+
+COMMIT TRANSACTION;
+GO
+
+/* Kiểm tra: mỗi Centre nên có 12 món và 5 combo */
+SELECT c.CentreID, c.CentreName,
+       (SELECT COUNT(*) FROM FnbItems i WHERE i.CentreID = c.CentreID) AS SoMon,
+       (SELECT COUNT(*) FROM FnbCombos co WHERE co.CentreID = c.CentreID) AS SoCombo
+FROM Centres c
+ORDER BY c.CentreID;
 GO

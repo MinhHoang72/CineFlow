@@ -1,31 +1,44 @@
 package model;
 
 import java.math.BigDecimal;
-import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 public class Voucher {
+
     private int voucherId;
     private String voucherCode;
     private String voucherName;
     private String description;
-    private Integer centreId;
-    private String centreName;
-    private Integer createdBy;
-    private String createdByName;
-    private String discountType; // FIXED / PERCENT
+    private String discountType;
     private BigDecimal discountValue;
     private BigDecimal minimumOrderValue;
     private BigDecimal maximumDiscount;
-    private Timestamp startDate;
-    private Timestamp endDate;
+    private LocalDateTime startDate;
+    private LocalDateTime endDate;
     private Integer usageLimit;
     private int usedCount;
-    private int perCustomerLimit = 1;
-    private String status; // ACTIVE / INACTIVE / EXPIRED
+    private String status;
 
     public Voucher() {
     }
 
+    public Voucher(int voucherId, String voucherCode, String voucherName, String description, String discountType, BigDecimal discountValue, BigDecimal minimumOrderValue, BigDecimal maximumDiscount, LocalDateTime startDate, LocalDateTime endDate, Integer usageLimit, int usedCount, String status) {
+        this.voucherId = voucherId;
+        this.voucherCode = voucherCode;
+        this.voucherName = voucherName;
+        this.description = description;
+        this.discountType = discountType;
+        this.discountValue = discountValue;
+        this.minimumOrderValue = minimumOrderValue;
+        this.maximumDiscount = maximumDiscount;
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.usageLimit = usageLimit;
+        this.usedCount = usedCount;
+        this.status = status;
+    }
+
+    
     public int getVoucherId() {
         return voucherId;
     }
@@ -56,38 +69,6 @@ public class Voucher {
 
     public void setDescription(String description) {
         this.description = description;
-    }
-
-    public Integer getCentreId() {
-        return centreId;
-    }
-
-    public void setCentreId(Integer centreId) {
-        this.centreId = centreId;
-    }
-
-    public String getCentreName() {
-        return centreName;
-    }
-
-    public void setCentreName(String centreName) {
-        this.centreName = centreName;
-    }
-
-    public Integer getCreatedBy() {
-        return createdBy;
-    }
-
-    public void setCreatedBy(Integer createdBy) {
-        this.createdBy = createdBy;
-    }
-
-    public String getCreatedByName() {
-        return createdByName;
-    }
-
-    public void setCreatedByName(String createdByName) {
-        this.createdByName = createdByName;
     }
 
     public String getDiscountType() {
@@ -122,19 +103,19 @@ public class Voucher {
         this.maximumDiscount = maximumDiscount;
     }
 
-    public Timestamp getStartDate() {
+    public LocalDateTime getStartDate() {
         return startDate;
     }
 
-    public void setStartDate(Timestamp startDate) {
+    public void setStartDate(LocalDateTime startDate) {
         this.startDate = startDate;
     }
 
-    public Timestamp getEndDate() {
+    public LocalDateTime getEndDate() {
         return endDate;
     }
 
-    public void setEndDate(Timestamp endDate) {
+    public void setEndDate(LocalDateTime endDate) {
         this.endDate = endDate;
     }
 
@@ -154,14 +135,6 @@ public class Voucher {
         this.usedCount = usedCount;
     }
 
-    public int getPerCustomerLimit() {
-        return perCustomerLimit;
-    }
-
-    public void setPerCustomerLimit(int perCustomerLimit) {
-        this.perCustomerLimit = perCustomerLimit;
-    }
-
     public String getStatus() {
         return status;
     }
@@ -169,4 +142,18 @@ public class Voucher {
     public void setStatus(String status) {
         this.status = status;
     }
+
+    public boolean isExpired() {
+        return endDate != null && endDate.isBefore(LocalDateTime.now());
+    }
+
+    public boolean isExhausted() {
+        return usageLimit != null && usedCount >= usageLimit;
+    }
+
+    @Override
+    public String toString() {
+        return "Voucher{" + "voucherId=" + voucherId + ", voucherCode=" + voucherCode + ", voucherName=" + voucherName + ", description=" + description + ", discountType=" + discountType + ", discountValue=" + discountValue + ", minimumOrderValue=" + minimumOrderValue + ", maximumDiscount=" + maximumDiscount + ", startDate=" + startDate + ", endDate=" + endDate + ", usageLimit=" + usageLimit + ", usedCount=" + usedCount + ", status=" + status + '}';
+    }
+    
 }

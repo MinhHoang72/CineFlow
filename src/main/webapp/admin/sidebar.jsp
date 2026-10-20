@@ -6,6 +6,10 @@
     if (activeNav == null) {
         if (cfUri.contains("/admin/distribution")) {
             activeNav = "distribution";
+        } else if (cfUri.contains("/admin/centres") || cfUri.contains("/admin/centre")) {
+            activeNav = "centres";
+        } else if (cfUri.contains("/halls")) {
+            activeNav = "halls";
         } else if (cfUri.contains("/admin/movies") || cfUri.contains("/admin/movie")) {
             activeNav = "movies";
         } else if (cfUri.contains("/admin/customers")) {
@@ -41,6 +45,16 @@
 
     <div class="cf-sidebar-section">QUẢN TRỊ NỘI DUNG</div>
     <nav class="cf-sidebar-nav">
+        <a class="<%= "centres".equals(activeNav) ? "active" : "" %>" href="<%= cfPath %>/admin/centres">
+            <span class="icon">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M3 7v14M21 7v14M6 7V3h12v4M9 11h2M13 11h2M9 15h2M13 15h2"/></svg>
+            </span>Quản lý Chi nhánh
+        </a>
+        <a class="<%= "halls".equals(activeNav) ? "active" : "" %>" href="<%= cfPath %>/manager/halls">
+            <span class="icon">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+            </span>Quản lý Phòng chiếu
+        </a>
         <a class="<%= "movies".equals(activeNav) ? "active" : "" %>" href="<%= cfPath %>/admin/movies">
             <span class="icon">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line><line x1="2" y1="7" x2="7" y2="7"></line><line x1="2" y1="17" x2="7" y2="17"></line><line x1="17" y1="17" x2="22" y2="17"></line><line x1="17" y1="7" x2="22" y2="7"></line></svg>
@@ -50,6 +64,20 @@
             <span class="icon">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
             </span>Phân phối rạp chiếu
+        </a>
+    </nav>
+
+    <div class="cf-sidebar-section">BẮP NƯỚC</div>
+    <nav class="cf-sidebar-nav">
+        <a class="<%= "fnb".equals(activeNav) ? "active" : "" %>" href="<%= cfPath %>/fnb">
+            <span class="icon">🍿</span>Món &amp; Combo
+        </a>
+    </nav>
+
+    <div class="cf-sidebar-section">KHUYẾN MÃI</div>
+    <nav class="cf-sidebar-nav">
+        <a class="<%= "vouchers".equals(activeNav) || cfUri.contains("/admin/vouchers") ? "active" : "" %>" href="<%= cfPath %>/admin/vouchers">
+            <span class="icon">🎟</span>Voucher
         </a>
     </nav>
 
@@ -74,8 +102,14 @@
 
     <div class="cf-sidebar-section">BÁO CÁO & PHÂN TÍCH</div>
     <nav class="cf-sidebar-nav">
-        <a class="<%= "reports".equals(activeNav) || cfUri.contains("/reports") ? "active" : "" %>" href="<%= cfPath %>/reports">
-            <span class="icon">📊</span>Báo cáo doanh thu
+        <a class="<%= cfUri.contains("/report/chain") ? "active" : "" %>" href="<%= cfPath %>/report/chain">
+            <span class="icon">📈</span>Dashboard chuỗi
+        </a>
+        <a class="<%= cfUri.contains("/report/sales") ? "active" : "" %>" href="<%= cfPath %>/report/sales">
+            <span class="icon">💰</span>Doanh thu &amp; bán hàng
+        </a>
+        <a class="<%= cfUri.contains("/report/operations") ? "active" : "" %>" href="<%= cfPath %>/report/operations">
+            <span class="icon">⚙</span>Chỉ số vận hành
         </a>
     </nav>
 
