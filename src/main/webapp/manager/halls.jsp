@@ -7,7 +7,7 @@
         authRole = ((model.User) session.getAttribute("user")).getRole();
     }
     if (!"MANAGER".equalsIgnoreCase(authRole) && !"ADMIN".equalsIgnoreCase(authRole)) {
-        response.sendError(HttpServletResponse.SC_FORBIDDEN, "Chỉ Quản lý cụm rạp (MANAGER) hoặc Quản trị viên (ADMIN) mới có quyền truy cập trang này.");
+        response.sendError(HttpServletResponse.SC_FORBIDDEN, "Chỉ Quản lý chi nhánh (MANAGER) hoặc Quản trị viên (ADMIN) mới có quyền truy cập trang này.");
         return;
     }
 
@@ -51,7 +51,7 @@
     <!-- Phông chữ chuẩn hệ thống CineFlow -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&display=swap" rel="stylesheet">
 
     <!-- CSS chung của hệ thống -->
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/reset.css">
@@ -79,10 +79,10 @@
             <div class="cf-page-header">
                 <div>
                     <h1>Quản lý Phòng chiếu</h1>
-                    <p>Danh sách phòng chiếu, định dạng kỹ thuật 2D/3D và sức chứa thiết kế trực thuộc cụm rạp</p>
+                    <p>Danh sách phòng chiếu, định dạng kỹ thuật 2D/3D và sức chứa thiết kế trực thuộc chi nhánh</p>
                 </div>
                 <% if (Boolean.TRUE.equals(noCentreAssigned)) { %>
-                    <!-- Không hiển thị nút thêm khi chưa có rạp -->
+                    <!-- Không hiển thị nút thêm khi chưa có chi nhánh -->
                 <% } else { %>
                     <button type="button" class="cf-btn cf-btn-primary" onclick="openCreateHallModal()" style="display: flex; align-items: center; gap: 8px;">
                         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
@@ -105,12 +105,10 @@
                     <span>✓</span> <strong>Thành công!</strong> Đã cập nhật trạng thái hoạt động của phòng chiếu thành công.
                 </div>
             <% } else if ("duplicate_name".equals(errorParam)) { %>
-                <!-- Alt 1: Trùng tên phòng chiếu trong cùng cụm rạp -->
                 <div class="cf-alert cf-alert-danger">
-                    <span>⚠</span> <strong>Lỗi:</strong> Tên phòng chiếu đã tồn tại tại cụm rạp này. Vui lòng nhập tên khác.
+                    <span>⚠</span> <strong>Lỗi:</strong> Tên phòng chiếu đã tồn tại tại chi nhánh này. Vui lòng nhập tên khác.
                 </div>
             <% } else if ("has_future_bookings".equals(errorParam)) { %>
-                <!-- Alt 2: Thay đổi trạng thái phòng đang có lịch chiếu / đặt vé -->
                 <div class="cf-alert cf-alert-danger">
                     <span>⚠</span> <strong>Cảnh báo:</strong> Không thể vô hiệu hóa phòng chiếu vì đang có suất chiếu đã phát sinh vé đặt.
                 </div>
@@ -127,15 +125,15 @@
             <% if (Boolean.TRUE.equals(noCentreAssigned)) { %>
                 <!-- Trường hợp Manager chưa được gán Centre -->
                 <div class="cf-alert cf-alert-danger" style="margin-top: 20px;">
-                    <span>⚠</span> <strong>Chưa phân công cụm rạp:</strong> Tài khoản Quản lý của bạn hiện chưa được phân công phụ trách Cụm rạp nào. Vui lòng liên hệ Quản trị viên (Admin) để được bổ nhiệm vào Cụm rạp.
+                    <span>⚠</span> <strong>Chưa phân công chi nhánh:</strong> Tài khoản Quản lý của bạn hiện chưa được phân công phụ trách Chi nhánh nào. Vui lòng liên hệ Quản trị viên (Admin) để được bổ nhiệm vào Chi nhánh.
                 </div>
             <% } else { %>
-                <!-- Banner Cụm rạp đang quản lý -->
+                <!-- Banner Chi nhánh đang quản lý -->
                 <div class="cf-centre-banner">
                     <div class="cf-centre-meta">
                         <div class="cf-centre-icon">🏢</div>
                         <div class="cf-centre-info">
-                            <h2><%= currentCentre != null ? currentCentre.getCentreName() : "Cụm rạp #" + targetCentreId %></h2>
+                            <h2><%= currentCentre != null ? currentCentre.getCentreName() : "Chi nhánh #" + targetCentreId %></h2>
                             <p>
                                 📍 <%= currentCentre != null ? currentCentre.getAddress() : "" %>
                                 <% if (currentCentre != null && currentCentre.getCity() != null && !currentCentre.getCity().trim().isEmpty()) { %>
@@ -149,13 +147,13 @@
                     </div>
 
                     <% if (isAdmin && allCentres != null && allCentres.size() > 1) { %>
-                        <!-- Dropdown chuyển đổi Cụm rạp dành cho Admin có toàn quyền -->
+                        <!-- Dropdown chuyển đổi Chi nhánh dành cho Admin có toàn quyền -->
                         <div class="cf-centre-switch">
-                            <label for="adminCentreSelect">Đổi Cụm rạp:</label>
+                            <label for="adminCentreSelect">Đổi Chi nhánh:</label>
                             <select id="adminCentreSelect" class="cf-centre-select" onchange="switchCentre(this.value)">
                                 <% for (Centre c : allCentres) { %>
                                     <option value="<%= c.getCentreId() %>" <%= (targetCentreId != null && targetCentreId == c.getCentreId()) ? "selected" : "" %>>
-                                        <%= c.getCentreName() %> (<%= c.getCity() != null ? c.getCity() : "Rạp #" + c.getCentreId() %>)
+                                        <%= c.getCentreName() %> (<%= c.getCity() != null ? c.getCity() : "Chi nhánh #" + c.getCentreId() %>)
                                     </option>
                                 <% } %>
                             </select>
@@ -246,7 +244,7 @@
                             <tr>
                                 <td><strong>#<%= h.getHallId() %></strong></td>
                                 <td>
-                                    <strong style="color: #0F172A; font-size: 15px;"><%= h.getHallName() %></strong>
+                                    <strong style="color: #F8FAFC; font-size: 15px;"><%= h.getHallName() %></strong>
                                 </td>
                                 <td>
                                     <% if (is3D) { %>
@@ -256,20 +254,20 @@
                                     <% } %>
                                 </td>
                                 <td>
-                                    <strong><%= h.getCapacity() %></strong> ghế
+                                    <strong style="color: #F8FAFC;"><%= h.getCapacity() %></strong> ghế
                                 </td>
                                 <td>
                                     <% if (isActive) { %>
-                                        <span class="cf-badge cf-badge-active">● Active</span>
+                                        <span class="cf-badge cf-badge-active">● Đang hoạt động</span>
                                     <% } else { %>
-                                        <span class="cf-badge cf-badge-inactive">● Inactive</span>
+                                        <span class="cf-badge cf-badge-inactive">● Tạm ngưng</span>
                                     <% } %>
                                 </td>
                                 <td style="text-align: right;">
                                     <div class="cf-actions" style="justify-content: flex-end;">
-                                        <!-- Nút Configure Seats / Cấu hình sơ đồ ghế (UC-FE-03.3) -->
+                                        <!-- Nút Configure Seats / Cấu hình sơ đồ ghế -->
                                         <a href="${pageContext.request.contextPath}/manager/seat-config?hallId=<%= h.getHallId() %>"
-                                           class="cf-btn cf-btn-sm" style="background: rgba(59, 130, 246, 0.12); color: #2563EB; border: 1px solid rgba(59, 130, 246, 0.3);"
+                                           class="cf-btn cf-btn-sm" style="background: rgba(59, 130, 246, 0.15); color: #60A5FA; border: 1px solid rgba(59, 130, 246, 0.35);"
                                            title="Cấu hình ma trận sơ đồ ghế và bảo trì">
                                             💺 Cấu hình ghế
                                         </a>
@@ -308,7 +306,7 @@
                                 } else {
                             %>
                             <tr>
-                                <td colspan="6" style="text-align: center; padding: 40px; color: #64748B;">
+                                <td colspan="6" style="text-align: center; padding: 40px; color: #94A3B8;">
                                     Không tìm thấy phòng chiếu nào phù hợp. Bấm nút <strong>"Thêm phòng chiếu mới"</strong> để khởi tạo phòng.
                                 </td>
                             </tr>
@@ -402,7 +400,7 @@
                 <div class="cf-form-group">
                     <label>Tên / Số phòng chiếu *</label>
                     <input type="text" name="hallName" placeholder="VD: Hall 01, Phòng 01..." required>
-                    <span class="cf-form-hint">Tên phòng chiếu không được trùng lặp trong cùng Cụm rạp.</span>
+                    <span class="cf-form-hint">Tên phòng chiếu không được trùng lặp trong cùng Chi nhánh.</span>
                 </div>
 
                 <div class="cf-form-group">
@@ -421,7 +419,7 @@
 
                 <div class="cf-form-group">
                     <label>Trạng thái khởi tạo</label>
-                    <input type="text" value="Đang hoạt động" disabled style="background: #E2E8F0; color: #475569; font-weight: 600;">
+                    <input type="text" value="Đang hoạt động" disabled style="background: #1E293B; color: #34D399; border: 1px solid rgba(255, 255, 255, 0.14); font-weight: 600;">
                     <input type="hidden" name="status" value="AVAILABLE">
                 </div>
             </div>
@@ -455,7 +453,7 @@
                 <div class="cf-form-group">
                     <label>Tên / Số phòng chiếu *</label>
                     <input type="text" name="hallName" id="editHallName" required>
-                    <span class="cf-form-hint">Kiểm tra không trùng tên phòng khác trong Cụm rạp.</span>
+                    <span class="cf-form-hint">Kiểm tra không trùng tên phòng khác trong Chi nhánh.</span>
                 </div>
 
                 <div class="cf-form-group">
@@ -532,7 +530,7 @@
         }
     }
 
-    // Chuyển đổi Cụm rạp (Dành cho Admin)
+    // Chuyển đổi Chi nhánh (Dành cho Admin)
     function switchCentre(centreId) {
         window.location.href = '${pageContext.request.contextPath}/manager/halls?centreId=' + centreId;
     }

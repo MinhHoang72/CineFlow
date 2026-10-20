@@ -49,7 +49,7 @@
     <!-- Phông chữ chuẩn hệ thống CineFlow -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&display=swap" rel="stylesheet">
 
     <!-- CSS chung của hệ thống -->
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/reset.css">
@@ -290,10 +290,10 @@
             <div class="cf-seats-table-card" style="margin-top: 36px;">
                 <div class="cf-section-header">
                     <div>
-                        <h2 style="font-size: 18px; font-weight: 700; color: #0F172A; margin: 0 0 4px 0;">
+                        <h2 style="font-size: 18px; font-weight: 700; color: #F8FAFC; margin: 0 0 4px 0;">
                             📋 Danh sách chi tiết ghế ngồi &amp; Quản lý bảo trì
                         </h2>
-                        <p style="font-size: 13px; color: #64748B; margin: 0;">
+                        <p style="font-size: 13px; color: #94A3B8; margin: 0;">
                             Tra cứu từng vị trí ghế theo mã hoặc hàng, lọc phân hạng Standard/VIP/Sweetbox và thao tác bật/tắt bảo trì nhanh.
                         </p>
                     </div>
@@ -354,25 +354,25 @@
                             <tr>
                                 <td><strong>#<%= s.getSeatId() %></strong></td>
                                 <td>
-                                    <div style="display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 32px; background: #0F172A; color: #FFFFFF; font-weight: 700; border-radius: 6px; font-size: 13px;">
+                                    <div style="display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 32px; background: #1E293B; border: 1px solid rgba(255, 255, 255, 0.15); color: #F8FAFC; font-weight: 700; border-radius: 6px; font-size: 13px;">
                                         <%= s.getLabel() %>
                                     </div>
-                                    <span style="font-size: 13px; color: #64748B; margin-left: 8px;">(Hàng <%= s.getSeatRow() %>, Ghế <%= s.getSeatNumber() %>)</span>
+                                    <span style="font-size: 13px; color: #94A3B8; margin-left: 8px;">(Hàng <%= s.getSeatRow() %>, Ghế <%= s.getSeatNumber() %>)</span>
                                 </td>
                                 <td>
                                     <% if ("VIP".equals(type)) { %>
-                                        <span class="cf-badge" style="background: #FEF3C7; color: #B45309; border: 1px solid #F59E0B;">★ VIP</span>
+                                        <span class="cf-badge" style="background: rgba(245, 158, 11, 0.15); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.35);">★ VIP</span>
                                     <% } else if ("SWEETBOX".equals(type)) { %>
-                                        <span class="cf-badge" style="background: #FCE7F3; color: #BE185D; border: 1px solid #EC4899;">♥ Sweetbox</span>
+                                        <span class="cf-badge" style="background: rgba(236, 72, 153, 0.15); color: #F472B6; border: 1px solid rgba(236, 72, 153, 0.35);">♥ Sweetbox</span>
                                     <% } else { %>
-                                        <span class="cf-badge" style="background: #F1F5F9; color: #334155; border: 1px solid #CBD5E1;">Standard</span>
+                                        <span class="cf-badge" style="background: rgba(255, 255, 255, 0.08); color: #E2E8F0; border: 1px solid rgba(255, 255, 255, 0.16);">Standard</span>
                                     <% } %>
                                 </td>
                                 <td>
                                     <% if (isAvailable) { %>
                                         <span class="cf-badge cf-badge-active">● Khả dụng (Active)</span>
                                     <% } else if (isMaint) { %>
-                                        <span class="cf-badge" style="background: #FEE2E2; color: #DC2626; border: 1px solid #EF4444;">🔧 Đang bảo trì (Disabled)</span>
+                                        <span class="cf-badge" style="background: rgba(239, 68, 68, 0.15); color: #F87171; border: 1px solid rgba(239, 68, 68, 0.35);">🔧 Đang bảo trì</span>
                                     <% } else { %>
                                         <span class="cf-badge cf-badge-inactive">● <%= s.getStatus() %></span>
                                     <% } %>
@@ -405,7 +405,7 @@
                                 } else {
                             %>
                             <tr>
-                                <td colspan="5" style="text-align: center; padding: 40px; color: #64748B;">
+                                <td colspan="5" style="text-align: center; padding: 40px; color: #94A3B8;">
                                     Không tìm thấy ghế nào phù hợp với điều kiện tìm kiếm / lọc.
                                 </td>
                             </tr>
