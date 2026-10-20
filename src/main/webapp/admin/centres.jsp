@@ -168,7 +168,7 @@
                 <table class="cf-table">
                     <thead>
                         <tr>
-                            <th style="width: 60px;">ID</th>
+                            <th style="width: 70px;">STT</th>
                             <th style="min-width: 180px;">Tên Chi nhánh</th>
                             <th style="min-width: 240px;">Địa chỉ & Thành phố</th>
                             <th style="min-width: 130px;">Hotline</th>
@@ -180,11 +180,13 @@
                     <tbody>
                         <%
                             if (centres != null && !centres.isEmpty()) {
+                                int centreIndex = (currentPage - 1) * pageSize;
                                 for (Centre c : centres) {
+                                    centreIndex++;
                                     boolean isActive = "ACTIVE".equalsIgnoreCase(c.getStatus());
                         %>
                         <tr>
-                            <td><strong>#<%= c.getCentreId() %></strong></td>
+                            <td><strong>#<%= centreIndex %></strong></td>
                             <td>
                                 <strong style="color: #F8FAFC; font-size: 15px;"><%= c.getCentreName() %></strong>
                             </td>
@@ -433,7 +435,7 @@
                 <table class="cf-halls-table">
                     <thead>
                         <tr>
-                            <th style="width: 80px;">Mã phòng</th>
+                            <th style="width: 70px;">STT</th>
                             <th>Tên phòng chiếu</th>
                             <th>Loại phòng</th>
                             <th>Sức chứa (Ghế)</th>
@@ -513,7 +515,7 @@
                 if (!data || data.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 24px; color: #94A3B8;">Chi nhánh này hiện chưa có phòng chiếu nào trực thuộc.</td></tr>';
                 } else {
-                    data.forEach(function(hall) {
+                    data.forEach(function(hall, index) {
                         var statusBadge = '';
                         if (hall.status === 'AVAILABLE') {
                             statusBadge = '<span class="cf-badge cf-badge-active">Hoạt động</span>';
@@ -524,7 +526,7 @@
                         }
 
                         var tr = document.createElement('tr');
-                        tr.innerHTML = '<td><strong>#' + hall.hallId + '</strong></td>'
+                        tr.innerHTML = '<td><strong>#' + (index + 1) + '</strong></td>'
                                      + '<td><strong style="color: #F8FAFC;">' + hall.hallName + '</strong></td>'
                                      + '<td><span class="cf-badge" style="background: rgba(56, 189, 248, 0.15); color: #38BDF8; border: 1px solid rgba(56, 189, 248, 0.3);">' + hall.hallType + '</span></td>'
                                      + '<td><strong style="color: #F8FAFC;">' + hall.capacity + '</strong> ghế</td>'

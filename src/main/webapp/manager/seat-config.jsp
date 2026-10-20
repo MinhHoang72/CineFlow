@@ -336,7 +336,7 @@
                     <table class="cf-table">
                         <thead>
                             <tr>
-                                <th style="width: 80px;">Mã ghế</th>
+                                <th style="width: 80px;">STT</th>
                                 <th style="min-width: 140px;">Vị trí ghế</th>
                                 <th style="min-width: 160px;">Phân hạng ghế</th>
                                 <th style="min-width: 160px;">Trạng thái hoạt động</th>
@@ -346,21 +346,33 @@
                         <tbody>
                             <%
                                 if (pagedSeats != null && !pagedSeats.isEmpty()) {
+                                    int seatIndex = (currentPage - 1) * pageSize;
                                     for (SeatConfigDTO s : pagedSeats) {
+                                        seatIndex++;
                                         boolean isAvailable = s.isAvailable();
                                         boolean isMaint = s.isMaintenance();
+                                        boolean isUnavail = s.isUnavailable();
                                         String type = s.getSeatType() != null ? s.getSeatType().toUpperCase() : "STANDARD";
                             %>
                             <tr>
-                                <td><strong>#<%= s.getSeatId() %></strong></td>
+                                <td><strong>#<%= seatIndex %></strong></td>
                                 <td>
-                                    <div style="display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 32px; background: #1E293B; border: 1px solid rgba(255, 255, 255, 0.15); color: #F8FAFC; font-weight: 700; border-radius: 6px; font-size: 13px;">
-                                        <%= s.getLabel() %>
-                                    </div>
-                                    <span style="font-size: 13px; color: #94A3B8; margin-left: 8px;">(Hàng <%= s.getSeatRow() %>, Ghế <%= s.getSeatNumber() %>)</span>
+                                    <% if (isUnavail) { %>
+                                        <div style="display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 32px; background: rgba(255, 255, 255, 0.04); border: 1px dashed rgba(255, 255, 255, 0.2); color: #94A3B8; font-weight: 700; border-radius: 6px; font-size: 13px;">
+                                            —
+                                        </div>
+                                        <span style="font-size: 13px; color: #94A3B8; margin-left: 8px;">(Hàng <%= s.getSeatRow() %>, Cột <%= s.getSeatNumber() %> - Lối đi / Trống)</span>
+                                    <% } else { %>
+                                        <div style="display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 32px; background: #1E293B; border: 1px solid rgba(255, 255, 255, 0.15); color: #F8FAFC; font-weight: 700; border-radius: 6px; font-size: 13px;">
+                                            <%= s.getLabel() %>
+                                        </div>
+                                        <span style="font-size: 13px; color: #94A3B8; margin-left: 8px;">(Hàng <%= s.getSeatRow() %>, Ghế <%= s.getSeatNumber() %>)</span>
+                                    <% } %>
                                 </td>
                                 <td>
-                                    <% if ("VIP".equals(type)) { %>
+                                    <% if (isUnavail) { %>
+                                        <span class="cf-badge" style="background: rgba(148, 163, 184, 0.1); color: #94A3B8; border: 1px dashed rgba(148, 163, 184, 0.25);">Lối đi / Trống</span>
+                                    <% } else if ("VIP".equals(type)) { %>
                                         <span class="cf-badge" style="background: rgba(245, 158, 11, 0.15); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.35);">★ VIP</span>
                                     <% } else if ("SWEETBOX".equals(type)) { %>
                                         <span class="cf-badge" style="background: rgba(236, 72, 153, 0.15); color: #F472B6; border: 1px solid rgba(236, 72, 153, 0.35);">♥ Sweetbox</span>
@@ -373,31 +385,37 @@
                                         <span class="cf-badge cf-badge-active">● Khả dụng (Active)</span>
                                     <% } else if (isMaint) { %>
                                         <span class="cf-badge" style="background: rgba(239, 68, 68, 0.15); color: #F87171; border: 1px solid rgba(239, 68, 68, 0.35);">🔧 Đang bảo trì</span>
+                                    <% } else if (isUnavail) { %>
+                                        <span class="cf-badge" style="background: rgba(148, 163, 184, 0.1); color: #94A3B8; border: 1px dashed rgba(148, 163, 184, 0.25);">— Không khả dụng</span>
                                     <% } else { %>
                                         <span class="cf-badge cf-badge-inactive">● <%= s.getStatus() %></span>
                                     <% } %>
                                 </td>
                                 <td style="text-align: right;">
-                                    <form method="POST" action="${pageContext.request.contextPath}/manager/seat-config" style="display: inline-block; margin: 0;"
-                                          onsubmit="return confirm('<%= isAvailable ? ("Khóa bảo trì ghế " + s.getLabel() + "? Ghế này sẽ không thể đặt vé cho đến khi mở lại.") : ("Mở bảo trì lại ghế " + s.getLabel() + "?") %>');">
-                                        <input type="hidden" name="action" value="toggleMaintenance">
-                                        <input type="hidden" name="hallId" value="<%= hall != null ? hall.getHallId() : 0 %>">
-                                        <input type="hidden" name="seatId" value="<%= s.getSeatId() %>">
-                                        <input type="hidden" name="search" value="<%= currentSearch != null ? currentSearch : "" %>">
-                                        <input type="hidden" name="seatType" value="<%= currentSeatType != null ? currentSeatType : "ALL" %>">
-                                        <input type="hidden" name="seatStatus" value="<%= currentSeatStatus != null ? currentSeatStatus : "ALL" %>">
-                                        <input type="hidden" name="page" value="<%= currentPage %>">
+                                    <% if (isUnavail) { %>
+                                        <span style="color: #64748B; font-size: 13px; font-style: italic;">Lối đi / Trống</span>
+                                    <% } else { %>
+                                        <form method="POST" action="${pageContext.request.contextPath}/manager/seat-config" style="display: inline-block; margin: 0;"
+                                              onsubmit="return confirm('<%= isAvailable ? ("Khóa bảo trì ghế " + s.getLabel() + "? Ghế này sẽ không thể đặt vé cho đến khi mở lại.") : ("Mở bảo trì lại ghế " + s.getLabel() + "?") %>');">
+                                            <input type="hidden" name="action" value="toggleMaintenance">
+                                            <input type="hidden" name="hallId" value="<%= hall != null ? hall.getHallId() : 0 %>">
+                                            <input type="hidden" name="seatId" value="<%= s.getSeatId() %>">
+                                            <input type="hidden" name="search" value="<%= currentSearch != null ? currentSearch : "" %>">
+                                            <input type="hidden" name="seatType" value="<%= currentSeatType != null ? currentSeatType : "ALL" %>">
+                                            <input type="hidden" name="seatStatus" value="<%= currentSeatStatus != null ? currentSeatStatus : "ALL" %>">
+                                            <input type="hidden" name="page" value="<%= currentPage %>">
 
-                                        <% if (isAvailable) { %>
-                                            <button type="submit" class="cf-btn cf-btn-danger cf-btn-sm" title="Khóa bảo trì vị trí ghế này">
-                                                🔧 Khóa bảo trì
-                                            </button>
-                                        <% } else { %>
-                                            <button type="submit" class="cf-btn cf-btn-primary cf-btn-sm" style="background: #16A34A; border-color: #16A34A;" title="Mở hoạt động lại vị trí ghế này">
-                                                ✓ Mở hoạt động
-                                            </button>
-                                        <% } %>
-                                    </form>
+                                            <% if (isAvailable) { %>
+                                                <button type="submit" class="cf-btn cf-btn-danger cf-btn-sm" title="Khóa bảo trì vị trí ghế này">
+                                                    🔧 Khóa bảo trì
+                                                </button>
+                                            <% } else { %>
+                                                <button type="submit" class="cf-btn cf-btn-primary cf-btn-sm" style="background: #16A34A; border-color: #16A34A;" title="Mở hoạt động lại vị trí ghế này">
+                                                    ✓ Mở hoạt động
+                                                </button>
+                                            <% } %>
+                                        </form>
+                                    <% } %>
                                 </td>
                             </tr>
                             <%
@@ -644,7 +662,8 @@
             leftLabel.innerText = r;
             rowDiv.appendChild(leftLabel);
 
-            // Các ô ghế trong hàng
+            // Các ô ghế trong hàng: Đánh số tuần tự A1, A2, A3... khi bỏ ghế trống (lối đi)
+            var seatIndexInRow = 0;
             for (var c = 1; c <= maxCols; c++) {
                 countTotalCells++;
                 var cell = seatMatrix[r] ? seatMatrix[r][c] : null;
@@ -655,25 +674,30 @@
                 var seatBox = document.createElement('div');
                 seatBox.className = 'cf-seat-box';
 
-                // Xác định class hiển thị
+                // Xác định class hiển thị & đánh số ghế tuần tự
                 if (cell.status === 'UNAVAILABLE') {
                     seatBox.classList.add('EMPTY');
                     seatBox.innerText = '—';
-                    seatBox.title = r + c + ' (Lối đi / Trống)';
+                    seatBox.title = 'Hàng ' + r + ' - Lối đi / Trống (Cột ' + c + ')';
                     countEmpty++;
-                } else if (cell.status === 'MAINTENANCE') {
-                    seatBox.classList.add(cell.type, 'MAINTENANCE');
-                    seatBox.innerText = r + c;
-                    seatBox.title = r + c + ' (Bảo trì / Hỏng - ' + cell.type + ')';
-                    countMaintenance++;
                 } else {
-                    seatBox.classList.add(cell.type);
-                    seatBox.innerText = r + c;
-                    seatBox.title = r + c + ' (' + cell.type + ')';
+                    seatIndexInRow++;
+                    var seatLabel = r + seatIndexInRow;
 
-                    if (cell.type === 'VIP') countVip++;
-                    else if (cell.type === 'SWEETBOX') countSweetbox++;
-                    else countStandard++;
+                    if (cell.status === 'MAINTENANCE') {
+                        seatBox.classList.add(cell.type, 'MAINTENANCE');
+                        seatBox.innerText = seatLabel;
+                        seatBox.title = seatLabel + ' (Bảo trì / Hỏng - ' + cell.type + ')';
+                        countMaintenance++;
+                    } else {
+                        seatBox.classList.add(cell.type);
+                        seatBox.innerText = seatLabel;
+                        seatBox.title = seatLabel + ' (' + cell.type + ')';
+
+                        if (cell.type === 'VIP') countVip++;
+                        else if (cell.type === 'SWEETBOX') countSweetbox++;
+                        else countStandard++;
+                    }
                 }
 
                 (function(row, col) {

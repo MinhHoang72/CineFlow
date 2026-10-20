@@ -226,7 +226,7 @@
                     <table class="cf-table">
                         <thead>
                             <tr>
-                                <th style="width: 90px;">Mã phòng</th>
+                                <th style="width: 80px;">STT</th>
                                 <th style="min-width: 180px;">Tên phòng chiếu</th>
                                 <th style="min-width: 140px;">Định dạng kỹ thuật</th>
                                 <th style="min-width: 140px;">Tổng sức chứa</th>
@@ -237,12 +237,14 @@
                         <tbody>
                             <%
                                 if (halls != null && !halls.isEmpty()) {
+                                    int hallIndex = (currentPage - 1) * pageSize;
                                     for (Hall h : halls) {
+                                        hallIndex++;
                                         boolean isActive = h.isActive();
                                         boolean is3D = "3D".equalsIgnoreCase(h.getHallType());
                             %>
                             <tr>
-                                <td><strong>#<%= h.getHallId() %></strong></td>
+                                <td><strong>#<%= hallIndex %></strong></td>
                                 <td>
                                     <strong style="color: #F8FAFC; font-size: 15px;"><%= h.getHallName() %></strong>
                                 </td>

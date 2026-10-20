@@ -337,10 +337,16 @@ body, button, input, select, textarea, table, th, td, h1, h2, h3, h4, p, span, a
     user-select: none;
 }
 
-/* Từng ô ghế */
+/* Từng ô ghế: Đồng nhất kích thước 38px x 34px, chỉ đổi màu khi chọn, không làm lệch hình */
 .cf-seat-box {
     width: 38px;
+    min-width: 38px;
+    max-width: 38px;
     height: 34px;
+    min-height: 34px;
+    max-height: 34px;
+    box-sizing: border-box;
+    flex-shrink: 0;
     line-height: 32px;
     text-align: center;
     border-radius: 6px;
@@ -348,16 +354,16 @@ body, button, input, select, textarea, table, th, td, h1, h2, h3, h4, p, span, a
     font-weight: 700;
     cursor: pointer;
     user-select: none;
-    transition: transform 0.15s, border-color 0.15s, background-color 0.15s, box-shadow 0.15s;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
     display: inline-flex;
     align-items: center;
     justify-content: center;
 }
 
 .cf-seat-box:hover {
-    transform: scale(1.15);
     z-index: 2;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.25), 0 2px 8px rgba(0, 0, 0, 0.4);
+    filter: brightness(1.15);
 }
 
 /* Phân loại Standard */
@@ -380,18 +386,19 @@ body, button, input, select, textarea, table, th, td, h1, h2, h3, h4, p, span, a
 
 .cf-seat-box.VIP:hover {
     background: rgba(245, 158, 11, 0.35);
+    border-color: #FBBF24;
 }
 
-/* Phân loại Sweetbox */
+/* Phân loại Sweetbox: CHỈ ĐỔI MÀU HỒNG, giữ đúng chuẩn 38px, không làm lệch hình */
 .cf-seat-box.SWEETBOX {
     background: rgba(236, 72, 153, 0.22);
     color: #FBCFE8;
     border: 1px solid #EC4899;
-    width: 54px;
 }
 
 .cf-seat-box.SWEETBOX:hover {
     background: rgba(236, 72, 153, 0.35);
+    border-color: #F472B6;
 }
 
 /* Trạng thái Bảo trì (Maintenance) */
@@ -406,23 +413,26 @@ body, button, input, select, textarea, table, th, td, h1, h2, h3, h4, p, span, a
 .cf-seat-box.MAINTENANCE::after {
     content: "🔧";
     position: absolute;
-    top: -6px;
-    right: -6px;
-    font-size: 10px;
+    top: -5px;
+    right: -5px;
+    font-size: 9px;
+    line-height: 1;
+    pointer-events: none;
 }
 
-/* Ô Trống / Lối đi (Empty / Aisle) */
+/* Ô Trống / Lối đi (Empty / Aisle): Giữ đúng 38px để các cột trong hàng luôn thẳng tắp */
 .cf-seat-box.EMPTY {
     background: transparent;
-    color: transparent;
-    border: 1px dashed rgba(255, 255, 255, 0.12);
-    opacity: 0.35;
+    color: #64748B;
+    border: 1px dashed rgba(255, 255, 255, 0.16);
+    opacity: 0.5;
 }
 
 .cf-seat-box.EMPTY:hover {
-    opacity: 0.85;
-    border-color: #FF2855;
-    color: #FF2855;
+    opacity: 0.9;
+    border-color: #94A3B8;
+    color: #94A3B8;
+    background: rgba(255, 255, 255, 0.04);
 }
 
 /* Chú giải (Legend) */
