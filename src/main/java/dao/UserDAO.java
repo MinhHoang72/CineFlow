@@ -1,9 +1,9 @@
 package dao;
 
-import model.BookingHistory;
-import model.ManagerAssignment;
-import model.StaffTransfer;
-import model.User;
+import model.dto.BookingHistory;
+import model.entity.ManagerAssignment;
+import model.entity.StaffTransfer;
+import model.entity.User;
 import utils.DBContext;
 
 import java.sql.Connection;

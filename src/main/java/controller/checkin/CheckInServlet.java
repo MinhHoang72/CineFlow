@@ -13,8 +13,8 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.UUID;
-import model.CheckInResultDTO;
-import model.User;
+import model.dto.CheckInResultDTO;
+import model.entity.User;
 
 @WebServlet("/checkin/*")
 public class CheckInServlet extends HttpServlet {

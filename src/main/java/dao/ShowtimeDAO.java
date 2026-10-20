@@ -1,10 +1,10 @@
 package dao;
 import java.sql.*;
 import java.time.LocalDateTime;
-import model.SeatAvailability;
+import model.entity.SeatAvailability;
 
-import model.Centre;
-import model.Showtime;
+import model.entity.Centre;
+import model.entity.Showtime;
 import utils.DBContext;
 import java.sql.Connection;
 import java.sql.Date;

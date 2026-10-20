@@ -9,7 +9,7 @@ import jakarta.servlet.http.*;
 import java.io.IOException;
 import java.time.LocalDateTime;
 
-import model.Showtime;
+import model.entity.Showtime;
 
 @WebServlet("/showtimes/create")
 public class CreateShowtimeServlet

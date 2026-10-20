@@ -1,9 +1,9 @@
 package dao;
 import java.sql.*;
 import java.time.LocalDateTime;
-import model.SeatAvailability;
+import model.entity.SeatAvailability;
 
-import model.Movie;
+import model.entity.Movie;
 import utils.DBContext;
 import java.sql.Connection;
 import java.sql.PreparedStatement;

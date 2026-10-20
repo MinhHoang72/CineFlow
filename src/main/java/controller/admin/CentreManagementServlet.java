@@ -8,9 +8,9 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import model.Centre;
-import model.Hall;
-import model.User;
+import model.entity.Centre;
+import model.entity.Hall;
+import model.entity.User;
 
 import java.io.IOException;
 import java.net.URLEncoder;

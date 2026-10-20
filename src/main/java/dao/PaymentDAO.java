@@ -1,8 +1,8 @@
 package dao;
 
-import model.Payment;
-import model.PaymentTransaction;
-import model.Ticket;
+import model.entity.Payment;
+import model.dto.PaymentTransaction;
+import model.entity.Ticket;
 import utils.DBContext;
 import java.math.BigDecimal;
 import java.sql.Connection;

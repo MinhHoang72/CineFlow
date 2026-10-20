@@ -21,13 +21,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import model.ComboLine;
-import model.FnbCombo;
-import model.FnbItem;
-import model.FnbRowDTO;
-import model.OptionDTO;
-import model.PageDTO;
-import model.User;
+import model.entity.ComboLine;
+import model.entity.FnbCombo;
+import model.entity.FnbItem;
+import model.dto.FnbRowDTO;
+import model.dto.OptionDTO;
+import model.dto.PageDTO;
+import model.entity.User;
 import utils.MediaStorage;
 
 @MultipartConfig(maxFileSize = 2 * 1024 * 1024, maxRequestSize = 3 * 1024 * 1024)

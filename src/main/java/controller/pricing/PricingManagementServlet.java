@@ -15,7 +15,7 @@ import java.util.List;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
-import model.BranchPricing;
+import model.entity.BranchPricing;
 
 @WebServlet("/pricing")
 public class PricingManagementServlet

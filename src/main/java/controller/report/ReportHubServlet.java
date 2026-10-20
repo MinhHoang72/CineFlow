@@ -18,10 +18,10 @@ import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import model.OccupancyRowDTO;
-import model.OptionDTO;
-import model.SalesRowDTO;
-import model.User;
+import model.dto.OccupancyRowDTO;
+import model.dto.OptionDTO;
+import model.dto.SalesRowDTO;
+import model.entity.User;
 
 @WebServlet("/report/*")
 public class ReportHubServlet extends HttpServlet {

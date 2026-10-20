@@ -8,8 +8,8 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import model.Movie;
-import model.User;
+import model.entity.Movie;
+import model.entity.User;
 
 import java.io.IOException;
 

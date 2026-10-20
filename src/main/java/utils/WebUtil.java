@@ -1,6 +1,6 @@
 package utils;
 
-import model.User;
+import model.entity.User;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;

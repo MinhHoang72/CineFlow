@@ -1,8 +1,8 @@
 package controller.payment;
 
 import dao.PaymentDAO;
-import model.Payment;
-import model.User;
+import model.entity.Payment;
+import model.entity.User;
 import utils.WebUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;

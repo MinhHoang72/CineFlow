@@ -1,8 +1,8 @@
 package dao;
 
-import model.Centre;
-import model.Movie;
-import model.ShowtimeView;
+import model.entity.Centre;
+import model.entity.Movie;
+import model.dto.ShowtimeView;
 import utils.DBContext;
 
 import java.sql.Connection;

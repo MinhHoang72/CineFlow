@@ -5,7 +5,7 @@ import java.io.IOException;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
-import model.TimeSlotPricing;
+import model.entity.TimeSlotPricing;
 
 @WebServlet("/pricing/time-slots/edit")
 public class EditTimeSlotPricingServlet

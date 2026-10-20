@@ -12,9 +12,9 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import model.FnbSaleDTO;
-import model.SalesRowDTO;
-import model.SalesSummaryDTO;
+import model.dto.FnbSaleDTO;
+import model.dto.SalesRowDTO;
+import model.dto.SalesSummaryDTO;
 import utils.DBContext;
 
 public class SalesReportDAO {

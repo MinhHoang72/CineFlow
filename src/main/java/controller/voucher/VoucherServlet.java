@@ -17,9 +17,9 @@ import java.time.format.DateTimeParseException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
-import model.PageDTO;
-import model.User;
-import model.Voucher;
+import model.dto.PageDTO;
+import model.entity.User;
+import model.entity.Voucher;
 
 @WebServlet("/admin/vouchers/*")
 public class VoucherServlet extends HttpServlet {

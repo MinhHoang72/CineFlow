@@ -2,7 +2,7 @@ package controller.auth;
 import jakarta.servlet.annotation.WebServlet;
 
 import dao.UserDAO;
-import model.User;
+import model.entity.User;
 import utils.EmailUtils;
 import utils.PasswordUtils;
 import utils.ValidationUtils;

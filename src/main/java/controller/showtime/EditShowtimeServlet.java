@@ -7,7 +7,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 import java.io.IOException;
-import model.Showtime;
+import model.entity.Showtime;
 
 @WebServlet("/showtimes/edit")
 public class EditShowtimeServlet

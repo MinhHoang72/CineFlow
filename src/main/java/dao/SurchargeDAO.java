@@ -4,7 +4,7 @@ import utils.DBContext;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
-import model.Surcharge;
+import model.entity.Surcharge;
 
 public class SurchargeDAO extends DBContext {
 

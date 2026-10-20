@@ -8,11 +8,11 @@ import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import model.OccupancyRowDTO;
-import model.OperationsSummaryDTO;
-import model.PageDTO;
-import model.ShowtimeStatDTO;
-import model.StaffScanDTO;
+import model.dto.OccupancyRowDTO;
+import model.dto.OperationsSummaryDTO;
+import model.dto.PageDTO;
+import model.dto.ShowtimeStatDTO;
+import model.dto.StaffScanDTO;
 import utils.DBContext;
 
 public class OperationsReportDAO {

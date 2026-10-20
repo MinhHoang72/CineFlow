@@ -8,8 +8,8 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import model.Centre;
-import model.User;
+import model.entity.Centre;
+import model.entity.User;
 import utils.PasswordUtils;
 import utils.ValidationUtils;
 

@@ -7,7 +7,7 @@ import java.time.LocalTime;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
-import model.TimeSlotPricing;
+import model.entity.TimeSlotPricing;
 
 @WebServlet("/pricing/time-slots/save")
 public class SaveTimeSlotPricingServlet

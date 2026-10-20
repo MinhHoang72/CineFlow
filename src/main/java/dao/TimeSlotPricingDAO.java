@@ -4,7 +4,7 @@ import utils.DBContext;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
-import model.TimeSlotPricing;
+import model.entity.TimeSlotPricing;
 
 public class TimeSlotPricingDAO extends DBContext {
 

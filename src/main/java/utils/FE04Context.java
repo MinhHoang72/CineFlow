@@ -5,8 +5,8 @@ import jakarta.servlet.http.HttpSession;
 import java.sql.*;
 import java.util.List;
 import dao.CentreDAO;
-import model.Centre;
-import model.User;
+import model.entity.Centre;
+import model.entity.User;
 
 /** Resolves FE-04 actors and centres without demo IDs. */
 public final class FE04Context {

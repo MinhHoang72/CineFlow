@@ -1,11 +1,11 @@
 package dao;
 import java.sql.*;
 import java.time.LocalDateTime;
-import model.SeatAvailability;
+import model.entity.SeatAvailability;
 
-import model.Seat;
-import model.SeatConfigDTO;
-import model.Showtime;
+import model.entity.Seat;
+import model.dto.SeatConfigDTO;
+import model.entity.Showtime;
 import utils.DBContext;
 
 import java.math.BigDecimal;
