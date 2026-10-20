@@ -1,6 +1,13 @@
 /* =====================================================
    CineFlow - Admin Centre Management Styles (centres.css)
+   CineFlow Dark Obsidian Theme (Unified Design System)
    ===================================================== */
+
+body, button, input, select, textarea, table, th, td, h1, h2, h3, h4, p, span, a, label {
+    font-family: var(--cf-font, "Be Vietnam Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
 
 .cf-page-header {
     display: flex;
@@ -12,16 +19,20 @@
 }
 
 .cf-page-header h1 {
-    font-size: 24px;
-    font-weight: 700;
-    color: var(--text-color, #111827);
+    font-family: var(--cf-font, "Be Vietnam Pro", sans-serif);
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--cf-text, #F8FAFC) !important;
     margin: 0;
+    letter-spacing: -0.01em;
 }
 
 .cf-page-header p {
+    font-family: var(--cf-font, "Be Vietnam Pro", sans-serif);
     font-size: 14px;
-    color: var(--text-muted, #64748B);
-    margin: 4px 0 0 0;
+    color: var(--cf-muted, #94A3B8) !important;
+    margin: 6px 0 0 0;
+    line-height: 1.5;
 }
 
 /* Thống kê (Stat Cards) */
@@ -33,20 +44,21 @@
 }
 
 .cf-stat-card {
-    background: #ffffff;
-    border: 1px solid #E2E8F0;
+    background: var(--cf-surface, #161B26);
+    border: 1px solid var(--cf-border, rgba(255, 255, 255, 0.08));
     border-radius: 12px;
     padding: 18px 20px;
     display: flex;
     align-items: center;
     gap: 16px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
 }
 
 .cf-stat-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border-color: rgba(255, 255, 255, 0.16);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
 
 .cf-stat-icon {
@@ -57,49 +69,53 @@
     align-items: center;
     justify-content: center;
     font-size: 22px;
-    background: #F1F5F9;
-    color: #475569;
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--cf-text, #F8FAFC);
     flex-shrink: 0;
 }
 
 .cf-stat-icon.primary {
-    background: rgba(255, 40, 85, 0.1);
+    background: rgba(255, 40, 85, 0.15);
     color: #FF2855;
+    border: 1px solid rgba(255, 40, 85, 0.3);
 }
 
 .cf-stat-icon.success {
-    background: rgba(34, 197, 94, 0.12);
-    color: #16A34A;
+    background: rgba(34, 197, 94, 0.15);
+    color: #4ADE80;
+    border: 1px solid rgba(34, 197, 94, 0.3);
 }
 
 .cf-stat-icon.warning {
-    background: rgba(245, 158, 11, 0.12);
-    color: #D97706;
+    background: rgba(245, 158, 11, 0.15);
+    color: #FBBF24;
+    border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
 .cf-stat-icon.info {
-    background: rgba(59, 130, 246, 0.12);
-    color: #2563EB;
+    background: rgba(59, 130, 246, 0.15);
+    color: #60A5FA;
+    border: 1px solid rgba(59, 130, 246, 0.3);
 }
 
 .cf-stat-info h3 {
-    font-size: 22px;
-    font-weight: 700;
-    color: #0F172A;
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--cf-text, #F8FAFC);
     margin: 0;
     line-height: 1.2;
 }
 
 .cf-stat-info p {
     font-size: 13px;
-    color: #64748B;
+    color: var(--cf-muted, #94A3B8);
     margin: 4px 0 0 0;
 }
 
 /* Thanh tìm kiếm & bộ lọc */
 .cf-filter-card {
-    background: #ffffff;
-    border: 1px solid #E2E8F0;
+    background: var(--cf-surface, #161B26);
+    border: 1px solid var(--cf-border, rgba(255, 255, 255, 0.08));
     border-radius: 12px;
     padding: 16px 20px;
     margin-bottom: 24px;
@@ -108,6 +124,7 @@
     justify-content: space-between;
     gap: 16px;
     flex-wrap: wrap;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
 }
 
 .cf-filter-form {
@@ -127,19 +144,23 @@
 .cf-search-box input {
     width: 100%;
     padding: 9px 14px 9px 38px;
-    background: #F8FAFC;
-    border: 1px solid #CBD5E1;
+    background: #111622;
+    border: 1px solid rgba(255, 255, 255, 0.14);
     border-radius: 8px;
     font-size: 14px;
-    color: #1E293B;
+    color: var(--cf-text, #F8FAFC);
     outline: none;
     transition: all 0.2s;
 }
 
+.cf-search-box input::placeholder {
+    color: #64748B;
+}
+
 .cf-search-box input:focus {
     border-color: #FF2855;
-    background: #ffffff;
-    box-shadow: 0 0 0 3px rgba(255, 40, 85, 0.12);
+    background: #141A26;
+    box-shadow: 0 0 0 3px rgba(255, 40, 85, 0.2);
 }
 
 .cf-search-box .icon {
@@ -155,11 +176,11 @@
 
 .cf-select {
     padding: 9px 14px;
-    background: #F8FAFC;
-    border: 1px solid #CBD5E1;
+    background: #111622;
+    border: 1px solid rgba(255, 255, 255, 0.14);
     border-radius: 8px;
     font-size: 14px;
-    color: #1E293B;
+    color: var(--cf-text, #F8FAFC);
     outline: none;
     cursor: pointer;
     transition: all 0.2s;
@@ -167,45 +188,52 @@
 
 .cf-select:focus {
     border-color: #FF2855;
-    background: #ffffff;
+    background: #141A26;
+    box-shadow: 0 0 0 3px rgba(255, 40, 85, 0.2);
+}
+
+.cf-select option {
+    background: #161B26;
+    color: #F8FAFC;
 }
 
 /* Bảng hiển thị danh sách Centre */
 .cf-table-container {
-    background: #ffffff;
-    border: 1px solid #E2E8F0;
+    background: var(--cf-surface, #161B26);
+    border: 1px solid var(--cf-border, rgba(255, 255, 255, 0.08));
     border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
 }
 
 .cf-table {
     width: 100%;
     border-collapse: collapse;
     text-align: left;
+    background: var(--cf-surface, #161B26);
 }
 
 .cf-table th {
-    background: #F8FAFC;
+    background: rgba(11, 15, 23, 0.7);
     padding: 14px 18px;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    color: #475569;
-    border-bottom: 1px solid #E2E8F0;
+    color: var(--cf-muted, #94A3B8);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .cf-table td {
     padding: 16px 18px;
     font-size: 14px;
-    color: #1E293B;
-    border-bottom: 1px solid #F1F5F9;
+    color: var(--cf-text, #F8FAFC);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     vertical-align: middle;
 }
 
 .cf-table tr:hover td {
-    background: #F8FAFC;
+    background: rgba(255, 255, 255, 0.03);
 }
 
 .cf-table tr:last-child td {
@@ -224,28 +252,30 @@
 }
 
 .cf-badge-active {
-    background: rgba(34, 197, 94, 0.12);
-    color: #16A34A;
-    border: 1px solid rgba(34, 197, 94, 0.25);
+    background: rgba(34, 197, 94, 0.15);
+    color: #4ADE80;
+    border: 1px solid rgba(34, 197, 94, 0.35);
 }
 
 .cf-badge-inactive {
-    background: rgba(239, 68, 68, 0.12);
-    color: #DC2626;
-    border: 1px solid rgba(239, 68, 68, 0.25);
+    background: rgba(239, 68, 68, 0.15);
+    color: #F87171;
+    border: 1px solid rgba(239, 68, 68, 0.35);
 }
 
 .cf-badge-halls {
-    background: rgba(59, 130, 246, 0.1);
-    color: #1D4ED8;
-    border: 1px solid rgba(59, 130, 246, 0.2);
+    background: rgba(59, 130, 246, 0.15);
+    color: #60A5FA;
+    border: 1px solid rgba(59, 130, 246, 0.35);
     cursor: pointer;
     transition: all 0.2s;
 }
 
 .cf-badge-halls:hover {
-    background: rgba(59, 130, 246, 0.18);
-    transform: scale(1.03);
+    background: rgba(59, 130, 246, 0.25);
+    border-color: rgba(59, 130, 246, 0.5);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
 }
 
 /* Actions column */
@@ -261,36 +291,13 @@
     border-radius: 6px;
 }
 
-/* Alert notifications */
-.cf-alert {
-    padding: 12px 18px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 14px;
-}
-
-.cf-alert-success {
-    background: rgba(34, 197, 94, 0.15);
-    border: 1px solid rgba(34, 197, 94, 0.4);
-    color: #15803D;
-}
-
-.cf-alert-danger {
-    background: rgba(239, 68, 68, 0.15);
-    border: 1px solid rgba(239, 68, 68, 0.4);
-    color: #B91C1C;
-}
-
 /* Modals */
 .cf-modal-backdrop {
     display: none;
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.65);
-    backdrop-filter: blur(4px);
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(6px);
     z-index: 9999;
     align-items: center;
     justify-content: center;
@@ -302,14 +309,15 @@
 }
 
 .cf-modal {
-    background: #ffffff;
-    border: 1px solid #E2E8F0;
+    background: #161B26;
+    border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 14px;
     width: 100%;
     max-width: 540px;
-    box-shadow: 0 24px 50px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
     overflow: hidden;
     animation: modalFadeIn 0.2s ease-out;
+    color: var(--cf-text, #F8FAFC);
 }
 
 .cf-modal-lg {
@@ -329,31 +337,32 @@
 
 .cf-modal-header {
     padding: 18px 24px;
-    border-bottom: 1px solid #E2E8F0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: #ffffff;
+    background: #161B26;
 }
 
 .cf-modal-header h3 {
     margin: 0;
     font-size: 18px;
-    color: #111827;
+    color: var(--cf-text, #F8FAFC);
     font-weight: 700;
 }
 
 .cf-modal-close {
     background: none;
     border: none;
-    color: #64748B;
+    color: var(--cf-muted, #94A3B8);
     font-size: 24px;
     cursor: pointer;
     line-height: 1;
+    transition: color 0.15s;
 }
 
 .cf-modal-close:hover {
-    color: #111827;
+    color: #FFFFFF;
 }
 
 .cf-modal-body {
@@ -361,19 +370,19 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
-    background: #ffffff;
-    color: #1E293B;
+    background: #161B26;
+    color: var(--cf-text, #F8FAFC);
     max-height: 75vh;
     overflow-y: auto;
 }
 
 .cf-modal-footer {
     padding: 16px 24px;
-    border-top: 1px solid #E2E8F0;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
     display: flex;
     justify-content: flex-end;
     gap: 12px;
-    background: #F8FAFC;
+    background: #111622;
 }
 
 .cf-form-group {
@@ -385,57 +394,64 @@
 .cf-form-group label {
     font-size: 13px;
     font-weight: 600;
-    color: #1E293B;
+    color: #E2E8F0;
 }
 
 .cf-form-group input,
 .cf-form-group select {
-    background: #F8FAFC;
-    border: 1px solid #CBD5E1;
+    background: #111622;
+    border: 1px solid rgba(255, 255, 255, 0.14);
     border-radius: 8px;
     padding: 9px 14px;
-    color: #1E293B;
+    color: var(--cf-text, #F8FAFC);
     font-size: 14px;
     outline: none;
     transition: all 0.2s;
 }
 
+.cf-form-group input::placeholder {
+    color: #64748B;
+}
+
 .cf-form-group input:focus,
 .cf-form-group select:focus {
     border-color: #FF2855;
-    background: #ffffff;
-    box-shadow: 0 0 0 3px rgba(255, 40, 85, 0.12);
+    background: #141A26;
+    box-shadow: 0 0 0 3px rgba(255, 40, 85, 0.2);
 }
 
 .cf-form-hint {
     font-size: 12px;
-    color: #64748B;
+    color: var(--cf-muted, #94A3B8);
     margin-top: 2px;
 }
 
-/* Hall modal list styling (BR-HS-01) */
+/* Hall modal list styling */
 .cf-halls-table {
     width: 100%;
     border-collapse: collapse;
 }
 
 .cf-halls-table th {
-    background: #F1F5F9;
-    padding: 10px 14px;
-    font-size: 12px;
-    font-weight: 600;
-    color: #475569;
+    background: rgba(11, 15, 23, 0.7);
+    padding: 12px 14px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--cf-muted, #94A3B8);
     text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .cf-halls-table td {
     padding: 12px 14px;
     font-size: 13px;
-    border-bottom: 1px solid #E2E8F0;
+    color: var(--cf-text, #F8FAFC);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 /* =====================================================
-   Phân trang (Pagination) cho Quản lý Cụm rạp
+   Phân trang (Pagination) cho Quản lý Chi nhánh
    ===================================================== */
 .cf-pagination-bar {
     display: flex;
@@ -444,18 +460,18 @@
     flex-wrap: wrap;
     gap: 16px;
     padding: 14px 20px;
-    background: #F8FAFC;
-    border-top: 1px solid #E2E8F0;
+    background: rgba(11, 15, 23, 0.5);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .cf-pagination-info {
     font-size: 13px;
-    color: #64748B;
+    color: var(--cf-muted, #94A3B8);
 }
 
 .cf-pagination-info strong {
-    color: #0F172A;
-    font-weight: 600;
+    color: var(--cf-text, #F8FAFC);
+    font-weight: 700;
 }
 
 .cf-pagination-controls {
@@ -471,10 +487,10 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid #CBD5E1;
+    border: 1px solid rgba(255, 255, 255, 0.14);
     border-radius: 6px;
-    background: #ffffff;
-    color: #334155;
+    background: #1E293B;
+    color: var(--cf-text, #F8FAFC);
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
@@ -485,28 +501,28 @@
 .cf-page-btn:hover:not(.disabled):not(.active) {
     border-color: #FF2855;
     color: #FF2855;
-    background: rgba(255, 40, 85, 0.05);
+    background: rgba(255, 40, 85, 0.12);
 }
 
 .cf-page-btn.active {
     background: #FF2855;
     border-color: #FF2855;
     color: #ffffff;
-    box-shadow: 0 2px 6px rgba(255, 40, 85, 0.3);
+    box-shadow: 0 2px 8px rgba(255, 40, 85, 0.35);
 }
 
 .cf-page-btn.disabled {
-    opacity: 0.4;
+    opacity: 0.35;
     cursor: not-allowed;
-    background: #F1F5F9;
-    color: #94A3B8;
-    border-color: #E2E8F0;
+    background: transparent;
+    color: #64748B;
+    border-color: rgba(255, 255, 255, 0.06);
     pointer-events: none;
 }
 
 .cf-page-ellipsis {
     padding: 0 4px;
-    color: #94A3B8;
+    color: #64748B;
     font-size: 13px;
     user-select: none;
 }

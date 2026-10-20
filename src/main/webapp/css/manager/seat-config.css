@@ -1,43 +1,53 @@
 /* =====================================================
    CineFlow - Seat Configuration Styles (seat-config.css)
-   UC-FE-03.3 Configure Seat Layout & Maintenance
+   CineFlow Dark Obsidian Theme (Unified Design System)
    ===================================================== */
+
+body, button, input, select, textarea, table, th, td, h1, h2, h3, h4, p, span, a, label {
+    font-family: var(--cf-font, "Be Vietnam Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
 
 .cf-page-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: 24px;
     flex-wrap: wrap;
     gap: 16px;
 }
 
 .cf-page-header h1 {
-    font-size: 24px;
-    font-weight: 700;
-    color: var(--text-color, #111827);
+    font-family: var(--cf-font, "Be Vietnam Pro", sans-serif);
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--cf-text, #F8FAFC) !important;
     margin: 0;
+    letter-spacing: -0.01em;
 }
 
 .cf-page-header p {
+    font-family: var(--cf-font, "Be Vietnam Pro", sans-serif);
     font-size: 14px;
-    color: var(--text-muted, #64748B);
-    margin: 4px 0 0 0;
+    color: var(--cf-muted, #94A3B8) !important;
+    margin: 6px 0 0 0;
+    line-height: 1.5;
 }
 
 /* Banner thông tin phòng chiếu */
 .cf-hall-banner {
-    background: #ffffff;
-    border: 1px solid #E2E8F0;
+    background: var(--cf-surface, #161B26);
+    border: 1px solid var(--cf-border, rgba(255, 255, 255, 0.08));
     border-radius: 12px;
-    padding: 16px 20px;
+    padding: 18px 22px;
     margin-bottom: 20px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 16px;
     flex-wrap: wrap;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
 }
 
 .cf-hall-meta {
@@ -47,27 +57,28 @@
 }
 
 .cf-hall-badge-icon {
-    width: 44px;
-    height: 44px;
+    width: 46px;
+    height: 46px;
     border-radius: 10px;
-    background: rgba(59, 130, 246, 0.12);
-    color: #2563EB;
+    background: rgba(59, 130, 246, 0.15);
+    color: #60A5FA;
+    border: 1px solid rgba(59, 130, 246, 0.3);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 20px;
+    font-size: 22px;
 }
 
 .cf-hall-meta h2 {
-    font-size: 17px;
+    font-size: 18px;
     font-weight: 700;
-    color: #0F172A;
+    color: var(--cf-text, #F8FAFC);
     margin: 0 0 4px 0;
 }
 
 .cf-hall-meta p {
     font-size: 13px;
-    color: #64748B;
+    color: var(--cf-muted, #94A3B8);
     margin: 0;
 }
 
@@ -86,18 +97,18 @@
 }
 
 .cf-panel {
-    background: #ffffff;
-    border: 1px solid #E2E8F0;
+    background: var(--cf-surface, #161B26);
+    border: 1px solid var(--cf-border, rgba(255, 255, 255, 0.08));
     border-radius: 12px;
-    padding: 16px 20px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    padding: 18px 22px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
 }
 
 .cf-panel h3 {
     font-size: 15px;
     font-weight: 700;
-    color: #0F172A;
-    margin: 0 0 12px 0;
+    color: var(--cf-text, #F8FAFC);
+    margin: 0 0 14px 0;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -120,23 +131,25 @@
 .cf-form-inline label {
     font-size: 12px;
     font-weight: 600;
-    color: #475569;
+    color: var(--cf-muted, #94A3B8);
 }
 
 .cf-form-inline input {
     width: 90px;
     padding: 7px 10px;
-    background: #F8FAFC;
-    border: 1px solid #CBD5E1;
+    background: #111622;
+    border: 1px solid rgba(255, 255, 255, 0.14);
     border-radius: 6px;
     font-size: 14px;
-    color: #1E293B;
+    color: var(--cf-text, #F8FAFC);
     outline: none;
+    transition: all 0.2s;
 }
 
 .cf-form-inline input:focus {
     border-color: #FF2855;
-    background: #ffffff;
+    background: #141A26;
+    box-shadow: 0 0 0 3px rgba(255, 40, 85, 0.2);
 }
 
 /* Palette thanh công cụ phân hạng ghế */
@@ -152,9 +165,9 @@
     gap: 8px;
     padding: 8px 14px;
     border-radius: 8px;
-    border: 2px solid #E2E8F0;
-    background: #F8FAFC;
-    color: #1E293B;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: #1E293B;
+    color: var(--cf-text, #F8FAFC);
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
@@ -163,61 +176,63 @@
 }
 
 .cf-tool-btn:hover {
-    border-color: #94A3B8;
+    border-color: rgba(255, 255, 255, 0.3);
+    background: #253348;
 }
 
 .cf-tool-btn.active {
     border-color: #FF2855;
-    background: rgba(255, 40, 85, 0.08);
-    color: #FF2855;
-    box-shadow: 0 0 0 2px rgba(255, 40, 85, 0.2);
+    background: rgba(255, 40, 85, 0.15);
+    color: #FFFFFF;
+    box-shadow: 0 0 0 2px rgba(255, 40, 85, 0.35);
 }
 
 .cf-tool-swatch {
     width: 14px;
     height: 14px;
     border-radius: 3px;
-    border: 1px solid rgba(0,0,0,0.15);
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .cf-tool-swatch.standard {
-    background: #FFFFFF;
-    border-color: #94A3B8;
+    background: #334155;
+    border-color: #64748B;
 }
 
 .cf-tool-swatch.vip {
-    background: #FEF3C7;
+    background: rgba(245, 158, 11, 0.4);
     border-color: #F59E0B;
 }
 
 .cf-tool-swatch.sweetbox {
-    background: #FCE7F3;
+    background: rgba(236, 72, 153, 0.4);
     border-color: #EC4899;
 }
 
 .cf-tool-swatch.maintenance {
-    background: #FEE2E2;
+    background: rgba(239, 68, 68, 0.4);
     border-color: #EF4444;
 }
 
 .cf-tool-swatch.empty {
-    background: #E2E8F0;
-    border-color: #94A3B8;
+    background: transparent;
+    border-color: #64748B;
     border-style: dashed;
 }
 
 /* Thống kê sức chứa (Live Capacity Bar) */
 .cf-capacity-summary {
-    background: #F8FAFC;
-    border: 1px solid #E2E8F0;
+    background: var(--cf-surface, #161B26);
+    border: 1px solid var(--cf-border, rgba(255, 255, 255, 0.08));
     border-radius: 12px;
-    padding: 14px 20px;
+    padding: 16px 22px;
     margin-bottom: 20px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 16px;
     flex-wrap: wrap;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
 }
 
 .cf-capacity-stats {
@@ -226,7 +241,7 @@
     gap: 16px;
     flex-wrap: wrap;
     font-size: 13px;
-    color: #475569;
+    color: var(--cf-muted, #94A3B8);
 }
 
 .cf-stat-item {
@@ -242,35 +257,36 @@
     font-size: 12px;
 }
 
-.cf-stat-pill.standard { background: #E2E8F0; color: #334155; }
-.cf-stat-pill.vip { background: #FEF3C7; color: #B45309; }
-.cf-stat-pill.sweetbox { background: #FCE7F3; color: #BE185D; }
-.cf-stat-pill.maintenance { background: #FEE2E2; color: #B91C1C; }
-.cf-stat-pill.empty { background: #CBD5E1; color: #475569; }
+.cf-stat-pill.standard { background: #1E293B; color: #E2E8F0; border: 1px solid #334155; }
+.cf-stat-pill.vip { background: rgba(245, 158, 11, 0.15); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.35); }
+.cf-stat-pill.sweetbox { background: rgba(236, 72, 153, 0.15); color: #F472B6; border: 1px solid rgba(236, 72, 153, 0.35); }
+.cf-stat-pill.maintenance { background: rgba(239, 68, 68, 0.15); color: #F87171; border: 1px solid rgba(239, 68, 68, 0.35); }
+.cf-stat-pill.empty { background: rgba(255, 255, 255, 0.06); color: #94A3B8; border: 1px dashed rgba(255, 255, 255, 0.14); }
 
 .cf-capacity-highlight {
-    font-size: 15px;
-    color: #0F172A;
+    font-size: 14px;
+    color: var(--cf-muted, #94A3B8);
     display: flex;
     align-items: center;
     gap: 8px;
 }
 
 .cf-capacity-highlight strong {
-    font-size: 20px;
-    color: #16A34A;
+    font-size: 22px;
+    font-weight: 800;
+    color: #4ADE80;
 }
 
 /* Vùng Canvas sơ đồ ghế */
 .cf-seat-canvas-wrapper {
-    background: #111827;
-    border: 1px solid #1F2937;
+    background: #0D121B;
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 14px;
-    padding: 30px 20px;
+    padding: 34px 20px;
     margin-bottom: 24px;
     overflow-x: auto;
     text-align: center;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.4), 0 4px 20px rgba(0, 0, 0, 0.25);
 }
 
 /* Màn hình chiếu (Screen) */
@@ -279,9 +295,9 @@
     max-width: 600px;
     height: 10px;
     margin: 0 auto 35px auto;
-    background: linear-gradient(to bottom, #93C5FD, #3B82F6);
+    background: linear-gradient(to bottom, #60A5FA, #2563EB);
     border-radius: 50% 50% 0 0 / 100% 100% 0 0;
-    box-shadow: 0 10px 30px rgba(59, 130, 246, 0.4);
+    box-shadow: 0 10px 30px rgba(37, 99, 235, 0.45);
     position: relative;
 }
 
@@ -290,7 +306,7 @@
     top: 18px;
     left: 50%;
     transform: translateX(-50%);
-    color: #94A3B8;
+    color: var(--cf-muted, #94A3B8);
     font-size: 12px;
     font-weight: 700;
     letter-spacing: 2px;
@@ -316,7 +332,7 @@
     width: 28px;
     font-weight: 700;
     font-size: 14px;
-    color: #94A3B8;
+    color: var(--cf-muted, #94A3B8);
     text-align: center;
     user-select: none;
 }
@@ -332,46 +348,59 @@
     font-weight: 700;
     cursor: pointer;
     user-select: none;
-    transition: transform 0.15s, border-color 0.15s, background-color 0.15s;
+    transition: transform 0.15s, border-color 0.15s, background-color 0.15s, box-shadow 0.15s;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid #CBD5E1;
 }
 
 .cf-seat-box:hover {
-    transform: scale(1.1);
+    transform: scale(1.15);
     z-index: 2;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 
 /* Phân loại Standard */
 .cf-seat-box.STANDARD {
-    background: #FFFFFF;
-    color: #1E293B;
+    background: #1E293B;
+    color: var(--cf-text, #F8FAFC);
+    border: 1px solid #475569;
+}
+
+.cf-seat-box.STANDARD:hover {
     border-color: #94A3B8;
 }
 
 /* Phân loại VIP */
 .cf-seat-box.VIP {
-    background: #FEF3C7;
-    color: #92400E;
-    border-color: #F59E0B;
+    background: rgba(245, 158, 11, 0.22);
+    color: #FDE68A;
+    border: 1px solid #F59E0B;
+}
+
+.cf-seat-box.VIP:hover {
+    background: rgba(245, 158, 11, 0.35);
 }
 
 /* Phân loại Sweetbox */
 .cf-seat-box.SWEETBOX {
-    background: #FCE7F3;
-    color: #9D174D;
-    border-color: #EC4899;
+    background: rgba(236, 72, 153, 0.22);
+    color: #FBCFE8;
+    border: 1px solid #EC4899;
     width: 54px;
+}
+
+.cf-seat-box.SWEETBOX:hover {
+    background: rgba(236, 72, 153, 0.35);
 }
 
 /* Trạng thái Bảo trì (Maintenance) */
 .cf-seat-box.MAINTENANCE {
-    background: #FEE2E2 !important;
-    color: #991B1B !important;
-    border-color: #EF4444 !important;
+    background: rgba(239, 68, 68, 0.22) !important;
+    color: #FCA5A5 !important;
+    border: 1px solid #EF4444 !important;
     position: relative;
+    text-decoration: line-through;
 }
 
 .cf-seat-box.MAINTENANCE::after {
@@ -386,12 +415,12 @@
 .cf-seat-box.EMPTY {
     background: transparent;
     color: transparent;
-    border: 1px dashed rgba(255, 255, 255, 0.15);
-    opacity: 0.4;
+    border: 1px dashed rgba(255, 255, 255, 0.12);
+    opacity: 0.35;
 }
 
 .cf-seat-box.EMPTY:hover {
-    opacity: 0.8;
+    opacity: 0.85;
     border-color: #FF2855;
     color: #FF2855;
 }
@@ -403,10 +432,10 @@
     gap: 16px;
     margin-top: 25px;
     padding-top: 20px;
-    border-top: 1px solid #1F2937;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
     flex-wrap: wrap;
     font-size: 12px;
-    color: #94A3B8;
+    color: var(--cf-muted, #94A3B8);
 }
 
 .cf-legend-item {
@@ -419,14 +448,13 @@
     width: 20px;
     height: 18px;
     border-radius: 4px;
-    border: 1px solid rgba(255,255,255,0.2);
 }
 
-.cf-legend-box.standard { background: #FFFFFF; border-color: #94A3B8; }
-.cf-legend-box.vip { background: #FEF3C7; border-color: #F59E0B; }
-.cf-legend-box.sweetbox { background: #FCE7F3; border-color: #EC4899; }
-.cf-legend-box.maintenance { background: #FEE2E2; border-color: #EF4444; }
-.cf-legend-box.empty { background: transparent; border: 1px dashed #64748B; }
+.cf-legend-box.standard { background: #1E293B; border: 1px solid #475569; }
+.cf-legend-box.vip { background: rgba(245, 158, 11, 0.22); border: 1px solid #F59E0B; }
+.cf-legend-box.sweetbox { background: rgba(236, 72, 153, 0.22); border: 1px solid #EC4899; }
+.cf-legend-box.maintenance { background: rgba(239, 68, 68, 0.22); border: 1px solid #EF4444; }
+.cf-legend-box.empty { background: transparent; border: 1px dashed rgba(255, 255, 255, 0.16); }
 
 /* Thanh thao tác dưới cùng */
 .cf-footer-actions {
@@ -451,24 +479,24 @@
 .cf-alert-success {
     background: rgba(34, 197, 94, 0.15);
     border: 1px solid rgba(34, 197, 94, 0.4);
-    color: #15803D;
+    color: #4ADE80;
 }
 
 .cf-alert-danger {
     background: rgba(239, 68, 68, 0.15);
     border: 1px solid rgba(239, 68, 68, 0.4);
-    color: #B91C1C;
+    color: #F87171;
 }
 
 /* =====================================================
    Bảng danh sách chi tiết ghế ngồi & Quản lý bảo trì
    ===================================================== */
 .cf-seats-table-card {
-    background: #ffffff;
-    border: 1px solid #E2E8F0;
+    background: var(--cf-surface, #161B26);
+    border: 1px solid var(--cf-border, rgba(255, 255, 255, 0.08));
     border-radius: 12px;
     padding: 24px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
 }
 
 .cf-section-header {
@@ -480,8 +508,8 @@
 
 /* Thanh tìm kiếm & bộ lọc */
 .cf-filter-card {
-    background: #F8FAFC;
-    border: 1px solid #E2E8F0;
+    background: #111622;
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 10px;
     padding: 14px 18px;
     margin-bottom: 20px;
@@ -509,18 +537,23 @@
 .cf-search-box input {
     width: 100%;
     padding: 8px 14px 8px 36px;
-    background: #ffffff;
-    border: 1px solid #CBD5E1;
+    background: #161B26;
+    border: 1px solid rgba(255, 255, 255, 0.14);
     border-radius: 8px;
     font-size: 14px;
-    color: #1E293B;
+    color: var(--cf-text, #F8FAFC);
     outline: none;
     transition: all 0.2s;
 }
 
+.cf-search-box input::placeholder {
+    color: #64748B;
+}
+
 .cf-search-box input:focus {
     border-color: #FF2855;
-    box-shadow: 0 0 0 3px rgba(255, 40, 85, 0.12);
+    background: #1A2130;
+    box-shadow: 0 0 0 3px rgba(255, 40, 85, 0.2);
 }
 
 .cf-search-box .icon {
@@ -536,11 +569,11 @@
 
 .cf-select {
     padding: 8px 12px;
-    background: #ffffff;
-    border: 1px solid #CBD5E1;
+    background: #161B26;
+    border: 1px solid rgba(255, 255, 255, 0.14);
     border-radius: 8px;
     font-size: 13.5px;
-    color: #1E293B;
+    color: var(--cf-text, #F8FAFC);
     outline: none;
     cursor: pointer;
     transition: all 0.2s;
@@ -548,44 +581,51 @@
 
 .cf-select:focus {
     border-color: #FF2855;
+    background: #1A2130;
+}
+
+.cf-select option {
+    background: #161B26;
+    color: #F8FAFC;
 }
 
 /* Bảng danh sách ghế */
 .cf-table-container {
-    background: #ffffff;
-    border: 1px solid #E2E8F0;
+    background: var(--cf-surface, #161B26);
+    border: 1px solid var(--cf-border, rgba(255, 255, 255, 0.08));
     border-radius: 10px;
     overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
 }
 
 .cf-table {
     width: 100%;
     border-collapse: collapse;
     text-align: left;
+    background: var(--cf-surface, #161B26);
 }
 
 .cf-table th {
-    background: #F8FAFC;
+    background: rgba(11, 15, 23, 0.7);
     padding: 12px 16px;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    color: #475569;
-    border-bottom: 1px solid #E2E8F0;
+    color: var(--cf-muted, #94A3B8);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .cf-table td {
     padding: 14px 16px;
     font-size: 13.5px;
-    color: #1E293B;
-    border-bottom: 1px solid #F1F5F9;
+    color: var(--cf-text, #F8FAFC);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     vertical-align: middle;
 }
 
 .cf-table tr:hover td {
-    background: #F8FAFC;
+    background: rgba(255, 255, 255, 0.03);
 }
 
 .cf-table tr:last-child td {
@@ -600,18 +640,18 @@
     flex-wrap: wrap;
     gap: 16px;
     padding: 14px 18px;
-    background: #F8FAFC;
-    border-top: 1px solid #E2E8F0;
+    background: rgba(11, 15, 23, 0.5);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .cf-pagination-info {
     font-size: 13px;
-    color: #64748B;
+    color: var(--cf-muted, #94A3B8);
 }
 
 .cf-pagination-info strong {
-    color: #0F172A;
-    font-weight: 600;
+    color: var(--cf-text, #F8FAFC);
+    font-weight: 700;
 }
 
 .cf-pagination-controls {
@@ -627,10 +667,10 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid #CBD5E1;
+    border: 1px solid rgba(255, 255, 255, 0.14);
     border-radius: 6px;
-    background: #ffffff;
-    color: #334155;
+    background: #1E293B;
+    color: var(--cf-text, #F8FAFC);
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
@@ -641,28 +681,28 @@
 .cf-page-btn:hover:not(.disabled):not(.active) {
     border-color: #FF2855;
     color: #FF2855;
-    background: rgba(255, 40, 85, 0.05);
+    background: rgba(255, 40, 85, 0.12);
 }
 
 .cf-page-btn.active {
     background: #FF2855;
     border-color: #FF2855;
     color: #ffffff;
-    box-shadow: 0 2px 6px rgba(255, 40, 85, 0.3);
+    box-shadow: 0 2px 8px rgba(255, 40, 85, 0.35);
 }
 
 .cf-page-btn.disabled {
-    opacity: 0.4;
+    opacity: 0.35;
     cursor: not-allowed;
-    background: #F1F5F9;
-    color: #94A3B8;
-    border-color: #E2E8F0;
+    background: transparent;
+    color: #64748B;
+    border-color: rgba(255, 255, 255, 0.06);
     pointer-events: none;
 }
 
 .cf-page-ellipsis {
     padding: 0 4px;
-    color: #94A3B8;
+    color: #64748B;
     font-size: 13px;
     user-select: none;
 }
