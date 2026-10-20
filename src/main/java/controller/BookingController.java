@@ -2,12 +2,13 @@ package controller;
 
 import dao.BookingDAO;
 import dao.BookingDAO.SeatUnavailableException;
-import dao.CentreDAO;
+import dao.ShowtimeDAO.CityOption;
 import dao.MovieDAO;
 import dao.PaymentDAO;
 import dao.SeatDAO;
 import dao.ShowtimeDAO;
 import model.Booking;
+import model.Centre;
 import model.Seat;
 import model.Showtime;
 import model.Ticket;
@@ -33,7 +34,7 @@ import java.util.TreeMap;
 
 /**
  * FE-05 Dat ve:
- *   GET  /booking                          chon chi nhanh, phim, ngay, suat chieu
+ *   GET  /booking                          chon thanh pho -> rap -> phim -> ngay -> suat chieu
  *   GET  /booking?action=select-seats      chon ghe (can dang nhap)
  *   POST /booking?action=hold              giu ghe 5 phut, tao booking PENDING
  *   GET  /booking?action=checkout          xem lai don + dem nguoc + nut thanh toan
@@ -47,7 +48,6 @@ public class BookingController extends HttpServlet {
     private static final String VIEW_DIR = "/WEB-INF/views/";
     private static final String[] WEEKDAYS = {"T2", "T3", "T4", "T5", "T6", "T7", "CN"};
 
-    private final CentreDAO centreDAO = new CentreDAO();
     private final MovieDAO movieDAO = new MovieDAO();
     private final ShowtimeDAO showtimeDAO = new ShowtimeDAO();
     private final SeatDAO seatDAO = new SeatDAO();
@@ -94,18 +94,37 @@ public class BookingController extends HttpServlet {
 
     private void selectShowtime(HttpServletRequest req, HttpServletResponse resp)
             throws SQLException, ServletException, IOException {
+        String city = req.getParameter("city");
+        if (city != null && city.isBlank()) city = null;
         Integer branchId = WebUtil.parseInt(req.getParameter("branchId"));
         Integer movieId = WebUtil.parseInt(req.getParameter("movieId"));
-        // Tu trang chu / chi tiet phim chi truyen movieId: chon san rap co suat som nhat cua phim do
-        if (branchId == null && movieId != null) {
-            branchId = showtimeDAO.findFirstCentreForMovie(movieId);
-            if (branchId == null) {
-                WebUtil.flash(req, "info", "Phim này hiện chưa có suất chiếu mở bán.");
-                movieId = null;
-            }
-        }
 
-        req.setAttribute("branches", centreDAO.getActiveCentres());
+        // Da chon phim (tu trang chu / chi tiet phim, hoac o buoc 3): thanh pho va rap chi hien noi chieu phim do
+        List<CityOption> cities = movieId == null ? List.of() : showtimeDAO.getCities(movieId);
+        if (movieId != null && cities.isEmpty()) {
+            WebUtil.flash(req, "info", "Phim này hiện chưa có suất chiếu mở bán.");
+            movieId = null;
+        }
+        if (movieId == null) cities = showtimeDAO.getCities(null);
+
+        // Chi co phim: chon san rap co suat som nhat cua phim
+        if (movieId != null && city == null && branchId == null) {
+            branchId = showtimeDAO.findFirstCentreForMovie(movieId);
+        }
+        // Link cu chi co branchId (booking/booking.jsp?centreId=...): suy ra thanh pho cua rap
+        if (city == null && branchId != null) city = showtimeDAO.getCityOfCentre(branchId);
+        final String chosenCity = city;
+        if (city != null && cities.stream().noneMatch(c -> c.name().equals(chosenCity))) city = null;
+        if (city == null && cities.size() == 1) city = cities.get(0).name();
+
+        List<Centre> centres = city == null ? List.of() : showtimeDAO.getCentresInCity(city, movieId);
+        final Integer chosenBranch = branchId;
+        if (branchId != null && centres.stream().noneMatch(c -> c.getCentreId() == chosenBranch)) branchId = null;
+        if (branchId == null && centres.size() == 1) branchId = centres.get(0).getCentreId();
+
+        req.setAttribute("cities", cities);
+        req.setAttribute("selectedCity", city);
+        req.setAttribute("centres", centres);
         req.setAttribute("selectedBranchId", branchId);
         req.setAttribute("selectedMovieId", movieId);
 
