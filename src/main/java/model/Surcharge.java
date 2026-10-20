@@ -1,38 +1,27 @@
 package model;
 
-import java.io.Serializable;
-import java.math.BigDecimal;
-import java.sql.Timestamp;
+import java.text.NumberFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 
-/**
- * Model đại diện cho bảng phụ thu loại ghế và loại phòng chiếu (Surcharges).
- */
-public class Surcharge implements Serializable {
-    private static final long serialVersionUID = 1L;
+public class Surcharge {
 
     private int surchargeId;
     private String surchargeName;
-    private String surchargeType; // SEAT, HALL
-    private String targetValue;   // VIP, SWEETBOX, 3D, IMAX...
-    private BigDecimal amount;
-    private Timestamp effectiveFrom;
-    private Timestamp effectiveTo;
+    private String targetValue;
+    private String surchargeType;
+    public String getSurchargeType() { return surchargeType; }
+    public void setSurchargeType(String surchargeType) { this.surchargeType = surchargeType; }
+    private double amount;
+
+    private LocalDateTime effectiveFrom;
+    private LocalDateTime effectiveTo;
+
     private Integer updatedBy;
-    private Timestamp createdAt;
+    private LocalDateTime createdAt;
 
     public Surcharge() {
-    }
-
-    public Surcharge(int surchargeId, String surchargeName, String surchargeType, String targetValue, BigDecimal amount, Timestamp effectiveFrom, Timestamp effectiveTo, Integer updatedBy, Timestamp createdAt) {
-        this.surchargeId = surchargeId;
-        this.surchargeName = surchargeName;
-        this.surchargeType = surchargeType;
-        this.targetValue = targetValue;
-        this.amount = amount;
-        this.effectiveFrom = effectiveFrom;
-        this.effectiveTo = effectiveTo;
-        this.updatedBy = updatedBy;
-        this.createdAt = createdAt;
     }
 
     public int getSurchargeId() {
@@ -51,14 +40,6 @@ public class Surcharge implements Serializable {
         this.surchargeName = surchargeName;
     }
 
-    public String getSurchargeType() {
-        return surchargeType;
-    }
-
-    public void setSurchargeType(String surchargeType) {
-        this.surchargeType = surchargeType;
-    }
-
     public String getTargetValue() {
         return targetValue;
     }
@@ -67,27 +48,27 @@ public class Surcharge implements Serializable {
         this.targetValue = targetValue;
     }
 
-    public BigDecimal getAmount() {
+    public double getAmount() {
         return amount;
     }
 
-    public void setAmount(BigDecimal amount) {
+    public void setAmount(double amount) {
         this.amount = amount;
     }
 
-    public Timestamp getEffectiveFrom() {
+    public LocalDateTime getEffectiveFrom() {
         return effectiveFrom;
     }
 
-    public void setEffectiveFrom(Timestamp effectiveFrom) {
+    public void setEffectiveFrom(LocalDateTime effectiveFrom) {
         this.effectiveFrom = effectiveFrom;
     }
 
-    public Timestamp getEffectiveTo() {
+    public LocalDateTime getEffectiveTo() {
         return effectiveTo;
     }
 
-    public void setEffectiveTo(Timestamp effectiveTo) {
+    public void setEffectiveTo(LocalDateTime effectiveTo) {
         this.effectiveTo = effectiveTo;
     }
 
@@ -99,11 +80,46 @@ public class Surcharge implements Serializable {
         this.updatedBy = updatedBy;
     }
 
-    public Timestamp getCreatedAt() {
+    public LocalDateTime getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(Timestamp createdAt) {
+    public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getAmountFormatted() {
+        NumberFormat formatter =
+                NumberFormat.getCurrencyInstance(
+                        new Locale("vi", "VN")
+                );
+
+        return formatter.format(amount);
+    }
+
+    public String getEffectiveFromFormatted() {
+
+        if (effectiveFrom == null) {
+            return "";
+        }
+
+        return effectiveFrom.format(
+                DateTimeFormatter.ofPattern(
+                        "dd/MM/yyyy HH:mm:ss"
+                )
+        );
+    }
+
+    public String getEffectiveToFormatted() {
+
+        if (effectiveTo == null) {
+            return "Current";
+        }
+
+        return effectiveTo.format(
+                DateTimeFormatter.ofPattern(
+                        "dd/MM/yyyy HH:mm:ss"
+                )
+        );
     }
 }

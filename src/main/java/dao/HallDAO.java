@@ -459,4 +459,12 @@ public class HallDAO {
 
         return 0;
     }
+    public List<Hall> getAvailableHallsByCentre(int centreId) {
+        List<Hall> available = new ArrayList<>();
+        for (Hall hall : getHallsByCentre(centreId)) {
+            if ("AVAILABLE".equals(hall.getStatus())) available.add(hall);
+        }
+        available.sort(java.util.Comparator.comparing(Hall::getHallName));
+        return available;
+    }
 }

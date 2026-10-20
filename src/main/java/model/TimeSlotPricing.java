@@ -1,41 +1,29 @@
 package model;
 
-import java.io.Serializable;
-import java.math.BigDecimal;
-import java.sql.Time;
-import java.sql.Timestamp;
+import java.text.NumberFormat;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 
-/**
- * Model đại diện cho bảng phụ thu theo khung giờ chiếu (TimeSlotPricing).
- */
-public class TimeSlotPricing implements Serializable {
-    private static final long serialVersionUID = 1L;
+public class TimeSlotPricing {
 
     private int timeSlotPricingId;
-    private int centreId; // BranchID / CentreID
+    private int branchId;
     private String slotName;
-    private Time startTime;
-    private Time endTime;
-    private BigDecimal surcharge;
-    private Timestamp effectiveFrom;
-    private Timestamp effectiveTo;
+
+    private LocalTime startTime;
+    private LocalTime endTime;
+
+    private double surcharge;
+
+    private LocalDateTime effectiveFrom;
+    private LocalDateTime effectiveTo;
+
     private Integer updatedBy;
-    private Timestamp createdAt;
+    private LocalDateTime createdAt;
 
     public TimeSlotPricing() {
-    }
-
-    public TimeSlotPricing(int timeSlotPricingId, int centreId, String slotName, Time startTime, Time endTime, BigDecimal surcharge, Timestamp effectiveFrom, Timestamp effectiveTo, Integer updatedBy, Timestamp createdAt) {
-        this.timeSlotPricingId = timeSlotPricingId;
-        this.centreId = centreId;
-        this.slotName = slotName;
-        this.startTime = startTime;
-        this.endTime = endTime;
-        this.surcharge = surcharge;
-        this.effectiveFrom = effectiveFrom;
-        this.effectiveTo = effectiveTo;
-        this.updatedBy = updatedBy;
-        this.createdAt = createdAt;
     }
 
     public int getTimeSlotPricingId() {
@@ -46,20 +34,12 @@ public class TimeSlotPricing implements Serializable {
         this.timeSlotPricingId = timeSlotPricingId;
     }
 
-    public int getCentreId() {
-        return centreId;
-    }
-
-    public void setCentreId(int centreId) {
-        this.centreId = centreId;
-    }
-
     public int getBranchId() {
-        return centreId;
+        return branchId;
     }
 
     public void setBranchId(int branchId) {
-        this.centreId = branchId;
+        this.branchId = branchId;
     }
 
     public String getSlotName() {
@@ -70,43 +50,43 @@ public class TimeSlotPricing implements Serializable {
         this.slotName = slotName;
     }
 
-    public Time getStartTime() {
+    public LocalTime getStartTime() {
         return startTime;
     }
 
-    public void setStartTime(Time startTime) {
+    public void setStartTime(LocalTime startTime) {
         this.startTime = startTime;
     }
 
-    public Time getEndTime() {
+    public LocalTime getEndTime() {
         return endTime;
     }
 
-    public void setEndTime(Time endTime) {
+    public void setEndTime(LocalTime endTime) {
         this.endTime = endTime;
     }
 
-    public BigDecimal getSurcharge() {
+    public double getSurcharge() {
         return surcharge;
     }
 
-    public void setSurcharge(BigDecimal surcharge) {
+    public void setSurcharge(double surcharge) {
         this.surcharge = surcharge;
     }
 
-    public Timestamp getEffectiveFrom() {
+    public LocalDateTime getEffectiveFrom() {
         return effectiveFrom;
     }
 
-    public void setEffectiveFrom(Timestamp effectiveFrom) {
+    public void setEffectiveFrom(LocalDateTime effectiveFrom) {
         this.effectiveFrom = effectiveFrom;
     }
 
-    public Timestamp getEffectiveTo() {
+    public LocalDateTime getEffectiveTo() {
         return effectiveTo;
     }
 
-    public void setEffectiveTo(Timestamp effectiveTo) {
+    public void setEffectiveTo(LocalDateTime effectiveTo) {
         this.effectiveTo = effectiveTo;
     }
 
@@ -118,11 +98,65 @@ public class TimeSlotPricing implements Serializable {
         this.updatedBy = updatedBy;
     }
 
-    public Timestamp getCreatedAt() {
+    public LocalDateTime getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(Timestamp createdAt) {
+    public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getStartTimeFormatted() {
+        if (startTime == null) {
+            return "";
+        }
+
+        return startTime.format(
+                DateTimeFormatter.ofPattern("HH:mm")
+        );
+    }
+
+    public String getEndTimeFormatted() {
+        if (endTime == null) {
+            return "";
+        }
+
+        return endTime.format(
+                DateTimeFormatter.ofPattern("HH:mm")
+        );
+    }
+
+    public String getSurchargeFormatted() {
+        NumberFormat formatter =
+                NumberFormat.getCurrencyInstance(
+                        new Locale("vi", "VN")
+                );
+
+        return formatter.format(surcharge);
+    }
+
+    public String getEffectiveFromFormatted() {
+        if (effectiveFrom == null) {
+            return "";
+        }
+
+        return effectiveFrom.format(
+                DateTimeFormatter.ofPattern(
+                        "dd/MM/yyyy HH:mm:ss"
+                )
+        );
+    }
+
+    public String getEffectiveToFormatted() {
+
+        if (effectiveTo == null) {
+            return "Current";
+        }
+
+        return effectiveTo.format(
+                DateTimeFormatter.ofPattern(
+                        "dd/MM/yyyy HH:mm:ss"
+                )
+        );
     }
 }
