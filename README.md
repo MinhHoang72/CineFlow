@@ -20,7 +20,7 @@
    - Chạy trên máy chủ **Apache Tomcat 10+** (hỗ trợ Jakarta EE).
    - Địa chỉ truy cập: `http://localhost:8080/Cine_Flow/`
 
-3. **Tài khoản mẫu** (mật khẩu mặc định: `123456` hoặc theo thông báo):
+3. **Tài khoản mẫu** 
    - **Quản trị viên (Admin)**: `admin`
    - **Quản lý cụm rạp (Manager)**: `manager` (phụ trách rạp CineFlow Thủ Đức / Centre 21)
    - **Nhân viên rạp (Staff)**: `staff` (nhân viên bán vé, rạp 1)
