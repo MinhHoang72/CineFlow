@@ -1,4 +1,5 @@
 package controller;
+import jakarta.servlet.annotation.WebServlet;
 
 import dao.UserDAO;
 import model.User;
@@ -22,6 +23,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * kiểm tra ràng buộc nghiệp vụ, băm mật khẩu và gửi mã OTP kích hoạt qua Email.
  * URL ánh xạ: /register
  */
+@WebServlet(name = "RegisterServlet", urlPatterns = {"/register", "/auth/register"})
 public class RegisterServlet extends HttpServlet {
 
     private UserDAO userDAO;

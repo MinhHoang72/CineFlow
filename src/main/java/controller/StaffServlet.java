@@ -1,4 +1,5 @@
 package controller;
+import jakarta.servlet.annotation.WebServlet;
 
 import dao.CinemaDAO;
 import dao.UserDAO;
@@ -25,6 +26,7 @@ import java.util.List;
  * - Quản trị viên (Admin): Quản lý nhân viên trên toàn hệ thống hoặc lọc theo từng rạp.
  * URL ánh xạ: /staff
  */
+@WebServlet(name = "StaffServlet", urlPatterns = {"/staff", "/manager/staff"})
 public class StaffServlet extends HttpServlet {
 
     private final UserDAO userDAO = new UserDAO();

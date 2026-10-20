@@ -1,4 +1,5 @@
 package controller;
+import jakarta.servlet.annotation.WebServlet;
 
 import dao.UserDAO;
 import model.User;
@@ -18,6 +19,7 @@ import java.nio.charset.StandardCharsets;
  * Controller: Xử lý xác thực đăng nhập người dùng, kiểm tra trạng thái kích hoạt tài khoản và điều hướng theo vai trò.
  * URL ánh xạ: /login
  */
+@WebServlet(name = "LoginServlet", urlPatterns = {"/login", "/auth/login"})
 public class LoginServlet extends HttpServlet {
 
     private UserDAO userDAO;

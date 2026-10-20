@@ -1,4 +1,5 @@
 package controller;
+import jakarta.servlet.annotation.WebServlet;
 
 import dao.ReportDAO;
 import jakarta.servlet.ServletException;
@@ -16,6 +17,7 @@ import java.nio.charset.StandardCharsets;
  * Controller: Điều khiển màn hình báo cáo doanh thu và công suất phòng chiếu dành cho Quản lý (Manager) và Quản trị viên (Admin).
  * URL ánh xạ: /reports
  */
+@WebServlet(name = "ReportServlet", urlPatterns = {"/admin/reports"})
 public class ReportServlet extends HttpServlet {
 
     private final ReportDAO reportDAO = new ReportDAO();

@@ -1,4 +1,5 @@
 package controller;
+import jakarta.servlet.annotation.WebServlet;
 
 import dao.CinemaDAO;
 import dao.UserDAO;
@@ -21,6 +22,7 @@ import java.util.List;
  * Controller điều khiển nghiệp vụ Bổ nhiệm Quản lý trung tâm và Điều chuyển nhân sự dành cho Quản trị viên (Admin).
  * URL ánh xạ: /admin/transfers
  */
+@WebServlet(name = "StaffTransferServlet", urlPatterns = {"/admin/transfers"})
 public class StaffTransferServlet extends HttpServlet {
 
     private final UserDAO userDAO = new UserDAO();

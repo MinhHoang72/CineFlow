@@ -1,4 +1,5 @@
 package controller;
+import jakarta.servlet.annotation.WebServlet;
 
 import dao.UserDAO;
 import jakarta.servlet.ServletException;
@@ -23,6 +24,7 @@ import java.util.List;
  * - Khóa hoặc mở khóa tài khoản khách hàng
  * - Tra cứu chi tiết lịch sử đặt vé của khách hàng
  */
+@WebServlet(name = "CustomerManagementServlet", urlPatterns = {"/admin/customers"})
 public class CustomerManagementServlet extends HttpServlet {
 
     private final UserDAO userDAO = new UserDAO();

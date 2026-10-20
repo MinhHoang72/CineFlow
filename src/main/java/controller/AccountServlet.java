@@ -1,4 +1,5 @@
 package controller;
+import jakarta.servlet.annotation.WebServlet;
 
 import dao.UserDAO;
 import model.User;
@@ -27,6 +28,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * xem lịch sử đặt vé và cập nhật thông tin người dùng (họ tên, số điện thoại, avatar, đổi email qua OTP).
  * URL ánh xạ: /account
  */
+@WebServlet(name = "AccountServlet", urlPatterns = {"/account", "/profile"})
 @MultipartConfig(maxFileSize = 2 * 1024 * 1024, maxRequestSize = 3 * 1024 * 1024)
 public class AccountServlet extends HttpServlet {
 

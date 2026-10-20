@@ -1,4 +1,5 @@
 package controller;
+import jakarta.servlet.annotation.WebServlet;
 
 import dao.CinemaDAO;
 import dao.RatingDAO;
@@ -16,6 +17,7 @@ import java.io.IOException;
  * Controller: Hiển thị thông tin chi tiết của một bộ phim, điểm đánh giá tổng hợp và danh sách suất chiếu của phim.
  * URL ánh xạ: /movie-details
  */
+@WebServlet(name = "MovieDetailsServlet", urlPatterns = {"/movie/details"})
 public class MovieDetailsServlet extends HttpServlet {
 
     private final CinemaDAO cinemaDAO = new CinemaDAO();

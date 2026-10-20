@@ -1,4 +1,5 @@
 package controller;
+import jakarta.servlet.annotation.WebServlet;
 
 import dao.UserDAO;
 import model.User;
@@ -19,6 +20,7 @@ import java.util.concurrent.ThreadLocalRandom;
 /**
  * Xử lý yêu cầu quên mật khẩu: tạo mã OTP xác thực và gửi qua email cho người dùng.
  */
+@WebServlet(name = "ForgotPasswordServlet", urlPatterns = {"/forgot-password", "/auth/forgot-password"})
 public class ForgotPasswordServlet extends HttpServlet {
 
     private UserDAO userDAO;

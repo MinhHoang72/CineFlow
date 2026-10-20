@@ -1,4 +1,5 @@
 package controller;
+import jakarta.servlet.annotation.WebServlet;
 
 import dao.CinemaDAO;
 import jakarta.servlet.ServletException;
@@ -22,6 +23,7 @@ import java.util.Set;
  * - Xem danh sách các cụm rạp đã hoặc chưa được phân phối phim này
  * - Bật/tắt gán phim cho từng cụm rạp cụ thể để rạp đó có quyền lên lịch chiếu
  */
+@WebServlet(name = "DistributionServlet", urlPatterns = {"/admin/distribution"})
 public class DistributionServlet extends HttpServlet {
 
     private final CinemaDAO dao = new CinemaDAO();

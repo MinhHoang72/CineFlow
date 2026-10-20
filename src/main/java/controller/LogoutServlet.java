@@ -1,4 +1,5 @@
 package controller;
+import jakarta.servlet.annotation.WebServlet;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -12,6 +13,7 @@ import java.io.IOException;
  * Controller: Xử lý đăng xuất tài khoản người dùng, hủy phiên làm việc hiện tại và chuyển hướng về trang chủ.
  * URL ánh xạ: /logout
  */
+@WebServlet(name = "LogoutServlet", urlPatterns = {"/logout", "/auth/logout"})
 public class LogoutServlet extends HttpServlet {
 
     /**

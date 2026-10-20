@@ -1,4 +1,5 @@
 package controller;
+import jakarta.servlet.annotation.WebServlet;
 
 import dao.CinemaDAO;
 import dao.ReportDAO;
@@ -16,6 +17,7 @@ import java.net.URLEncoder;
  * Controller: Điều hướng người dùng đến bảng điều khiển tương ứng với vai trò (Admin, Manager, Staff, Customer).
  * URL ánh xạ: /dashboard
  */
+@WebServlet(name = "DashboardServlet", urlPatterns = {"/dashboard", "/admin/dashboard"})
 public class DashboardServlet extends HttpServlet {
 
     private final ReportDAO reportDAO = new ReportDAO();

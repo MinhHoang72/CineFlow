@@ -1,4 +1,5 @@
 package controller;
+import jakarta.servlet.annotation.WebServlet;
 
 import dao.CinemaDAO;
 import dao.UserDAO;
@@ -22,6 +23,7 @@ import java.util.List;
  * Trách nhiệm: Quản lý thông tin tài khoản Manager (tạo mới, cập nhật thông tin cá nhân, kích hoạt hoặc tạm ngưng tài khoản).
  * Nghiệp vụ Bổ nhiệm vào rạp và Điều chuyển nhân sự được quản lý riêng biệt tại StaffTransferServlet (/admin/transfers).
  */
+@WebServlet(name = "ManagerAccountServlet", urlPatterns = {"/admin/managers"})
 public class ManagerAccountServlet extends HttpServlet {
 
     private final UserDAO userDAO = new UserDAO();

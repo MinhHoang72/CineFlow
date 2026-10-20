@@ -1,4 +1,5 @@
 package controller;
+import jakarta.servlet.annotation.WebServlet;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -18,6 +19,7 @@ import java.util.Set;
  * đã được tải lên máy chủ, ngăn chặn tấn công Path Traversal.
  * URL ánh xạ: /uploads/*
  */
+@WebServlet(name = "MediaResourceServlet", urlPatterns = {"/uploads/*"})
 public class MediaResourceServlet extends HttpServlet {
     private static final Set<String> CATEGORIES = Set.of("avatars", "movies", "fnb");
     private static final Set<String> EXTENSIONS = Set.of("jpg", "jpeg", "png", "webp", "mp4", "webm", "ogg");

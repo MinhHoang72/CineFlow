@@ -1,4 +1,5 @@
 package controller;
+import jakarta.servlet.annotation.WebServlet;
 
 import dao.UserDAO;
 import model.User;
@@ -17,6 +18,7 @@ import java.io.IOException;
  * Controller: Xử lý yêu cầu thay đổi mật khẩu từ người dùng đã đăng nhập vào hệ thống.
  * URL ánh xạ: /change-password
  */
+@WebServlet(name = "ChangePasswordServlet", urlPatterns = {"/change-password", "/auth/change-password"})
 public class ChangePasswordServlet extends HttpServlet {
 
     private UserDAO userDAO;

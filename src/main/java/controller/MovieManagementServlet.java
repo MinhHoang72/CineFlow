@@ -1,4 +1,5 @@
 package controller;
+import jakarta.servlet.annotation.WebServlet;
 
 import dao.CinemaDAO;
 import jakarta.servlet.ServletException;
@@ -26,6 +27,7 @@ import java.util.UUID;
  * - Lưu thông tin phim, xác thực dữ liệu và upload file Poster / Trailer vật lý
  * - Cập nhật trạng thái phát hành (Coming Soon, Now Showing, Ended, Archived)
  */
+@WebServlet(name = "MovieManagementServlet", urlPatterns = {"/admin/movies", "/admin/movie"})
 @MultipartConfig(maxFileSize = 50 * 1024 * 1024, maxRequestSize = 60 * 1024 * 1024)
 public class MovieManagementServlet extends HttpServlet {
 

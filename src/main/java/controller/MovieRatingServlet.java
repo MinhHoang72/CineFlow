@@ -1,4 +1,5 @@
 package controller;
+import jakarta.servlet.annotation.WebServlet;
 
 import dao.CinemaDAO;
 import dao.RatingDAO;
@@ -17,6 +18,7 @@ import java.util.Locale;
  * Controller: Điều khiển API chấm điểm và lấy dữ liệu thống kê đánh giá phim của người dùng dưới định dạng JSON.
  * URL ánh xạ: /api/movie-rating
  */
+@WebServlet(name = "MovieRatingServlet", urlPatterns = {"/movie/rate"})
 public class MovieRatingServlet extends HttpServlet {
 
     private final CinemaDAO cinemaDAO = new CinemaDAO();

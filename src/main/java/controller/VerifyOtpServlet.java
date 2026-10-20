@@ -1,4 +1,5 @@
 package controller;
+import jakarta.servlet.annotation.WebServlet;
 
 import dao.UserDAO;
 import model.User;
@@ -18,6 +19,7 @@ import java.util.concurrent.ThreadLocalRandom;
 /**
  * Xử lý xác thực mã OTP cho luồng kích hoạt tài khoản đăng ký mới và luồng quên mật khẩu.
  */
+@WebServlet(name = "VerifyOtpServlet", urlPatterns = {"/verify-otp", "/auth/verify-otp"})
 public class VerifyOtpServlet extends HttpServlet {
 
     private UserDAO userDAO;

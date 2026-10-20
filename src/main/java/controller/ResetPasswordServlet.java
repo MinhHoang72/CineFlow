@@ -1,4 +1,5 @@
 package controller;
+import jakarta.servlet.annotation.WebServlet;
 
 import dao.UserDAO;
 import model.User;
@@ -16,6 +17,7 @@ import java.io.IOException;
 /**
  * Xử lý đặt lại mật khẩu mới cho người dùng sau khi đã xác thực mã OTP thành công.
  */
+@WebServlet(name = "ResetPasswordServlet", urlPatterns = {"/reset-password", "/auth/reset-password"})
 public class ResetPasswordServlet extends HttpServlet {
 
     private UserDAO userDAO;
