@@ -27,10 +27,16 @@ public class PricingService {
     }
 
 
+    /** Legacy callers use a 2D hall; pass hallType explicitly for actual bookings. */
+    public double calculateTicketPrice(int centreId, LocalDateTime showtime, String seatType) {
+        return calculateTicketPrice(centreId, showtime, seatType, "2D");
+    }
+
     public double calculateTicketPrice(
-            int branchId,
+            int centreId,
             LocalDateTime showtime,
-            String seatType) {
+            String seatType,
+            String hallType) {
 
         Timestamp time =
                 Timestamp.valueOf(
@@ -40,14 +46,14 @@ public class PricingService {
         double basePrice =
                 branchPricingDAO
                     .getBasePriceAt(
-                        branchId,
+                        centreId,
                         time
                     );
 
         double timeSurcharge =
                 timeSlotPricingDAO
                     .getSurchargeAt(
-                        branchId,
+                        centreId,
                         time
                     );
 
@@ -60,6 +66,7 @@ public class PricingService {
 
         return basePrice
                 + timeSurcharge
-                + seatSurcharge;
+                + seatSurcharge
+                + surchargeDAO.getHallSurchargeAt(hallType, time);
     }
 }

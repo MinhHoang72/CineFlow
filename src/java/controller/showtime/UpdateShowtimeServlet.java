@@ -99,7 +99,7 @@ public class UpdateShowtimeServlet
 
                 setError(
                         request,
-                        "This movie is not available at the selected branch."
+                        "This movie is not available at the selected centre."
                 );
 
                 redirect(request, response);

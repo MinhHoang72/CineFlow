@@ -8,29 +8,109 @@
 
 <html>
 
-    <head>
+<head>
 
-        <meta charset="UTF-8">
+    <meta charset="UTF-8">
 
-        <title>
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Showtime Management</title>
+
+
+    <!-- Common CSS -->
+    <link rel="stylesheet"
+      href="${pageContext.request.contextPath}/css/common/layout.css">
+
+<link rel="stylesheet"
+      href="${pageContext.request.contextPath}/css/common/button.css">
+
+<link rel="stylesheet"
+      href="${pageContext.request.contextPath}/css/common/form.css">
+
+<link rel="stylesheet"
+      href="${pageContext.request.contextPath}/css/common/table.css">
+
+<link rel="stylesheet"
+      href="${pageContext.request.contextPath}/css/common/badge.css">
+
+<link rel="stylesheet"
+      href="${pageContext.request.contextPath}/css/common/alert.css">
+
+<link rel="stylesheet"
+      href="${pageContext.request.contextPath}/css/management/showtime-pricing.css">
+
+
+    <!-- CSS riêng cho Showtime / Pricing -->
+    <link rel="stylesheet"
+          href="${pageContext.request.contextPath}/css/showtime-pricing/showtime-pricing.css">
+
+</head>
+
+
+<body>
+
+<div class="page-shell">
+
+
+    <!-- =====================================================
+         BREADCRUMB
+         ===================================================== -->
+
+    <nav class="cf-breadcrumb-nav">
+
+        <a href="${pageContext.request.contextPath}/">
+            Home
+        </a>
+
+        <span class="cf-breadcrumb-sep">
+            /
+        </span>
+
+        <span class="cf-breadcrumb-current">
             Showtime Management
-        </title>
+        </span>
 
-    </head>
-
-    <body>
+    </nav>
 
 
-        <h1>
-            Showtime Management
-        </h1>
+    <!-- =====================================================
+         MAIN CONTENT
+         ===================================================== -->
 
+    <main class="cf-management-page">
+
+
+        <!-- PAGE HEADER -->
+
+        <div class="cf-page-heading">
+
+            <div class="cf-page-title">
+
+                <h1>
+                    Showtime Management
+                </h1>
+
+            </div>
+
+            <p class="cf-page-description">
+                Create, manage and monitor cinema showtimes
+            </p>
+
+        </div>
+
+
+        <!-- =================================================
+             MESSAGE
+             ================================================= -->
 
         <c:if test="${not empty sessionScope.message}">
 
-            <p style="color: green;">
+            <div class="cf-alert cf-alert-success">
+
                 ${sessionScope.message}
-            </p>
+
+            </div>
 
             <c:remove
                 var="message"
@@ -41,9 +121,11 @@
 
         <c:if test="${not empty sessionScope.error}">
 
-            <p style="color: red;">
+            <div class="cf-alert cf-alert-error">
+
                 ${sessionScope.error}
-            </p>
+
+            </div>
 
             <c:remove
                 var="error"
@@ -52,193 +134,504 @@
         </c:if>
 
 
-        <h2>
-            Create Showtime
-        </h2>
+        <!-- =================================================
+             CREATE SHOWTIME
+             ================================================= -->
 
+        <section class="cf-card">
 
-        <form
-            action="${pageContext.request.contextPath}/showtimes/create"
-            method="post">
 
-            Movie ID:
+            <div class="cf-card-header">
 
-            <select name="movieId"
-                    required>
+                <div>
 
-                <option value="">
-                    -- Select Movie --
-                </option>
+                    <h2 class="cf-card-title">
+                        Create Showtime
+                    </h2>
 
-                <c:forEach var="m"
-                           items="${movies}">
+                    <p class="cf-card-subtitle">
+                        Select movie, hall and screening time
+                    </p>
 
-                    <option value="${m.movieId}">
-                        ${m.title}
-                        (${m.duration} min)
-                    </option>
+                </div>
 
-                </c:forEach>
+            </div>
 
-            </select>
-            <br><br>
 
+            <div class="cf-card-body">
 
-            Hall ID:
 
-            <select name="hallId"
-                    required>
+                <form
+                    action="${pageContext.request.contextPath}/showtimes/create"
+                    method="post">
 
-                <option value="">
-                    -- Select Hall --
-                </option>
 
-                <c:forEach var="h"
-                           items="${halls}">
+                    <div class="cf-form-grid">
 
-                    <option value="${h.hallId}">
-                        ${h.hallName}
-                        - ${h.hallType}
-                    </option>
 
-                </c:forEach>
+                        <!-- Movie -->
 
-            </select>
+                        <div class="cf-field">
 
-            <br><br>
+                            <label for="movieId">
 
+                                Movie
 
-            Start Time:
+                                <span>*</span>
 
-            <input
-                type="datetime-local"
-                name="startTime"
-                required>
+                            </label>
 
-            <br><br>
 
+                            <select
+                                id="movieId"
+                                name="movieId"
+                                required>
 
-            <button type="submit">
-                Create Showtime
-            </button>
+                                <option value="">
+                                    -- Select Movie --
+                                </option>
 
-        </form>
 
+                                <c:forEach
+                                    var="m"
+                                    items="${movies}">
 
-        <hr>
+                                    <option value="${m.movieId}">
 
+                                        ${m.title}
+                                        (${m.duration} min)
 
-        <h2>
-            Showtime List
-        </h2>
+                                    </option>
 
+                                </c:forEach>
 
-        <table
-            border="1"
-            cellpadding="8">
+                            </select>
 
-            <tr>
 
-                <th>ID</th>
+                            <div class="cf-help">
+                                Only movies available at this branch are shown.
+                            </div>
 
-                <th>Movie</th>
+                        </div>
 
-                <th>Hall</th>
 
-                <th>Start</th>
+                        <!-- Hall -->
 
-                <th>End</th>
+                        <div class="cf-field">
 
-                <th>Buffer</th>
+                            <label for="hallId">
 
-                <th>Status</th>
+                                Hall
 
-                <th>Action</th>
-                
-                <th>Action</th>
+                                <span>*</span>
 
-            </tr>
+                            </label>
 
 
-            <c:forEach
-                var="s"
-                items="${showtimes}">
+                            <select
+                                id="hallId"
+                                name="hallId"
+                                required>
 
-                <tr>
+                                <option value="">
+                                    -- Select Hall --
+                                </option>
 
-                    <td>
-                        ${s.showtimeId}
-                    </td>
 
-                    <td>
-                        ${s.movieTitle}
-                    </td>
+                                <c:forEach
+                                    var="h"
+                                    items="${halls}">
 
-                    <td>
-                        ${s.hallId}
-                    </td>
+                                    <option value="${h.hallId}">
 
-                    <td>
-                        ${s.startTimeFormatted}
-                    </td>
+                                        ${h.hallName}
+                                        - ${h.hallType}
 
-                    <td>
-                        ${s.endTimeFormatted}
-                    </td>
+                                    </option>
 
-                    <td>
-                        ${s.cleaningBufferMinutes}
-                        min
-                    </td>
+                                </c:forEach>
 
-                    <td>
-                        ${s.status}
-                    </td>
+                            </select>
 
-                    <td>
 
-                        <c:if test="${s.status == 'SCHEDULED'}">
+                            <div class="cf-help">
+                                Only available halls are shown.
+                            </div>
 
-                            <a href="${pageContext.request.contextPath}/showtimes/edit?id=${s.showtimeId}">
-                                Edit
-                            </a>
+                        </div>
 
-                        </c:if>
 
-                    </td>
-                    <td>
-                        <c:if test="${s.status == 'SCHEDULED'}">
+                        <!-- Start Time -->
 
-                            <form
-                                action="${pageContext.request.contextPath}/showtimes/cancel"
-                                method="post"
-                                style="display:inline;">
+                        <div class="cf-field cf-field-full">
 
-                                <input
-                                    type="hidden"
-                                    name="showtimeId"
-                                    value="${s.showtimeId}">
+                            <label for="startTime">
 
-                                <button
-                                    type="submit"
-                                    onclick="return confirm('Cancel this showtime?');">
+                                Start Time
 
-                                    Cancel
+                                <span>*</span>
 
-                                </button>
+                            </label>
 
-                            </form>
 
-                        </c:if>
-                    </td>
+                            <input
+                                id="startTime"
+                                type="datetime-local"
+                                name="startTime"
+                                required>
 
-                </tr>
 
-            </c:forEach>
+                            <div class="cf-help">
+                                End time is calculated automatically
+                                from the movie duration.
+                            </div>
 
-        </table>
+                        </div>
 
 
-    </body>
+                    </div>
+
+
+                    <!-- Actions -->
+
+                    <div class="cf-action-row"
+                         style="margin-top: 20px;">
+
+                        <button
+                            type="submit"
+                            class="cf-btn cf-btn-primary">
+
+                            Create Showtime
+
+                        </button>
+
+                    </div>
+
+
+                </form>
+
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             SHOWTIME LIST
+             ================================================= -->
+
+        <section class="cf-card">
+
+
+            <div class="cf-card-header">
+
+                <div>
+
+                    <h2 class="cf-card-title">
+                        Showtime List
+                    </h2>
+
+                    <p class="cf-card-subtitle">
+                        Current cinema schedule
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="cf-card-body">
+
+
+                <!-- EMPTY -->
+
+                <c:if test="${empty showtimes}">
+
+                    <div class="cf-empty-state">
+
+                        <strong>
+                            No showtimes found
+                        </strong>
+
+                        There are currently no showtimes
+                        scheduled for this branch.
+
+                    </div>
+
+                </c:if>
+
+
+                <!-- TABLE -->
+
+                <c:if test="${not empty showtimes}">
+
+
+                    <div class="cf-table-wrap">
+
+
+                        <table class="cf-table">
+
+
+                            <thead>
+
+                            <tr>
+
+                                <th>ID</th>
+
+                                <th>Movie</th>
+
+                                <th>Hall</th>
+
+                                <th>Start Time</th>
+
+                                <th>End Time</th>
+
+                                <th>Cleaning Buffer</th>
+
+                                <th>Status</th>
+
+                                <th>Actions</th>
+
+                            </tr>
+
+                            </thead>
+
+
+                            <tbody>
+
+
+                            <c:forEach
+                                var="s"
+                                items="${showtimes}">
+
+
+                                <tr>
+
+
+                                    <!-- ID -->
+
+                                    <td>
+                                        #${s.showtimeId}
+                                    </td>
+
+
+                                    <!-- Movie -->
+
+                                    <td>
+
+                                        <strong>
+                                            ${s.movieTitle}
+                                        </strong>
+
+                                    </td>
+
+
+                                    <!-- Hall -->
+
+                                    <td>
+
+                                        ${s.hallName} - ${s.hallType}
+
+                                    </td>
+
+
+                                    <!-- Start -->
+
+                                    <td>
+
+                                        ${s.startTimeFormatted}
+
+                                    </td>
+
+
+                                    <!-- End -->
+
+                                    <td>
+
+                                        ${s.endTimeFormatted}
+
+                                    </td>
+
+
+                                    <!-- Buffer -->
+
+                                    <td>
+
+                                        ${s.cleaningBufferMinutes}
+                                        min
+
+                                    </td>
+
+
+                                    <!-- Status -->
+
+                                    <td>
+
+
+                                        <c:choose>
+
+
+                                            <c:when test="${s.status == 'SCHEDULED'}">
+
+                                                <span class="cf-badge cf-badge-info">
+
+                                                    Scheduled
+
+                                                </span>
+
+                                            </c:when>
+
+
+                                            <c:when test="${s.status == 'ONGOING'}">
+
+                                                <span class="cf-badge cf-badge-warning">
+
+                                                    Ongoing
+
+                                                </span>
+
+                                            </c:when>
+
+
+                                            <c:when test="${s.status == 'COMPLETED'}">
+
+                                                <span class="cf-badge cf-badge-success">
+
+                                                    Completed
+
+                                                </span>
+
+                                            </c:when>
+
+
+                                            <c:when test="${s.status == 'CANCELLED'}">
+
+                                                <span class="cf-badge cf-badge-danger">
+
+                                                    Cancelled
+
+                                                </span>
+
+                                            </c:when>
+
+
+                                            <c:otherwise>
+
+                                                <span class="cf-badge cf-badge-muted">
+
+                                                    ${s.status}
+
+                                                </span>
+
+                                            </c:otherwise>
+
+
+                                        </c:choose>
+
+
+                                    </td>
+
+
+                                    <!-- ACTION -->
+
+                                    <td>
+
+
+                                        <div class="cf-table-actions">
+
+
+                                            <!-- View seats -->
+
+                                            <a
+                                                href="${pageContext.request.contextPath}/showtimes/seats?id=${s.showtimeId}"
+                                                class="cf-btn cf-btn-secondary cf-btn-sm">
+
+                                                View Seats
+
+                                            </a>
+
+
+                                            <!-- Scheduled actions -->
+
+                                            <c:if test="${s.status == 'SCHEDULED'}">
+
+
+                                                <!-- Edit -->
+
+                                                <a
+                                                    href="${pageContext.request.contextPath}/showtimes/edit?id=${s.showtimeId}"
+                                                    class="cf-btn cf-btn-secondary cf-btn-sm">
+
+                                                    Edit
+
+                                                </a>
+
+
+                                                <!-- Cancel -->
+
+                                                <form
+                                                    action="${pageContext.request.contextPath}/showtimes/cancel"
+                                                    method="post"
+                                                    style="margin: 0;">
+
+
+                                                    <input
+                                                        type="hidden"
+                                                        name="showtimeId"
+                                                        value="${s.showtimeId}">
+
+
+                                                    <button
+                                                        type="submit"
+                                                        class="cf-btn cf-btn-danger cf-btn-sm"
+                                                        onclick="return confirm('Cancel this showtime?');">
+
+                                                        Cancel
+
+                                                    </button>
+
+
+                                                </form>
+
+
+                                            </c:if>
+
+
+                                        </div>
+
+
+                                    </td>
+
+
+                                </tr>
+
+
+                            </c:forEach>
+
+
+                            </tbody>
+
+
+                        </table>
+
+
+                    </div>
+
+
+                </c:if>
+
+
+            </div>
+
+        </section>
+
+
+    </main>
+
+
+</div>
+
+
+</body>
 
 </html>

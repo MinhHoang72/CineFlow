@@ -28,10 +28,8 @@ public class UpdateSeatSurchargeServlet
                             "surchargeName"
                     );
 
-            String seatType =
-                    request.getParameter(
-                            "seatType"
-                    );
+            Surcharge oldRule = new SurchargeDAO().getById(id);
+            if (oldRule == null || oldRule.getEffectiveTo() != null) throw new IllegalArgumentException("Invalid surcharge rule");
 
             double amount =
                     Double.parseDouble(
@@ -40,9 +38,9 @@ public class UpdateSeatSurchargeServlet
                             )
                     );
 
-            int managerId = 1;
+            int managerId = utils.FE04Context.requireUserId(request);
 
-            if (amount < 0) {
+            if (!Double.isFinite(amount) || amount < 0) {
 
                 request.getSession()
                         .setAttribute(
@@ -62,9 +60,8 @@ public class UpdateSeatSurchargeServlet
                     surchargeName
             );
 
-            newRule.setSeatType(
-                    seatType
-            );
+            newRule.setSurchargeType(oldRule.getSurchargeType());
+            newRule.setTargetValue(oldRule.getTargetValue());
 
             newRule.setAmount(
                     amount
@@ -88,7 +85,7 @@ public class UpdateSeatSurchargeServlet
                 request.getSession()
                         .setAttribute(
                                 "message",
-                                "Seat surcharge updated successfully."
+                                "Surcharge updated successfully."
                         );
 
             } else {
@@ -96,7 +93,7 @@ public class UpdateSeatSurchargeServlet
                 request.getSession()
                         .setAttribute(
                                 "error",
-                                "Unable to update seat surcharge."
+                                "Unable to update surcharge."
                         );
             }
 

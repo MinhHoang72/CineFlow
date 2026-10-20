@@ -27,12 +27,7 @@ public class UpdateBasePriceServlet
 
         try {
 
-            int branchId =
-                    Integer.parseInt(
-                        request.getParameter(
-                            "branchId"
-                        )
-                    );
+            int centreId = utils.FE04Context.requireCentreId(request);
 
             double newPrice =
                     Double.parseDouble(
@@ -41,12 +36,9 @@ public class UpdateBasePriceServlet
                         )
                     );
 
-            /*
-                Sau này lấy từ session.
-                Demo tạm managerId = 1.
-            */
 
-            int managerId = 1;
+
+            int managerId = utils.FE04Context.requireUserId(request);
 
             if (newPrice < 0) {
 
@@ -69,7 +61,7 @@ public class UpdateBasePriceServlet
 
             boolean success =
                     dao.updateBasePrice(
-                        branchId,
+                        centreId,
                         newPrice,
                         managerId
                     );

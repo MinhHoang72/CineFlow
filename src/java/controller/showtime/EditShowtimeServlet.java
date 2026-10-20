@@ -65,7 +65,7 @@ public class EditShowtimeServlet
                 return;
             }
 
-            int branchId = 1;
+            int centreId = utils.FE04Context.requireCentreId(request);
 
             MovieDAO movieDAO =
                     new MovieDAO();
@@ -81,21 +81,21 @@ public class EditShowtimeServlet
             request.setAttribute(
                     "movies",
                     movieDAO
-                            .getAvailableMoviesByBranch(
-                                    branchId
+                            .getAvailableMoviesByCentre(
+                                    centreId
                             )
             );
 
             request.setAttribute(
                     "halls",
                     hallDAO
-                            .getAvailableHallsByBranch(
-                                    branchId
+                            .getAvailableHallsByCentre(
+                                    centreId
                             )
             );
 
             request.getRequestDispatcher(
-                    "/edit-showtime.jsp"
+                    "/showtime/edit-showtime.jsp"
             ).forward(
                     request,
                     response

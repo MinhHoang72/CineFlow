@@ -20,6 +20,12 @@ public class Showtime {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     
+    private String hallName;
+    private String hallType;
+    public String getHallName() { return hallName; }
+    public void setHallName(String hallName) { this.hallName = hallName; }
+    public String getHallType() { return hallType; }
+    public void setHallType(String hallType) { this.hallType = hallType; }
     private String movieTitle;
 
 public String getMovieTitle() {

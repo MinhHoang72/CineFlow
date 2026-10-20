@@ -46,7 +46,7 @@ public class EditSeatSurchargeServlet
             );
 
             request.getRequestDispatcher(
-                    "/edit-seat-surcharge.jsp"
+                    "/pricing/edit-seat-surcharge.jsp"
             ).forward(
                     request,
                     response

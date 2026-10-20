@@ -8,7 +8,7 @@ public class DBContext {
 
     private static final String URL =
             "jdbc:sqlserver://localhost:1433;"
-            + "databaseName=CineFlowDemoDB;"
+            + "databaseName=CineFlowDB;"
             + "encrypt=true;"
             + "trustServerCertificate=true;";
 

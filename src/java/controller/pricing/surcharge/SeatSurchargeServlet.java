@@ -30,7 +30,7 @@ public class SeatSurchargeServlet
         );
 
         request.getRequestDispatcher(
-                "/seat-surcharge.jsp"
+                "/pricing/seat-surcharge.jsp"
         ).forward(
                 request,
                 response

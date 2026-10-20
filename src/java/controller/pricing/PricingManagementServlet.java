@@ -29,23 +29,18 @@ public class PricingManagementServlet
 
         HttpSession session = request.getSession();
 
-        /*
-            Sau này lấy branchId từ user session.
 
-            Hiện tại demo:
-            BranchID = 1
-        */
 
-        int branchId = 1;
+        int centreId = utils.FE04Context.requireCentreId(request);
 
         BranchPricingDAO dao =
                 new BranchPricingDAO();
 
         BranchPricing currentPrice =
-                dao.getCurrentPrice(branchId);
+                dao.getCurrentPrice(centreId);
 
         List<BranchPricing> history =
-                dao.getPriceHistory(branchId);
+                dao.getPriceHistory(centreId);
 
         request.setAttribute(
                 "currentPrice",
@@ -58,8 +53,8 @@ public class PricingManagementServlet
         );
 
         request.setAttribute(
-                "branchId",
-                branchId
+                "centreId",
+                centreId
         );
 
         request.getRequestDispatcher(

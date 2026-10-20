@@ -78,7 +78,7 @@ public class TimeSlotPricingDAO extends DBContext {
     }
 
     public List<TimeSlotPricing>
-            getCurrentRules(int branchId) {
+            getCurrentRules(int centreId) {
 
         List<TimeSlotPricing> list
                 = new ArrayList<>();
@@ -93,7 +93,7 @@ public class TimeSlotPricingDAO extends DBContext {
         try (PreparedStatement ps
                 = connection.prepareStatement(sql)) {
 
-            ps.setInt(1, branchId);
+            ps.setInt(1, centreId);
 
             ResultSet rs
                     = ps.executeQuery();
@@ -110,7 +110,7 @@ public class TimeSlotPricingDAO extends DBContext {
     }
 
     public List<TimeSlotPricing>
-            getHistory(int branchId) {
+            getHistory(int centreId) {
 
         List<TimeSlotPricing> list
                 = new ArrayList<>();
@@ -124,7 +124,7 @@ public class TimeSlotPricingDAO extends DBContext {
         try (PreparedStatement ps
                 = connection.prepareStatement(sql)) {
 
-            ps.setInt(1, branchId);
+            ps.setInt(1, centreId);
 
             ResultSet rs
                     = ps.executeQuery();
@@ -141,13 +141,13 @@ public class TimeSlotPricingDAO extends DBContext {
     }
 
     public boolean hasOverlap(
-        int branchId,
+        int centreId,
         Time startTime,
         Time endTime,
         Integer excludeId) {
 
     System.out.println("===== CHECK OVERLAP =====");
-    System.out.println("BranchID: " + branchId);
+    System.out.println("BranchID: " + centreId);
     System.out.println("New Start: " + startTime);
     System.out.println("New End: " + endTime);
     System.out.println("Exclude ID: " + excludeId);
@@ -171,7 +171,7 @@ public class TimeSlotPricingDAO extends DBContext {
     try (PreparedStatement ps =
                  connection.prepareStatement(sql)) {
 
-        ps.setInt(1, branchId);
+        ps.setInt(1, centreId);
 
         // existing StartTime < new EndTime
         ps.setString(
@@ -430,7 +430,7 @@ public class TimeSlotPricingDAO extends DBContext {
     }
 
     public double getSurchargeAt(
-            int branchId,
+            int centreId,
             Timestamp showtime) {
 
         String sql
@@ -449,7 +449,7 @@ public class TimeSlotPricingDAO extends DBContext {
 
             ps.setInt(
                     1,
-                    branchId
+                    centreId
             );
 
             ps.setTimestamp(

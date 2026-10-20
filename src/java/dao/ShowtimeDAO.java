@@ -38,7 +38,7 @@ public class ShowtimeDAO extends DBContext {
 
 
     /* =====================================================
-       2. CHECK MOVIE IS DISTRIBUTED TO HALL'S BRANCH
+       2. CHECK MOVIE IS DISTRIBUTED TO HALL'S CENTRE
        ===================================================== */
     public boolean isMovieAvailableForHall(
             int movieId,
@@ -47,8 +47,8 @@ public class ShowtimeDAO extends DBContext {
         String sql
                 = "SELECT 1 "
                 + "FROM Halls h "
-                + "JOIN BranchMovies bm "
-                + "ON bm.BranchID = h.BranchID "
+                + "JOIN CentreMovies bm "
+                + "ON bm.CentreID = h.CentreID "
                 + "WHERE h.HallID = ? "
                 + "AND bm.MovieID = ? "
                 + "AND bm.IsActive = 1";
@@ -204,28 +204,28 @@ public class ShowtimeDAO extends DBContext {
 
 
     /* =====================================================
-       5. GET SHOWTIMES BY BRANCH
+       5. GET SHOWTIMES BY CENTRE
        ===================================================== */
-    public List<Showtime> getByBranch(
-            int branchId) {
+    public List<Showtime> getByCentre(
+            int centreId) {
 
         List<Showtime> list
                 = new ArrayList<>();
 
         String sql
-                = "SELECT s.*, m.Title AS MovieTitle "
+                = "SELECT s.*, m.Title AS MovieTitle, h.HallName, h.HallType "
                 + "FROM Showtimes s "
                 + "JOIN Halls h "
                 + "ON h.HallID = s.HallID "
                 + "JOIN Movies m "
                 + "ON m.MovieID = s.MovieID "
-                + "WHERE h.BranchID = ? "
+                + "WHERE h.CentreID = ? "
                 + "ORDER BY s.StartTime";
 
         try (PreparedStatement ps
                 = connection.prepareStatement(sql)) {
 
-            ps.setInt(1, branchId);
+            ps.setInt(1, centreId);
 
             ResultSet rs
                     = ps.executeQuery();
@@ -256,9 +256,9 @@ public class ShowtimeDAO extends DBContext {
             int showtimeId) {
 
         String sql
-                = "SELECT * "
-                + "FROM Showtimes "
-                + "WHERE ShowtimeID = ?";
+                = "SELECT s.*, m.Title AS MovieTitle, h.HallName, h.HallType "
+                + "FROM Showtimes s JOIN Halls h ON h.HallID = s.HallID "
+                + "JOIN Movies m ON m.MovieID = s.MovieID WHERE s.ShowtimeID = ?";
 
         try (PreparedStatement ps
                 = connection.prepareStatement(sql)) {
@@ -507,6 +507,9 @@ public class ShowtimeDAO extends DBContext {
             );
         }
 
+        s.setHallName(rs.getString("HallName"));
+        s.setHallType(rs.getString("HallType"));
+        s.setMovieTitle(rs.getString("MovieTitle"));
         return s;
     }
 }

@@ -7,12 +7,12 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Edit Seat Surcharge</title>
+    <title>Edit Surcharge</title>
 </head>
 
 <body>
 
-<h1>Edit Seat Surcharge</h1>
+<h1>Edit Surcharge</h1>
 
 <form
     action="${pageContext.request.contextPath}/pricing/seat-surcharges/update"
@@ -24,12 +24,12 @@
         value="${rule.surchargeId}">
 
 
-    Seat Type:
+    Target (SEAT / HALL):
 
     <input
         type="text"
-        name="seatType"
-        value="${rule.seatType}"
+        name="targetValue"
+        value="${rule.targetValue}"
         readonly>
 
 

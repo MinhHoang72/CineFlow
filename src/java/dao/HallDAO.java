@@ -8,8 +8,8 @@ import model.Hall;
 
 public class HallDAO extends DBContext {
 
-    public List<Hall> getAvailableHallsByBranch(
-            int branchId) {
+    public List<Hall> getAvailableHallsByCentre(
+            int centreId) {
 
         List<Hall> list =
                 new ArrayList<>();
@@ -17,14 +17,14 @@ public class HallDAO extends DBContext {
         String sql =
                 "SELECT * "
                 + "FROM Halls "
-                + "WHERE BranchID = ? "
+                + "WHERE CentreID = ? "
                 + "AND Status = 'AVAILABLE' "
                 + "ORDER BY HallName";
 
         try (PreparedStatement ps =
                      connection.prepareStatement(sql)) {
 
-            ps.setInt(1, branchId);
+            ps.setInt(1, centreId);
 
             ResultSet rs =
                     ps.executeQuery();
@@ -37,8 +37,8 @@ public class HallDAO extends DBContext {
                         rs.getInt("HallID")
                 );
 
-                h.setBranchId(
-                        rs.getInt("BranchID")
+                h.setCentreId(
+                        rs.getInt("CentreID")
                 );
 
                 h.setHallName(

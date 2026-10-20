@@ -17,7 +17,7 @@ import utils.DBContext;
 
 public class BranchPricingDAO extends DBContext {
 
-    public BranchPricing getCurrentPrice(int branchId) {
+    public BranchPricing getCurrentPrice(int centreId) {
 
         String sql =
             "SELECT TOP 1 * "
@@ -29,7 +29,7 @@ public class BranchPricingDAO extends DBContext {
         try (PreparedStatement ps =
                 connection.prepareStatement(sql)) {
 
-            ps.setInt(1, branchId);
+            ps.setInt(1, centreId);
 
             ResultSet rs = ps.executeQuery();
 
@@ -93,7 +93,7 @@ public class BranchPricingDAO extends DBContext {
         return null;
     }
         public List<BranchPricing> getPriceHistory(
-            int branchId) {
+            int centreId) {
 
         List<BranchPricing> list =
                 new ArrayList<>();
@@ -107,7 +107,7 @@ public class BranchPricingDAO extends DBContext {
         try (PreparedStatement ps =
                 connection.prepareStatement(sql)) {
 
-            ps.setInt(1, branchId);
+            ps.setInt(1, centreId);
 
             ResultSet rs = ps.executeQuery();
 
@@ -172,7 +172,7 @@ public class BranchPricingDAO extends DBContext {
         return list;
     }
             public boolean updateBasePrice(
-            int branchId,
+            int centreId,
             double newPrice,
             int managerId) {
 
@@ -206,11 +206,11 @@ public class BranchPricingDAO extends DBContext {
             ) {
 
                 // Close old price
-                psClose.setInt(1, branchId);
+                psClose.setInt(1, centreId);
                 psClose.executeUpdate();
 
                 // Insert new price
-                psInsert.setInt(1, branchId);
+                psInsert.setInt(1, centreId);
                 psInsert.setDouble(2, newPrice);
                 psInsert.setInt(3, managerId);
 
@@ -244,7 +244,7 @@ public class BranchPricingDAO extends DBContext {
         return false;
     }
             public double getBasePriceAt(
-        int branchId,
+        int centreId,
         Timestamp showtime) {
 
     String sql =
@@ -261,7 +261,7 @@ public class BranchPricingDAO extends DBContext {
 
         ps.setInt(
             1,
-            branchId
+            centreId
         );
 
         ps.setTimestamp(

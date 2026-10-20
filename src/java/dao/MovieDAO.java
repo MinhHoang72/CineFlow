@@ -109,16 +109,16 @@ public class MovieDAO extends DBContext {
 
     return -1;
 }
-public List<Movie> getAvailableMoviesByBranch(int branchId) {
+public List<Movie> getAvailableMoviesByCentre(int centreId) {
 
     List<Movie> list = new ArrayList<>();
 
     String sql =
             "SELECT m.* "
             + "FROM Movies m "
-            + "JOIN BranchMovies bm "
+            + "JOIN CentreMovies bm "
             + "ON bm.MovieID = m.MovieID "
-            + "WHERE bm.BranchID = ? "
+            + "WHERE bm.CentreID = ? "
             + "AND bm.IsActive = 1 "
             + "AND m.Status = 'NOW_SHOWING' "
             + "ORDER BY m.Title";
@@ -126,7 +126,7 @@ public List<Movie> getAvailableMoviesByBranch(int branchId) {
     try (PreparedStatement ps =
                  connection.prepareStatement(sql)) {
 
-        ps.setInt(1, branchId);
+        ps.setInt(1, centreId);
 
         ResultSet rs = ps.executeQuery();
 

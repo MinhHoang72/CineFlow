@@ -50,7 +50,7 @@ public class CreateShowtimeServlet
              * Demo manager ID.
              * Sau này lấy từ session.
              */
-            int managerId = 1;
+            int managerId = utils.FE04Context.requireUserId(request);
 
             ShowtimeDAO showtimeDAO =
                     new ShowtimeDAO();
@@ -78,7 +78,7 @@ public class CreateShowtimeServlet
 
             /*
              * 2. Check movie belongs
-             * to branch
+             * to centre
              */
             if (!showtimeDAO
                     .isMovieAvailableForHall(
@@ -88,7 +88,7 @@ public class CreateShowtimeServlet
 
                 setError(
                     request,
-                    "This movie is not available at the selected branch."
+                    "This movie is not available at the selected centre."
                 );
 
                 redirect(request, response);

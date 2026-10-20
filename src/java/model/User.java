@@ -101,6 +101,8 @@ public class User {
         this.status = status;
     }
 
+    public Integer getCentreId() { return branchId; }
+    public void setCentreId(Integer centreId) { this.branchId = centreId; }
     public Integer getBranchId() { return branchId; }
     public void setBranchId(Integer branchId) { this.branchId = branchId; }
 

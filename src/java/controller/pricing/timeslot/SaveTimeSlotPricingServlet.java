@@ -21,12 +21,7 @@ public class SaveTimeSlotPricingServlet
 
         try {
 
-            int branchId =
-                    Integer.parseInt(
-                            request.getParameter(
-                                    "branchId"
-                            )
-                    );
+            int centreId = utils.FE04Context.requireCentreId(request);
 
             String slotName =
                     request.getParameter(
@@ -54,7 +49,7 @@ public class SaveTimeSlotPricingServlet
                             )
                     );
 
-            int managerId = 1;
+            int managerId = utils.FE04Context.requireUserId(request);
 
             if (!endTime.isAfter(startTime)) {
 
@@ -87,12 +82,12 @@ public class SaveTimeSlotPricingServlet
 
             boolean overlap =
                     dao.hasOverlap(
-                            branchId,
+                            centreId,
                             Time.valueOf(startTime),
                             Time.valueOf(endTime),
                             null
                     );
-            System.out.println("Servlet BranchID = " + branchId);
+            System.out.println("Servlet BranchID = " + centreId);
 System.out.println("Servlet Start = " + startTime);
 System.out.println("Servlet End = " + endTime);
 System.out.println("Servlet Overlap = " + overlap);
@@ -113,7 +108,7 @@ System.out.println("Servlet Overlap = " + overlap);
             TimeSlotPricing item =
                     new TimeSlotPricing();
 
-            item.setBranchId(branchId);
+            item.setBranchId(centreId);
             item.setSlotName(slotName);
             item.setStartTime(startTime);
             item.setEndTime(endTime);

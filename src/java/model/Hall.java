@@ -3,7 +3,7 @@ package model;
 public class Hall {
 
     private int hallId;
-    private int branchId;
+    private int centreId;
     private String hallName;
     private String hallType;
     private int capacity;
@@ -20,12 +20,12 @@ public class Hall {
         this.hallId = hallId;
     }
 
-    public int getBranchId() {
-        return branchId;
+    public int getCentreId() {
+        return centreId;
     }
 
-    public void setBranchId(int branchId) {
-        this.branchId = branchId;
+    public void setCentreId(int centreId) {
+        this.centreId = centreId;
     }
 
     public String getHallName() {

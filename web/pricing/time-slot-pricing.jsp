@@ -168,8 +168,8 @@
 
             <input
                 type="hidden"
-                name="branchId"
-                value="${branchId}">
+                name="centreId"
+                value="${centreId}">
 
 
             <div>

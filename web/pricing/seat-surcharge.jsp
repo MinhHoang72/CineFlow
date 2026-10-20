@@ -10,12 +10,12 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Seat Surcharge Management</title>
+    <title>Surcharge Management</title>
 </head>
 
 <body>
 
-<h1>Seat Surcharge Management</h1>
+<h1>Surcharge Management</h1>
 
 
 <c:if test="${not empty sessionScope.message}">
@@ -44,13 +44,13 @@
 </c:if>
 
 
-<h2>Current Seat Surcharges</h2>
+<h2>Current Surcharges</h2>
 
 <table border="1"
        cellpadding="8">
 
     <tr>
-        <th>Seat Type</th>
+        <th>Target (SEAT / HALL)</th>
         <th>Name</th>
         <th>Surcharge</th>
         <th>Effective From</th>
@@ -63,7 +63,7 @@
         <tr>
 
             <td>
-                ${s.seatType}
+                ${s.surchargeType}: ${s.targetValue}
             </td>
 
             <td>
@@ -121,7 +121,7 @@
 
     <tr>
         <th>ID</th>
-        <th>Seat Type</th>
+        <th>Target (SEAT / HALL)</th>
         <th>Name</th>
         <th>Amount</th>
         <th>Effective From</th>
@@ -139,7 +139,7 @@
             </td>
 
             <td>
-                ${s.seatType}
+                ${s.surchargeType}: ${s.targetValue}
             </td>
 
             <td>

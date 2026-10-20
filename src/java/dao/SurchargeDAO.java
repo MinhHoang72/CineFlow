@@ -21,10 +21,11 @@ public class SurchargeDAO extends DBContext {
                 rs.getString("SurchargeName")
         );
 
-        s.setSeatType(
-                rs.getString("SeatType")
+        s.setTargetValue(
+                rs.getString("TargetValue")
         );
 
+        s.setSurchargeType(rs.getString("SurchargeType"));
         s.setAmount(
                 rs.getDouble("Amount")
         );
@@ -75,7 +76,7 @@ public class SurchargeDAO extends DBContext {
                 "SELECT * "
                 + "FROM Surcharges "
                 + "WHERE EffectiveTo IS NULL "
-                + "ORDER BY SeatType";
+                + "ORDER BY SurchargeType, TargetValue";
 
         try (PreparedStatement ps =
                      connection.prepareStatement(sql)) {
@@ -159,9 +160,9 @@ public class SurchargeDAO extends DBContext {
 
         String insertNew =
                 "INSERT INTO Surcharges "
-                + "(SurchargeName, SeatType, Amount, "
+                + "(SurchargeName, TargetValue, SurchargeType, Amount, "
                 + "EffectiveFrom, EffectiveTo, UpdatedBy) "
-                + "VALUES (?, ?, ?, GETDATE(), NULL, ?)";
+                + "VALUES (?, ?, ?, ?, GETDATE(), NULL, ?)";
 
         try {
 
@@ -199,18 +200,17 @@ public class SurchargeDAO extends DBContext {
 
                 psInsert.setString(
                         2,
-                        newRule.getSeatType()
+                        newRule.getTargetValue()
                 );
 
+                psInsert.setString(3, newRule.getSurchargeType());
                 psInsert.setDouble(
-                        3,
+                        4,
                         newRule.getAmount()
                 );
 
-                psInsert.setInt(
-                        4,
-                        newRule.getUpdatedBy()
-                );
+                if (newRule.getUpdatedBy() == null) psInsert.setNull(5, Types.INTEGER);
+                else psInsert.setInt(5, newRule.getUpdatedBy());
 
                 int inserted =
                         psInsert.executeUpdate();
@@ -269,54 +269,31 @@ public class SurchargeDAO extends DBContext {
         return false;
     }
 
-    public double getSeatSurchargeAt(
-            String seatType,
-            Timestamp showtime) {
+    public double getSeatSurchargeAt(String seatType, Timestamp showtime) {
+        if ("STANDARD".equalsIgnoreCase(seatType)) return 0;
+        return getSurchargeAt("SEAT", seatType, showtime);
+    }
 
-        if ("STANDARD".equalsIgnoreCase(
-                seatType)) {
+    public double getHallSurchargeAt(String hallType, Timestamp showtime) {
+        return getSurchargeAt("HALL", hallType, showtime);
+    }
 
-            return 0;
-        }
-
-        String sql =
-                "SELECT TOP 1 Amount "
-                + "FROM Surcharges "
-                + "WHERE SeatType = ? "
-                + "AND EffectiveFrom <= ? "
-                + "AND (EffectiveTo IS NULL "
-                + "OR ? < EffectiveTo) "
-                + "ORDER BY EffectiveFrom DESC";
-
-        try (PreparedStatement ps =
-                     connection.prepareStatement(sql)) {
-
-            ps.setString(
-                    1,
-                    seatType
-            );
-
-            ps.setTimestamp(
-                    2,
-                    showtime
-            );
-
-            ps.setTimestamp(
-                    3,
-                    showtime
-            );
-
-            ResultSet rs =
-                    ps.executeQuery();
-
-            if (rs.next()) {
-                return rs.getDouble("Amount");
+    private double getSurchargeAt(String type, String target, Timestamp showtime) {
+        String sql = "SELECT TOP 1 Amount FROM Surcharges "
+                + "WHERE SurchargeType = ? AND TargetValue = ? AND EffectiveFrom <= ? "
+                + "AND (EffectiveTo IS NULL OR ? < EffectiveTo) "
+                + "ORDER BY EffectiveFrom DESC, SurchargeID DESC";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, type);
+            ps.setString(2, target);
+            ps.setTimestamp(3, showtime);
+            ps.setTimestamp(4, showtime);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getDouble("Amount");
             }
-
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new IllegalStateException("Unable to load " + type + " surcharge", e);
         }
-
         return 0;
     }
 }

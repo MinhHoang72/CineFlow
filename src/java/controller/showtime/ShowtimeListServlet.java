@@ -18,7 +18,7 @@ public class ShowtimeListServlet
             HttpServletResponse response)
             throws ServletException, IOException {
 
-        int branchId = 1;
+        int centreId = utils.FE04Context.requireCentreId(request);
 
         ShowtimeDAO showtimeDAO =
                 new ShowtimeDAO();
@@ -31,25 +31,25 @@ public class ShowtimeListServlet
 
         request.setAttribute(
                 "showtimes",
-                showtimeDAO.getByBranch(branchId)
+                showtimeDAO.getByCentre(centreId)
         );
 
         request.setAttribute(
                 "movies",
-                movieDAO.getAvailableMoviesByBranch(
-                        branchId
+                movieDAO.getAvailableMoviesByCentre(
+                        centreId
                 )
         );
 
         request.setAttribute(
                 "halls",
-                hallDAO.getAvailableHallsByBranch(
-                        branchId
+                hallDAO.getAvailableHallsByCentre(
+                        centreId
                 )
         );
 
         request.getRequestDispatcher(
-                "/showtime-list.jsp"
+                "/showtime/showtime-list.jsp"
         ).forward(
                 request,
                 response

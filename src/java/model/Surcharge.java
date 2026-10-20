@@ -9,7 +9,10 @@ public class Surcharge {
 
     private int surchargeId;
     private String surchargeName;
-    private String seatType;
+    private String targetValue;
+    private String surchargeType;
+    public String getSurchargeType() { return surchargeType; }
+    public void setSurchargeType(String surchargeType) { this.surchargeType = surchargeType; }
     private double amount;
 
     private LocalDateTime effectiveFrom;
@@ -37,12 +40,12 @@ public class Surcharge {
         this.surchargeName = surchargeName;
     }
 
-    public String getSeatType() {
-        return seatType;
+    public String getTargetValue() {
+        return targetValue;
     }
 
-    public void setSeatType(String seatType) {
-        this.seatType = seatType;
+    public void setTargetValue(String targetValue) {
+        this.targetValue = targetValue;
     }
 
     public double getAmount() {

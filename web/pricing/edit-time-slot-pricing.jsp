@@ -34,7 +34,7 @@
 
     <input
         type="hidden"
-        name="branchId"
+        name="centreId"
         value="${rule.branchId}">
 
 

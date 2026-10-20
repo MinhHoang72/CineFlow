@@ -21,28 +21,28 @@ public class TimeSlotPricingServlet
          * BranchID = 1
          */
 
-        int branchId = 1;
+        int centreId = utils.FE04Context.requireCentreId(request);
 
         TimeSlotPricingDAO dao =
                 new TimeSlotPricingDAO();
 
         request.setAttribute(
                 "rules",
-                dao.getCurrentRules(branchId)
+                dao.getCurrentRules(centreId)
         );
 
         request.setAttribute(
                 "history",
-                dao.getHistory(branchId)
+                dao.getHistory(centreId)
         );
 
         request.setAttribute(
-                "branchId",
-                branchId
+                "centreId",
+                centreId
         );
 
         request.getRequestDispatcher(
-                "/time-slot-pricing.jsp"
+                "/pricing/time-slot-pricing.jsp"
         ).forward(
                 request,
                 response

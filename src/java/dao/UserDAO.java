@@ -293,8 +293,8 @@ public class UserDAO {
         user.setAvatar(rs.getString("Avatar"));
         user.setRole(rs.getString("Role"));
         user.setStatus(rs.getString("Status"));
-        int branchId = rs.getInt("BranchID");
-        user.setBranchId(rs.wasNull() ? null : branchId);
+        int centreId = rs.getInt("CentreID");
+        user.setCentreId(rs.wasNull() ? null : centreId);
 
         user.setCreatedAt(rs.getTimestamp("CreatedAt"));
         user.setUpdatedAt(rs.getTimestamp("UpdatedAt"));
