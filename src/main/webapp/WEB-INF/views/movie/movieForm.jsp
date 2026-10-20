@@ -47,10 +47,10 @@
 </head>
 <body>
 <div class="cf-manager-shell">
-    <jsp:include page="/WEB-INF/fragments/adminSidebar.jsp" />
+    <jsp:include page="/WEB-INF/fragments/adminSidebar.jspf" />
 
     <div class="cf-manager-main">
-        <jsp:include page="/WEB-INF/fragments/adminTopbar.jsp" />
+        <jsp:include page="/WEB-INF/fragments/adminTopbar.jspf" />
 
         <main class="cf-content">
             <!-- TIÊU ĐỀ TRANG -->

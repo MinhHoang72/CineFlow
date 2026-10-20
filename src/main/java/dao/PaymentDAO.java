@@ -1,7 +1,7 @@
 package dao;
 
 import model.entity.Payment;
-import model.dto.PaymentTransaction;
+import model.dto.booking.PaymentTransaction;
 import model.entity.Ticket;
 import utils.DBContext;
 import java.math.BigDecimal;

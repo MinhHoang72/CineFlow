@@ -13,7 +13,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import model.entity.Centre;
 import model.entity.Hall;
-import model.dto.SeatConfigDTO;
+import model.dto.pricing.SeatConfigDTO;
 import model.entity.User;
 
 import java.io.IOException;

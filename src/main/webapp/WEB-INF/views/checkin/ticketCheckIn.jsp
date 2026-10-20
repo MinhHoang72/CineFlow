@@ -1,5 +1,5 @@
-﻿<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ page import="model.dto.CheckInResultDTO, model.dto.TicketInfoDTO, model.dto.CheckInLogDTO, java.util.List" %>
+<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ page import="model.dto.checkin.CheckInResultDTO, model.dto.booking.TicketInfoDTO, model.dto.checkin.CheckInLogDTO, java.util.List" %>
 <%!
     static String esc(Object value) {
         if (value == null) {
@@ -48,9 +48,9 @@
 </head>
 <body>
 <div class="cf-manager-shell">
-    <jsp:include page="/WEB-INF/fragments/managerSidebar.jsp" />
+    <jsp:include page="/WEB-INF/fragments/managerSidebar.jspf" />
     <div class="cf-manager-main">
-        <jsp:include page="/WEB-INF/fragments/adminTopbar.jsp" />
+        <jsp:include page="/WEB-INF/fragments/adminTopbar.jspf" />
         <main class="cf-content">
             <div class="cf-page-header">
                 <div>

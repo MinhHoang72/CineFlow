@@ -1,4 +1,4 @@
-﻿<%@ page pageEncoding="UTF-8" %>
+<%@ page pageEncoding="UTF-8" %>
 <% request.setAttribute("pageTitle", "Sửa suất chiếu"); request.setAttribute("pageDescription", "Điều chỉnh phim, phòng và thời gian của suất chiếu đã lên lịch."); request.setAttribute("activeTab", "showtimes"); %>
 <%@ include file="/WEB-INF/fragments/cinemaBegin.jspf" %>
 <c:choose><c:when test="${not empty showtime}">

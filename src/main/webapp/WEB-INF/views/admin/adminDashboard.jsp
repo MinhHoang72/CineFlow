@@ -1,5 +1,5 @@
-<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ page import="model.dto.ReportSummary,model.dto.RevenueReport,model.entity.Movie,model.entity.Centre,model.entity.User,java.util.List,java.math.BigDecimal" %>
+﻿<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ page import="model.dto.report.ReportSummary,model.dto.report.RevenueReport,model.entity.Movie,model.entity.Centre,model.entity.User,java.util.List,java.math.BigDecimal" %>
 <%
     String authRole = (String) session.getAttribute("role");
     if (authRole == null && session.getAttribute("user") instanceof model.entity.User) {
@@ -58,10 +58,10 @@
 </head>
 <body>
 <div class="admin-layout">
-    <jsp:include page="/WEB-INF/fragments/adminSidebar.jsp" />
+    <jsp:include page="/WEB-INF/fragments/adminSidebar.jspf" />
 
     <div class="admin-main">
-        <jsp:include page="/WEB-INF/fragments/adminTopbar.jsp" />
+        <jsp:include page="/WEB-INF/fragments/adminTopbar.jspf" />
 
         <main class="admin-content">
             <!-- BANNER CHÀO MỪNG QUẢN TRỊ VIÊN -->

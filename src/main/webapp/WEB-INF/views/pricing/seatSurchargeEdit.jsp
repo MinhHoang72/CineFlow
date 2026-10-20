@@ -1,4 +1,4 @@
-﻿<%@ page pageEncoding="UTF-8" %>
+<%@ page pageEncoding="UTF-8" %>
 <% request.setAttribute("pageTitle", "Sửa phụ thu ghế & phòng"); request.setAttribute("pageDescription", "Cập nhật tên và mức phụ thu cho đối tượng đã chọn."); request.setAttribute("activeTab", "surcharge"); %>
 <%@ include file="/WEB-INF/fragments/cinemaBegin.jspf" %>
 <c:choose><c:when test="${not empty rule}"><section class="st-panel"><div class="st-panel-heading"><div><h2>Thông tin phụ thu</h2><p>Loại và đối tượng áp dụng được giữ nguyên khi cập nhật.</p></div><a class="st-link" href="${pageContext.request.contextPath}/pricing/seat-surcharges">← Danh sách phụ thu</a></div>

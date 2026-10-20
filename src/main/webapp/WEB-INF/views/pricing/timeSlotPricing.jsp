@@ -1,4 +1,4 @@
-﻿<%@ page pageEncoding="UTF-8" %>
+<%@ page pageEncoding="UTF-8" %>
 <% request.setAttribute("pageTitle", "Phụ thu theo khung giờ"); request.setAttribute("pageDescription", "Thiết lập mức phụ thu cho từng khung giờ chiếu tại cụm rạp."); request.setAttribute("activeTab", "time"); %>
 <%@ include file="/WEB-INF/fragments/cinemaBegin.jspf" %>
 <section class="st-panel"><div class="st-panel-heading"><div><h2>Thêm khung giờ</h2><p>Nhập thời gian bắt đầu, kết thúc và mức phụ thu.</p></div><span class="st-step">CỤM RẠP #${centreId}</span></div>

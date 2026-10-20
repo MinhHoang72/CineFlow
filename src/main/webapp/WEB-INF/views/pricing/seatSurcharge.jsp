@@ -1,4 +1,4 @@
-﻿<%@ page pageEncoding="UTF-8" %>
+<%@ page pageEncoding="UTF-8" %>
 <% request.setAttribute("pageTitle", "Phụ thu ghế & phòng"); request.setAttribute("pageDescription", "Quản lý mức phụ thu theo loại ghế, loại phòng và theo dõi lịch sử thay đổi."); request.setAttribute("activeTab", "surcharge"); %>
 <%@ include file="/WEB-INF/fragments/cinemaBegin.jspf" %>
 <section class="st-panel"><div class="st-panel-heading"><div><h2>Phụ thu đang áp dụng <span class="st-count">${fn:length(currentRules)}</span></h2><p>Phân biệt phụ thu loại ghế và phụ thu loại phòng chiếu.</p></div></div>

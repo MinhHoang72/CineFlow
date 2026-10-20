@@ -17,7 +17,7 @@ import java.time.format.DateTimeParseException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
-import model.dto.PageDTO;
+import model.dto.common.PageDTO;
 import model.entity.User;
 import model.entity.Voucher;
 

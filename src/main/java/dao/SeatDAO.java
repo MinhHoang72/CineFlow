@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 import model.entity.SeatAvailability;
 
 import model.entity.Seat;
-import model.dto.SeatConfigDTO;
+import model.dto.pricing.SeatConfigDTO;
 import model.entity.Showtime;
 import utils.DBContext;
 

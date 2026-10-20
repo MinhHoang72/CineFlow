@@ -9,7 +9,7 @@ import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
-import model.dto.PageDTO;
+import model.dto.common.PageDTO;
 import model.entity.Voucher;
 import utils.DBContext;
 

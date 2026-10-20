@@ -1,16 +1,11 @@
-package model.dto;
-import model.entity.*;
+package model.dto.common;
 
 import java.util.List;
 
 public class PageDTO<T> {
-    //danh sách dòng 
     private final List<T> items;
-    //trang hiện tại 
     private final int page;
-    //số dòng / trang
     private final int size;
-    //tổng kết quả
     private final int total;
 
     public PageDTO(List<T> items, int page, int size, int total) {
@@ -48,11 +43,11 @@ public class PageDTO<T> {
         return Math.min(total, page * size);
     }
 
-    public boolean isHasPrev() {
+    public boolean hasPrev() {
         return page > 1;
     }
 
-    public boolean isHasNext() {
+    public boolean hasNext() {
         return page < getTotalPages();
     }
 }

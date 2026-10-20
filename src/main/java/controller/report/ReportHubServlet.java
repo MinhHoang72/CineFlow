@@ -18,12 +18,12 @@ import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import model.dto.OccupancyRowDTO;
-import model.dto.OptionDTO;
-import model.dto.SalesRowDTO;
+import model.dto.report.OccupancyRowDTO;
+import model.dto.common.OptionDTO;
+import model.dto.report.SalesRowDTO;
 import model.entity.User;
 
-@WebServlet("/report/*")
+@WebServlet(name = "ReportHubServlet", urlPatterns = {"/report", "/report/*"})
 public class ReportHubServlet extends HttpServlet {
 
     private static final int PAGE_SIZE = 15;

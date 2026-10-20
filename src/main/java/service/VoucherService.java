@@ -1,7 +1,7 @@
 package service;
 
 import dao.VoucherDAO;
-import model.dto.PageDTO;
+import model.dto.common.PageDTO;
 import model.entity.Voucher;
 
 import java.math.BigDecimal;

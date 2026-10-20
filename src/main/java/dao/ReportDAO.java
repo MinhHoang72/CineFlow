@@ -1,8 +1,8 @@
 package dao;
 
-import model.dto.ReportSummary;
-import model.dto.RevenueReport;
-import model.dto.ShowtimeMetric;
+import model.dto.report.ReportSummary;
+import model.dto.report.RevenueReport;
+import model.dto.showtime.ShowtimeMetric;
 import utils.DBContext;
 
 import java.sql.Connection;

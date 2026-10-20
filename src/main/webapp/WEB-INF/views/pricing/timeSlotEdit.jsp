@@ -1,4 +1,4 @@
-﻿<%@ page pageEncoding="UTF-8" %>
+<%@ page pageEncoding="UTF-8" %>
 <% request.setAttribute("pageTitle", "Sửa phụ thu khung giờ"); request.setAttribute("pageDescription", "Điều chỉnh thời gian và mức phụ thu của khung giờ đã chọn."); request.setAttribute("activeTab", "time"); %>
 <%@ include file="/WEB-INF/fragments/cinemaBegin.jspf" %>
 <c:choose><c:when test="${not empty rule}"><section class="st-panel"><div class="st-panel-heading"><div><h2>Thông tin khung giờ</h2><p><c:out value="${rule.slotName}" /></p></div><a class="st-link" href="${pageContext.request.contextPath}/pricing/time-slots">← Danh sách khung giờ</a></div>

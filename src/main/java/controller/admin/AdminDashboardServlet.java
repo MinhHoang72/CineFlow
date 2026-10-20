@@ -9,7 +9,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import model.dto.ReportSummary;
+import model.dto.report.ReportSummary;
 import model.entity.User;
 
 import java.io.IOException;
@@ -20,7 +20,7 @@ import java.net.URLEncoder;
  * Phân luồng điều hướng theo vai trò (Admin, Manager, Staff, Customer).
  * URL ánh xạ: /dashboard, /admin/dashboard
  */
-@WebServlet(name = "AdminDashboardServlet", urlPatterns = {"/dashboard", "/admin/dashboard"})
+@WebServlet(name = "AdminDashboardServlet", urlPatterns = {"/dashboard", "/admin/dashboard", "/admin"})
 public class AdminDashboardServlet extends HttpServlet {
 
     private final ReportDAO reportDAO = new ReportDAO();

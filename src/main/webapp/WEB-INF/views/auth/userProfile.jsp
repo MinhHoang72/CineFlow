@@ -1,5 +1,5 @@
-﻿<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ page import="model.entity.User,model.dto.BookingHistory,java.util.List,java.text.SimpleDateFormat" %>
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ page import="model.entity.User,model.dto.booking.BookingHistoryDTO,java.util.List,java.text.SimpleDateFormat" %>
 <%
     if (session.getAttribute("userId") == null) {
         String loginUrl = request.getContextPath() + "/login?redirect=" + java.net.URLEncoder.encode("/account", "UTF-8");
@@ -21,7 +21,7 @@
 %>
 <%
     User user = (User) request.getAttribute("accountUser");
-    List<BookingHistory> history = (List<BookingHistory>) request.getAttribute("bookingHistory");
+    List<BookingHistoryDTO> history = (List<BookingHistoryDTO>) request.getAttribute("bookingHistory");
     String error = request.getParameter("error");
     String updated = request.getParameter("updated");
     SimpleDateFormat dateTime = new SimpleDateFormat("dd/MM/yyyy HH:mm");
@@ -75,9 +75,9 @@
 <body>
 <% if (isInternal) { %>
     <div class="cf-manager-shell">
-        <jsp:include page='<%= isAdmin ? "/WEB-INF/fragments/adminSidebar.jsp" : "/WEB-INF/fragments/managerSidebar.jsp" %>' />
+        <jsp:include page='<%= isAdmin ? "/WEB-INF/fragments/adminSidebar.jspf" : "/WEB-INF/fragments/managerSidebar.jspf" %>' />
         <div class="cf-manager-main">
-            <jsp:include page="/WEB-INF/fragments/adminTopbar.jsp" />
+            <jsp:include page="/WEB-INF/fragments/adminTopbar.jspf" />
             <main class="cf-content">
                 <div class="account-page staff-account-container">
 <% } else { %>
@@ -372,7 +372,7 @@
                 </div>
             <% } else { %>
                 <div class="history-list">
-                    <% for (BookingHistory item : history) { %>
+                    <% for (BookingHistoryDTO item : history) { %>
                         <article class="history-item">
                             <div class="history-left">
                                 <div class="movie-ticket-icon">??</div>

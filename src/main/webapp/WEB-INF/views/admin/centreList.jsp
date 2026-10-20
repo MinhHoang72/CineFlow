@@ -62,11 +62,11 @@
 <body>
 <div class="cf-manager-shell">
     <!-- Menu bên trái (Sidebar) -->
-    <jsp:include page="/WEB-INF/fragments/adminSidebar.jsp" />
+    <jsp:include page="/WEB-INF/fragments/adminSidebar.jspf" />
 
     <div class="cf-manager-main">
         <!-- Thanh tiêu đề trên (Topbar) -->
-        <jsp:include page="/WEB-INF/fragments/adminTopbar.jsp" />
+        <jsp:include page="/WEB-INF/fragments/adminTopbar.jspf" />
 
         <main class="cf-content">
             <!-- Header trang -->

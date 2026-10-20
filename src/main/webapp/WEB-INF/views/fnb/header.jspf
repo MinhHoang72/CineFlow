@@ -89,9 +89,9 @@
 </head>
 <body>
 <div class="cf-manager-shell">
-    <jsp:include page="<%= adminUser ? \"/WEB-INF/fragments/adminSidebar.jsp\" : \"/WEB-INF/fragments/managerSidebar.jsp\" %>" />
+    <jsp:include page="<%= adminUser ? \"/WEB-INF/fragments/adminSidebar.jspf\" : \"/WEB-INF/fragments/managerSidebar.jspf\" %>" />
     <div class="cf-manager-main">
-        <jsp:include page="/WEB-INF/fragments/adminTopbar.jsp" />
+        <jsp:include page="/WEB-INF/fragments/adminTopbar.jspf" />
         <main class="cf-content">
             <% if (flashMessage != null) { %>
                 <div class="fnb-flash <%= "success".equals(flashType) ? "success" : "error" %>"><%= esc(flashMessage) %></div>

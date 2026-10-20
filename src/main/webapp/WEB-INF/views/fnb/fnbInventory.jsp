@@ -1,5 +1,5 @@
 ﻿<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ page import="model.dto.StockRowDTO, java.util.List" %>
+<%@ page import="model.dto.fnb.StockRowDTO, java.util.List" %>
 <%@ include file="header.jspf" %>
 <%
     List<StockRowDTO> rows = (List<StockRowDTO>) request.getAttribute("rows");

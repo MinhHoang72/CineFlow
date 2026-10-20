@@ -7,7 +7,7 @@ import dao.PaymentDAO.Outcome;
 import dao.SeatDAO;
 import dao.ShowtimeDAO;
 import model.entity.Booking;
-import model.dto.PaymentTransaction;
+import model.dto.booking.PaymentTransaction;
 import model.entity.Seat;
 import model.entity.Showtime;
 import model.entity.Ticket;

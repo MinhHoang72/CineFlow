@@ -23,9 +23,9 @@
 </head>
 <body>
 <div class="cf-manager-shell">
-    <jsp:include page="/WEB-INF/fragments/managerSidebar.jsp"/>
+    <jsp:include page="/WEB-INF/fragments/managerSidebar.jspf"/>
     <div class="cf-manager-main">
-        <jsp:include page="/WEB-INF/fragments/managerTopbar.jsp"/>
+        <jsp:include page="/WEB-INF/fragments/managerTopbar.jspf"/>
         <main class="cf-content">
             <div class="cf-page-header">
                 <div>

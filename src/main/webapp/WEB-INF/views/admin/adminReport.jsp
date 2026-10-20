@@ -1,5 +1,5 @@
-<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ page import="model.dto.ReportSummary,model.dto.RevenueReport,model.dto.ShowtimeMetric,java.util.List,java.math.BigDecimal" %>
+﻿<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ page import="model.dto.report.ReportSummary,model.dto.report.RevenueReport,model.dto.showtime.ShowtimeMetric,java.util.List,java.math.BigDecimal" %>
 <%
     String authRole = (String) session.getAttribute("role");
     if (authRole == null && session.getAttribute("user") instanceof model.entity.User) {
@@ -52,10 +52,10 @@
 </head>
 <body>
 <div class="admin-layout">
-    <jsp:include page='<%= isAdmin ? "/WEB-INF/fragments/adminSidebar.jsp" : "/WEB-INF/fragments/managerSidebar.jsp" %>' />
+    <jsp:include page='<%= isAdmin ? "/WEB-INF/fragments/adminSidebar.jspf" : "/WEB-INF/fragments/managerSidebar.jspf" %>' />
 
     <div class="admin-main">
-        <jsp:include page='<%= isAdmin ? "/WEB-INF/fragments/adminTopbar.jsp" : "/WEB-INF/fragments/managerTopbar.jsp" %>' />
+        <jsp:include page='<%= isAdmin ? "/WEB-INF/fragments/adminTopbar.jspf" : "/WEB-INF/fragments/managerTopbar.jspf" %>' />
 
         <main class="admin-content">
             <!-- TIÊU ĐỀ TRANG VÀ NÚT TÁC VỤ -->

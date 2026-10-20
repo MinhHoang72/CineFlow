@@ -1,5 +1,5 @@
 ﻿<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ page import="model.dto.SalesSummaryDTO, model.dto.SalesRowDTO, model.dto.FnbSaleDTO, java.util.List, java.math.BigDecimal" %>
+<%@ page import="model.dto.report.SalesSummaryDTO, model.dto.report.SalesRowDTO, model.dto.fnb.FnbSaleDTO, java.util.List, java.math.BigDecimal" %>
 <%@ include file="header.jspf" %>
 <%
     SalesSummaryDTO s = (SalesSummaryDTO) request.getAttribute("summary");

@@ -68,11 +68,11 @@
 <body>
 <div class="cf-manager-shell">
     <!-- Sidebar điều hướng tương ứng theo vai trò Admin / Manager -->
-    <jsp:include page="<%= isAdmin ? \"/WEB-INF/fragments/adminSidebar.jsp\" : \"/WEB-INF/fragments/managerSidebar.jsp\" %>" />
+    <jsp:include page="<%= isAdmin ? \"/WEB-INF/fragments/adminSidebar.jspf\" : \"/WEB-INF/fragments/managerSidebar.jspf\" %>" />
 
     <div class="cf-manager-main">
         <!-- Topbar chung -->
-        <jsp:include page="/WEB-INF/fragments/adminTopbar.jsp" />
+        <jsp:include page="/WEB-INF/fragments/adminTopbar.jspf" />
 
         <main class="cf-content">
             <!-- Header trang -->

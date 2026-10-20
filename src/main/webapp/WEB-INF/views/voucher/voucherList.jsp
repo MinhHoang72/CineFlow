@@ -1,5 +1,5 @@
 ﻿<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ page import="model.dto.PageDTO, model.entity.Voucher" %>
+<%@ page import="model.dto.common.PageDTO, model.entity.Voucher" %>
 <%@ include file="header.jspf" %>
 <%
     PageDTO<Voucher> result = (PageDTO<Voucher>) request.getAttribute("result");

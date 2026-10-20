@@ -13,10 +13,10 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.UUID;
-import model.dto.CheckInResultDTO;
+import model.dto.checkin.CheckInResultDTO;
 import model.entity.User;
 
-@WebServlet("/checkin/*")
+@WebServlet(name = "TicketCheckInServlet", urlPatterns = {"/checkin", "/checkin/*"})
 public class TicketCheckInServlet extends HttpServlet {
 
     private static final int HISTORY_SIZE = 20;

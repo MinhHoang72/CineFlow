@@ -1,6 +1,6 @@
-﻿
+
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ page import="model.entity.User,model.dto.BookingHistory,java.util.List,java.math.BigDecimal,java.text.SimpleDateFormat" %>
+<%@ page import="model.entity.User,model.dto.booking.BookingHistoryDTO,java.util.List,java.math.BigDecimal,java.text.SimpleDateFormat" %>
 <%
     String authRole = (String) session.getAttribute("role");
 
@@ -40,8 +40,8 @@
     User customerDetail =
         (User) request.getAttribute("customerDetail");
 
-    List<BookingHistory> bookingHistory =
-        (List<BookingHistory>) request.getAttribute("bookingHistory");
+    List<BookingHistoryDTO> bookingHistory =
+        (List<BookingHistoryDTO>) request.getAttribute("bookingHistory");
 
     String successParam = request.getParameter("success");
     String errorParam = request.getParameter("error");
@@ -111,10 +111,10 @@
 
     <body>
         <div class="cf-manager-shell">
-            <jsp:include page="/WEB-INF/fragments/adminSidebar.jsp" />
+            <jsp:include page="/WEB-INF/fragments/adminSidebar.jspf" />
 
             <div class="cf-manager-main">
-                <jsp:include page="/WEB-INF/fragments/adminTopbar.jsp" />
+                <jsp:include page="/WEB-INF/fragments/adminTopbar.jspf" />
 
                 <main class="cf-content">
 
@@ -500,7 +500,7 @@
                         </thead>
 
                         <tbody>
-                            <% for (BookingHistory h : bookingHistory) {
+                            <% for (BookingHistoryDTO h : bookingHistory) {
                                 String bStatus = h.getBookingStatus();
 
                                 String bBadge =

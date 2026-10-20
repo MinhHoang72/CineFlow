@@ -7,7 +7,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import model.dto.BookingHistory;
+import model.dto.booking.BookingHistoryDTO;
 import model.entity.User;
 
 import java.io.IOException;
@@ -87,7 +87,7 @@ public class CustomerManagementServlet extends HttpServlet {
                 User customerDetail = userDAO.getUserById(viewUserId);
                 // Đảm bảo chỉ xem chi tiết nếu tài khoản đó đúng là vai trò CUSTOMER
                 if (customerDetail != null && "CUSTOMER".equalsIgnoreCase(customerDetail.getRole())) {
-                    List<BookingHistory> history = userDAO.getBookingHistory(viewUserId);
+                    List<BookingHistoryDTO> history = userDAO.getBookingHistory(viewUserId);
                     request.setAttribute("customerDetail", customerDetail);
                     request.setAttribute("bookingHistory", history);
                 }

@@ -1,4 +1,4 @@
-﻿<%@ page pageEncoding="UTF-8" %>
+<%@ page pageEncoding="UTF-8" %>
 <% request.setAttribute("pageTitle", "Giá vé cơ bản"); request.setAttribute("pageDescription", "Quản lý giá cơ bản và theo dõi lịch sử điều chỉnh tại cụm rạp."); request.setAttribute("activeTab", "base"); %>
 <%@ include file="/WEB-INF/fragments/cinemaBegin.jspf" %>
 <div class="st-pricing-grid">

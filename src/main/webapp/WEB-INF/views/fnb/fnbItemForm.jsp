@@ -1,5 +1,5 @@
 ﻿<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ page import="model.entity.FnbItem, model.dto.OptionDTO, java.util.List, java.util.Map" %>
+<%@ page import="model.entity.FnbItem, model.dto.common.OptionDTO, java.util.List, java.util.Map" %>
 <%@ include file="header.jspf" %>
 <%
     FnbItem item = (FnbItem) request.getAttribute("item");

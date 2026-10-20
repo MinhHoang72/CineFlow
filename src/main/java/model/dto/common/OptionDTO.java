@@ -1,5 +1,4 @@
-package model.dto;
-import model.entity.*;
+package model.dto.common;
 
 public class OptionDTO {
 
@@ -18,5 +17,4 @@ public class OptionDTO {
     public String getLabel() {
         return label;
     }
-
 }

@@ -1,6 +1,6 @@
 package dao;
 
-import model.dto.BookingHistory;
+import model.dto.booking.BookingHistoryDTO;
 import model.entity.ManagerAssignment;
 import model.entity.StaffTransfer;
 import model.entity.User;
@@ -515,7 +515,7 @@ public class UserDAO {
      * @param userId mã định danh khách hàng
      * @return danh sách lịch sử đặt vé
      */
-    public List<BookingHistory> getBookingHistory(int userId) {
+    public List<BookingHistoryDTO> getBookingHistory(int userId) {
         String sql = "SELECT b.BookingCode, m.Title, br.CentreName, s.StartTime, "
                 + "b.BookingStatus, b.TotalAmount, b.CreatedAt "
                 + "FROM Bookings b "
@@ -524,13 +524,13 @@ public class UserDAO {
                 + "JOIN Halls h ON h.HallID = s.HallID "
                 + "JOIN Centres br ON br.CentreID = h.CentreID "
                 + "WHERE b.UserID = ? ORDER BY b.CreatedAt DESC";
-        List<BookingHistory> history = new ArrayList<>();
+        List<BookingHistoryDTO> history = new ArrayList<>();
         try (Connection connection = DBContext.getConnection();
              PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, userId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    BookingHistory item = new BookingHistory();
+                    BookingHistoryDTO item = new BookingHistoryDTO();
                     item.setBookingCode(rs.getString("BookingCode"));
                     item.setMovieTitle(rs.getString("Title"));
                     item.setCentreName(rs.getString("CentreName"));

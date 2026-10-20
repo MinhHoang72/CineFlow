@@ -2,47 +2,39 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 public class ArchitectureValidationTest {
 
     private static final Path WEBAPP_DIR = Path.of("src/main/webapp");
-    private static final Pattern JSP_INCLUDE_JSPF = Pattern.compile("<jsp:include[^>]+page=['\"][^'\"]*\\.jspf");
+    private static final Path DTO_DIR = Path.of("src/main/java/model/dto");
 
     public static void main(String[] args) throws Exception {
         System.out.println("=================================================");
         System.out.println("  CINEFLOW ARCHITECTURE INTEGRITY VERIFICATION");
         System.out.println("=================================================");
 
-        testNoJspIncludePointsToJspf();
+        testNoRedundantDtoFilesInRoot();
         testDtoPackageStandardization();
         testCoreServicesExist();
-        testRequiredFragmentJspFilesExist();
+        testNoRedundantJspInFragments();
+        testRequiredFragmentJspfFilesExist();
         testWebXmlJspfMapping();
         testNoEmptyDummyForwarderJspInViews();
 
         System.out.println("\n[SUCCESS] ALL ARCHITECTURE VERIFICATION CHECKS PASSED!");
     }
 
-    static void testNoJspIncludePointsToJspf() throws IOException {
-        try (Stream<Path> stream = Files.walk(WEBAPP_DIR)) {
-            List<Path> offendingFiles = stream
-                    .filter(p -> p.toString().endsWith(".jsp") || p.toString().endsWith(".jspf"))
-                    .filter(p -> {
-                        try {
-                            String content = Files.readString(p);
-                            return JSP_INCLUDE_JSPF.matcher(content).find();
-                        } catch (IOException e) {
-                            return false;
-                        }
-                    })
+    static void testNoRedundantDtoFilesInRoot() throws IOException {
+        try (Stream<Path> stream = Files.list(DTO_DIR)) {
+            List<Path> rootFiles = stream
+                    .filter(Files::isRegularFile)
                     .toList();
-            if (!offendingFiles.isEmpty()) {
-                throw new AssertionError("Offending <jsp:include> .jspf files found: " + offendingFiles);
+            if (!rootFiles.isEmpty()) {
+                throw new AssertionError("Redundant DTO files found in root model/dto: " + rootFiles);
             }
         }
-        System.out.println("  [PASS] No <jsp:include> points to .jspf");
+        System.out.println("  [PASS] Zero redundant DTO files in model/dto root");
     }
 
     static void testDtoPackageStandardization() throws ClassNotFoundException {
@@ -57,19 +49,19 @@ public class ArchitectureValidationTest {
             "model.dto.pricing.SeatConfigDTO",
             "model.dto.fnb.FnbRowDTO",
             "model.dto.fnb.FnbSaleDTO",
-            "model.dto.stock.StockRowDTO" == null ? "" : "model.dto.fnb.StockRowDTO",
+            "model.dto.fnb.StockRowDTO",
             "model.dto.checkin.CheckInResultDTO",
             "model.dto.checkin.CheckInLogDTO",
             "model.dto.report.SalesSummaryDTO",
             "model.dto.report.SalesRowDTO",
-            "model.dto.report.OccupancyRowDTO"
+            "model.dto.report.OccupancyRowDTO",
+            "model.dto.common.PageDTO",
+            "model.dto.common.OptionDTO"
         };
         for (String dto : dtos) {
-            if (!dto.isEmpty()) {
-                Class.forName(dto);
-            }
+            Class.forName(dto);
         }
-        System.out.println("  [PASS] All 16 standardized DTOs exist in model.dto.*");
+        System.out.println("  [PASS] All standardized DTOs exist in model.dto.<domain>.*");
     }
 
     static void testCoreServicesExist() throws ClassNotFoundException {
@@ -87,19 +79,32 @@ public class ArchitectureValidationTest {
         System.out.println("  [PASS] All 6 Core Services exist in service.*");
     }
 
-    static void testRequiredFragmentJspFilesExist() {
+    static void testNoRedundantJspInFragments() throws IOException {
+        Path fragmentsDir = WEBAPP_DIR.resolve("WEB-INF/fragments");
+        try (Stream<Path> stream = Files.list(fragmentsDir)) {
+            List<Path> jspFiles = stream
+                    .filter(p -> p.toString().endsWith(".jsp"))
+                    .toList();
+            if (!jspFiles.isEmpty()) {
+                throw new AssertionError("Redundant .jsp files found in WEB-INF/fragments: " + jspFiles);
+            }
+        }
+        System.out.println("  [PASS] Zero redundant .jsp files in WEB-INF/fragments");
+    }
+
+    static void testRequiredFragmentJspfFilesExist() {
         Path fragmentsDir = WEBAPP_DIR.resolve("WEB-INF/fragments");
         String[] files = {
-            "adminSidebar.jsp", "adminTopbar.jsp", "managerSidebar.jsp", "managerTopbar.jsp",
-            "header.jsp", "footer.jsp", "pagination.jsp", "cinemaBegin.jsp", "cinemaEnd.jsp",
-            "showtimePricingNav.jsp"
+            "adminSidebar.jspf", "adminTopbar.jspf", "managerSidebar.jspf", "managerTopbar.jspf",
+            "header.jspf", "footer.jspf", "pagination.jspf", "cinemaBegin.jspf", "cinemaEnd.jspf",
+            "showtimePricingNav.jspf"
         };
         for (String f : files) {
             if (!Files.exists(fragmentsDir.resolve(f))) {
-                throw new AssertionError("Missing fragment JSP: " + f);
+                throw new AssertionError("Missing fragment JSPF: " + f);
             }
         }
-        System.out.println("  [PASS] All fragment .jsp companion files exist");
+        System.out.println("  [PASS] All standard .jspf fragment files exist");
     }
 
     static void testWebXmlJspfMapping() throws IOException {

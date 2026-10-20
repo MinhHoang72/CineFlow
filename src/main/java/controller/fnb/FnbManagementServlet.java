@@ -24,14 +24,14 @@ import java.util.UUID;
 import model.entity.ComboLine;
 import model.entity.FnbCombo;
 import model.entity.FnbItem;
-import model.dto.FnbRowDTO;
-import model.dto.OptionDTO;
-import model.dto.PageDTO;
+import model.dto.fnb.FnbRowDTO;
+import model.dto.common.OptionDTO;
+import model.dto.common.PageDTO;
 import model.entity.User;
 import utils.MediaStorage;
 
 @MultipartConfig(maxFileSize = 2 * 1024 * 1024, maxRequestSize = 3 * 1024 * 1024)
-@WebServlet("/fnb/*")
+@WebServlet(name = "FnbManagementServlet", urlPatterns = {"/fnb", "/fnb/*"})
 public class FnbManagementServlet extends HttpServlet {
 
     private static final int PAGE_SIZE = 10;

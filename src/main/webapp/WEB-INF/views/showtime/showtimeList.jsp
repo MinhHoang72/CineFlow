@@ -24,9 +24,9 @@
 </head>
 <body>
 <div class="cf-manager-shell">
-    <jsp:include page='<%= showtimeAdmin ? "/WEB-INF/fragments/adminSidebar.jsp" : "/WEB-INF/fragments/managerSidebar.jsp" %>' />
+    <jsp:include page='<%= showtimeAdmin ? "/WEB-INF/fragments/adminSidebar.jspf" : "/WEB-INF/fragments/managerSidebar.jspf" %>' />
     <div class="cf-manager-main">
-        <jsp:include page="/WEB-INF/fragments/adminTopbar.jsp" />
+        <jsp:include page="/WEB-INF/fragments/adminTopbar.jspf" />
         <main class="cf-content st-page">
             <header class="st-heading">
                 <div><span class="st-eyebrow">ĐIỀU HÀNH RẠP CHIẾU</span><h1>Quản lý suất chiếu</h1><p>Sắp xếp lịch chiếu, theo dõi phòng và quản lý từng suất phim.</p></div>
@@ -34,7 +34,7 @@
             </header>
             <c:if test="${not empty sessionScope.message}"><div class="st-notice st-success" role="status"><c:out value="${sessionScope.message}" /></div><c:remove var="message" scope="session" /></c:if>
             <c:if test="${not empty sessionScope.error}"><div class="st-notice st-error" role="alert"><c:out value="${sessionScope.error}" /></div><c:remove var="error" scope="session" /></c:if>
-            <%@ include file="/WEB-INF/fragments/showtimePricingNav.jsp" %>
+            <%@ include file="/WEB-INF/fragments/showtimePricingNav.jspf" %>
             <div class="st-stats" aria-label="Tổng quan lịch chiếu">
                 <div><span>Tổng suất chiếu</span><strong>${fn:length(showtimes)}</strong><small>Trong danh sách của cụm rạp</small></div>
                 <div><span>Phòng sẵn sàng</span><strong>${fn:length(halls)}</strong><small>Có thể sắp xếp lịch chiếu</small></div>

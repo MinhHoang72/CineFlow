@@ -606,7 +606,7 @@ public class CodexVerificationRunner {
                 "UPDATE CentreManagerAssignments SET Status = 'ENDED', EndDate = GETDATE() WHERE ManagerID = " + managerId + " AND Status = 'ACTIVE'"
             );
             conn.createStatement().executeUpdate(
-                "UPDATE Users SET CentreID = NULL WHERE UserID = " + managerId
+                "UPDATE Users SET CentreID = NULL, Status = 'ACTIVE' WHERE UserID = " + managerId
             );
         }
     }
