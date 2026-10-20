@@ -189,13 +189,13 @@
                         <table class="cf-table">
                             <thead>
                                 <tr>
-                                    <th>Mã nhân sự</th>
-                                    <th>Quản lý</th>
-                                    <th>Tên đăng nhập</th>
-                                    <th>Số điện thoại</th>
-                                    <th>Trung tâm phụ trách</th>
-                                    <th>Trạng thái tài khoản</th>
-                                    <th>Thao tác</th>
+                                    <th style="width: 110px; white-space: nowrap;">Mã nhân sự</th>
+                                    <th style="min-width: 180px; white-space: nowrap;">Quản lý</th>
+                                    <th style="min-width: 140px; white-space: nowrap;">Tên đăng nhập</th>
+                                    <th style="min-width: 120px; white-space: nowrap;">Số điện thoại</th>
+                                    <th style="min-width: 180px; white-space: nowrap;">Trung tâm phụ trách</th>
+                                    <th style="min-width: 150px; white-space: nowrap;">Trạng thái tài khoản</th>
+                                    <th style="min-width: 180px; white-space: nowrap;">Thao tác</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -229,28 +229,29 @@
                                                 <%= isActive ? "Đang hoạt động" : "Tạm ngưng" %>
                                             </span>
                                         </td>
-                                        <td>
-                                            <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                                        <td style="white-space: nowrap;">
+                                            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: nowrap;">
                                                 <!-- Nút Sửa thông tin tài khoản -->
                                                 <button type="button" class="cf-btn cf-btn-secondary cf-btn-sm" 
                                                         onclick="openEditManagerModal(<%= m.getUserId() %>, '<%= m.getEmployeeCode() %>', '<%= m.getFullName().replace("'", "\\'") %>', '<%= m.getPhone() != null ? m.getPhone().replace("'", "\\'") : "" %>', '<%= m.getEmail().replace("'", "\\'") %>')"
-                                                        title="Chỉnh sửa thông tin cá nhân">
+                                                        title="Chỉnh sửa thông tin cá nhân"
+                                                        style="white-space: nowrap; flex-shrink: 0;">
                                                     Sửa
                                                 </button>
 
                                                 <!-- Nút Kích hoạt / Tạm ngưng tài khoản -->
-                                                <form method="post" action="${pageContext.request.contextPath}/admin/managers" style="display: inline;">
+                                                <form method="post" action="${pageContext.request.contextPath}/admin/managers" style="display: inline-flex; margin: 0; flex-shrink: 0;">
                                                     <input type="hidden" name="action" value="toggle_status">
                                                     <input type="hidden" name="userId" value="<%= m.getUserId() %>">
                                                     <% if (isActive) { %>
                                                         <input type="hidden" name="status" value="INACTIVE">
-                                                        <button type="submit" class="cf-btn cf-btn-secondary cf-btn-sm" style="color: #f59e0b;" 
+                                                        <button type="submit" class="cf-btn cf-btn-secondary cf-btn-sm" style="color: #f59e0b !important; border-color: rgba(245, 158, 11, 0.4); background: rgba(245, 158, 11, 0.08); white-space: nowrap; flex-shrink: 0;" 
                                                                 onclick="return confirm('Bạn có chắc muốn TẠM NGƯNG tài khoản Quản lý này? Cụm rạp phụ trách (nếu có) sẽ được giải phóng để sẵn sàng bổ nhiệm Quản lý mới.');">
                                                             Tạm ngưng
                                                         </button>
                                                     <% } else { %>
                                                         <input type="hidden" name="status" value="ACTIVE">
-                                                        <button type="submit" class="cf-btn cf-btn-secondary cf-btn-sm" style="color: #4ade80;">
+                                                        <button type="submit" class="cf-btn cf-btn-secondary cf-btn-sm" style="color: #4ade80 !important; border-color: rgba(74, 222, 128, 0.4); background: rgba(74, 222, 128, 0.08); white-space: nowrap; flex-shrink: 0;">
                                                             Kích hoạt
                                                         </button>
                                                     <% } %>

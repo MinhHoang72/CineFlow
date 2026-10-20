@@ -33,6 +33,13 @@
     <a class="cf-btn cf-btn-secondary" href="<%= ctx %>/report/sales/export?<%= esc(request.getAttribute("filters")) %>">Xuất CSV doanh thu</a>
 </div>
 
+<div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 18px;">
+    <a class="cf-btn cf-btn-primary" href="<%= ctx %>/admin/movies">Quản lý phim</a>
+    <a class="cf-btn cf-btn-ghost" href="<%= ctx %>/admin/customers">Khách hàng</a>
+    <a class="cf-btn cf-btn-ghost" href="<%= ctx %>/reports">Báo cáo doanh thu</a>
+    <a class="cf-btn cf-btn-ghost" href="<%= ctx %>/admin/managers">Quản lý nhân sự</a>
+</div>
+
 <%@ include file="filter.jspf" %>
 
 <div class="rp-kpis">
