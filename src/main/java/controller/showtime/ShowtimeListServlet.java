@@ -18,7 +18,7 @@ public class ShowtimeListServlet
             HttpServletResponse response)
             throws ServletException, IOException {
 
-        int centreId = utils.FE04Context.requireCentreId(request);
+        int centreId = utils.CinemaContext.requireCentreId(request);
 
         ShowtimeDAO showtimeDAO =
                 new ShowtimeDAO();

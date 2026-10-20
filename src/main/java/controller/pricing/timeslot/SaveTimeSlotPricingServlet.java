@@ -21,7 +21,7 @@ public class SaveTimeSlotPricingServlet
 
         try {
 
-            int centreId = utils.FE04Context.requireCentreId(request);
+            int centreId = utils.CinemaContext.requireCentreId(request);
 
             String slotName =
                     request.getParameter(
@@ -49,7 +49,7 @@ public class SaveTimeSlotPricingServlet
                             )
                     );
 
-            int managerId = utils.FE04Context.requireUserId(request);
+            int managerId = utils.CinemaContext.requireUserId(request);
 
             if (!endTime.isAfter(startTime)) {
 

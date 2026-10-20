@@ -1881,4 +1881,33 @@ public class UserDAO {
         }
         return 0;
     }
+
+    /**
+     * Lay vai tro va ID rap chieu duoc phan cong cua nguoi dung.
+     *
+     * @param userId ID nguoi dung
+     * @return mang String [Role, CentreId] hoac null neu khong tim thay
+     */
+    public String[] getUserRoleAndAssignedCentre(int userId) {
+        String sql = "SELECT u.Role, u.CentreID, a.CentreID AS AssignedCentreID "
+                + "FROM Users u LEFT JOIN CentreManagerAssignments a ON a.ManagerID = u.UserID "
+                + "AND a.Status = 'ACTIVE' AND a.StartDate <= GETDATE() "
+                + "AND (a.EndDate IS NULL OR a.EndDate > GETDATE()) "
+                + "WHERE u.UserID = ?";
+        try (Connection connection = DBContext.getConnection();
+             PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, userId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    String role = rs.getString("Role");
+                    int centre = rs.getInt("MANAGER".equalsIgnoreCase(role) ? "AssignedCentreID" : "CentreID");
+                    String centreStr = (!rs.wasNull() && centre > 0) ? String.valueOf(centre) : null;
+                    return new String[]{role, centreStr};
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Loi khi lay thong tin phan cong rap cua nguoi dung: " + userId, e);
+        }
+        return null;
+    }
 }

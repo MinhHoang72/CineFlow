@@ -50,7 +50,7 @@ public class CreateShowtimeServlet
              * Demo manager ID.
              * Sau này lấy từ session.
              */
-            int managerId = utils.FE04Context.requireUserId(request);
+            int managerId = utils.CinemaContext.requireUserId(request);
 
             ShowtimeDAO showtimeDAO =
                     new ShowtimeDAO();

@@ -38,7 +38,7 @@ public class UpdateSeatSurchargeServlet
                             )
                     );
 
-            int managerId = utils.FE04Context.requireUserId(request);
+            int managerId = utils.CinemaContext.requireUserId(request);
 
             if (!Double.isFinite(amount) || amount < 0) {
 

@@ -1,6 +1,5 @@
 package controller.counter;
 import controller.payment.PaymentController;
-
 import dao.BookingDAO;
 import dao.BookingDAO.SeatUnavailableException;
 import dao.PaymentDAO;

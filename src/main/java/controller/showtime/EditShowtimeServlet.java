@@ -65,7 +65,7 @@ public class EditShowtimeServlet
                 return;
             }
 
-            int centreId = utils.FE04Context.requireCentreId(request);
+            int centreId = utils.CinemaContext.requireCentreId(request);
 
             MovieDAO movieDAO =
                     new MovieDAO();

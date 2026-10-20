@@ -1,6 +1,6 @@
 <%@ page pageEncoding="UTF-8" %>
-<% request.setAttribute("fe04Title", "Sửa suất chiếu"); request.setAttribute("fe04Description", "Điều chỉnh phim, phòng và thời gian của suất chiếu đã lên lịch."); request.setAttribute("fe04Tab", "showtimes"); %>
-<%@ include file="/WEB-INF/fragments/fe04/begin.jspf" %>
+<% request.setAttribute("pageTitle", "Sửa suất chiếu"); request.setAttribute("pageDescription", "Điều chỉnh phim, phòng và thời gian của suất chiếu đã lên lịch."); request.setAttribute("activeTab", "showtimes"); %>
+<%@ include file="/WEB-INF/fragments/cinema/begin.jspf" %>
 <c:choose><c:when test="${not empty showtime}">
 <section class="st-panel"><div class="st-panel-heading"><div><h2>Thông tin suất chiếu #${showtime.showtimeId}</h2><p>Thời gian kết thúc được tính lại theo thời lượng phim.</p></div><a class="st-link" href="${pageContext.request.contextPath}/showtimes">← Danh sách suất chiếu</a></div>
 <form class="st-create-form" action="${pageContext.request.contextPath}/showtimes/update" method="post">
@@ -12,4 +12,4 @@
 </div><div class="st-form-footer"><p>Dọn phòng: ${showtime.cleaningBufferMinutes} phút sau mỗi suất chiếu.</p><div class="st-row-actions"><a class="st-button st-button-muted" href="${pageContext.request.contextPath}/showtimes">Quay lại</a><button class="st-button st-button-primary" type="submit">Lưu thay đổi</button></div></div>
 </form></section>
 </c:when><c:otherwise><div class="st-empty"><h2>Không tìm thấy suất chiếu</h2><a class="st-link" href="${pageContext.request.contextPath}/showtimes">Quay lại danh sách</a></div></c:otherwise></c:choose>
-<%@ include file="/WEB-INF/fragments/fe04/end.jspf" %>
+<%@ include file="/WEB-INF/fragments/cinema/end.jspf" %>

@@ -8,7 +8,7 @@
     }
     boolean showtimeAdmin = "ADMIN".equalsIgnoreCase(showtimeRole);
     request.setAttribute("activeNav", "showtimes");
-    request.setAttribute("fe04Tab", "showtimes");
+    request.setAttribute("activeTab", "showtimes");
     request.setAttribute("pageTitle", "Quản lý suất chiếu");
     request.setAttribute("pageBreadcrumb", "Lịch chiếu");
 %>
@@ -34,7 +34,7 @@
             </header>
             <c:if test="${not empty sessionScope.message}"><div class="st-notice st-success" role="status"><c:out value="${sessionScope.message}" /></div><c:remove var="message" scope="session" /></c:if>
             <c:if test="${not empty sessionScope.error}"><div class="st-notice st-error" role="alert"><c:out value="${sessionScope.error}" /></div><c:remove var="error" scope="session" /></c:if>
-            <%@ include file="/WEB-INF/fragments/fe04/navigation.jspf" %>
+            <%@ include file="/WEB-INF/fragments/cinema/navigation.jspf" %>
             <div class="st-stats" aria-label="Tổng quan lịch chiếu">
                 <div><span>Tổng suất chiếu</span><strong>${fn:length(showtimes)}</strong><small>Trong danh sách của chi nhánh</small></div>
                 <div><span>Phòng sẵn sàng</span><strong>${fn:length(halls)}</strong><small>Có thể sắp xếp lịch chiếu</small></div>

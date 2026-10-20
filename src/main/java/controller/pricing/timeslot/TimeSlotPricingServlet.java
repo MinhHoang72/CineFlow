@@ -21,7 +21,7 @@ public class TimeSlotPricingServlet
          * BranchID = 1
          */
 
-        int centreId = utils.FE04Context.requireCentreId(request);
+        int centreId = utils.CinemaContext.requireCentreId(request);
 
         TimeSlotPricingDAO dao =
                 new TimeSlotPricingDAO();

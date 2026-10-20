@@ -27,7 +27,7 @@ public class UpdateBasePriceServlet
 
         try {
 
-            int centreId = utils.FE04Context.requireCentreId(request);
+            int centreId = utils.CinemaContext.requireCentreId(request);
 
             double newPrice =
                     Double.parseDouble(
@@ -38,7 +38,7 @@ public class UpdateBasePriceServlet
 
 
 
-            int managerId = utils.FE04Context.requireUserId(request);
+            int managerId = utils.CinemaContext.requireUserId(request);
 
             if (newPrice < 0) {
 
