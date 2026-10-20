@@ -208,7 +208,7 @@
                         <button type="button"
                                 class="staff-control-btn staff-control-btn-primary"
                                 onclick="openCreateStaffModal()">
-                            <span aria-hidden="true"></span> Thêm nhân viên
+                            <span aria-hidden="true" style="font-weight: 700; font-size: 15px; margin-right: 2px;">+</span> Thêm nhân viên
                         </button>
                     </div>
                 </div>
@@ -218,14 +218,14 @@
                         <table class="cf-table">
                             <thead>
                             <tr>
-                                <th>Mã nhân sự</th>
-                                <th>Nhân viên</th>
-                                <th>Tên đăng nhập</th>
-                                <th>Vị trí công việc</th>
-                                <th>Số điện thoại</th>
-                                <th>Trung tâm</th>
-                                <th>Trạng thái</th>
-                                <th>Thao tác</th>
+                                <th class="col-code">Mã nhân sự</th>
+                                <th class="col-staff">Nhân viên</th>
+                                <th class="col-account">Tên đăng nhập</th>
+                                <th class="col-role">Vị trí công việc</th>
+                                <th class="col-phone">Số điện thoại</th>
+                                <th class="col-centre">Trung tâm</th>
+                                <th class="col-status">Trạng thái</th>
+                                <th class="col-actions">Thao tác</th>
                             </tr>
                             </thead>
                             <tbody>
@@ -255,39 +255,40 @@
                                         ? item.getCentreName() : currentCentreName;
                             %>
                                 <tr class="staff-row <%= stClass %> <%= roleClass %>" data-search="<%= searchVal %>">
-                                    <td>
+                                    <td class="col-code">
                                         <code class="cf-badge cf-badge-info"><%= employeeCode %></code>
                                     </td>
-                                    <td>
+                                    <td class="col-staff">
                                         <strong><%= staffName %></strong>
                                         <small><%= staffEmail %></small>
                                     </td>
-                                    <td><code><%= staffAccount %></code></td>
-                                    <td>
+                                    <td class="col-account"><code><%= staffAccount %></code></td>
+                                    <td class="col-role">
                                         <% if (isSales) { %>
-                                            <span class="cf-badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35);">
+                                            <span class="cf-badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); white-space: nowrap;">
                                                 🎫 Bán vé (Ticket Sales)
                                             </span>
                                         <% } else if (isChecker) { %>
-                                            <span class="cf-badge" style="background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.35);">
+                                            <span class="cf-badge" style="background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.35); white-space: nowrap;">
                                                 🔍 Soát vé (Ticket Checker)
                                             </span>
                                         <% } else { %>
-                                            <span class="cf-badge cf-badge-info">
+                                            <span class="cf-badge cf-badge-info" style="white-space: nowrap;">
                                                 Nhân viên
                                             </span>
                                         <% } %>
                                     </td>
-                                    <td><%= !staffPhone.isEmpty() ? staffPhone : "—" %></td>
-                                    <td>🏛 <%= itemCentreName %></td>
-                                    <td>
+                                    <td class="col-phone"><%= !staffPhone.isEmpty() ? staffPhone : "—" %></td>
+                                    <td class="col-centre"><span class="centre-name-tag">🏛 <%= itemCentreName %></span></td>
+                                    <td class="col-status">
                                         <span id="badge-status-<%= item.getUserId() %>"
-                                              class="cf-badge <%= "ACTIVE".equalsIgnoreCase(st) ? "cf-badge-success" : ("LOCKED".equalsIgnoreCase(st) ? "cf-badge-danger" : "cf-badge-warning") %>">
+                                              class="cf-badge <%= "ACTIVE".equalsIgnoreCase(st) ? "cf-badge-success" : ("LOCKED".equalsIgnoreCase(st) ? "cf-badge-danger" : "cf-badge-warning") %>"
+                                              style="white-space: nowrap;">
                                             <%= "ACTIVE".equalsIgnoreCase(st) ? "Đang hoạt động"
                                                 : ("LOCKED".equalsIgnoreCase(st) ? "Đã khóa" : "Tạm ngưng") %>
                                         </span>
                                     </td>
-                                    <td>
+                                    <td class="col-actions">
                                         <div class="staff-actions">
                                             <button type="button" class="staff-edit-btn"
                                                     onclick="openEditStaffModal(<%= item.getUserId() %>, '<%= employeeCode.replace("'", "\\'") %>', '<%= staffName.replace("'", "\\'") %>', '<%= staffPhone.replace("'", "\\'") %>', '<%= staffEmail.replace("'", "\\'") %>', '<%= staffRole.replace("'", "\\'") %>')"
