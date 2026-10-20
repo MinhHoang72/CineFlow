@@ -74,7 +74,7 @@
         <!-- Menu điều hướng chính -->
         <nav class="cf-navbar" aria-label="Điều hướng chính">
             <a class="cf-nav-item <%= "home".equalsIgnoreCase(activeNav) ? "active" : "" %>" href="<%= ctx %>/home/index.jsp">TRANG CHỦ</a>
-            <a class="cf-nav-item <%= "booking".equalsIgnoreCase(activeNav) ? "active" : "" %>" href="<%= ctx %>/booking/booking.jsp">MUA VÉ</a>
+            <a class="cf-nav-item <%= "booking".equalsIgnoreCase(activeNav) ? "active" : "" %>" href="<%= ctx %>/booking">MUA VÉ</a>
             <a class="cf-nav-item <%= "promotions".equalsIgnoreCase(activeNav) ? "active" : "" %>" href="<%= ctx %>/home/index.jsp#promotions">TIN MỚI &amp; ƯU ĐÃI</a>
             <a class="cf-nav-item <%= "cinema".equalsIgnoreCase(activeNav) ? "active" : "" %>" href="<%= ctx %>/cinema/index.jsp">RẠP CHIẾU PHIM</a>
             <a class="cf-nav-item <%= "support".equalsIgnoreCase(activeNav) ? "active" : "" %>" href="<%= ctx %>/home/index.jsp#support">HỖ TRỢ</a>

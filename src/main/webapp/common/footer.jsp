@@ -16,7 +16,7 @@
         <div>
             <h4>CINEFLOW</h4>
             <a href="<%= fCtx %>/home/index.jsp#movies">Phim đang chiếu</a>
-            <a href="<%= fCtx %>/booking/booking.jsp?view=schedule">Lịch chiếu</a>
+            <a href="<%= fCtx %>/booking?view=schedule">Lịch chiếu</a>
             <a href="<%= fCtx %>/cinema/index.jsp">Rạp chiếu phim</a>
             <a href="<%= fCtx %>/home/index.jsp#promotions">Tin mới &amp; ưu đãi</a>
         </div>

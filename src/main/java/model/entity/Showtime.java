@@ -156,6 +156,10 @@ public String getStartTimeInputFormatted() {
     private String branchName;
     private BigDecimal basePrice;
     public int getId() { return showtimeId; }
+    public int getCentreId() { return branchId; }
+    public void setCentreId(int centreId) { this.branchId = centreId; }
+    public String getCentreName() { return branchName; }
+    public void setCentreName(String centreName) { this.branchName = centreName; }
     public int getBranchId() { return branchId; }
     public String getBranchName() { return branchName; }
     public BigDecimal getBasePrice() { return basePrice; }

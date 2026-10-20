@@ -10,17 +10,17 @@
 
     Object activeTabObj = request.getAttribute("activeTab");
     if (activeTabObj == null) activeTabObj = request.getAttribute("cinemaTab");
-    if (activeTabObj == null) activeTabObj = request.getAttribute("fe04Tab");
+    
     String activeTab = activeTabObj != null ? activeTabObj.toString() : "showtimes";
 
     Object pageTitleObj = request.getAttribute("pageTitle");
     if (pageTitleObj == null) pageTitleObj = request.getAttribute("cinemaTitle");
-    if (pageTitleObj == null) pageTitleObj = request.getAttribute("fe04Title");
+    
     String pageTitle = pageTitleObj != null ? pageTitleObj.toString() : "CineFlow";
 
     Object pageDescObj = request.getAttribute("pageDescription");
     if (pageDescObj == null) pageDescObj = request.getAttribute("cinemaDescription");
-    if (pageDescObj == null) pageDescObj = request.getAttribute("fe04Description");
+    
     String pageDescription = pageDescObj != null ? pageDescObj.toString() : "";
 
     request.setAttribute("activeNav", "showtimes".equals(activeTab) ? "showtimes" : "pricing");

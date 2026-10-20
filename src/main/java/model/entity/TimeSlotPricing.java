@@ -34,6 +34,9 @@ public class TimeSlotPricing {
         this.timeSlotPricingId = timeSlotPricingId;
     }
 
+    public int getCentreId() { return branchId; }
+    public void setCentreId(int centreId) { this.branchId = centreId; }
+
     public int getBranchId() {
         return branchId;
     }

@@ -97,6 +97,7 @@ public class BookingServlet extends HttpServlet {
         String city = req.getParameter("city");
         if (city != null && city.isBlank()) city = null;
         Integer branchId = WebUtil.parseInt(req.getParameter("branchId"));
+        if (branchId == null) branchId = WebUtil.parseInt(req.getParameter("centreId"));
         Integer movieId = WebUtil.parseInt(req.getParameter("movieId"));
 
         // Da chon phim (tu trang chu / chi tiet phim, hoac o buoc 3): thanh pho va rap chi hien noi chieu phim do
@@ -126,6 +127,7 @@ public class BookingServlet extends HttpServlet {
         req.setAttribute("selectedCity", city);
         req.setAttribute("centres", centres);
         req.setAttribute("selectedBranchId", branchId);
+        req.setAttribute("selectedCentreId", branchId);
         req.setAttribute("selectedMovieId", movieId);
 
         if (branchId != null) {

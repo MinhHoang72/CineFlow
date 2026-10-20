@@ -106,7 +106,7 @@
                         <p class="hero-label"><%= heroIndex == 0 ? "CINEFLOW FEATURE" : "PHIM ĐANG CHIẾU" %></p>
                         <h1><%= escapeHtml(featuredMovie.getTitle()) %></h1>
                         <p><%= escapeHtml(featuredMovie.getDescription()) %></p>
-                        <div class="hero-buttons"><a href="<%= contextPath %>/booking/booking.jsp?movieId=<%= featuredMovie.getMovieId() %>">Mua vé</a><a class="outline" href="<%= contextPath %>/movie/details?movieId=<%= featuredMovie.getMovieId() %>">Chi tiết</a></div>
+                        <div class="hero-buttons"><a href="<%= contextPath %>/booking?movieId=<%= featuredMovie.getMovieId() %>">Mua vé</a><a class="outline" href="<%= contextPath %>/movie/details?movieId=<%= featuredMovie.getMovieId() %>">Chi tiết</a></div>
                     </div>
                 </article>
             <% } %>
@@ -144,7 +144,7 @@
                                 <span class="age-badge<%= "T18".equalsIgnoreCase(movie.getAgeRating()) ? " restricted" : ("T13".equalsIgnoreCase(movie.getAgeRating()) || "P".equalsIgnoreCase(movie.getAgeRating()) ? " general" : "") %>"><%= escapeHtml(movie.getAgeRating()) %></span>
                                 <div class="poster-actions">
                                     <a class="poster-hover-link detail" href="<%= contextPath %>/movie/details?movieId=<%= movie.getMovieId() %>">Chi tiết</a>
-                                    <a class="poster-hover-link book" href="<%= contextPath %>/booking/booking.jsp?movieId=<%= movie.getMovieId() %>">Mua vé</a>
+                                    <a class="poster-hover-link book" href="<%= contextPath %>/booking?movieId=<%= movie.getMovieId() %>">Mua vé</a>
                                 </div>
                             </div>
                             <div class="movie-info">
@@ -195,9 +195,9 @@
         <section class="promotion-section" id="promotions" aria-labelledby="promotions-title">
             <div class="section-title"><span></span><h2 id="promotions-title">TIN MỚI &amp; ƯU ĐÃI</h2><span></span></div>
             <div class="promotion-grid">
-                <article class="promotion-card"><img src="https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&amp;fit=crop&amp;w=900&amp;q=85" alt="Không gian phòng chiếu CineFlow"><div class="promotion-content"><span class="promotion-tag">ƯU ĐÃI ĐẶC BIỆT</span><h3>Thứ Ba thành viên</h3><p>Giảm đến 30% giá vé cho thành viên CineFlow mỗi thứ Ba.</p><a href="<%= contextPath %>/booking/booking.jsp">Đặt vé ngay</a></div></article>
-                <article class="promotion-card"><img src="https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&amp;fit=crop&amp;w=900&amp;q=85" alt="Trải nghiệm điện ảnh CineFlow"><div class="promotion-content"><span class="promotion-tag">TIN MỚI</span><h3>Đêm phim cuối tuần</h3><p>Cùng bạn bè tận hưởng những suất chiếu đặc biệt cuối tuần.</p><a href="<%= contextPath %>/booking/booking.jsp">Xem lịch chiếu</a></div></article>
-                <article class="promotion-card"><img src="https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&amp;fit=crop&amp;w=900&amp;q=85" alt="Bắp nước tại CineFlow"><div class="promotion-content"><span class="promotion-tag">COMBO MỚI</span><h3>Combo đi cùng bạn</h3><p>Thưởng thức phim trọn vẹn với combo bắp nước dành cho hai người.</p><a href="<%= contextPath %>/booking/booking.jsp">Khám phá ngay</a></div></article>
+                <article class="promotion-card"><img src="https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&amp;fit=crop&amp;w=900&amp;q=85" alt="Không gian phòng chiếu CineFlow"><div class="promotion-content"><span class="promotion-tag">ƯU ĐÃI ĐẶC BIỆT</span><h3>Thứ Ba thành viên</h3><p>Giảm đến 30% giá vé cho thành viên CineFlow mỗi thứ Ba.</p><a href="<%= contextPath %>/booking">Đặt vé ngay</a></div></article>
+                <article class="promotion-card"><img src="https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&amp;fit=crop&amp;w=900&amp;q=85" alt="Trải nghiệm điện ảnh CineFlow"><div class="promotion-content"><span class="promotion-tag">TIN MỚI</span><h3>Đêm phim cuối tuần</h3><p>Cùng bạn bè tận hưởng những suất chiếu đặc biệt cuối tuần.</p><a href="<%= contextPath %>/booking">Xem lịch chiếu</a></div></article>
+                <article class="promotion-card"><img src="https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&amp;fit=crop&amp;w=900&amp;q=85" alt="Bắp nước tại CineFlow"><div class="promotion-content"><span class="promotion-tag">COMBO MỚI</span><h3>Combo đi cùng bạn</h3><p>Thưởng thức phim trọn vẹn với combo bắp nước dành cho hai người.</p><a href="<%= contextPath %>/booking">Khám phá ngay</a></div></article>
             </div>
         </section>
 
@@ -208,7 +208,7 @@
 </div>
 
 <nav class="quick-rail" aria-label="Tiện ích nhanh">
-    <a href="<%= contextPath %>/booking/booking.jsp"><span class="quick-icon">🎟</span><span>Đặt vé</span></a>
+    <a href="<%= contextPath %>/booking"><span class="quick-icon">🎟</span><span>Đặt vé</span></a>
     <a href="#support"><span class="quick-icon">❔</span><span>Hỗ trợ</span></a>
     <a class="top" href="#top"><span class="quick-icon">↑</span><span>Đầu trang</span></a>
 </nav>
