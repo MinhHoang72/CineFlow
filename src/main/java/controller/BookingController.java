@@ -142,7 +142,7 @@ public class BookingController extends HttpServlet {
                 req.setAttribute("showtimes", showtimeDAO.getShowtimes(branchId, movieId, date));
             }
         }
-        req.getRequestDispatcher(VIEW_DIR + "booking-select-showtime.jsp").forward(req, resp);
+        req.getRequestDispatcher(VIEW_DIR + "booking/select-showtime.jsp").forward(req, resp);
     }
 
     private void selectSeats(HttpServletRequest req, HttpServletResponse resp)
@@ -169,7 +169,7 @@ public class BookingController extends HttpServlet {
         req.setAttribute("priceByType", priceByType);
         req.setAttribute("maxSeats", BookingDAO.MAX_SEATS_PER_BOOKING);
         req.setAttribute("holdMinutes", BookingDAO.HOLD_MINUTES);
-        req.getRequestDispatcher(VIEW_DIR + "booking-select-seats.jsp").forward(req, resp);
+        req.getRequestDispatcher(VIEW_DIR + "booking/select-seats.jsp").forward(req, resp);
     }
 
     private void hold(HttpServletRequest req, HttpServletResponse resp) throws SQLException, IOException {
@@ -214,7 +214,7 @@ public class BookingController extends HttpServlet {
             return;
         }
         req.setAttribute("booking", booking);
-        req.getRequestDispatcher(VIEW_DIR + "booking-checkout.jsp").forward(req, resp);
+        req.getRequestDispatcher(VIEW_DIR + "booking/checkout.jsp").forward(req, resp);
     }
 
     private void cancel(HttpServletRequest req, HttpServletResponse resp) throws SQLException, IOException {
@@ -239,7 +239,7 @@ public class BookingController extends HttpServlet {
         User user = WebUtil.requireUser(req, resp);
         if (user == null) return;
         req.setAttribute("bookings", bookingDAO.getUserBookings(user.getUserId()));
-        req.getRequestDispatcher(VIEW_DIR + "booking-history.jsp").forward(req, resp);
+        req.getRequestDispatcher(VIEW_DIR + "booking/history.jsp").forward(req, resp);
     }
 
     /** 5.4 Chi tiet don: ve, chi tiet gia, cac giao dich thanh toan. */
@@ -259,7 +259,7 @@ public class BookingController extends HttpServlet {
         req.setAttribute("transactions", paymentDAO.getTransactions(booking.getId()));
         req.setAttribute("isOwner", booking.getUserId() != null && booking.getUserId() == user.getUserId());
         if (!tickets.isEmpty()) req.setAttribute("bookingQr", QrUtil.toDataUri(booking.getQrContent()));
-        req.getRequestDispatcher(VIEW_DIR + "booking-detail.jsp").forward(req, resp);
+        req.getRequestDispatcher(VIEW_DIR + "booking/detail.jsp").forward(req, resp);
     }
 
     /** Khach xem don cua minh; nhan vien ban ve/MANAGER xem don cua chi nhanh minh (MANAGER chua gan chi nhanh: tat ca); ADMIN tat ca. */

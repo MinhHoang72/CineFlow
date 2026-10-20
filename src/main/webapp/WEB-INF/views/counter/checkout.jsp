@@ -3,7 +3,7 @@
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <c:set var="pageTitle" value="Bán vé tại quầy - Thu tiền" scope="request"/>
 <c:set var="pageStep" value="3" scope="request"/>
-<%@ include file="common/header.jspf" %>
+<%@ include file="/WEB-INF/views/common/header.jspf" %>
 <c:set var="ctx" value="${pageContext.request.contextPath}"/>
 <c:set var="st" value="${booking.showtime}"/>
 
@@ -129,4 +129,4 @@
 </script>
 </c:if>
 
-<%@ include file="common/footer.jspf" %>
+<%@ include file="/WEB-INF/views/common/footer.jspf" %>

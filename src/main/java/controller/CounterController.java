@@ -108,7 +108,7 @@ public class CounterController extends HttpServlet {
         req.setAttribute("dateOptions", toDateOptions(dates));
         req.setAttribute("selectedDate", date == null ? null : date.toString());
         req.setAttribute("showtimesByMovie", byMovie);
-        req.getRequestDispatcher(VIEW_DIR + "counter-showtimes.jsp").forward(req, resp);
+        req.getRequestDispatcher(VIEW_DIR + "counter/showtimes.jsp").forward(req, resp);
     }
 
     private void seats(HttpServletRequest req, HttpServletResponse resp, User staff)
@@ -136,7 +136,7 @@ public class CounterController extends HttpServlet {
         req.setAttribute("seatFormAction", ctx + "/staff/counter");
         req.setAttribute("seatBackUrl", ctx + "/staff/counter?date=" + showtime.getStartTime().toLocalDateTime().toLocalDate());
         req.setAttribute("pageTitle", "Bán vé tại quầy - Chọn ghế");
-        req.getRequestDispatcher(VIEW_DIR + "booking-select-seats.jsp").forward(req, resp);
+        req.getRequestDispatcher(VIEW_DIR + "booking/select-seats.jsp").forward(req, resp);
     }
 
     private void hold(HttpServletRequest req, HttpServletResponse resp, User staff) throws SQLException, IOException {
@@ -177,7 +177,7 @@ public class CounterController extends HttpServlet {
             return;
         }
         req.setAttribute("booking", booking);
-        req.getRequestDispatcher(VIEW_DIR + "counter-checkout.jsp").forward(req, resp);
+        req.getRequestDispatcher(VIEW_DIR + "counter/checkout.jsp").forward(req, resp);
     }
 
     private void payCash(HttpServletRequest req, HttpServletResponse resp, User staff) throws SQLException, IOException {
@@ -262,7 +262,7 @@ public class CounterController extends HttpServlet {
         req.setAttribute("tickets", tickets);
         req.setAttribute("paidTransaction", paid);
         if (!tickets.isEmpty()) req.setAttribute("bookingQr", QrUtil.toDataUri(booking.getQrContent()));
-        req.getRequestDispatcher(VIEW_DIR + "counter-ticket.jsp").forward(req, resp);
+        req.getRequestDispatcher(VIEW_DIR + "counter/ticket.jsp").forward(req, resp);
     }
 
     /** Don tai quay thuoc chi nhanh cua nhan vien, null neu khong hop le. */

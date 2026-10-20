@@ -3,7 +3,7 @@
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <c:set var="pageTitle" value="Chi tiết đơn" scope="request"/>
 <c:set var="pageStep" value="📄" scope="request"/>
-<%@ include file="common/header.jspf" %>
+<%@ include file="/WEB-INF/views/common/header.jspf" %>
 <c:set var="ctx" value="${pageContext.request.contextPath}"/>
 <c:set var="st" value="${booking.showtime}"/>
 
@@ -25,7 +25,7 @@
 <c:choose>
     <c:when test="${not empty tickets}">
         <h6>Vé điện tử</h6>
-        <%@ include file="common/booking-ticket.jspf" %>
+        <%@ include file="/WEB-INF/views/booking/ticket.jspf" %>
     </c:when>
     <c:otherwise>
         <div class="card mb-3"><div class="card-body">
@@ -96,4 +96,4 @@
 
 <a href="${ctx}/booking" class="btn btn-link mt-3 no-print">Đặt vé khác</a>
 
-<%@ include file="common/footer.jspf" %>
+<%@ include file="/WEB-INF/views/common/footer.jspf" %>

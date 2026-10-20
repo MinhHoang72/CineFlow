@@ -3,7 +3,7 @@
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <c:set var="pageTitle" value="Chọn suất chiếu" scope="request"/>
 <c:set var="pageStep" value="1" scope="request"/>
-<%@ include file="common/header.jspf" %>
+<%@ include file="/WEB-INF/views/common/header.jspf" %>
 <c:set var="ctx" value="${pageContext.request.contextPath}"/>
 
 <!-- Buoc 1: Thanh pho -->
@@ -125,4 +125,4 @@
     </div>
 </div>
 
-<%@ include file="common/footer.jspf" %>
+<%@ include file="/WEB-INF/views/common/footer.jspf" %>

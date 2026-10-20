@@ -3,7 +3,7 @@
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <c:set var="pageTitle" value="In vé & hoá đơn" scope="request"/>
 <c:set var="pageStep" value="4" scope="request"/>
-<%@ include file="common/header.jspf" %>
+<%@ include file="/WEB-INF/views/common/header.jspf" %>
 <c:set var="ctx" value="${pageContext.request.contextPath}"/>
 <c:set var="st" value="${booking.showtime}"/>
 
@@ -17,7 +17,7 @@
         <div class="alert alert-warning">Đơn <c:out value="${booking.code}"/> chưa được thanh toán nên chưa có vé.</div>
     </c:when>
     <c:otherwise>
-        <%@ include file="common/booking-ticket.jspf" %>
+        <%@ include file="/WEB-INF/views/booking/ticket.jspf" %>
 
         <%-- Hoa don --%>
         <div class="eticket mt-3" style="max-width: 420px">
@@ -53,4 +53,4 @@
     </c:otherwise>
 </c:choose>
 
-<%@ include file="common/footer.jspf" %>
+<%@ include file="/WEB-INF/views/common/footer.jspf" %>

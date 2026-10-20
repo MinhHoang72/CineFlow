@@ -62,7 +62,7 @@ public class StaffPaymentController extends HttpServlet {
         req.setAttribute("status", status);
         req.setAttribute("method", method);
         req.setAttribute("days", days);
-        req.getRequestDispatcher("/WEB-INF/views/staff-payments.jsp").forward(req, resp);
+        req.getRequestDispatcher("/WEB-INF/views/payment/transactions.jsp").forward(req, resp);
     }
 
     /** Gia tri bo loc hop le, null = khong loc (Set.of khong nhan contains(null)). */

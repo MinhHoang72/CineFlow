@@ -3,7 +3,7 @@
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <c:set var="pageTitle" value="Lịch sử đặt vé" scope="request"/>
 <c:set var="pageStep" value="🕘" scope="request"/>
-<%@ include file="common/header.jspf" %>
+<%@ include file="/WEB-INF/views/common/header.jspf" %>
 <c:set var="ctx" value="${pageContext.request.contextPath}"/>
 
 <c:choose>
@@ -49,4 +49,4 @@
     </c:otherwise>
 </c:choose>
 
-<%@ include file="common/footer.jspf" %>
+<%@ include file="/WEB-INF/views/common/footer.jspf" %>
