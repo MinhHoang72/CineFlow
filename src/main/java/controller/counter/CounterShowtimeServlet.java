@@ -1,5 +1,5 @@
 package controller.counter;
-import controller.payment.PaymentController;
+import controller.payment.PaymentServlet;
 import dao.BookingDAO;
 import dao.BookingDAO.SeatUnavailableException;
 import dao.PaymentDAO;
@@ -42,8 +42,8 @@ import java.util.TreeMap;
  *   POST /staff/counter?action=cancel         huy don
  *   GET  /staff/counter?action=ticket         in ve
  */
-@WebServlet(name = "CounterController", urlPatterns = {"/staff/counter"})
-public class CounterController extends HttpServlet {
+@WebServlet(name = "CounterShowtimeServlet", urlPatterns = {"/staff/counter"})
+public class CounterShowtimeServlet extends HttpServlet {
 
     private static final String VIEW_DIR = "/WEB-INF/views/";
     private static final String[] WEEKDAYS = {"T2", "T3", "T4", "T5", "T6", "T7", "CN"};
@@ -214,7 +214,7 @@ public class CounterController extends HttpServlet {
             resp.sendRedirect(checkoutUrl);
             return;
         }
-        String payUrl = PaymentController.startVnpay(req, booking);
+        String payUrl = PaymentServlet.startVnpay(req, booking);
         resp.sendRedirect(payUrl == null ? checkoutUrl : payUrl);
     }
 

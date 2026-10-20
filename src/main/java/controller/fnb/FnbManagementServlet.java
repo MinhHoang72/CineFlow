@@ -32,7 +32,7 @@ import utils.MediaStorage;
 
 @MultipartConfig(maxFileSize = 2 * 1024 * 1024, maxRequestSize = 3 * 1024 * 1024)
 @WebServlet("/fnb/*")
-public class FnbServlet extends HttpServlet {
+public class FnbManagementServlet extends HttpServlet {
 
     private static final int PAGE_SIZE = 10;
     private static final BigDecimal MAX_PRICE = new BigDecimal("10000000");

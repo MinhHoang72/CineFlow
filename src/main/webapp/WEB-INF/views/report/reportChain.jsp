@@ -1,6 +1,6 @@
-<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
+﻿<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ page import="model.dto.SalesSummaryDTO, model.dto.OperationsSummaryDTO, model.dto.SalesRowDTO, model.dto.FnbSaleDTO, java.util.List, java.util.Map, java.math.BigDecimal" %>
-<%@ include file="head.jspf" %>
+<%@ include file="header.jspf" %>
 <%
     SalesSummaryDTO s = (SalesSummaryDTO) request.getAttribute("summary");
     OperationsSummaryDTO ops = (OperationsSummaryDTO) request.getAttribute("ops");
@@ -125,4 +125,4 @@
         </div>
     </div>
 </div>
-<%@ include file="foot.jspf" %>
+<%@ include file="footer.jspf" %>

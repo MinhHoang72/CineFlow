@@ -3,7 +3,7 @@ import jakarta.servlet.annotation.WebServlet;
 
 import dao.UserDAO;
 import model.entity.User;
-import utils.PasswordUtils;
+import utils.PasswordUtil;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -72,12 +72,12 @@ public class LoginServlet extends HttpServlet {
 
         // 5.1. Nếu mật khẩu đã được băm bằng BCrypt ($2a$, $2b$...) -> đối soát qua BCrypt
         if (storedPassword != null && storedPassword.startsWith("$2")) {
-            passwordCorrect = PasswordUtils.checkPassword(password, storedPassword);
+            passwordCorrect = PasswordUtil.checkPassword(password, storedPassword);
         } else {
             // 5.2. Hỗ trợ dữ liệu mật khẩu cũ (nếu có) và tự động nâng cấp sang chuẩn băm BCrypt an toàn
             passwordCorrect = password.equals(storedPassword);
             if (passwordCorrect) {
-                userDAO.updatePassword(user.getUserId(), PasswordUtils.hashPassword(password));
+                userDAO.updatePassword(user.getUserId(), PasswordUtil.hashPassword(password));
             }
         }
 

@@ -23,7 +23,7 @@ import javax.crypto.spec.SecretKeySpec;
  * Cau hinh trong src/main/resources/vnpay.properties (vnp.tmnCode, vnp.hashSecret),
  * hoac bien moi truong VNP_TMN_CODE / VNP_HASH_SECRET (uu tien hon file).
  */
-public final class VnpayUtil {
+public final class VNPayUtil {
 
     private static final ZoneId VN_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
     private static final DateTimeFormatter VNP_TIME = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
@@ -36,7 +36,7 @@ public final class VnpayUtil {
 
     static {
         Properties props = new Properties();
-        try (InputStream in = VnpayUtil.class.getClassLoader().getResourceAsStream("vnpay.properties")) {
+        try (InputStream in = VNPayUtil.class.getClassLoader().getResourceAsStream("vnpay.properties")) {
             if (in != null) props.load(in);
         } catch (IOException e) {
             // khong co file cau hinh -> isConfigured() = false
@@ -48,7 +48,7 @@ public final class VnpayUtil {
         RETURN_URL = setting("VNP_RETURN_URL", props, "vnp.returnUrl");
     }
 
-    private VnpayUtil() {}
+    private VNPayUtil() {}
 
     private static String setting(String env, Properties props, String key) {
         String value = System.getenv(env);

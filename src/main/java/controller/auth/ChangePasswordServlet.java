@@ -3,8 +3,8 @@ import jakarta.servlet.annotation.WebServlet;
 
 import dao.UserDAO;
 import model.entity.User;
-import utils.PasswordUtils;
-import utils.ValidationUtils;
+import utils.PasswordUtil;
+import utils.ValidationUtil;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -80,7 +80,7 @@ public class ChangePasswordServlet extends HttpServlet {
         }
 
         // 6. Kiểm tra độ mạnh của mật khẩu mới theo chuẩn bảo mật
-        if (!ValidationUtils.isValidPassword(newPassword)) {
+        if (!ValidationUtil.isValidPassword(newPassword)) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "New password must be at least 8 characters and contain uppercase, lowercase, number and special character.");
             return;
         }
@@ -99,20 +99,20 @@ public class ChangePasswordServlet extends HttpServlet {
             return;
         }
 
-        boolean currentPasswordCorrect = PasswordUtils.checkPassword(currentPassword, storedPassword);
+        boolean currentPasswordCorrect = PasswordUtil.checkPassword(currentPassword, storedPassword);
         if (!currentPasswordCorrect) {
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Current password is incorrect.");
             return;
         }
 
         // 9. Kiểm tra tính hợp lệ: Mật khẩu mới không được trùng với mật khẩu hiện tại
-        if (PasswordUtils.checkPassword(newPassword, storedPassword)) {
+        if (PasswordUtil.checkPassword(newPassword, storedPassword)) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "New password must be different from current password.");
             return;
         }
 
         // 10. Băm mật khẩu mới bằng thuật toán BCrypt và lưu vào cơ sở dữ liệu
-        String hashedPassword = PasswordUtils.hashPassword(newPassword);
+        String hashedPassword = PasswordUtil.hashPassword(newPassword);
         boolean success = userDAO.changePassword(userId, hashedPassword);
 
         if (!success) {

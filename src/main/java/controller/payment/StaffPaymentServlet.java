@@ -20,8 +20,8 @@ import java.util.Set;
  *   GET /staff/payments?status=&method=&days=
  * Nhan vien ban ve chi thay chi nhanh cua minh; MANAGER/ADMIN thay tat ca.
  */
-@WebServlet(name = "StaffPaymentController", urlPatterns = {"/staff/payments"})
-public class StaffPaymentController extends HttpServlet {
+@WebServlet(name = "StaffPaymentServlet", urlPatterns = {"/staff/payments"})
+public class StaffPaymentServlet extends HttpServlet {
 
     private static final Set<String> STATUSES = Set.of("PENDING", "PAID", "FAILED", "TIMEOUT", "CANCELLED");
     private static final Set<String> METHODS = Set.of("QR", "CASH");

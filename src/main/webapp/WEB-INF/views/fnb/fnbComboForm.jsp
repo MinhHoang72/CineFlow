@@ -1,6 +1,6 @@
-<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
+﻿<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ page import="model.entity.FnbCombo, model.entity.FnbItem, model.entity.ComboLine, java.util.List, java.util.Map" %>
-<%@ include file="head.jspf" %>
+<%@ include file="header.jspf" %>
 <%
     FnbCombo combo = (FnbCombo) request.getAttribute("combo");
     List<FnbItem> items = (List<FnbItem>) request.getAttribute("items");
@@ -98,4 +98,4 @@
         lines.appendChild(template.content.cloneNode(true));
     }
 </script>
-<%@ include file="foot.jspf" %>
+<%@ include file="footer.jspf" %>

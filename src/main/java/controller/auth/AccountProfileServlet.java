@@ -3,9 +3,9 @@ import jakarta.servlet.annotation.WebServlet;
 
 import dao.UserDAO;
 import model.entity.User;
-import utils.EmailUtils;
+import utils.EmailUtil;
 import utils.MediaStorage;
-import utils.ValidationUtils;
+import utils.ValidationUtil;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.MultipartConfig;
@@ -28,9 +28,9 @@ import java.util.concurrent.ThreadLocalRandom;
  * xem lịch sử đặt vé và cập nhật thông tin người dùng (họ tên, số điện thoại, avatar, đổi email qua OTP).
  * URL ánh xạ: /account
  */
-@WebServlet(name = "AccountServlet", urlPatterns = {"/account", "/profile"})
+@WebServlet(name = "AccountProfileServlet", urlPatterns = {"/account", "/profile"})
 @MultipartConfig(maxFileSize = 2 * 1024 * 1024, maxRequestSize = 3 * 1024 * 1024)
-public class AccountServlet extends HttpServlet {
+public class AccountProfileServlet extends HttpServlet {
 
     private final UserDAO userDAO = new UserDAO();
 
@@ -93,23 +93,23 @@ public class AccountServlet extends HttpServlet {
                 ? request.getPart("avatarFile") : null;
 
         // 4. Kiểm tra các trường bắt buộc không được rỗng
-        if (ValidationUtils.isBlank(fullName) || ValidationUtils.isBlank(email)) {
+        if (ValidationUtil.isBlank(fullName) || ValidationUtil.isBlank(email)) {
             response.sendRedirect(request.getContextPath() + "/account?error=required");
             return;
         }
 
         // 5. Kiểm tra tính hợp lệ của định dạng Họ tên, Email, Số điện thoại
-        if (!ValidationUtils.isValidFullName(fullName)) {
+        if (!ValidationUtil.isValidFullName(fullName)) {
             response.sendRedirect(request.getContextPath() + "/account?error=invalidName");
             return;
         }
 
-        if (!ValidationUtils.isValidEmail(email)) {
+        if (!ValidationUtil.isValidEmail(email)) {
             response.sendRedirect(request.getContextPath() + "/account?error=invalidEmail");
             return;
         }
 
-        if (!ValidationUtils.isValidPhone(phone, false)) {
+        if (!ValidationUtil.isValidPhone(phone, false)) {
             response.sendRedirect(request.getContextPath() + "/account?error=invalidPhone");
             return;
         }
@@ -123,7 +123,7 @@ public class AccountServlet extends HttpServlet {
         // 7. Xử lý tải lên file ảnh đại diện (Avatar) nếu người dùng có chọn file mới
         if (avatarPart != null && avatarPart.getSize() > 0) {
             String submittedFileName = avatarPart.getSubmittedFileName();
-            if (submittedFileName != null && !ValidationUtils.isValidImageExtension(submittedFileName)) {
+            if (submittedFileName != null && !ValidationUtil.isValidImageExtension(submittedFileName)) {
                 response.sendRedirect(request.getContextPath() + "/account?error=avatarType");
                 return;
             }
@@ -181,7 +181,7 @@ public class AccountServlet extends HttpServlet {
 
             // Gửi email chứa mã OTP xác nhận đổi email
             try {
-                EmailUtils.sendEmailChangeOtpEmail(email.trim(), otp, fullName.trim());
+                EmailUtil.sendEmailChangeOtpEmail(email.trim(), otp, fullName.trim());
             } catch (Exception ex) {
                 ex.printStackTrace();
             }

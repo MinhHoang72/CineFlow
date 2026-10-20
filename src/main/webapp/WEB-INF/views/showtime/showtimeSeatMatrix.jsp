@@ -1,6 +1,6 @@
-<%@ page pageEncoding="UTF-8" %>
+﻿<%@ page pageEncoding="UTF-8" %>
 <% request.setAttribute("pageTitle", "Tình trạng ghế"); request.setAttribute("pageDescription", "Theo dõi ghế trống, ghế đang giữ và ghế đã đặt theo suất chiếu."); request.setAttribute("activeTab", "showtimes"); %>
-<%@ include file="/WEB-INF/fragments/cinema/begin.jspf" %>
+<%@ include file="/WEB-INF/fragments/cinemaBegin.jspf" %>
 <c:choose><c:when test="${not empty showtime}">
 <section class="st-panel"><div class="st-panel-heading"><div><h2><c:out value="${showtime.movieTitle}" /></h2><p>#${showtime.showtimeId} · <c:out value="${showtime.hallName}" /> · <c:out value="${showtime.hallType}" /> · <c:out value="${showtime.startTimeFormatted}" /></p></div><a class="st-button st-button-muted" href="${pageContext.request.contextPath}/showtimes">← Quay lại</a></div>
 <c:set var="availableCount" value="0" /><c:set var="heldCount" value="0" /><c:set var="bookedCount" value="0" />
@@ -11,4 +11,4 @@
 </div><c:if test="${empty seats}"><div class="st-empty"><h3>Chưa có dữ liệu ghế</h3><p>Phòng chiếu này chưa có danh sách ghế để hiển thị.</p></div></c:if>
 <footer class="st-list-footer"><span>Danh sách ghế theo mã ghế · Chỉ xem</span><span>Tải lại trang để cập nhật tình trạng mới nhất</span></footer></section>
 </c:when><c:otherwise><div class="st-empty"><h2>Không tìm thấy suất chiếu</h2><a class="st-link" href="${pageContext.request.contextPath}/showtimes">Quay lại danh sách</a></div></c:otherwise></c:choose>
-<%@ include file="/WEB-INF/fragments/cinema/end.jspf" %>
+<%@ include file="/WEB-INF/fragments/cinemaEnd.jspf" %>

@@ -12,7 +12,7 @@ import java.util.Properties;
 /**
  * Tiện ích gửi thư điện tử (Email) thông báo OTP qua giao thức SMTP Gmail.
  */
-public class EmailUtils {
+public class EmailUtil {
 
     // Địa chỉ email hệ thống sử dụng để gửi OTP
     private static final String FROM_EMAIL = "duongquyetthai@gmail.com";

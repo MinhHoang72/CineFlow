@@ -3,8 +3,8 @@ import jakarta.servlet.annotation.WebServlet;
 
 import dao.UserDAO;
 import model.entity.User;
-import utils.PasswordUtils;
-import utils.ValidationUtils;
+import utils.PasswordUtil;
+import utils.ValidationUtil;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -57,7 +57,7 @@ public class ResetPasswordServlet extends HttpServlet {
         String newPassword = request.getParameter("newPassword");
         String confirmPassword = request.getParameter("confirmPassword");
 
-        if (ValidationUtils.isBlank(newPassword) || ValidationUtils.isBlank(confirmPassword)) {
+        if (ValidationUtil.isBlank(newPassword) || ValidationUtil.isBlank(confirmPassword)) {
             request.setAttribute("error", "missing_fields");
             request.getRequestDispatcher("/WEB-INF/views/auth/resetPassword.jsp").forward(request, response);
             return;
@@ -71,14 +71,14 @@ public class ResetPasswordServlet extends HttpServlet {
         }
 
         // 3. Kiểm tra độ mạnh mật khẩu
-        if (!ValidationUtils.isValidPassword(newPassword)) {
+        if (!ValidationUtil.isValidPassword(newPassword)) {
             request.setAttribute("error", "weak_password");
             request.getRequestDispatcher("/WEB-INF/views/auth/resetPassword.jsp").forward(request, response);
             return;
         }
 
         // 4. Băm mật khẩu mới và lưu vào cơ sở dữ liệu, đồng thời hủy bỏ token đặt lại
-        String hashedPassword = PasswordUtils.hashPassword(newPassword);
+        String hashedPassword = PasswordUtil.hashPassword(newPassword);
         boolean success = userDAO.resetPassword(resetUserId, hashedPassword);
 
         if (!success) {

@@ -5,7 +5,7 @@ import dao.PaymentDAO.Outcome;
 import dao.PaymentDAO.VnpayRef;
 import model.entity.Payment;
 import model.entity.Ticket;
-import utils.VnpayUtil;
+import utils.VNPayUtil;
 
 import java.math.BigDecimal;
 import java.sql.SQLException;
@@ -54,7 +54,7 @@ public class PaymentService {
      * @return true nếu chữ ký hợp lệ và nguyên vẹn, ngược lại false
      */
     public boolean verifyVnpaySignature(Map<String, String> vnpParams) {
-        return VnpayUtil.verify(vnpParams);
+        return VNPayUtil.verify(vnpParams);
     }
 
     /**

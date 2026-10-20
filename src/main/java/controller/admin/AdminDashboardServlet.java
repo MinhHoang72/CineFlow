@@ -1,36 +1,32 @@
-package controller.common;
-import jakarta.servlet.annotation.WebServlet;
+package controller.admin;
 
-import dao.CinemaDAO;
+import dao.CentreDAO;
+import dao.MovieDAO;
 import dao.ReportDAO;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import model.dto.ReportSummary;
 import model.entity.User;
 
 import java.io.IOException;
 import java.net.URLEncoder;
 
 /**
- * Controller: Điều hướng người dùng đến bảng điều khiển tương ứng với vai trò (Admin, Manager, Staff, Customer).
- * URL ánh xạ: /dashboard
+ * Controller: Bảng điều khiển quản trị viên cấp cao (Admin Dashboard).
+ * Phân luồng điều hướng theo vai trò (Admin, Manager, Staff, Customer).
+ * URL ánh xạ: /dashboard, /admin/dashboard
  */
-@WebServlet(name = "DashboardServlet", urlPatterns = {"/dashboard", "/admin/dashboard"})
-public class DashboardServlet extends HttpServlet {
+@WebServlet(name = "AdminDashboardServlet", urlPatterns = {"/dashboard", "/admin/dashboard"})
+public class AdminDashboardServlet extends HttpServlet {
 
     private final ReportDAO reportDAO = new ReportDAO();
-    private final CinemaDAO cinemaDAO = new CinemaDAO();
+    private final CentreDAO centreDAO = new CentreDAO();
+    private final MovieDAO movieDAO = new MovieDAO();
 
-    /**
-     * Xử lý yêu cầu HTTP GET: Kiểm tra vai trò của người dùng hiện tại và chuyển tiếp tới Dashboard phù hợp.
-     *
-     * @param request  yêu cầu HTTP từ client
-     * @param response phản hồi HTTP gửi về client
-     * @throws ServletException nếu xảy ra lỗi servlet
-     * @throws IOException      nếu xảy ra lỗi vào/ra dữ liệu
-     */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -50,16 +46,20 @@ public class DashboardServlet extends HttpServlet {
         }
 
         // 3. Phân luồng điều hướng theo vai trò:
-        // 3.1. Vai trò Quản trị viên (ADMIN) -> Hiển thị Dashboard tổng quan số liệu doanh thu hệ thống
+        // 3.1. Vai trò Quản trị viên (ADMIN) -> Hiển thị Dashboard tổng quan số liệu toàn hệ thống
         if ("ADMIN".equalsIgnoreCase(role)) {
-            // Admin vào thẳng Dashboard toàn chuỗi (báo cáo tổng hợp doanh thu, vận hành)
-            response.sendRedirect(request.getContextPath() + "/report/chain");
+            ReportSummary summary = reportDAO.getSummary();
+            request.setAttribute("reportSummary", summary);
+            request.setAttribute("topMovies", reportDAO.revenueByMovie());
+            request.setAttribute("movies", movieDAO.getAllMovies());
+            request.setAttribute("centres", centreDAO.getAllCentres("", "ACTIVE"));
+            request.getRequestDispatcher("/WEB-INF/views/admin/adminDashboard.jsp").forward(request, response);
             return;
         }
 
         // 3.2. Vai trò Quản lý trung tâm (MANAGER) -> Dashboard vận hành cụm rạp
         if ("MANAGER".equalsIgnoreCase(role)) {
-            request.getRequestDispatcher("/WEB-INF/views/manager/managerDashboard.jsp").forward(request, response);
+            response.sendRedirect(request.getContextPath() + "/manager/dashboard");
             return;
         }
 

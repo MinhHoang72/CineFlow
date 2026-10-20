@@ -5,7 +5,7 @@ import org.mindrot.jbcrypt.BCrypt;
 /**
  * Tiện ích mã hóa và kiểm tra mật khẩu sử dụng thuật toán BCrypt.
  */
-public class PasswordUtils {
+public class PasswordUtil {
 
     /**
      * Băm mật khẩu dạng văn bản thuần sang chuỗi mã hóa BCrypt an toàn.

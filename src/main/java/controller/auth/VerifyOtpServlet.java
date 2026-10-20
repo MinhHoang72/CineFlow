@@ -3,7 +3,7 @@ import jakarta.servlet.annotation.WebServlet;
 
 import dao.UserDAO;
 import model.entity.User;
-import utils.EmailUtils;
+import utils.EmailUtil;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -159,7 +159,7 @@ public class VerifyOtpServlet extends HttpServlet {
                         Timestamp expiry = new Timestamp(System.currentTimeMillis() + (15 * 60 * 1000));
                         userDAO.updateActivationOtp(user.getUserId(), otp, expiry);
                         try {
-                            EmailUtils.sendEmailChangeOtpEmail(email, otp, user.getFullName());
+                            EmailUtil.sendEmailChangeOtpEmail(email, otp, user.getFullName());
                         } catch (Exception ex) {
                             ex.printStackTrace();
                         }
@@ -177,9 +177,9 @@ public class VerifyOtpServlet extends HttpServlet {
                 userDAO.updateActivationOtp(user.getUserId(), otp, expiry);
                 try {
                     if ("register".equalsIgnoreCase(type)) {
-                        EmailUtils.sendAccountActivationOtpEmail(user.getEmail(), otp, user.getFullName());
+                        EmailUtil.sendAccountActivationOtpEmail(user.getEmail(), otp, user.getFullName());
                     } else {
-                        EmailUtils.sendResetPasswordOtpEmail(user.getEmail(), otp);
+                        EmailUtil.sendResetPasswordOtpEmail(user.getEmail(), otp);
                     }
                 } catch (Exception ex) {
                     ex.printStackTrace();

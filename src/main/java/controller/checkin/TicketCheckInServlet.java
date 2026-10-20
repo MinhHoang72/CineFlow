@@ -17,7 +17,7 @@ import model.dto.CheckInResultDTO;
 import model.entity.User;
 
 @WebServlet("/checkin/*")
-public class CheckInServlet extends HttpServlet {
+public class TicketCheckInServlet extends HttpServlet {
 
     private static final int HISTORY_SIZE = 20;
     private final CheckInDAO dao = new CheckInDAO();

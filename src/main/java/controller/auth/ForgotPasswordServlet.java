@@ -3,8 +3,8 @@ import jakarta.servlet.annotation.WebServlet;
 
 import dao.UserDAO;
 import model.entity.User;
-import utils.EmailUtils;
-import utils.ValidationUtils;
+import utils.EmailUtil;
+import utils.ValidationUtil;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -48,7 +48,7 @@ public class ForgotPasswordServlet extends HttpServlet {
 
         // 1. Lấy địa chỉ email từ biểu mẫu
         String email = request.getParameter("email");
-        if (ValidationUtils.isBlank(email) || !ValidationUtils.isValidEmail(email)) {
+        if (ValidationUtil.isBlank(email) || !ValidationUtil.isValidEmail(email)) {
             String encodedEmail = email != null ? URLEncoder.encode(email.trim(), StandardCharsets.UTF_8) : "";
             response.sendRedirect(request.getContextPath() + "/forgot-password?error=invalid_email&email=" + encodedEmail);
             return;
@@ -80,7 +80,7 @@ public class ForgotPasswordServlet extends HttpServlet {
 
         // 6. Gửi mã OTP xác thực qua email người dùng
         try {
-            EmailUtils.sendResetPasswordOtpEmail(email, otp);
+            EmailUtil.sendResetPasswordOtpEmail(email, otp);
         } catch (Exception e) {
             e.printStackTrace();
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to send OTP email.");

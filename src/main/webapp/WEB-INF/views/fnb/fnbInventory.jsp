@@ -1,6 +1,6 @@
-<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
+﻿<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ page import="model.dto.StockRowDTO, java.util.List" %>
-<%@ include file="head.jspf" %>
+<%@ include file="header.jspf" %>
 <%
     List<StockRowDTO> rows = (List<StockRowDTO>) request.getAttribute("rows");
     boolean canEdit = Boolean.TRUE.equals(request.getAttribute("canEdit"));
@@ -48,4 +48,4 @@
         </table>
     </div>
 </div>
-<%@ include file="foot.jspf" %>
+<%@ include file="footer.jspf" %>

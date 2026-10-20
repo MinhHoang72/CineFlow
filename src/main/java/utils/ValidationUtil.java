@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
  * Tập trung các quy tắc nghiệp vụ về định dạng email, số điện thoại, mật khẩu, tên tài khoản,
  * khoảng thời gian, tệp tin và các trường danh mục chuẩn.
  */
-public final class ValidationUtils {
+public final class ValidationUtil {
 
     // Regex kiểm tra định dạng email chuẩn RFC 5322 cơ bản
     private static final Pattern EMAIL_PATTERN = Pattern.compile(
@@ -62,7 +62,7 @@ public final class ValidationUtils {
             "TICKET_SALES", "TICKET_CHECKER"
     ));
 
-    private ValidationUtils() {
+    private ValidationUtil() {
         // Lớp tiện ích không khởi tạo đối tượng
     }
 

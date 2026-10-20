@@ -42,8 +42,8 @@ import java.util.TreeMap;
  *   GET  /booking?action=history           lich su dat ve cua khach
  *   GET  /booking?action=detail            chi tiet don (khach, nhan vien, quan ly, admin)
  */
-@WebServlet(name = "BookingController", urlPatterns = {"/booking"})
-public class BookingController extends HttpServlet {
+@WebServlet(name = "BookingServlet", urlPatterns = {"/booking"})
+public class BookingServlet extends HttpServlet {
 
     private static final String VIEW_DIR = "/WEB-INF/views/";
     private static final String[] WEEKDAYS = {"T2", "T3", "T4", "T5", "T6", "T7", "CN"};

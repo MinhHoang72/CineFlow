@@ -1,6 +1,6 @@
-<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
+﻿<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ page import="model.dto.OperationsSummaryDTO, model.dto.ShowtimeStatDTO, model.dto.StaffScanDTO, model.dto.PageDTO, java.util.List" %>
-<%@ include file="head.jspf" %>
+<%@ include file="header.jspf" %>
 <%
     OperationsSummaryDTO s = (OperationsSummaryDTO) request.getAttribute("summary");
     PageDTO<ShowtimeStatDTO> result = (PageDTO<ShowtimeStatDTO>) request.getAttribute("result");
@@ -80,4 +80,4 @@
         </table>
     </div>
 </div>
-<%@ include file="foot.jspf" %>
+<%@ include file="footer.jspf" %>

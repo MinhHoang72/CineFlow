@@ -12,7 +12,7 @@ import jakarta.servlet.http.Part;
 import model.entity.Movie;
 import model.entity.User;
 import utils.MediaStorage;
-import utils.ValidationUtils;
+import utils.ValidationUtil;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -145,7 +145,7 @@ public class MovieManagementServlet extends HttpServlet {
             String sep = redirectTarget.contains("?") ? "&" : "?";
 
             // 2.3. Kiểm tra tính hợp lệ (Validation) của tiêu đề phim
-            if (ValidationUtils.isBlank(title)) {
+            if (ValidationUtil.isBlank(title)) {
                 response.sendRedirect(redirectTarget + sep + "error=missing_title");
                 return;
             }
@@ -154,7 +154,7 @@ public class MovieManagementServlet extends HttpServlet {
             int duration;
             try {
                 duration = Integer.parseInt(durationStr != null ? durationStr.trim() : "0");
-                if (!ValidationUtils.isValidDuration(duration)) {
+                if (!ValidationUtil.isValidDuration(duration)) {
                     response.sendRedirect(redirectTarget + sep + "error=invalid_duration");
                     return;
                 }
@@ -164,13 +164,13 @@ public class MovieManagementServlet extends HttpServlet {
             }
 
             // 2.5. Kiểm tra phân loại độ tuổi hợp lệ (P, K, T13, T16, T18, C)
-            if (!ValidationUtils.isValidAgeRating(ageRating)) {
+            if (!ValidationUtil.isValidAgeRating(ageRating)) {
                 response.sendRedirect(redirectTarget + sep + "error=invalid_age_rating");
                 return;
             }
 
             // 2.6. Kiểm tra trạng thái phát hành hợp lệ (COMING_SOON, NOW_SHOWING, ENDED, ARCHIVED)
-            if (!ValidationUtils.isValidMovieStatus(status)) {
+            if (!ValidationUtil.isValidMovieStatus(status)) {
                 response.sendRedirect(redirectTarget + sep + "error=invalid_status");
                 return;
             }
@@ -187,13 +187,13 @@ public class MovieManagementServlet extends HttpServlet {
                 }
             }
 
-            if (!ValidationUtils.isValidDateRange(releaseDate, endDate)) {
+            if (!ValidationUtil.isValidDateRange(releaseDate, endDate)) {
                 response.sendRedirect(redirectTarget + sep + "error=invalid_date_range");
                 return;
             }
 
             // Nghiệp vụ trạng thái theo ngày phát hành (COMING_SOON không được ở quá khứ, NOW_SHOWING không được ở tương lai)
-            String dateConsistencyError = ValidationUtils.validateMovieStatusDateConsistency(status, releaseDate, today);
+            String dateConsistencyError = ValidationUtil.validateMovieStatusDateConsistency(status, releaseDate, today);
             if (dateConsistencyError != null) {
                 response.sendRedirect(redirectTarget + sep + "error=" + dateConsistencyError);
                 return;
@@ -240,7 +240,7 @@ public class MovieManagementServlet extends HttpServlet {
                 try {
                     int movieId = Integer.parseInt(movieIdParam.trim());
                     String targetStatus = newStatus.trim().toUpperCase();
-                    if (ValidationUtils.isValidMovieStatus(targetStatus)) {
+                    if (ValidationUtil.isValidMovieStatus(targetStatus)) {
                         if ("ENDED".equals(targetStatus)) {
                             dao.endMovie(movieId);
                         } else {
@@ -338,11 +338,11 @@ public class MovieManagementServlet extends HttpServlet {
 
         // 4. Kiểm tra phần mở rộng tệp tin theo quy chuẩn an toàn
         if ("poster".equals(prefix)) {
-            if (!ValidationUtils.isValidImageExtension(original)) {
+            if (!ValidationUtil.isValidImageExtension(original)) {
                 throw new IllegalArgumentException("invalid_poster_file");
             }
         } else if ("trailer".equals(prefix)) {
-            if (!ValidationUtils.isValidVideoExtension(original)) {
+            if (!ValidationUtil.isValidVideoExtension(original)) {
                 throw new IllegalArgumentException("invalid_trailer_file");
             }
         } else if (!extension.matches("\\.(jpg|jpeg|png|webp|mp4|webm|ogg)")) {

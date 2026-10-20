@@ -1,6 +1,6 @@
-<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
+﻿<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ page import="model.entity.FnbItem, model.dto.OptionDTO, java.util.List, java.util.Map" %>
-<%@ include file="head.jspf" %>
+<%@ include file="header.jspf" %>
 <%
     FnbItem item = (FnbItem) request.getAttribute("item");
     List<OptionDTO> categories = (List<OptionDTO>) request.getAttribute("categories");
@@ -67,4 +67,4 @@
         <button class="cf-btn cf-btn-primary" type="submit">Lưu</button>
     </form>
 </div>
-<%@ include file="foot.jspf" %>
+<%@ include file="footer.jspf" %>

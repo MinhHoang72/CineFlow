@@ -1,6 +1,6 @@
-<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
+﻿<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ page import="model.entity.Voucher, java.util.Map" %>
-<%@ include file="head.jspf" %>
+<%@ include file="header.jspf" %>
 <%
     Voucher v = (Voucher) request.getAttribute("voucher");
     Map<String, String> errors = (Map<String, String>) request.getAttribute("errors");
@@ -92,4 +92,4 @@
         <button class="cf-btn cf-btn-primary" type="submit">Lưu</button>
     </form>
 </div>
-<%@ include file="foot.jspf" %>
+<%@ include file="footer.jspf" %>

@@ -10,8 +10,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import model.entity.Centre;
 import model.entity.User;
-import utils.PasswordUtils;
-import utils.ValidationUtils;
+import utils.PasswordUtil;
+import utils.ValidationUtil;
 
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -23,8 +23,8 @@ import java.util.List;
  * Trách nhiệm: Quản lý thông tin tài khoản Manager (tạo mới, cập nhật thông tin cá nhân, kích hoạt hoặc tạm ngưng tài khoản).
  * Nghiệp vụ Bổ nhiệm vào rạp và Điều chuyển nhân sự được quản lý riêng biệt tại StaffTransferServlet (/admin/transfers).
  */
-@WebServlet(name = "ManagerAccountServlet", urlPatterns = {"/admin/managers"})
-public class ManagerAccountServlet extends HttpServlet {
+@WebServlet(name = "ManagerManagementServlet", urlPatterns = {"/admin/managers"})
+public class ManagerManagementServlet extends HttpServlet {
 
     private final UserDAO userDAO = new UserDAO();
     private final CinemaDAO cinemaDAO = new CinemaDAO();
@@ -125,11 +125,11 @@ public class ManagerAccountServlet extends HttpServlet {
             String centreIdParam = request.getParameter("centreId");
 
             // 4.2. Kiểm tra các trường bắt buộc không được để trống
-            if (ValidationUtils.isBlank(fullName)
-                    || ValidationUtils.isBlank(account)
-                    || ValidationUtils.isBlank(email)
-                    || ValidationUtils.isBlank(password)
-                    || ValidationUtils.isBlank(centreIdParam)) {
+            if (ValidationUtil.isBlank(fullName)
+                    || ValidationUtil.isBlank(account)
+                    || ValidationUtil.isBlank(email)
+                    || ValidationUtil.isBlank(password)
+                    || ValidationUtil.isBlank(centreIdParam)) {
                 response.sendRedirect(request.getContextPath() + "/admin/managers?error=missing_fields");
                 return;
             }
@@ -155,37 +155,37 @@ public class ManagerAccountServlet extends HttpServlet {
             phone = phone != null ? phone.trim() : "";
 
             // 4.5. Validate định dạng Họ và tên
-            if (!ValidationUtils.isValidFullName(fullName)) {
+            if (!ValidationUtil.isValidFullName(fullName)) {
                 response.sendRedirect(request.getContextPath() + "/admin/managers?error=invalid_name");
                 return;
             }
 
             // 4.6. Validate định dạng Tên đăng nhập (Account)
-            if (!ValidationUtils.isValidAccount(account)) {
+            if (!ValidationUtil.isValidAccount(account)) {
                 response.sendRedirect(request.getContextPath() + "/admin/managers?error=invalid_account");
                 return;
             }
 
             // 4.7. Validate định dạng Email
-            if (!ValidationUtils.isValidEmail(email)) {
+            if (!ValidationUtil.isValidEmail(email)) {
                 response.sendRedirect(request.getContextPath() + "/admin/managers?error=invalid_email");
                 return;
             }
 
             // 4.8. Chặn các tên miền email rác dùng 1 lần (disposable email)
-            if (ValidationUtils.isDisposableEmail(email)) {
+            if (ValidationUtil.isDisposableEmail(email)) {
                 response.sendRedirect(request.getContextPath() + "/admin/managers?error=disposable_email");
                 return;
             }
 
             // 4.9. Kiểm tra độ mạnh của mật khẩu (tối thiểu 8 ký tự, chữ hoa, chữ thường, số, ký tự đặc biệt)
-            if (!ValidationUtils.isValidPassword(password)) {
+            if (!ValidationUtil.isValidPassword(password)) {
                 response.sendRedirect(request.getContextPath() + "/admin/managers?error=weak_password");
                 return;
             }
 
             // 4.10. Validate số điện thoại hợp lệ (đầu số Việt Nam 10 chữ số)
-            if (!ValidationUtils.isValidPhone(phone, false)) {
+            if (!ValidationUtil.isValidPhone(phone, false)) {
                 response.sendRedirect(request.getContextPath() + "/admin/managers?error=invalid_phone");
                 return;
             }
@@ -208,7 +208,7 @@ public class ManagerAccountServlet extends HttpServlet {
             newManager.setFullName(fullName);
             newManager.setAccount(account);
             newManager.setEmail(email);
-            newManager.setPassword(PasswordUtils.hashPassword(password.trim()));
+            newManager.setPassword(PasswordUtil.hashPassword(password.trim()));
             newManager.setPhone(phone);
             newManager.setCentreId(centreId);
 
@@ -232,7 +232,7 @@ public class ManagerAccountServlet extends HttpServlet {
                 String email = request.getParameter("email");
 
                 // 5.2. Kiểm tra các trường thông tin bắt buộc
-                if (ValidationUtils.isBlank(fullName) || ValidationUtils.isBlank(email)) {
+                if (ValidationUtil.isBlank(fullName) || ValidationUtil.isBlank(email)) {
                     response.sendRedirect(request.getContextPath() + "/admin/managers?error=missing_fields");
                     return;
                 }
@@ -242,22 +242,22 @@ public class ManagerAccountServlet extends HttpServlet {
                 phone = phone != null ? phone.trim() : "";
 
                 // 5.3. Validate định dạng Họ tên, Email, Phone
-                if (!ValidationUtils.isValidFullName(fullName)) {
+                if (!ValidationUtil.isValidFullName(fullName)) {
                     response.sendRedirect(request.getContextPath() + "/admin/managers?error=invalid_name");
                     return;
                 }
 
-                if (!ValidationUtils.isValidEmail(email)) {
+                if (!ValidationUtil.isValidEmail(email)) {
                     response.sendRedirect(request.getContextPath() + "/admin/managers?error=invalid_email");
                     return;
                 }
 
-                if (ValidationUtils.isDisposableEmail(email)) {
+                if (ValidationUtil.isDisposableEmail(email)) {
                     response.sendRedirect(request.getContextPath() + "/admin/managers?error=disposable_email");
                     return;
                 }
 
-                if (!ValidationUtils.isValidPhone(phone, false)) {
+                if (!ValidationUtil.isValidPhone(phone, false)) {
                     response.sendRedirect(request.getContextPath() + "/admin/managers?error=invalid_phone");
                     return;
                 }
@@ -295,7 +295,7 @@ public class ManagerAccountServlet extends HttpServlet {
                 // 6.1. Nhận ID người dùng và trạng thái mới muốn thiết lập
                 int userId = Integer.parseInt(request.getParameter("userId"));
                 String status = request.getParameter("status");
-                if (!ValidationUtils.isValidUserStatus(status)) {
+                if (!ValidationUtil.isValidUserStatus(status)) {
                     status = "ACTIVE";
                 }
 

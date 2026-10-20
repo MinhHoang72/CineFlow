@@ -1,6 +1,6 @@
-<%@ page pageEncoding="UTF-8" %>
+﻿<%@ page pageEncoding="UTF-8" %>
 <% request.setAttribute("pageTitle", "Phụ thu theo khung giờ"); request.setAttribute("pageDescription", "Thiết lập mức phụ thu cho từng khung giờ chiếu tại chi nhánh."); request.setAttribute("activeTab", "time"); %>
-<%@ include file="/WEB-INF/fragments/cinema/begin.jspf" %>
+<%@ include file="/WEB-INF/fragments/cinemaBegin.jspf" %>
 <section class="st-panel"><div class="st-panel-heading"><div><h2>Thêm khung giờ</h2><p>Nhập thời gian bắt đầu, kết thúc và mức phụ thu.</p></div><span class="st-step">CHI NHÁNH #${centreId}</span></div>
 <form class="st-create-form" action="${pageContext.request.contextPath}/pricing/time-slots/save" method="post"><input type="hidden" name="centreId" value="${centreId}"><div class="st-fields st-fields-four">
 <div class="st-field"><label for="slot-name">Tên khung giờ <span>*</span></label><input id="slot-name" name="slotName" type="text" required placeholder="Ví dụ: Suất tối"></div>
@@ -13,4 +13,4 @@
 </tbody></table></div><c:if test="${empty rules}"><div class="st-empty"><h3>Chưa có phụ thu khung giờ</h3><p>Thêm khung giờ bằng biểu mẫu phía trên.</p></div></c:if></section>
 <section class="st-panel"><div class="st-panel-heading"><div><h2>Lịch sử phụ thu khung giờ</h2><p>Toàn bộ mức phụ thu và thời gian áp dụng.</p></div></div>
 <div class="st-table-scroll" tabindex="0" role="region" aria-label="Lịch sử phụ thu khung giờ"><table class="st-table st-table-compact"><thead><tr><th scope="col">STT</th><th scope="col">Khung giờ</th><th scope="col">Thời gian</th><th scope="col">Phụ thu</th><th scope="col">Hiệu lực từ</th><th scope="col">Hiệu lực đến</th></tr></thead><tbody><c:forEach var="r" items="${history}" varStatus="loop"><tr><td>${loop.count}</td><td><c:out value="${r.slotName}" /></td><td class="st-time"><c:out value="${r.startTimeFormatted}" /> – <c:out value="${r.endTimeFormatted}" /></td><td class="st-money"><c:out value="${r.surchargeFormatted}" /></td><td><c:out value="${r.effectiveFromFormatted}" /></td><td><c:choose><c:when test="${empty r.effectiveTo}"><span class="st-status st-status-COMPLETED">Đang áp dụng</span></c:when><c:otherwise><c:out value="${r.effectiveToFormatted}" /></c:otherwise></c:choose></td></tr></c:forEach></tbody></table></div><c:if test="${empty history}"><div class="st-empty"><h3>Chưa có lịch sử điều chỉnh</h3></div></c:if></section>
-<%@ include file="/WEB-INF/fragments/cinema/end.jspf" %>
+<%@ include file="/WEB-INF/fragments/cinemaEnd.jspf" %>

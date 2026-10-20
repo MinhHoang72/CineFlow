@@ -2,7 +2,7 @@ package service;
 
 import dao.UserDAO;
 import model.entity.User;
-import utils.PasswordUtils;
+import utils.PasswordUtil;
 
 /**
  * Service: Xử lý logic nghiệp vụ Người dùng, Xác thực & Tài khoản (User & Authentication).
@@ -77,12 +77,12 @@ public class UserService {
         boolean passwordCorrect;
 
         if (storedPassword != null && storedPassword.startsWith("$2")) {
-            passwordCorrect = PasswordUtils.checkPassword(rawPassword, storedPassword);
+            passwordCorrect = PasswordUtil.checkPassword(rawPassword, storedPassword);
         } else {
             // Hỗ trợ mật khẩu cũ và tự động nâng cấp sang chuẩn băm BCrypt
             passwordCorrect = rawPassword.equals(storedPassword);
             if (passwordCorrect) {
-                userDAO.updatePassword(user.getUserId(), PasswordUtils.hashPassword(rawPassword));
+                userDAO.updatePassword(user.getUserId(), PasswordUtil.hashPassword(rawPassword));
             }
         }
 
@@ -122,7 +122,7 @@ public class UserService {
         String storedPassword = user.getPassword();
         boolean validOld;
         if (storedPassword != null && storedPassword.startsWith("$2")) {
-            validOld = PasswordUtils.checkPassword(oldPassword, storedPassword);
+            validOld = PasswordUtil.checkPassword(oldPassword, storedPassword);
         } else {
             validOld = oldPassword.equals(storedPassword);
         }
@@ -131,7 +131,7 @@ public class UserService {
             return false;
         }
 
-        String hashedNew = PasswordUtils.hashPassword(newPassword);
+        String hashedNew = PasswordUtil.hashPassword(newPassword);
         return userDAO.changePassword(userId, hashedNew);
     }
 
@@ -139,7 +139,7 @@ public class UserService {
      * Đặt lại mật khẩu (quên mật khẩu).
      */
     public boolean resetPassword(int userId, String newPassword) {
-        String hashedPassword = PasswordUtils.hashPassword(newPassword);
+        String hashedPassword = PasswordUtil.hashPassword(newPassword);
         return userDAO.resetPassword(userId, hashedPassword);
     }
 

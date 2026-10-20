@@ -3,9 +3,9 @@ import jakarta.servlet.annotation.WebServlet;
 
 import dao.UserDAO;
 import model.entity.User;
-import utils.EmailUtils;
-import utils.PasswordUtils;
-import utils.ValidationUtils;
+import utils.EmailUtil;
+import utils.PasswordUtil;
+import utils.ValidationUtil;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -58,9 +58,9 @@ public class RegisterServlet extends HttpServlet {
             String confirmPassword = request.getParameter("confirmPassword");
 
             // 2. Kiểm tra tính toàn vẹn: Không trường nào được để trống
-            if (ValidationUtils.isBlank(fullName) || ValidationUtils.isBlank(account)
-                    || ValidationUtils.isBlank(email) || ValidationUtils.isBlank(password)
-                    || ValidationUtils.isBlank(confirmPassword)) {
+            if (ValidationUtil.isBlank(fullName) || ValidationUtil.isBlank(account)
+                    || ValidationUtil.isBlank(email) || ValidationUtil.isBlank(password)
+                    || ValidationUtil.isBlank(confirmPassword)) {
                 response.sendRedirect(request.getContextPath() + "/register?error=missing_fields");
                 return;
             }
@@ -70,7 +70,7 @@ public class RegisterServlet extends HttpServlet {
             email = email.trim();
 
             // 3. Kiểm tra định dạng Họ và tên (chỉ chứa chữ cái và khoảng trắng)
-            if (!ValidationUtils.isValidFullName(fullName)) {
+            if (!ValidationUtil.isValidFullName(fullName)) {
                 response.sendRedirect(request.getContextPath() + "/register?error=invalid_name&account="
                         + URLEncoder.encode(account, StandardCharsets.UTF_8)
                         + "&email=" + URLEncoder.encode(email, StandardCharsets.UTF_8));
@@ -78,21 +78,21 @@ public class RegisterServlet extends HttpServlet {
             }
 
             // 4. Kiểm tra định dạng Tài khoản (3-50 ký tự, không chứa ký tự đặc biệt nguy hiểm)
-            if (!ValidationUtils.isValidAccount(account)) {
+            if (!ValidationUtil.isValidAccount(account)) {
                 response.sendRedirect(request.getContextPath() + "/register?error=invalid_account&email="
                         + URLEncoder.encode(email, StandardCharsets.UTF_8));
                 return;
             }
 
             // 5. Kiểm tra định dạng Email hợp lệ theo chuẩn RFC 5322
-            if (!ValidationUtils.isValidEmail(email)) {
+            if (!ValidationUtil.isValidEmail(email)) {
                 response.sendRedirect(request.getContextPath() + "/register?error=invalid_email&account="
                         + URLEncoder.encode(account, StandardCharsets.UTF_8));
                 return;
             }
 
             // 6. Chặn các hòm thư rác tạm thời dùng 1 lần (10minutemail, mailinator...)
-            if (ValidationUtils.isDisposableEmail(email)) {
+            if (ValidationUtil.isDisposableEmail(email)) {
                 response.sendRedirect(request.getContextPath() + "/register?error=tempmail&account="
                         + URLEncoder.encode(account, StandardCharsets.UTF_8));
                 return;
@@ -107,7 +107,7 @@ public class RegisterServlet extends HttpServlet {
             }
 
             // 8. Kiểm tra độ mạnh của mật khẩu (tối thiểu 8 ký tự, gồm chữ hoa, chữ thường, số, ký tự đặc biệt)
-            if (!ValidationUtils.isValidPassword(password)) {
+            if (!ValidationUtil.isValidPassword(password)) {
                 response.sendRedirect(request.getContextPath() + "/register?error=weak_password&account="
                         + URLEncoder.encode(account, StandardCharsets.UTF_8)
                         + "&email=" + URLEncoder.encode(email, StandardCharsets.UTF_8));
@@ -134,7 +134,7 @@ public class RegisterServlet extends HttpServlet {
                     Timestamp expiry = new Timestamp(System.currentTimeMillis() + (15 * 60 * 1000));
                     userDAO.updateActivationOtp(existingUser.getUserId(), otp, expiry);
                     try {
-                        EmailUtils.sendAccountActivationOtpEmail(email, otp, existingUser.getFullName());
+                        EmailUtil.sendAccountActivationOtpEmail(email, otp, existingUser.getFullName());
                     } catch (Exception ex) {
                         System.out.println("Warning: Could not resend activation email: " + ex.getMessage());
                     }
@@ -154,7 +154,7 @@ public class RegisterServlet extends HttpServlet {
             }
 
             // 11. Băm mật khẩu bằng thuật toán BCrypt
-            String hashedPassword = PasswordUtils.hashPassword(password);
+            String hashedPassword = PasswordUtil.hashPassword(password);
 
             // 12. Khởi tạo đối tượng User và tạo mã OTP kích hoạt 6 chữ số (hạn dùng 15 phút)
             User user = new User();
@@ -175,7 +175,7 @@ public class RegisterServlet extends HttpServlet {
 
             // 14. Gửi email kích hoạt tài khoản kèm mã OTP qua SMTP
             try {
-                EmailUtils.sendAccountActivationOtpEmail(email, otp, fullName);
+                EmailUtil.sendAccountActivationOtpEmail(email, otp, fullName);
             } catch (Exception ex) {
                 System.out.println("Warning: Failed to send activation email: " + ex.getMessage());
                 ex.printStackTrace();

@@ -21,8 +21,8 @@ import model.dto.PageDTO;
 import model.entity.User;
 import model.entity.Voucher;
 
-@WebServlet("/admin/vouchers/*")
-public class VoucherServlet extends HttpServlet {
+@WebServlet(name = "VoucherManagementServlet", urlPatterns = {"/admin/vouchers/*", "/admin/vouchers"})
+public class VoucherManagementServlet extends HttpServlet {
 
     private static final int PAGE_SIZE = 10;
     private static final BigDecimal MAX_MONEY = new BigDecimal("100000000");

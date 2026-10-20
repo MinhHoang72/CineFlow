@@ -1,6 +1,6 @@
-<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
+﻿<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ page import="model.dto.PageDTO, model.dto.FnbRowDTO, model.dto.OptionDTO, java.util.List" %>
-<%@ include file="head.jspf" %>
+<%@ include file="header.jspf" %>
 <%
     PageDTO<FnbRowDTO> result = (PageDTO<FnbRowDTO>) request.getAttribute("result");
     List<OptionDTO> categories = (List<OptionDTO>) request.getAttribute("categories");
@@ -132,4 +132,4 @@
         <%= pager(ctx, pagerBase, result.getPage(), result.getTotalPages()) %>
     </div>
 </div>
-<%@ include file="foot.jspf" %>
+<%@ include file="footer.jspf" %>

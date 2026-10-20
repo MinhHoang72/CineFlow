@@ -10,8 +10,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import model.entity.Centre;
 import model.entity.User;
-import utils.PasswordUtils;
-import utils.ValidationUtils;
+import utils.PasswordUtil;
+import utils.ValidationUtil;
 
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -26,8 +26,8 @@ import java.util.List;
  * - Quản trị viên (Admin): Quản lý nhân viên trên toàn hệ thống hoặc lọc theo từng rạp.
  * URL ánh xạ: /staff
  */
-@WebServlet(name = "StaffServlet", urlPatterns = {"/staff", "/manager/staff"})
-public class StaffServlet extends HttpServlet {
+@WebServlet(name = "StaffManagementServlet", urlPatterns = {"/staff", "/manager/staff"})
+public class StaffManagementServlet extends HttpServlet {
 
     private final UserDAO userDAO = new UserDAO();
     private final CinemaDAO cinemaDAO = new CinemaDAO();
@@ -210,7 +210,7 @@ public class StaffServlet extends HttpServlet {
             } else {
                 // Nếu là Admin: Phải chọn cụm rạp từ danh sách
                 String cp = request.getParameter("centreId");
-                if (ValidationUtils.isBlank(cp)) {
+                if (ValidationUtil.isBlank(cp)) {
                     response.sendRedirect(request.getContextPath() + "/staff?error=missing_centre");
                     return;
                 }
@@ -235,10 +235,10 @@ public class StaffServlet extends HttpServlet {
             String phone = request.getParameter("phone");
 
             // 3.3. Kiểm tra các trường bắt buộc không để trống
-            if (ValidationUtils.isBlank(fullName)
-                    || ValidationUtils.isBlank(account)
-                    || ValidationUtils.isBlank(email)
-                    || ValidationUtils.isBlank(password)) {
+            if (ValidationUtil.isBlank(fullName)
+                    || ValidationUtil.isBlank(account)
+                    || ValidationUtil.isBlank(email)
+                    || ValidationUtil.isBlank(password)) {
                 response.sendRedirect(request.getContextPath() + "/staff?error=missing_fields");
                 return;
             }
@@ -249,37 +249,37 @@ public class StaffServlet extends HttpServlet {
             phone = phone != null ? phone.trim() : "";
 
             // 3.4. Validate định dạng Họ tên
-            if (!ValidationUtils.isValidFullName(fullName)) {
+            if (!ValidationUtil.isValidFullName(fullName)) {
                 response.sendRedirect(request.getContextPath() + "/staff?error=invalid_name");
                 return;
             }
 
             // 3.5. Validate định dạng Tên tài khoản
-            if (!ValidationUtils.isValidAccount(account)) {
+            if (!ValidationUtil.isValidAccount(account)) {
                 response.sendRedirect(request.getContextPath() + "/staff?error=invalid_account");
                 return;
             }
 
             // 3.6. Validate định dạng Email
-            if (!ValidationUtils.isValidEmail(email)) {
+            if (!ValidationUtil.isValidEmail(email)) {
                 response.sendRedirect(request.getContextPath() + "/staff?error=invalid_email");
                 return;
             }
 
             // 3.7. Kiểm tra email rác dùng 1 lần
-            if (ValidationUtils.isDisposableEmail(email)) {
+            if (ValidationUtil.isDisposableEmail(email)) {
                 response.sendRedirect(request.getContextPath() + "/staff?error=disposable_email");
                 return;
             }
 
             // 3.8. Kiểm tra mật khẩu đạt chuẩn bảo mật
-            if (!ValidationUtils.isValidPassword(password)) {
+            if (!ValidationUtil.isValidPassword(password)) {
                 response.sendRedirect(request.getContextPath() + "/staff?error=weak_password");
                 return;
             }
 
             // 3.9. Validate định dạng Số điện thoại
-            if (!ValidationUtils.isValidPhone(phone, false)) {
+            if (!ValidationUtil.isValidPhone(phone, false)) {
                 response.sendRedirect(request.getContextPath() + "/staff?error=invalid_phone");
                 return;
             }
@@ -298,7 +298,7 @@ public class StaffServlet extends HttpServlet {
 
             // 3.12. Xác định vai trò nhân sự: Bán vé (TICKET_SALES_STAFF) hoặc Soát vé (TICKET_CHECKER_STAFF)
             String role = request.getParameter("role");
-            if (role == null || role.isBlank() || !ValidationUtils.isStaffRole(role)) {
+            if (role == null || role.isBlank() || !ValidationUtil.isStaffRole(role)) {
                 role = User.ROLE_TICKET_SALES;
             } else {
                 role = role.trim().toUpperCase();
@@ -309,7 +309,7 @@ public class StaffServlet extends HttpServlet {
             newStaff.setFullName(fullName);
             newStaff.setAccount(account);
             newStaff.setEmail(email);
-            newStaff.setPassword(PasswordUtils.hashPassword(password.trim()));
+            newStaff.setPassword(PasswordUtil.hashPassword(password.trim()));
             newStaff.setPhone(phone);
             newStaff.setRole(role);
             newStaff.setCentreId(targetCentreId);
@@ -335,7 +335,7 @@ public class StaffServlet extends HttpServlet {
                 String role = request.getParameter("role");
 
                 // 4.2. Kiểm tra các trường bắt buộc
-                if (ValidationUtils.isBlank(fullName) || ValidationUtils.isBlank(email)) {
+                if (ValidationUtil.isBlank(fullName) || ValidationUtil.isBlank(email)) {
                     response.sendRedirect(request.getContextPath() + "/staff?error=missing_fields");
                     return;
                 }
@@ -345,22 +345,22 @@ public class StaffServlet extends HttpServlet {
                 phone = phone != null ? phone.trim() : "";
 
                 // 4.3. Validate định dạng Họ tên, Email, Phone
-                if (!ValidationUtils.isValidFullName(fullName)) {
+                if (!ValidationUtil.isValidFullName(fullName)) {
                     response.sendRedirect(request.getContextPath() + "/staff?error=invalid_name");
                     return;
                 }
 
-                if (!ValidationUtils.isValidEmail(email)) {
+                if (!ValidationUtil.isValidEmail(email)) {
                     response.sendRedirect(request.getContextPath() + "/staff?error=invalid_email");
                     return;
                 }
 
-                if (ValidationUtils.isDisposableEmail(email)) {
+                if (ValidationUtil.isDisposableEmail(email)) {
                     response.sendRedirect(request.getContextPath() + "/staff?error=disposable_email");
                     return;
                 }
 
-                if (!ValidationUtils.isValidPhone(phone, false)) {
+                if (!ValidationUtil.isValidPhone(phone, false)) {
                     response.sendRedirect(request.getContextPath() + "/staff?error=invalid_phone");
                     return;
                 }
@@ -378,7 +378,7 @@ public class StaffServlet extends HttpServlet {
                     return;
                 }
 
-                if (role == null || role.isBlank() || !ValidationUtils.isStaffRole(role)) {
+                if (role == null || role.isBlank() || !ValidationUtil.isStaffRole(role)) {
                     role = targetUser.getRole();
                 } else {
                     role = role.trim().toUpperCase();

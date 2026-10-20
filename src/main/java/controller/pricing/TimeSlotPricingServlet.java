@@ -1,4 +1,4 @@
-package controller.pricing.timeslot;
+package controller.pricing;
 
 import dao.TimeSlotPricingDAO;
 import java.io.IOException;

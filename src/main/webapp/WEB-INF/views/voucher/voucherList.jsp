@@ -1,6 +1,6 @@
-<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
+﻿<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ page import="model.dto.PageDTO, model.entity.Voucher" %>
-<%@ include file="head.jspf" %>
+<%@ include file="header.jspf" %>
 <%
     PageDTO<Voucher> result = (PageDTO<Voucher>) request.getAttribute("result");
     String q = (String) request.getAttribute("q");
@@ -115,4 +115,4 @@
         <%= pager(ctx, pagerBase, result.getPage(), result.getTotalPages()) %>
     </div>
 </div>
-<%@ include file="foot.jspf" %>
+<%@ include file="footer.jspf" %>
