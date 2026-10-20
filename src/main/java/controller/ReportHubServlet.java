@@ -101,7 +101,7 @@ public class ReportHubServlet extends HttpServlet {
         request.setAttribute("centres", centres);
         request.setAttribute("selectedCentre", centreId);
         request.setAttribute("filters", filters);
-        request.setAttribute("pageBreadcrumb", admin ? "Báo cáo" : crumb(user, "Báo cáo"));
+        request.setAttribute("pageBreadcrumb", "/chain".equals(path) ? "Tổng quan" : (admin ? "Báo cáo" : crumb(user, "Báo cáo")));
 
         switch (path) {
             case "/sales":
@@ -197,7 +197,7 @@ public class ReportHubServlet extends HttpServlet {
         request.setAttribute("fnbTop", sales.topFnb(from, toExclusive, null, 5));
         request.setAttribute("activeCentres", operations.activeCentres());
         request.setAttribute("customers", operations.activeCustomers());
-        request.setAttribute("pageTitle", "Dashboard chuỗi");
+        request.setAttribute("pageTitle", "Dashboard");
         request.getRequestDispatcher("/WEB-INF/views/report/chain.jsp").forward(request, response);
     }
 }
