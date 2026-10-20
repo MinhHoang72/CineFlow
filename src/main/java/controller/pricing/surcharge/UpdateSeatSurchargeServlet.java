@@ -38,7 +38,7 @@ public class UpdateSeatSurchargeServlet
                             )
                     );
 
-            int managerId = utils.CinemaContext.requireUserId(request);
+            int managerId = service.ShowtimeService.requireUserId(request);
 
             if (!Double.isFinite(amount) || amount < 0) {
 

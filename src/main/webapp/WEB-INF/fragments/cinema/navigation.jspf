@@ -11,7 +11,7 @@
 <a class="${tab == 'surcharge' ? 'is-active' : ''}" href="${pageContext.request.contextPath}/pricing/seat-surcharges" ${tab == 'surcharge' ? 'aria-current="page"' : ''}>Phụ thu ghế & phòng</a>
 </nav>
 
-<%-- ADMIN chon chi nhanh (CinemaContext.requireCentreId) --%>
+<%-- ADMIN chon chi nhanh (ShowtimeService.requireCentreId) --%>
 <c:if test="${not empty centres}">
 <form class="st-create-form" method="get" style="margin-bottom:16px"
       action="${pageContext.request.contextPath}${tab == 'showtimes' ? '/showtimes' : (tab == 'time' ? '/pricing/time-slots' : '/pricing')}">

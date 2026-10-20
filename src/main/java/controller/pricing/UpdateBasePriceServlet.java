@@ -27,7 +27,7 @@ public class UpdateBasePriceServlet
 
         try {
 
-            int centreId = utils.CinemaContext.requireCentreId(request);
+            int centreId = service.ShowtimeService.requireCentreId(request);
 
             double newPrice =
                     Double.parseDouble(
@@ -38,7 +38,7 @@ public class UpdateBasePriceServlet
 
 
 
-            int managerId = utils.CinemaContext.requireUserId(request);
+            int managerId = service.ShowtimeService.requireUserId(request);
 
             if (newPrice < 0) {
 

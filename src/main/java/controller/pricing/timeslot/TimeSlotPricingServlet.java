@@ -21,7 +21,7 @@ public class TimeSlotPricingServlet
          * BranchID = 1
          */
 
-        int centreId = utils.CinemaContext.requireCentreId(request);
+        int centreId = service.ShowtimeService.requireCentreId(request);
 
         TimeSlotPricingDAO dao =
                 new TimeSlotPricingDAO();

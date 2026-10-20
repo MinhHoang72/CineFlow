@@ -26,7 +26,7 @@ public class UpdateTimeSlotPricingServlet
                     request.getParameter("id")
                 );
 
-            int centreId = utils.CinemaContext.requireCentreId(request);
+            int centreId = service.ShowtimeService.requireCentreId(request);
 
             String slotName =
                 request.getParameter(
@@ -54,7 +54,7 @@ public class UpdateTimeSlotPricingServlet
                     )
                 );
 
-            int managerId = utils.CinemaContext.requireUserId(request);
+            int managerId = service.ShowtimeService.requireUserId(request);
 
             if (!endTime.isAfter(startTime)) {
 

@@ -31,7 +31,7 @@ public class PricingManagementServlet
 
 
 
-        int centreId = utils.CinemaContext.requireCentreId(request);
+        int centreId = service.ShowtimeService.requireCentreId(request);
 
         BranchPricingDAO dao =
                 new BranchPricingDAO();
