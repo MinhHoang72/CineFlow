@@ -40,10 +40,15 @@
     String ctx = request.getContextPath();
     User currentUser = (User) session.getAttribute("user");
     boolean adminUser = currentUser != null && "ADMIN".equals(currentUser.getRole());
+    boolean isAdminScope = Boolean.TRUE.equals(request.getAttribute("isAdminScope"));
     request.setAttribute("activeNav", "vouchers");
     String shellTitle = (String) request.getAttribute("pageTitle");
     String flashType = (String) request.getAttribute("flashType");
     String flashMessage = (String) request.getAttribute("flashMessage");
+    String baseUrl = (String) request.getAttribute("baseUrl");
+    if (baseUrl == null) {
+        baseUrl = ctx + (adminUser ? "/admin/vouchers" : "/manager/vouchers");
+    }
 %>
 <!DOCTYPE html>
 <html lang="vi">
@@ -85,13 +90,24 @@
         .vc-noimg { align-items: center; justify-content: center; background: rgba(148, 163, 184, .15); font-size: 22px; }
         .vc-preview { max-width: 180px; max-height: 140px; border-radius: 10px; object-fit: cover; display: block; }
         .vc-form { max-width: 720px; padding: 18px; }
+        .vc-scope-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 12px; }
+        .vc-scope-global { background: rgba(99,102,241,.18); color: #a5b4fc; }
+        .vc-scope-branch { background: rgba(16,185,129,.18); color: #6ee7b7; }
     </style>
 </head>
 <body>
 <div class="cf-manager-shell">
+    <% if (adminUser && isAdminScope) { %>
     <jsp:include page="/admin/sidebar.jsp" />
+    <% } else { %>
+    <jsp:include page="/manager/sidebar.jsp" />
+    <% } %>
     <div class="cf-manager-main">
+        <% if (adminUser && isAdminScope) { %>
         <jsp:include page="/admin/topbar.jsp" />
+        <% } else { %>
+        <jsp:include page="/manager/topbar.jsp" />
+        <% } %>
         <main class="cf-content">
             <% if (flashMessage != null) { %>
                 <div class="vc-flash <%= "success".equals(flashType) ? "success" : "error" %>"><%= esc(flashMessage) %></div>

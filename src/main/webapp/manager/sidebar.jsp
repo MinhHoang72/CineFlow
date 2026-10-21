@@ -1,4 +1,4 @@
-<%@ page pageEncoding="UTF-8" %>
+﻿<%@ page pageEncoding="UTF-8" %>
 <%
     String cfPath = request.getContextPath();
     String cfUri = request.getRequestURI();
@@ -47,6 +47,14 @@
         </a>
     </nav>
     <% } %>
+    <% if ("MANAGER".equalsIgnoreCase(cfRole)) { %>
+    <div class="cf-sidebar-section">KHUYẾN MÃI</div>
+    <nav class="cf-sidebar-nav">
+        <a class="<%= cfUri.contains("/manager/vouchers") ? "active" : "" %>" href="<%= cfPath %>/manager/vouchers">
+            <span class="icon">🎟</span>Voucher chi nhánh
+        </a>
+    </nav>
+    <% } %>
 
     <% if ("MANAGER".equalsIgnoreCase(cfRole) || "TICKET_SALES_STAFF".equalsIgnoreCase(cfRole)) { %>
     <div class="cf-sidebar-section">BẮP NƯỚC</div>
@@ -79,3 +87,4 @@
         </a>
     </nav>
 </aside>
+

@@ -1,11 +1,12 @@
 <%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ page import="model.Voucher, java.util.Map" %>
+<%@ page import="model.Voucher, model.User, java.util.Map" %>
 <%@ include file="head.jspf" %>
 <%
     Voucher v = (Voucher) request.getAttribute("voucher");
     Map<String, String> errors = (Map<String, String>) request.getAttribute("errors");
     Map<String, String> raw = (Map<String, String>) request.getAttribute("raw");
     String csrf = (String) request.getAttribute("csrf");
+    boolean adminScope = Boolean.TRUE.equals(request.getAttribute("isAdminScope"));
     boolean locked = v.getVoucherId() > 0 && v.getUsedCount() > 0;
     java.time.format.DateTimeFormatter fmt = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
     String discountValue = raw != null ? raw.get("discountValue") : (v.getDiscountValue() == null ? "" : v.getDiscountValue().stripTrailingZeros().toPlainString());
@@ -18,12 +19,17 @@
 <div class="cf-page-header">
     <div>
         <h1><%= v.getVoucherId() == 0 ? "Thêm voucher" : "Sửa voucher" %></h1>
-        <p>Voucher áp dụng cho toàn chuỗi CineFlow.</p>
+        <% if (adminScope) { %>
+            <p>Voucher áp dụng cho <strong>toàn chuỗi</strong> CineFlow (CentreID = NULL).</p>
+        <% } else { %>
+            <p>Voucher áp dụng tại <strong>chi nhánh của bạn</strong>
+               <%= v.getCentreName() != null ? "(" + esc(v.getCentreName()) + ")" : "" %>.</p>
+        <% } %>
     </div>
-    <a class="cf-btn cf-btn-ghost" href="<%= ctx %>/admin/vouchers">Quay lại</a>
+    <a class="cf-btn cf-btn-ghost" href="<%= esc(baseUrl) %>">Quay lại</a>
 </div>
 <div class="cf-card">
-    <form class="vc-form" method="post" action="<%= ctx %>/admin/vouchers/save">
+    <form class="vc-form" method="post" action="<%= esc(baseUrl) %>/save">
         <input type="hidden" name="_csrf" value="<%= esc(csrf) %>">
         <input type="hidden" name="id" value="<%= v.getVoucherId() == 0 ? "" : v.getVoucherId() %>">
         <div class="cf-form-group">

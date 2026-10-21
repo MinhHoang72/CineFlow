@@ -19,10 +19,25 @@ public class Voucher {
     private int usedCount;
     private String status;
 
+    /**
+     * NULL = voucher toàn chuỗi do Admin tạo (áp dụng mọi chi nhánh).
+     * Có giá trị = voucher chi nhánh do Manager tạo (chỉ áp dụng tại chi nhánh đó).
+     */
+    private Integer centreId;
+
+    /** ID người tạo voucher (Admin hoặc Manager). */
+    private Integer createdBy;
+
+    /** Tên chi nhánh, JOIN từ Centres – dùng cho hiển thị, không lưu DB. */
+    private String centreName;
+
     public Voucher() {
     }
 
-    public Voucher(int voucherId, String voucherCode, String voucherName, String description, String discountType, BigDecimal discountValue, BigDecimal minimumOrderValue, BigDecimal maximumDiscount, LocalDateTime startDate, LocalDateTime endDate, Integer usageLimit, int usedCount, String status) {
+    public Voucher(int voucherId, String voucherCode, String voucherName, String description,
+                   String discountType, BigDecimal discountValue, BigDecimal minimumOrderValue,
+                   BigDecimal maximumDiscount, LocalDateTime startDate, LocalDateTime endDate,
+                   Integer usageLimit, int usedCount, String status) {
         this.voucherId = voucherId;
         this.voucherCode = voucherCode;
         this.voucherName = voucherName;
@@ -38,7 +53,6 @@ public class Voucher {
         this.status = status;
     }
 
-    
     public int getVoucherId() {
         return voucherId;
     }
@@ -143,6 +157,35 @@ public class Voucher {
         this.status = status;
     }
 
+    public Integer getCentreId() {
+        return centreId;
+    }
+
+    public void setCentreId(Integer centreId) {
+        this.centreId = centreId;
+    }
+
+    public Integer getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(Integer createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    public String getCentreName() {
+        return centreName;
+    }
+
+    public void setCentreName(String centreName) {
+        this.centreName = centreName;
+    }
+
+    /** Voucher áp dụng toàn chuỗi (do Admin tạo, CentreID = NULL). */
+    public boolean isGlobal() {
+        return centreId == null;
+    }
+
     public boolean isExpired() {
         return endDate != null && endDate.isBefore(LocalDateTime.now());
     }
@@ -153,7 +196,8 @@ public class Voucher {
 
     @Override
     public String toString() {
-        return "Voucher{" + "voucherId=" + voucherId + ", voucherCode=" + voucherCode + ", voucherName=" + voucherName + ", description=" + description + ", discountType=" + discountType + ", discountValue=" + discountValue + ", minimumOrderValue=" + minimumOrderValue + ", maximumDiscount=" + maximumDiscount + ", startDate=" + startDate + ", endDate=" + endDate + ", usageLimit=" + usageLimit + ", usedCount=" + usedCount + ", status=" + status + '}';
+        return "Voucher{" + "voucherId=" + voucherId + ", voucherCode=" + voucherCode
+                + ", voucherName=" + voucherName + ", centreId=" + centreId
+                + ", status=" + status + '}';
     }
-    
 }
