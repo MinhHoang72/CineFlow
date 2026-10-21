@@ -20,7 +20,7 @@
         <%@ include file="/WEB-INF/views/booking/ticket.jspf" %>
 
         <%-- Hoa don --%>
-        <div class="eticket mt-3" style="max-width: 420px">
+        <div class="eticket mt-3" data-bs-theme="light" style="max-width: 420px">
             <div class="text-center">
                 <div class="fw-bold">CINEFLOW · <c:out value="${st.branchName}"/></div>
                 <div class="fs-5 fw-bold">HOÁ ĐƠN THANH TOÁN</div>

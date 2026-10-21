@@ -10,7 +10,7 @@
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
     <h5 class="mb-0">Đơn <c:out value="${booking.code}"/>
         <span class="badge ${booking.statusBadge}">${booking.statusLabel}</span>
-        <span class="badge bg-light text-dark border">${booking.counter ? 'Tại quầy' : 'Online'}</span>
+        <span class="badge text-bg-secondary">${booking.counter ? 'Tại quầy' : 'Online'}</span>
     </h5>
     <div class="d-flex gap-2 no-print">
         <c:if test="${isOwner and booking.holdActive}">
@@ -33,7 +33,7 @@
             <div><c:out value="${st.branchName}"/> · <c:out value="${st.hallName}"/> (${st.hallType}) ·
                 <fmt:formatDate value="${st.startTime}" pattern="HH:mm dd/MM/yyyy"/></div>
             <table class="table table-sm mt-3 mb-0">
-                <thead class="table-light"><tr><th>Hạng mục</th><th>Chi tiết</th><th class="text-end">Thành tiền</th></tr></thead>
+                <thead><tr><th>Hạng mục</th><th>Chi tiết</th><th class="text-end">Thành tiền</th></tr></thead>
                 <tbody>
                 <c:forEach var="seat" items="${booking.seats}">
                     <tr><td>Ghế <strong>${seat.label}</strong></td><td>${seat.type}</td>
@@ -66,7 +66,7 @@
             <c:otherwise>
                 <div class="table-responsive">
                     <table class="table table-sm mb-0">
-                        <thead class="table-light">
+                        <thead>
                         <tr><th>Mã giao dịch</th><th>Hình thức</th><th class="text-end">Số tiền</th>
                             <th>Trạng thái</th><th>Tạo lúc</th><th>Thanh toán lúc</th></tr>
                         </thead>

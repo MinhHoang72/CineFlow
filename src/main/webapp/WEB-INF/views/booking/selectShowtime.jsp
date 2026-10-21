@@ -112,7 +112,7 @@
                     <c:forEach var="s" items="${showtimes}">
                         <div class="col-6 col-md-4">
                             <a href="${ctx}/booking?action=select-seats&showtimeId=${s.id}"
-                               class="btn btn-outline-dark w-100">
+                               class="btn btn-outline-light w-100">
                                 <strong><fmt:formatDate value="${s.startTime}" pattern="HH:mm"/></strong><br>
                                 <small><c:out value="${s.hallName}"/> · ${s.hallType}</small><br>
                                 <small><fmt:formatNumber value="${s.basePrice}" pattern="#,##0"/> đ</small>

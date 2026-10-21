@@ -25,7 +25,7 @@
                     <div class="d-flex flex-wrap gap-2">
                         <c:forEach var="s" items="${entry.value}">
                             <a href="${ctx}/staff/counter?action=seats&showtimeId=${s.id}"
-                               class="btn btn-outline-dark text-center" style="min-width: 110px">
+                               class="btn btn-outline-light text-center" style="min-width: 110px">
                                 <strong><fmt:formatDate value="${s.startTime}" pattern="HH:mm"/></strong><br>
                                 <small><c:out value="${s.hallName}"/> · ${s.hallType}</small>
                             </a>

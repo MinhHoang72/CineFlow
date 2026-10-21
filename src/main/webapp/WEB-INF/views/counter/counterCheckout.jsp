@@ -50,7 +50,7 @@
                                 <div class="d-flex justify-content-between fs-5 mb-2">
                                     <span>Tiền thối</span><strong id="change">—</strong>
                                 </div>
-                                <button type="submit" class="btn btn-success w-100" id="cashBtn" disabled>Xác nhận thu tiền mặt</button>
+                                <button type="submit" class="btn btn-primary w-100" id="cashBtn" disabled>Xác nhận thu tiền mặt</button>
                             </form>
                         </div>
                         <form method="post" action="${ctx}/staff/counter" class="mb-2">

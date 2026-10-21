@@ -53,7 +53,7 @@
         <div class="card">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
+                    <thead>
                     <tr>
                         <th>Thời gian</th><th>Mã giao dịch / Đơn</th><th>Khách hàng</th><th>Phim / Rạp</th>
                         <th>Phương thức</th><th class="text-end">Số tiền</th><th>Trạng thái</th>
@@ -76,7 +76,7 @@
                                         <a href="${ctx}/booking?action=detail&bookingId=${p.bookingId}"><strong><c:out value="${p.bookingCode}"/></strong></a>
                                     </c:otherwise>
                                 </c:choose>
-                                <span class="badge ${p.counter ? 'bg-info text-dark' : 'bg-light text-dark border'}">${p.counter ? 'Tại quầy' : 'Online'}</span>
+                                <span class="badge ${p.counter ? 'bg-info text-dark' : 'text-bg-secondary'}">${p.counter ? 'Tại quầy' : 'Online'}</span>
                             </td>
                             <td><c:out value="${p.customerName}" default="Khách tại quầy"/><br><small class="text-muted"><c:out value="${p.customerPhone}"/></small></td>
                             <td><c:out value="${p.movieTitle}"/><br><small class="text-muted"><c:out value="${p.branchName}"/></small></td>

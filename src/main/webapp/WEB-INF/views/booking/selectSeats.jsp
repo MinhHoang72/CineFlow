@@ -12,18 +12,16 @@
 </c:if>
 
 <style>
-    .screen { background: #333; color: #fff; text-align: center; border-radius: 4px; padding: 4px; margin-bottom: 20px; }
+    /* Mau ghe theo giao dien chung: css/booking/booking.css */
     .seat-row { display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 6px; }
     .row-label { width: 24px; font-weight: bold; text-align: center; }
     .seat input { display: none; }
     .seat span { display: inline-block; width: 40px; height: 34px; line-height: 34px; text-align: center;
-                 border-radius: 6px; font-size: 12px; cursor: pointer; border: 1px solid #bbb; background: #fff; }
-    .seat.VIP span { border-color: #f0ad4e; background: #fff6e5; }
-    .seat.SWEETBOX span { border-color: #e83e8c; background: #fde8f1; width: 56px; }
-    .seat input:checked + span { background: #198754; border-color: #198754; color: #fff; }
-    .seat input:disabled + span { background: #adb5bd; border-color: #adb5bd; color: #fff; cursor: not-allowed; }
+                 border-radius: 6px; font-size: 12px; cursor: pointer; border: 1px solid; }
+    .seat.SWEETBOX span { width: 56px; }
+    .seat input:disabled + span { cursor: not-allowed; }
     .legend span { display: inline-block; width: 18px; height: 18px; border-radius: 4px; vertical-align: middle;
-                   margin-right: 4px; border: 1px solid #bbb; }
+                   margin-right: 4px; border: 1px solid; }
 </style>
 
 <div class="card mb-4">
@@ -58,11 +56,11 @@
                     </div>
                 </c:forEach>
                 <div class="legend d-flex flex-wrap gap-3 justify-content-center mt-3 small">
-                    <div><span></span>Thường</div>
-                    <div><span style="background:#fff6e5;border-color:#f0ad4e"></span>VIP</div>
-                    <div><span style="background:#fde8f1;border-color:#e83e8c"></span>Sweetbox</div>
-                    <div><span style="background:#198754;border-color:#198754"></span>Đang chọn</div>
-                    <div><span style="background:#adb5bd;border-color:#adb5bd"></span>Đã đặt</div>
+                    <div><span class="seat-std"></span>Thường</div>
+                    <div><span class="seat-vip"></span>VIP</div>
+                    <div><span class="seat-sweetbox"></span>Sweetbox</div>
+                    <div><span class="seat-picked"></span>Đang chọn</div>
+                    <div><span class="seat-taken"></span>Đã đặt</div>
                 </div>
             </div></div>
         </div>
@@ -78,7 +76,7 @@
                 <div>Ghế đã chọn: <strong id="selectedLabels">—</strong></div>
                 <div class="fs-5 my-2">Tổng: <strong id="total">0</strong> đ</div>
                 <p class="small text-muted">Tối đa ${maxSeats} ghế. Ghế sẽ được giữ ${holdMinutes} phút để bạn thanh toán.</p>
-                <button type="submit" class="btn btn-success w-100" id="submitBtn" disabled>Tiếp tục</button>
+                <button type="submit" class="btn btn-primary btn-lg w-100" id="submitBtn" disabled>Tiếp tục</button>
                 <a href="${seatBackUrl}" class="btn btn-link w-100">← Chọn suất khác</a>
             </div></div>
         </div>
