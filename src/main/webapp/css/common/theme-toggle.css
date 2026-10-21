@@ -1,0 +1,43 @@
+/* Nut doi giao dien sang / toi (js/theme.js chen vao header, topbar hoac noi o goc phai). */
+.cf-theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    margin-right: 10px;
+    padding: 0;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: #161B26;
+    color: #FBBF24;
+    font-size: 17px;
+    line-height: 1;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: transform .2s ease, border-color .2s ease;
+}
+
+.cf-theme-toggle:hover {
+    transform: rotate(-20deg);
+    border-color: #FF2855;
+}
+
+.cf-theme-toggle-floating {
+    position: fixed;
+    top: 14px;
+    right: 16px;
+    z-index: 2000;
+    margin: 0;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
+html[data-theme="light"] .cf-theme-toggle {
+    background: #ffffff;
+    border-color: #CBD5E1;
+    color: #4F46E5;
+}
+
+@media print {
+    .cf-theme-toggle { display: none !important; }
+}

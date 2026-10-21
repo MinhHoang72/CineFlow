@@ -5,10 +5,13 @@ import java.sql.Timestamp;
 
 /**
  * DTO lịch sử đơn hàng của khách hàng (BookingHistoryDTO).
- * Phục vụ màn hình tra cứu đơn (/booking?action=history) và hồ sơ cá nhân (/account).
+ * Phục vụ lịch sử đặt vé ở hồ sơ cá nhân (/account) và trang quản lý khách hàng.
  */
 public class BookingHistoryDTO {
 
+    private int bookingId;
+    /** Đơn chờ thanh toán còn trong thời gian giữ ghế. */
+    private boolean holdActive;
     private String bookingCode;
     private String movieTitle;
     private String centreName;
@@ -30,6 +33,28 @@ public class BookingHistoryDTO {
         this.bookingStatus = bookingStatus;
         this.totalAmount = totalAmount;
         this.createdAt = createdAt;
+    }
+
+    public int getBookingId() { return bookingId; }
+    public void setBookingId(int bookingId) { this.bookingId = bookingId; }
+
+    public boolean isHoldActive() { return holdActive; }
+    public void setHoldActive(boolean holdActive) { this.holdActive = holdActive; }
+
+    /** Còn thanh toán tiếp được (đơn chờ thanh toán, chưa hết giờ giữ ghế). */
+    public boolean isPayable() { return "PENDING".equals(bookingStatus) && holdActive; }
+
+    /** Trạng thái hiển thị tiếng Việt; đơn chờ thanh toán đã quá giờ giữ ghế coi như hết hạn. */
+    public String getStatusLabel() {
+        if (bookingStatus == null) return "";
+        return switch (bookingStatus) {
+            case "PENDING" -> holdActive ? "Chờ thanh toán" : "Hết hạn";
+            case "CONFIRMED" -> "Đã thanh toán";
+            case "COMPLETED" -> "Hoàn tất";
+            case "CANCELLED" -> "Đã huỷ";
+            case "EXPIRED" -> "Hết hạn";
+            default -> bookingStatus;
+        };
     }
 
     public String getBookingCode() { return bookingCode; }

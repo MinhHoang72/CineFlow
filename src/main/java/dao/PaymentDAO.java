@@ -21,7 +21,9 @@ public class PaymentDAO {
         ALREADY_PAID,
         NOT_FOUND,
         /** Tien da nhan nhung don het han giu ghe va ghe da bi nguoi khac lay -> can hoan tien. */
-        PAID_BUT_SEATS_LOST
+        PAID_BUT_SEATS_LOST,
+        /** Tien da nhan theo so tien cu, khach da doi bap nuoc / voucher sau khi tao giao dich -> can hoan tien. */
+        PAID_AMOUNT_MISMATCH
     }
 
     public record Outcome(Status status, Integer bookingId) {}
@@ -156,8 +158,10 @@ public class PaymentDAO {
     private Outcome confirm(Connection conn, int paymentId, Integer branchId) throws SQLException {
         int bookingId;
         String paymentStatus;
+        boolean amountMatches;
         try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT p.BookingID, p.PaymentStatus FROM Payments p WITH (UPDLOCK, ROWLOCK) "
+                "SELECT p.BookingID, p.PaymentStatus, CASE WHEN p.Amount = b.TotalAmount THEN 1 ELSE 0 END AS AmountMatches "
+              + "FROM Payments p WITH (UPDLOCK, ROWLOCK) "
               + "JOIN Bookings b ON b.BookingID = p.BookingID "
               + "JOIN Showtimes s ON s.ShowtimeID = b.ShowtimeID JOIN Halls h ON h.HallID = s.HallID "
               + "WHERE p.PaymentID = ? AND (? IS NULL OR h.CentreID = ?)")) {
@@ -168,11 +172,14 @@ public class PaymentDAO {
                 if (!rs.next()) return new Outcome(Status.NOT_FOUND, null);
                 bookingId = rs.getInt("BookingID");
                 paymentStatus = rs.getString("PaymentStatus");
+                amountMatches = rs.getInt("AmountMatches") == 1;
             }
         }
         if ("PAID".equals(paymentStatus)) return new Outcome(Status.ALREADY_PAID, bookingId);
 
         update(conn, "UPDATE Payments SET PaymentStatus = 'PAID', PaidAt = SYSDATETIME() WHERE PaymentID = ?", paymentId);
+        // Giao dich tao truoc khi khach doi bap nuoc / voucher: ghi nhan tien nhung khong xac nhan don
+        if (!amountMatches) return new Outcome(Status.PAID_AMOUNT_MISMATCH, bookingId);
 
         try {
             // Thuong la HELD; RELEASED khi VNPay bao thanh cong sau khi don da het han giu ghe.
@@ -181,10 +188,13 @@ public class PaymentDAO {
         } catch (SQLException e) {
             if (!BookingDAO.isDuplicateKey(e)) throw e;
             update(conn, "UPDATE Bookings SET BookingStatus = 'CANCELLED', UpdatedAt = SYSDATETIME() WHERE BookingID = ?", bookingId);
+            FnbOrderDAO.cancelPendingForBookings(conn, "?", bookingId);
             return new Outcome(Status.PAID_BUT_SEATS_LOST, bookingId);
         }
 
         update(conn, "UPDATE Bookings SET BookingStatus = 'CONFIRMED', UpdatedAt = SYSDATETIME() WHERE BookingID = ?", bookingId);
+        FnbOrderDAO.confirmForBooking(conn, bookingId);
+        BookingVoucherDAO.recordUsage(conn, bookingId);
         try (PreparedStatement ps = conn.prepareStatement(
                 "UPDATE Payments SET PaymentStatus = 'CANCELLED' "
               + "WHERE BookingID = ? AND PaymentID <> ? AND PaymentStatus IN ('PENDING', 'TIMEOUT')")) {

@@ -19,6 +19,7 @@
     <title>CineFlow - <%= pageTitle %></title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/auth/base.css?v=<%= System.currentTimeMillis() %>">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/auth/verify-otp.css?v=<%= System.currentTimeMillis() %>">
+    <%@ include file="/WEB-INF/fragments/theme.jspf" %>
 </head>
 <body>
     <main class="card">

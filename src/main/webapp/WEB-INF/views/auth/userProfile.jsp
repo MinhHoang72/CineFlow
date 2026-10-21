@@ -386,9 +386,22 @@
                             </div>
                             <div class="history-right">
                                 <span class="total-price"><%= money(item.getTotalAmount()) %></span>
-                                <span class="booking-status-tag">
-                                    ● <%= esc(item.getBookingStatus()) %>
+                                <%
+                                    String st = item.getBookingStatus();
+                                    String tagClass = item.isPayable() ? " is-pending"
+                                            : ("CONFIRMED".equals(st) || "COMPLETED".equals(st)) ? "" : " is-muted";
+                                %>
+                                <span class="booking-status-tag<%= tagClass %>">
+                                    ● <%= esc(item.getStatusLabel()) %>
                                 </span>
+                                <div class="history-actions">
+                                    <% if (item.isPayable()) { %>
+                                        <a href="${pageContext.request.contextPath}/booking?action=checkout&bookingId=<%= item.getBookingId() %>"
+                                           class="new-booking-btn">Thanh toán</a>
+                                    <% } %>
+                                    <a href="${pageContext.request.contextPath}/booking?action=detail&bookingId=<%= item.getBookingId() %>"
+                                       class="new-booking-btn">Xem vé</a>
+                                </div>
                             </div>
                         </article>
                     <% } %>

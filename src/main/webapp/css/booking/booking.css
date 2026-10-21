@@ -1,0 +1,237 @@
+/* =========================================================================
+   Dat ve & thanh toan (FE-05 / FE-07): Bootstrap che do toi theo bang mau CineFlow
+   (css/common/variables.css): nen #0B0F16, the #161B26, nhan do #FF2855,
+   font Be Vietnam Pro / Barlow Condensed.
+   ========================================================================= */
+[data-bs-theme="dark"] {
+    --bs-body-bg: #0B0F16;
+    --bs-body-bg-rgb: 11, 15, 22;
+    --bs-body-color: #E2E8F0;
+    --bs-body-color-rgb: 226, 232, 240;
+    --bs-emphasis-color: #F8FAFC;
+    --bs-secondary-color: #94A3B8;
+    --bs-secondary-bg: #161B26;
+    --bs-tertiary-bg: #141A24;
+    --bs-border-color: rgba(255, 255, 255, 0.08);
+    --bs-border-color-translucent: rgba(255, 255, 255, 0.08);
+    --bs-primary: #FF2855;
+    --bs-primary-rgb: 255, 40, 85;
+    --bs-link-color: #FF5C7C;
+    --bs-link-color-rgb: 255, 92, 124;
+    --bs-link-hover-color: #FF2855;
+    --bs-link-hover-color-rgb: 255, 40, 85;
+    --bs-font-sans-serif: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --bs-border-radius: 10px;
+    --bs-card-bg: #161B26;
+}
+
+body.cf-booking {
+    background: #0B0F16;
+    color: #E2E8F0;
+    font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.cf-booking h1, .cf-booking h2, .cf-booking h3, .cf-booking h4, .cf-booking h5, .cf-booking h6 {
+    color: #F8FAFC;
+    font-weight: 700;
+}
+
+.cf-booking .text-muted { color: #94A3B8 !important; }
+
+/* ---------- khung trang khach ---------- */
+.cf-booking-site .cf-booking-content {
+    padding-top: 32px;
+    padding-bottom: 56px;
+    min-height: 60vh;
+}
+
+.cf-booking-heading {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.cf-booking-heading h1 {
+    margin: 0;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 34px;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+}
+
+.cf-booking-eyebrow {
+    display: block;
+    color: #FF2855;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+}
+
+.cf-booking-step {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #FF2855 0%, #E11D48 100%);
+    color: #fff;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 24px;
+    font-weight: 700;
+    box-shadow: 0 8px 24px rgba(255, 40, 85, 0.35);
+}
+
+/* ---------- khung trang nhan vien ---------- */
+.cf-booking-staff .cf-booking-content .card { margin-bottom: 0; }
+
+/* ---------- the, bang, form ---------- */
+.cf-booking .card {
+    background: #161B26;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+.cf-booking .table {
+    --bs-table-bg: transparent;
+    --bs-table-color: #E2E8F0;
+    --bs-table-border-color: rgba(255, 255, 255, 0.08);
+    --bs-table-hover-bg: rgba(255, 255, 255, 0.03);
+}
+
+.cf-booking .table th { color: #94A3B8; font-weight: 600; }
+.cf-booking .table thead th {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    background: #141A24;
+}
+
+.cf-booking .form-control, .cf-booking .form-select {
+    background-color: #111622;
+    border-color: rgba(255, 255, 255, 0.12);
+    color: #F8FAFC;
+}
+
+.cf-booking .form-control:focus, .cf-booking .form-select:focus {
+    border-color: #FF2855;
+    box-shadow: 0 0 0 .2rem rgba(255, 40, 85, 0.2);
+}
+
+.cf-booking .border.rounded { border-color: rgba(255, 255, 255, 0.08) !important; background: #141A24; }
+
+/* ---------- nut ---------- */
+.cf-booking .btn { font-weight: 600; border-radius: 8px; }
+
+.cf-booking .btn-primary {
+    --bs-btn-bg: #FF2855;
+    --bs-btn-border-color: #FF2855;
+    --bs-btn-hover-bg: #E11D48;
+    --bs-btn-hover-border-color: #E11D48;
+    --bs-btn-active-bg: #BE123C;
+    --bs-btn-active-border-color: #BE123C;
+    --bs-btn-disabled-bg: #FF2855;
+    --bs-btn-disabled-border-color: #FF2855;
+    box-shadow: 0 6px 18px rgba(255, 40, 85, 0.25);
+}
+
+.cf-booking .btn-outline-primary {
+    --bs-btn-color: #FF5C7C;
+    --bs-btn-border-color: rgba(255, 40, 85, 0.45);
+    --bs-btn-hover-bg: #FF2855;
+    --bs-btn-hover-border-color: #FF2855;
+    --bs-btn-hover-color: #fff;
+    --bs-btn-active-bg: #E11D48;
+    --bs-btn-active-border-color: #E11D48;
+}
+
+.cf-booking .btn-outline-light {
+    --bs-btn-color: #E2E8F0;
+    --bs-btn-border-color: rgba(255, 255, 255, 0.16);
+    --bs-btn-hover-bg: rgba(255, 40, 85, 0.12);
+    --bs-btn-hover-border-color: #FF2855;
+    --bs-btn-hover-color: #fff;
+}
+
+/* ---------- danh sach chon (rap / phim) ---------- */
+.cf-booking .list-group {
+    --bs-list-group-bg: #161B26;
+    --bs-list-group-border-color: rgba(255, 255, 255, 0.08);
+    --bs-list-group-action-hover-bg: #1E2433;
+    --bs-list-group-action-hover-color: #fff;
+    --bs-list-group-active-bg: rgba(255, 40, 85, 0.16);
+    --bs-list-group-active-border-color: #FF2855;
+    --bs-list-group-active-color: #fff;
+    border-radius: 12px;
+}
+
+.cf-booking .list-group-item.active { box-shadow: inset 3px 0 0 #FF2855; }
+
+/* ---------- so do ghe ---------- */
+.cf-booking .screen {
+    margin: 0 auto 26px;
+    width: 80%;
+    padding-top: 10px;
+    border-top: 4px solid #FF2855;
+    border-radius: 50% 50% 0 0 / 14px 14px 0 0;
+    box-shadow: 0 -10px 24px rgba(255, 40, 85, 0.35);
+    color: #94A3B8;
+    text-align: center;
+    font-size: 12px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+}
+
+.cf-booking .seat span {
+    background: #1E2433;
+    border-color: rgba(255, 255, 255, 0.18);
+    color: #E2E8F0;
+}
+
+.cf-booking .seat.VIP span { background: rgba(245, 158, 11, 0.14); border-color: #F59E0B; }
+.cf-booking .seat.SWEETBOX span { background: rgba(236, 72, 153, 0.16); border-color: #EC4899; }
+.cf-booking .seat input:checked + span { background: #FF2855; border-color: #FF2855; color: #fff; }
+.cf-booking .seat input:disabled + span { background: #2A3142; border-color: #2A3142; color: #64748B; text-decoration: line-through; cursor: not-allowed; }
+
+.cf-booking .legend .seat-std { background: #1E2433; border-color: rgba(255, 255, 255, 0.18); }
+.cf-booking .legend .seat-vip { background: rgba(245, 158, 11, 0.14); border-color: #F59E0B; }
+.cf-booking .legend .seat-sweetbox { background: rgba(236, 72, 153, 0.16); border-color: #EC4899; }
+.cf-booking .legend .seat-picked { background: #FF2855; border-color: #FF2855; }
+.cf-booking .legend .seat-taken { background: #2A3142; border-color: #2A3142; }
+
+/* Giao dien sang: ghe thuong nen trang, ghe da dat xam dam de phan biet (viet tay, generator bo qua) */
+html[data-theme="light"] body.cf-booking .seat span,
+html[data-theme="light"] body.cf-booking .legend .seat-std { background: #FFFFFF; border-color: #CBD5E1; color: #0F172A; }
+html[data-theme="light"] body.cf-booking .seat.VIP span { background: #FEF3C7; border-color: #F59E0B; }
+html[data-theme="light"] body.cf-booking .seat.SWEETBOX span { background: #FCE7F3; border-color: #EC4899; }
+html[data-theme="light"] body.cf-booking .seat input:checked + span { background: #FF2855; border-color: #FF2855; color: #FFFFFF; }
+html[data-theme="light"] body.cf-booking .seat input:disabled + span,
+html[data-theme="light"] body.cf-booking .legend .seat-taken { background: #94A3B8; border-color: #94A3B8; color: #F1F5F9; }
+
+/* ---------- ve dien tu / hoa don: giu nen trang nhu ve giay ---------- */
+.cf-booking .eticket {
+    background: #fff;
+    color: #111827;
+    border: 2px dashed #CBD5E1;
+}
+
+.cf-booking .eticket .table {
+    --bs-table-color: #111827;
+    --bs-table-border-color: #E2E8F0;
+}
+
+.cf-booking .eticket .table th { color: #334155; }
+.cf-booking .eticket .table thead th { background: #F1F5F9; }
+.cf-booking .eticket .text-muted { color: #64748B !important; }
+
+/* In ve / hoa don: chi in phan ve */
+@media print {
+    body.cf-booking { background: #fff; }
+    .cf-main-header, .footer, .cf-sidebar, .cf-topbar, .cf-booking-heading, .no-print, .alert { display: none !important; }
+    .cf-manager-main { margin-left: 0 !important; background: #fff !important; }
+}

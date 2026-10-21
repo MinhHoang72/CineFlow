@@ -28,12 +28,16 @@
                             </c:forEach>
                         </td>
                     </tr>
-                    <tr><th>Tổng tiền</th>
-                        <td class="fs-4 fw-bold text-danger"><fmt:formatNumber value="${booking.totalAmount}" pattern="#,##0"/> đ</td></tr>
+                </table>
+                <table class="table table-sm mb-3">
+                    <%@ include file="/WEB-INF/views/booking/amountRows.jspf" %>
+                    <tr class="border-top"><th class="fs-5">Tổng tiền</th>
+                        <td class="text-end fs-4 fw-bold text-danger"><fmt:formatNumber value="${booking.totalAmount}" pattern="#,##0"/> đ</td></tr>
                 </table>
 
                 <c:choose>
                     <c:when test="${booking.holdActive}">
+                        <%@ include file="/WEB-INF/views/booking/extras.jspf" %>
                         <div class="border rounded p-3 mb-3">
                             <h6>💵 Thanh toán tiền mặt</h6>
                             <form method="post" action="${ctx}/staff/counter" id="cashForm">
@@ -46,7 +50,7 @@
                                 <div class="d-flex justify-content-between fs-5 mb-2">
                                     <span>Tiền thối</span><strong id="change">—</strong>
                                 </div>
-                                <button type="submit" class="btn btn-success w-100" id="cashBtn" disabled>Xác nhận thu tiền mặt</button>
+                                <button type="submit" class="btn btn-primary w-100" id="cashBtn" disabled>Xác nhận thu tiền mặt</button>
                             </form>
                         </div>
                         <form method="post" action="${ctx}/staff/counter" class="mb-2">

@@ -1,4 +1,5 @@
 package controller.counter;
+import controller.booking.BookingServlet;
 import controller.payment.PaymentServlet;
 import dao.BookingDAO;
 import dao.BookingDAO.SeatUnavailableException;
@@ -12,6 +13,7 @@ import model.entity.Seat;
 import model.entity.Showtime;
 import model.entity.Ticket;
 import model.entity.User;
+import service.BookingExtrasService;
 import utils.QrUtil;
 import utils.WebUtil;
 import jakarta.servlet.ServletException;
@@ -52,6 +54,7 @@ public class CounterShowtimeServlet extends HttpServlet {
     private final SeatDAO seatDAO = new SeatDAO();
     private final BookingDAO bookingDAO = new BookingDAO();
     private final PaymentDAO paymentDAO = new PaymentDAO();
+    private final BookingExtrasService extrasService = new BookingExtrasService();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -86,6 +89,7 @@ public class CounterShowtimeServlet extends HttpServlet {
                 case "cash" -> payCash(req, resp, staff);
                 case "vnpay" -> payVnpay(req, resp, staff);
                 case "cancel" -> cancel(req, resp, staff);
+                case "save-fnb", "apply-voucher", "remove-voucher" -> updateExtras(req, resp, staff, action);
                 default -> resp.sendError(HttpServletResponse.SC_NOT_FOUND);
             }
         } catch (SQLException e) {
@@ -177,6 +181,10 @@ public class CounterShowtimeServlet extends HttpServlet {
             return;
         }
         req.setAttribute("booking", booking);
+        if (booking.isHoldActive()) {
+            req.setAttribute("fnbMenu", extrasService.getMenu(booking));
+            req.setAttribute("extrasAction", req.getContextPath() + "/staff/counter");
+        }
         req.getRequestDispatcher(VIEW_DIR + "counter/counterCheckout.jsp").forward(req, resp);
     }
 
@@ -229,9 +237,27 @@ public class CounterShowtimeServlet extends HttpServlet {
             }
             case PAID_BUT_SEATS_LOST -> WebUtil.flash(req, "danger", "Đơn đã hết hạn giữ ghế và ghế đã được người "
                     + "khác đặt. Đã ghi nhận tiền, cần hoàn lại cho khách.");
+            case PAID_AMOUNT_MISMATCH -> WebUtil.flash(req, "danger", "Giao dịch được tạo trước khi đơn thay đổi "
+                    + "(bắp nước / mã giảm giá). Đã ghi nhận tiền, cần hoàn lại cho khách và thanh toán lại.");
             case NOT_FOUND -> WebUtil.flash(req, "danger", "Không tìm thấy giao dịch.");
         }
         resp.sendRedirect(ctx + "/staff/counter?action=checkout&bookingId=" + booking.getId());
+    }
+
+    /** Chon bap nuoc / ap voucher cho don tai quay dang giu ghe. */
+    private void updateExtras(HttpServletRequest req, HttpServletResponse resp, User staff, String action)
+            throws SQLException, IOException {
+        Booking booking = loadCounterBooking(req, staff);
+        if (booking == null) {
+            resp.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+        if (booking.isHoldActive()) {
+            BookingServlet.applyExtras(req, booking, action, extrasService);
+        } else {
+            WebUtil.flash(req, "warning", "Đơn đã hết thời gian giữ ghế, vui lòng chọn ghế lại.");
+        }
+        resp.sendRedirect(req.getContextPath() + "/staff/counter?action=checkout&bookingId=" + booking.getId());
     }
 
     private void cancel(HttpServletRequest req, HttpServletResponse resp, User staff) throws SQLException, IOException {

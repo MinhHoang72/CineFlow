@@ -1,0 +1,5 @@
+<%@ page pageEncoding="UTF-8" %>
+<%-- Giao dien sang / toi: nap mau sang (tu sinh) + nut doi giao dien. Dung chung cho moi trang. --%>
+<link rel="stylesheet" href="<%= request.getContextPath() %>/css/common/theme-toggle.css">
+<link rel="stylesheet" href="<%= request.getContextPath() %>/css/common/theme-light.css">
+<script src="<%= request.getContextPath() %>/js/theme.js"></script>

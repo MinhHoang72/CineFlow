@@ -112,6 +112,9 @@
         <a class="<%= cfUri.contains("/report/operations") ? "active" : "" %>" href="<%= cfPath %>/report/operations">
             <span class="icon">⚙</span>Chỉ số vận hành
         </a>
+        <a class="<%= cfUri.contains("/staff/payments") ? "active" : "" %>" href="<%= cfPath %>/staff/payments">
+            <span class="icon">₫</span>Theo dõi giao dịch
+        </a>
     </nav>
 
     <div class="cf-sidebar-section">TÀI KHOẢN</div>

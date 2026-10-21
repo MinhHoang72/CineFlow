@@ -516,8 +516,12 @@ public class UserDAO {
      * @return danh sách lịch sử đặt vé
      */
     public List<BookingHistoryDTO> getBookingHistory(int userId) {
-        String sql = "SELECT b.BookingCode, m.Title, br.CentreName, s.StartTime, "
-                + "b.BookingStatus, b.TotalAmount, b.CreatedAt "
+        String sql = "SELECT b.BookingID, b.BookingCode, m.Title, br.CentreName, s.StartTime, "
+                + "b.BookingStatus, b.TotalAmount, b.CreatedAt, "
+                // Don cho thanh toan con trong thoi gian giu ghe (de hien nut Thanh toan)
+                + "CASE WHEN b.BookingStatus = 'PENDING' AND EXISTS (SELECT 1 FROM BookingSeats bs "
+                + "  WHERE bs.BookingID = b.BookingID AND bs.SeatStatus = 'HELD' AND bs.HoldUntil > SYSDATETIME()) "
+                + "  THEN 1 ELSE 0 END AS HoldActive "
                 + "FROM Bookings b "
                 + "JOIN Showtimes s ON s.ShowtimeID = b.ShowtimeID "
                 + "JOIN Movies m ON m.MovieID = s.MovieID "
@@ -531,6 +535,8 @@ public class UserDAO {
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     BookingHistoryDTO item = new BookingHistoryDTO();
+                    item.setBookingId(rs.getInt("BookingID"));
+                    item.setHoldActive(rs.getInt("HoldActive") == 1);
                     item.setBookingCode(rs.getString("BookingCode"));
                     item.setMovieTitle(rs.getString("Title"));
                     item.setCentreName(rs.getString("CentreName"));

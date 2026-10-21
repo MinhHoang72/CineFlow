@@ -11,6 +11,7 @@
 
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/auth/base.css?v=<%= System.currentTimeMillis() %>">
         <link rel="stylesheet" href="${pageContext.request.contextPath}/css/auth/cineflow-auth.css?v=<%= System.currentTimeMillis() %>">
+        <%@ include file="/WEB-INF/fragments/theme.jspf" %>
     </head>
 
     <body>

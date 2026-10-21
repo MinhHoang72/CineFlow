@@ -29,7 +29,7 @@
 
     <div class="cf-sidebar-section">NHÂN SỰ</div>
     <nav class="cf-sidebar-nav">
-        <a class="<%= cfUri.contains("/staff") ? "active" : "" %>" href="<%= cfPath %>/staff">
+        <a class="<%= cfUri.endsWith("/staff") ? "active" : "" %>" href="<%= cfPath %>/staff">
             <span class="icon">♙</span>Danh sách nhân viên
         </a>
     </nav>
@@ -52,6 +52,20 @@
     <nav class="cf-sidebar-nav">
         <a class="<%= cfUri.contains("/manager/vouchers") ? "active" : "" %>" href="<%= cfPath %>/manager/vouchers">
             <span class="icon">🎟</span>Voucher chi nhánh
+        </a>
+    </nav>
+    <% } %>
+
+    <% if ("MANAGER".equalsIgnoreCase(cfRole) || "TICKET_SALES_STAFF".equalsIgnoreCase(cfRole) || "STAFF".equalsIgnoreCase(cfRole)) { %>
+    <div class="cf-sidebar-section">BÁN VÉ</div>
+    <nav class="cf-sidebar-nav">
+        <% if (!"MANAGER".equalsIgnoreCase(cfRole)) { %>
+        <a class="<%= cfUri.contains("/staff/counter") ? "active" : "" %>" href="<%= cfPath %>/staff/counter">
+            <span class="icon">🎟</span>Bán vé tại quầy
+        </a>
+        <% } %>
+        <a class="<%= cfUri.contains("/staff/payments") ? "active" : "" %>" href="<%= cfPath %>/staff/payments">
+            <span class="icon">₫</span>Theo dõi giao dịch
         </a>
     </nav>
     <% } %>

@@ -1,0 +1,11 @@
+<%@ page pageEncoding="UTF-8" %>
+<%-- Cac dong tien cua don trong bang (tr): tien ve, giam gia, bap nuoc, tong. Can co: booking. --%>
+<tr><th>Tiền vé</th><td class="text-end"><fmt:formatNumber value="${booking.subTotal}" pattern="#,##0"/> đ</td></tr>
+<c:if test="${booking.discountAmount > 0}">
+    <tr><th>Giảm giá <c:if test="${not empty booking.voucherCode}">(<c:out value="${booking.voucherCode}"/>)</c:if></th>
+        <td class="text-end text-success">− <fmt:formatNumber value="${booking.discountAmount}" pattern="#,##0"/> đ</td></tr>
+</c:if>
+<c:forEach var="line" items="${booking.fnbLines}">
+    <tr><th class="fw-normal"><c:out value="${line.name}"/> × ${line.quantity}</th>
+        <td class="text-end"><fmt:formatNumber value="${line.lineTotal}" pattern="#,##0"/> đ</td></tr>
+</c:forEach>

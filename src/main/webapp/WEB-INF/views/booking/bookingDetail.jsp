@@ -10,14 +10,14 @@
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
     <h5 class="mb-0">Đơn <c:out value="${booking.code}"/>
         <span class="badge ${booking.statusBadge}">${booking.statusLabel}</span>
-        <span class="badge bg-light text-dark border">${booking.counter ? 'Tại quầy' : 'Online'}</span>
+        <span class="badge text-bg-secondary">${booking.counter ? 'Tại quầy' : 'Online'}</span>
     </h5>
     <div class="d-flex gap-2 no-print">
         <c:if test="${isOwner and booking.holdActive}">
             <a href="${ctx}/booking?action=checkout&bookingId=${booking.id}" class="btn btn-warning">Tiếp tục thanh toán</a>
         </c:if>
         <c:if test="${isOwner}">
-            <a href="${ctx}/booking?action=history" class="btn btn-outline-primary">← Lịch sử đặt vé</a>
+            <a href="${ctx}/account" class="btn btn-outline-primary">← Lịch sử đặt vé</a>
         </c:if>
     </div>
 </div>
@@ -33,12 +33,20 @@
             <div><c:out value="${st.branchName}"/> · <c:out value="${st.hallName}"/> (${st.hallType}) ·
                 <fmt:formatDate value="${st.startTime}" pattern="HH:mm dd/MM/yyyy"/></div>
             <table class="table table-sm mt-3 mb-0">
-                <thead class="table-light"><tr><th>Hạng mục</th><th>Chi tiết</th><th class="text-end">Thành tiền</th></tr></thead>
+                <thead><tr><th>Hạng mục</th><th>Chi tiết</th><th class="text-end">Thành tiền</th></tr></thead>
                 <tbody>
                 <c:forEach var="seat" items="${booking.seats}">
                     <tr><td>Ghế <strong>${seat.label}</strong></td><td>${seat.type}</td>
                         <td class="text-end"><fmt:formatNumber value="${seat.price}" pattern="#,##0"/> đ</td></tr>
                 </c:forEach>
+                <c:forEach var="line" items="${booking.fnbLines}">
+                    <tr><td><c:out value="${line.name}"/></td><td>${line.combo ? 'Combo' : 'Bắp nước'} × ${line.quantity}</td>
+                        <td class="text-end"><fmt:formatNumber value="${line.lineTotal}" pattern="#,##0"/> đ</td></tr>
+                </c:forEach>
+                <c:if test="${booking.discountAmount > 0}">
+                    <tr><td>Giảm giá</td><td><c:out value="${booking.voucherCode}"/> (trên tiền vé)</td>
+                        <td class="text-end text-success">− <fmt:formatNumber value="${booking.discountAmount}" pattern="#,##0"/> đ</td></tr>
+                </c:if>
                 </tbody>
                 <tfoot><tr><th colspan="2">Tổng cộng</th>
                     <th class="text-end"><fmt:formatNumber value="${booking.totalAmount}" pattern="#,##0"/> đ</th></tr></tfoot>
@@ -58,7 +66,7 @@
             <c:otherwise>
                 <div class="table-responsive">
                     <table class="table table-sm mb-0">
-                        <thead class="table-light">
+                        <thead>
                         <tr><th>Mã giao dịch</th><th>Hình thức</th><th class="text-end">Số tiền</th>
                             <th>Trạng thái</th><th>Tạo lúc</th><th>Thanh toán lúc</th></tr>
                         </thead>

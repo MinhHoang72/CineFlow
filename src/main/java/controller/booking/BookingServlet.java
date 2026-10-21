@@ -2,6 +2,7 @@ package controller.booking;
 
 import dao.BookingDAO;
 import dao.BookingDAO.SeatUnavailableException;
+import service.BookingExtrasService;
 import service.BookingService;
 import dao.ShowtimeDAO.CityOption;
 import dao.MovieDAO;
@@ -38,9 +39,12 @@ import java.util.TreeMap;
  *   GET  /booking                          chon thanh pho -> rap -> phim -> ngay -> suat chieu
  *   GET  /booking?action=select-seats      chon ghe (can dang nhap)
  *   POST /booking?action=hold              giu ghe 5 phut, tao booking PENDING
- *   GET  /booking?action=checkout          xem lai don + dem nguoc + nut thanh toan
+ *   GET  /booking?action=checkout          xem lai don + chon bap nuoc / voucher + dem nguoc + nut thanh toan
+ *   POST /booking?action=save-fnb          luu bap nuoc (qty_I{id}, qty_C{id})
+ *   POST /booking?action=apply-voucher     ap ma giam gia (chi giam tien ve)
+ *   POST /booking?action=remove-voucher    bo ma giam gia
  *   POST /booking?action=cancel            huy booking dang cho thanh toan
- *   GET  /booking?action=history           lich su dat ve cua khach
+ *   GET  /booking?action=history           chuyen sang lich su dat ve o trang tai khoan (/account)
  *   GET  /booking?action=detail            chi tiet don (khach, nhan vien, quan ly, admin)
  */
 @WebServlet(name = "BookingServlet", urlPatterns = {"/booking", "/booking/booking.jsp"})
@@ -54,6 +58,7 @@ public class BookingServlet extends HttpServlet {
     private final SeatDAO seatDAO = new SeatDAO();
     private final BookingDAO bookingDAO = new BookingDAO();
     private final BookingService bookingService = new BookingService();
+    private final BookingExtrasService extrasService = new BookingExtrasService();
     private final PaymentDAO paymentDAO = new PaymentDAO();
 
     @Override
@@ -86,11 +91,55 @@ public class BookingServlet extends HttpServlet {
                 hold(req, resp);
             } else if ("cancel".equals(action)) {
                 cancel(req, resp);
+            } else if ("save-fnb".equals(action) || "apply-voucher".equals(action) || "remove-voucher".equals(action)) {
+                updateExtras(req, resp, action);
             } else {
                 resp.sendError(HttpServletResponse.SC_NOT_FOUND);
             }
         } catch (SQLException e) {
             throw new ServletException(e);
+        }
+    }
+
+    /** Buoc 3: chon bap nuoc / ap voucher cho don dang giu ghe, xong quay lai trang thanh toan. */
+    private void updateExtras(HttpServletRequest req, HttpServletResponse resp, String action)
+            throws SQLException, IOException {
+        User user = WebUtil.requireUser(req, resp);
+        if (user == null) return;
+        Booking booking = loadOwnBooking(req, user);
+        if (booking == null) {
+            resp.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+        if (booking.isHoldActive()) {
+            applyExtras(req, booking, action, extrasService);
+        } else {
+            WebUtil.flash(req, "warning", "Đơn đã hết thời gian giữ ghế.");
+        }
+        resp.sendRedirect(req.getContextPath() + "/booking?action=checkout&bookingId=" + booking.getId());
+    }
+
+    /** Dung chung cho dat ve online va ban tai quay: thuc hien thao tac va dat thong bao. */
+    public static void applyExtras(HttpServletRequest req, Booking booking, String action, BookingExtrasService service)
+            throws SQLException {
+        try {
+            switch (action) {
+                case "save-fnb" -> {
+                    service.saveFnb(booking, req.getParameterMap());
+                    WebUtil.flash(req, "success", "Đã cập nhật bắp nước.");
+                }
+                case "apply-voucher" -> {
+                    BigDecimal discount = service.applyVoucher(booking, req.getParameter("voucherCode"));
+                    WebUtil.flash(req, "success", "Đã áp dụng mã giảm giá, giảm "
+                            + String.format("%,d", discount.longValue()).replace(',', '.') + " đ trên tiền vé.");
+                }
+                default -> {
+                    service.removeVoucher(booking);
+                    WebUtil.flash(req, "info", "Đã bỏ mã giảm giá.");
+                }
+            }
+        } catch (IllegalArgumentException e) {
+            WebUtil.flash(req, "warning", e.getMessage());
         }
     }
 
@@ -218,6 +267,10 @@ public class BookingServlet extends HttpServlet {
             return;
         }
         req.setAttribute("booking", booking);
+        if (booking.isHoldActive()) {
+            req.setAttribute("fnbMenu", extrasService.getMenu(booking));
+            req.setAttribute("extrasAction", req.getContextPath() + "/booking");
+        }
         req.getRequestDispatcher(VIEW_DIR + "booking/bookingCheckout.jsp").forward(req, resp);
     }
 
@@ -237,13 +290,9 @@ public class BookingServlet extends HttpServlet {
                 + booking.getShowtime().getId());
     }
 
-    /** 5.5 Lich su dat ve cua khach. */
-    private void history(HttpServletRequest req, HttpServletResponse resp)
-            throws SQLException, ServletException, IOException {
-        User user = WebUtil.requireUser(req, resp);
-        if (user == null) return;
-        req.setAttribute("bookings", bookingService.getUserBookings(user.getUserId()));
-        req.getRequestDispatcher(VIEW_DIR + "booking/bookingHistory.jsp").forward(req, resp);
+    /** 5.5 Lich su dat ve nam o trang tai khoan (/account); giu duong dan cu de link cu van dung. */
+    private void history(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        resp.sendRedirect(req.getContextPath() + "/account");
     }
 
     /** 5.4 Chi tiet don: ve, chi tiet gia, cac giao dich thanh toan. */

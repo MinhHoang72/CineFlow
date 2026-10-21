@@ -63,6 +63,7 @@
     }
     String ctx = request.getContextPath();
 %>
+<%@ include file="/WEB-INF/fragments/theme.jspf" %>
 <header class="cf-main-header" id="cfMainHeader">
     <div class="cf-header-container">
         <!-- Logo thương hiệu -->

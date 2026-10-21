@@ -2,7 +2,10 @@ package model.entity;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import model.dto.booking.FnbLineDTO;
 
 public class Booking {
 
@@ -42,6 +45,33 @@ public class Booking {
     public Timestamp getCreatedAt() { return createdAt; }
     public Showtime getShowtime() { return showtime; }
     public List<Seat> getSeats() { return seats; }
+
+    // Tien ve / giam gia / bap nuoc (BookingDAO.getBooking dien vao)
+    private BigDecimal subTotal = BigDecimal.ZERO, discountAmount = BigDecimal.ZERO;
+    private String voucherCode;
+    private List<FnbLineDTO> fnbLines = List.of();
+
+    /** Tien ve (tong gia ghe), voucher chi giam tren khoan nay. */
+    public BigDecimal getSubTotal() { return subTotal; }
+    public void setSubTotal(BigDecimal subTotal) { if (subTotal != null) this.subTotal = subTotal; }
+    public BigDecimal getDiscountAmount() { return discountAmount; }
+    public void setDiscountAmount(BigDecimal discountAmount) { if (discountAmount != null) this.discountAmount = discountAmount; }
+    /** Ma voucher da ap dung, null neu khong co. */
+    public String getVoucherCode() { return voucherCode; }
+    public void setVoucherCode(String voucherCode) { this.voucherCode = voucherCode; }
+    public List<FnbLineDTO> getFnbLines() { return fnbLines; }
+    public void setFnbLines(List<FnbLineDTO> fnbLines) { if (fnbLines != null) this.fnbLines = fnbLines; }
+    public BigDecimal getFnbTotal() {
+        BigDecimal total = BigDecimal.ZERO;
+        for (FnbLineDTO line : fnbLines) total = total.add(line.getLineTotal());
+        return total;
+    }
+    /** So luong da chon theo key menu (I12 / C3), de dien lai form chon bap nuoc. */
+    public Map<String, Integer> getFnbQuantities() {
+        Map<String, Integer> map = new HashMap<>();
+        for (FnbLineDTO line : fnbLines) map.put(line.getKey(), line.getQuantity());
+        return map;
+    }
 
     public boolean isPending() { return "PENDING".equals(status); }
 
