@@ -36,7 +36,7 @@ public class PaymentServlet extends HttpServlet {
     private final PaymentDAO paymentDAO = new PaymentDAO();
 
     /** Ket qua xu ly du lieu VNPay gui ve. */
-    enum VnpayResult { SUCCESS, ALREADY_PAID, SEATS_LOST, FAILED, NOT_FOUND, INVALID_AMOUNT, INVALID_SIGNATURE }
+    enum VnpayResult { SUCCESS, ALREADY_PAID, SEATS_LOST, AMOUNT_CHANGED, FAILED, NOT_FOUND, INVALID_AMOUNT, INVALID_SIGNATURE }
 
     record Processed(VnpayResult result, Integer bookingId) {}
 
@@ -131,6 +131,7 @@ public class PaymentServlet extends HttpServlet {
             case SUCCESS -> VnpayResult.SUCCESS;
             case ALREADY_PAID -> VnpayResult.ALREADY_PAID;
             case PAID_BUT_SEATS_LOST -> VnpayResult.SEATS_LOST;
+            case PAID_AMOUNT_MISMATCH -> VnpayResult.AMOUNT_CHANGED;
             case NOT_FOUND -> VnpayResult.NOT_FOUND;
         }, ref.bookingId());
     }
@@ -142,7 +143,7 @@ public class PaymentServlet extends HttpServlet {
         try {
             Processed p = processVnpay(VNPayUtil.vnpParams(req));
             switch (p.result()) {
-                case SUCCESS, FAILED, SEATS_LOST -> { code = "00"; message = "Confirm Success"; }
+                case SUCCESS, FAILED, SEATS_LOST, AMOUNT_CHANGED -> { code = "00"; message = "Confirm Success"; }
                 case ALREADY_PAID -> { code = "02"; message = "Order already confirmed"; }
                 case NOT_FOUND -> { code = "01"; message = "Order not Found"; }
                 case INVALID_AMOUNT -> { code = "04"; message = "Invalid Amount"; }
@@ -177,6 +178,8 @@ public class PaymentServlet extends HttpServlet {
                 }
                 case SEATS_LOST -> WebUtil.flash(req, "danger", "Đơn đã hết hạn giữ ghế và ghế đã được người khác đặt. "
                         + "Đã ghi nhận tiền, cần hoàn lại cho khách.");
+                case AMOUNT_CHANGED -> WebUtil.flash(req, "danger", "Giao dịch được tạo trước khi đơn thay đổi (bắp nước / "
+                        + "mã giảm giá). Đã ghi nhận tiền, cần hoàn lại cho khách và thanh toán lại.");
                 default -> WebUtil.flash(req, "warning", "VNPay: " + VNPayUtil.failureMessage(params.get("vnp_ResponseCode")));
             }
             resp.sendRedirect(ctx + "/staff/counter?action=checkout&bookingId=" + booking.getId());
@@ -191,6 +194,11 @@ public class PaymentServlet extends HttpServlet {
                 WebUtil.flash(req, "danger", "Thanh toán đã nhận nhưng đơn đã hết hạn giữ ghế và ghế đã có người khác đặt. "
                         + "Vui lòng liên hệ quầy vé để được hoàn tiền.");
                 resp.sendRedirect(detailUrl(req, booking));
+            }
+            case AMOUNT_CHANGED -> {
+                WebUtil.flash(req, "danger", "Đơn đã thay đổi (bắp nước / mã giảm giá) sau khi bạn mở trang thanh toán nên "
+                        + "giao dịch này không được dùng. Vui lòng liên hệ quầy vé để được hoàn tiền, rồi thanh toán lại đơn.");
+                resp.sendRedirect(req.getContextPath() + "/booking?action=checkout&bookingId=" + booking.getId());
             }
             default -> {
                 WebUtil.flash(req, "warning", VNPayUtil.failureMessage(params.get("vnp_ResponseCode")));

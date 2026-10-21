@@ -36,6 +36,14 @@
                     <tr><td>Vé ghế ${seat.label} (${seat.type})</td>
                         <td class="text-end"><fmt:formatNumber value="${seat.price}" pattern="#,##0"/></td></tr>
                 </c:forEach>
+                <c:forEach var="line" items="${booking.fnbLines}">
+                    <tr><td><c:out value="${line.name}"/> × ${line.quantity}</td>
+                        <td class="text-end"><fmt:formatNumber value="${line.lineTotal}" pattern="#,##0"/></td></tr>
+                </c:forEach>
+                <c:if test="${booking.discountAmount > 0}">
+                    <tr><td>Giảm giá <c:out value="${booking.voucherCode}"/> (tiền vé)</td>
+                        <td class="text-end">−<fmt:formatNumber value="${booking.discountAmount}" pattern="#,##0"/></td></tr>
+                </c:if>
                 <tr class="border-top fw-bold"><td>Tổng cộng</td>
                     <td class="text-end"><fmt:formatNumber value="${booking.totalAmount}" pattern="#,##0"/> đ</td></tr>
                 <tr><td>Hình thức</td>

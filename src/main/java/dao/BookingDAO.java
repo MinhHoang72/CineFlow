@@ -108,9 +108,10 @@ public class BookingDAO {
     }
 
     public Booking getBooking(int bookingId) throws SQLException {
-        String sql = "SELECT BookingID, BookingCode, UserID, ShowtimeID, BookingType, BookingStatus, TotalAmount, CreatedAt, "
+        String sql = "SELECT BookingID, BookingCode, UserID, ShowtimeID, BookingType, BookingStatus, SubTotal, DiscountAmount, "
+                   + "  TotalAmount, CreatedAt, v.VoucherCode, "
                    + "  (SELECT MIN(HoldUntil) FROM BookingSeats WHERE BookingID = b.BookingID AND SeatStatus = 'HELD') AS HoldUntil "
-                   + "FROM Bookings b WHERE BookingID = ?";
+                   + "FROM Bookings b LEFT JOIN Vouchers v ON v.VoucherID = b.VoucherID WHERE BookingID = ?";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, bookingId);
@@ -119,10 +120,36 @@ public class BookingDAO {
                 int userId = rs.getInt("UserID");
                 Integer owner = rs.wasNull() ? null : userId;
                 Showtime showtime = loadShowtime(conn, rs.getInt("ShowtimeID"));
-                return new Booking(rs.getInt("BookingID"), rs.getString("BookingCode"), owner,
+                Booking booking = new Booking(rs.getInt("BookingID"), rs.getString("BookingCode"), owner,
                         rs.getString("BookingType"), rs.getString("BookingStatus"), rs.getBigDecimal("TotalAmount"),
                         rs.getTimestamp("HoldUntil"), rs.getTimestamp("CreatedAt"), showtime, loadSeats(conn, bookingId));
+                booking.setSubTotal(rs.getBigDecimal("SubTotal"));
+                booking.setDiscountAmount(rs.getBigDecimal("DiscountAmount"));
+                booking.setVoucherCode(rs.getString("VoucherCode"));
+                booking.setFnbLines(FnbOrderDAO.getLines(conn, bookingId));
+                return booking;
             }
+        }
+    }
+
+    /** Tong tien don = tien ve (SubTotal) - giam gia + bap nuoc chua huy. */
+    static void recalculateTotal(Connection conn, int bookingId) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "UPDATE b SET TotalAmount = CASE WHEN b.SubTotal - b.DiscountAmount < 0 THEN 0 ELSE b.SubTotal - b.DiscountAmount END "
+              + "  + ISNULL((SELECT SUM(o.TotalAmount) FROM FnbOrders o WHERE o.BookingID = b.BookingID AND o.OrderStatus <> 'CANCELLED'), 0), "
+              + "  UpdatedAt = SYSDATETIME() "
+              + "FROM Bookings b WHERE b.BookingID = ? AND b.BookingStatus = 'PENDING'")) {
+            ps.setInt(1, bookingId);
+            ps.executeUpdate();
+        }
+    }
+
+    /** Don doi so tien: huy giao dich VNPay dang cho (so tien cu), khach bam thanh toan lai se tao giao dich moi. */
+    static void cancelPendingPayments(Connection conn, int bookingId) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "UPDATE Payments SET PaymentStatus = 'CANCELLED' WHERE BookingID = ? AND PaymentStatus = 'PENDING'")) {
+            ps.setInt(1, bookingId);
+            ps.executeUpdate();
         }
     }
 
@@ -184,6 +211,7 @@ public class BookingDAO {
         try (Statement st = conn.createStatement()) {
             st.executeUpdate("UPDATE Payments SET PaymentStatus = 'TIMEOUT' "
                     + "WHERE PaymentStatus = 'PENDING' AND BookingID IN (" + expired + ")");
+            FnbOrderDAO.cancelPendingForBookings(conn, expired);
             st.executeUpdate("UPDATE Bookings SET BookingStatus = 'EXPIRED', UpdatedAt = SYSDATETIME() "
                     + "WHERE BookingID IN (" + expired + ")");
             st.executeUpdate("UPDATE BookingSeats SET SeatStatus = 'RELEASED' "
@@ -208,6 +236,7 @@ public class BookingDAO {
             }
             pay.executeUpdate();
             seats.executeUpdate();
+            FnbOrderDAO.cancelPendingForBookings(conn, ids, params);
             return booking.executeUpdate();
         }
     }

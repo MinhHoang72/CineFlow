@@ -39,6 +39,14 @@
                     <tr><td>Ghế <strong>${seat.label}</strong></td><td>${seat.type}</td>
                         <td class="text-end"><fmt:formatNumber value="${seat.price}" pattern="#,##0"/> đ</td></tr>
                 </c:forEach>
+                <c:forEach var="line" items="${booking.fnbLines}">
+                    <tr><td><c:out value="${line.name}"/></td><td>${line.combo ? 'Combo' : 'Bắp nước'} × ${line.quantity}</td>
+                        <td class="text-end"><fmt:formatNumber value="${line.lineTotal}" pattern="#,##0"/> đ</td></tr>
+                </c:forEach>
+                <c:if test="${booking.discountAmount > 0}">
+                    <tr><td>Giảm giá</td><td><c:out value="${booking.voucherCode}"/> (trên tiền vé)</td>
+                        <td class="text-end text-success">− <fmt:formatNumber value="${booking.discountAmount}" pattern="#,##0"/> đ</td></tr>
+                </c:if>
                 </tbody>
                 <tfoot><tr><th colspan="2">Tổng cộng</th>
                     <th class="text-end"><fmt:formatNumber value="${booking.totalAmount}" pattern="#,##0"/> đ</th></tr></tfoot>

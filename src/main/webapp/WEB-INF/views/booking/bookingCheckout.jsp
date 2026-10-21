@@ -29,11 +29,16 @@
                             </c:forEach>
                         </td>
                     </tr>
-                    <tr><th>Tổng tiền</th><td class="fs-5 fw-bold"><fmt:formatNumber value="${booking.totalAmount}" pattern="#,##0"/> đ</td></tr>
+                </table>
+                <table class="table table-sm mb-3">
+                    <%@ include file="/WEB-INF/views/booking/amountRows.jspf" %>
+                    <tr class="border-top"><th class="fs-5">Tổng thanh toán</th>
+                        <td class="text-end fs-5 fw-bold"><fmt:formatNumber value="${booking.totalAmount}" pattern="#,##0"/> đ</td></tr>
                 </table>
 
                 <c:choose>
                     <c:when test="${booking.holdActive}">
+                        <%@ include file="/WEB-INF/views/booking/extras.jspf" %>
                         <form method="post" action="${ctx}/payment/vnpay" class="mb-2">
                             <input type="hidden" name="bookingId" value="${booking.id}">
                             <button type="submit" class="btn btn-primary w-100 btn-lg">Thanh toán qua VNPay</button>

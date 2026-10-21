@@ -98,7 +98,8 @@ public class VoucherService {
         }
 
         BigDecimal discount = BigDecimal.ZERO;
-        if ("PERCENTAGE".equalsIgnoreCase(voucher.getDiscountType())) {
+        // DB luu PERCENT (CK_Vouchers_Type), giu PERCENTAGE cho tuong thich
+        if ("PERCENT".equalsIgnoreCase(voucher.getDiscountType()) || "PERCENTAGE".equalsIgnoreCase(voucher.getDiscountType())) {
             discount = orderAmount.multiply(voucher.getDiscountValue())
                     .divide(BigDecimal.valueOf(100), 0, RoundingMode.HALF_UP);
             if (voucher.getMaximumDiscount() != null && discount.compareTo(voucher.getMaximumDiscount()) > 0) {
