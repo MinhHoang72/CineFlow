@@ -32,7 +32,7 @@ import model.entity.Voucher;
  * Manager chỉ thấy và chỉ có thể thao tác voucher gắn với centreId của mình.
  * Admin xem và quản lý TẤT CẢ voucher (bao gồm cả voucher chi nhánh nếu muốn).
  */
-@WebServlet(name = "VoucherManagementServlet", urlPatterns = {"/admin/vouchers/*", "/admin/vouchers", "/manager/vouchers/*", "/manager/vouchers"})
+@WebServlet(name = "VoucherManagementServlet", urlPatterns = {"/admin/vouchers", "/admin/vouchers/*", "/manager/vouchers", "/manager/vouchers/*"})
 public class VoucherManagementServlet extends HttpServlet {
 
     private static final int PAGE_SIZE = 10;
@@ -279,7 +279,7 @@ public class VoucherManagementServlet extends HttpServlet {
         request.setAttribute("csrf", csrfToken(request));
         request.setAttribute("pageTitle", voucher.getVoucherId() == 0 ? "Thêm voucher" : "Sửa voucher");
         request.setAttribute("pageBreadcrumb", "Khuyến mãi");
-        request.setAttribute("baseUrl", base);
+request.setAttribute("baseUrl", base);
         request.setAttribute("currentUser", user);
         request.setAttribute("isAdminScope", user.isAdmin() && request.getRequestURI().contains("/admin/"));
         request.getRequestDispatcher("/WEB-INF/views/voucher/voucherForm.jsp").forward(request, response);

@@ -119,7 +119,7 @@ public class VoucherService {
      * Tìm kiếm và phân trang danh sách Voucher.
      */
     public PageDTO<Voucher> searchVouchers(String key, String status, String type, int page, int size) {
-        return voucherDAO.search(key, status, type, page, size);
+        return voucherDAO.search(key, status, type, null, page, size); // null = moi chi nhanh (Admin)
     }
 
     /**

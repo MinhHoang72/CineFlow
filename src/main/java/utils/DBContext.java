@@ -3,44 +3,55 @@ package utils;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Proxy;
 
 /**
  * Cung cấp kết nối JDBC tới cơ sở dữ liệu Microsoft SQL Server của hệ thống CineFlow.
  */
 public class DBContext implements AutoCloseable {
 
+    /** Ket noi that cua thread/request hien tai, mo khi DAO dung lan dau. */
+    private static final ThreadLocal<Connection> REQUEST_CONNECTION = new ThreadLocal<>();
+
+    /** Moi loi goi tren proxy chuyen sang ket noi that cua request hien tai (mo lai neu chua co / da dong). */
+    private static final Connection REQUEST_CONNECTION_PROXY = (Connection) Proxy.newProxyInstance(
+            DBContext.class.getClassLoader(), new Class<?>[] {Connection.class},
+            (proxy, method, args) -> {
+                if ("close".equals(method.getName())) {
+                    closeRequestConnections();
+                    return null;
+                }
+                Connection real = REQUEST_CONNECTION.get();
+                if (real == null || real.isClosed()) {
+                    real = getConnection();
+                    REQUEST_CONNECTION.set(real);
+                }
+                try {
+                    return method.invoke(real, args);
+                } catch (InvocationTargetException e) {
+                    throw e.getCause();
+                }
+            });
+
     /**
-     * Ket noi rieng cua cac DAO ke thua DBContext (BranchPricingDAO, SurchargeDAO, TimeSlotPricingDAO).
-     * Ket noi mo o constructor duoc ghi lai theo request va dong boi filter.DBConnectionFilter khi request
-     * ket thuc; dung DAO trong try-with-resources thi ket noi dong ngay.
+     * Ket noi cho cac DAO ke thua DBContext (BranchPricingDAO, SurchargeDAO, TimeSlotPricingDAO).
+     * Moi request dung ket noi rieng, filter.DBConnectionFilter dong no khi request ket thuc, nen DAO
+     * tao moi moi request hay giu lau trong servlet deu khong ro ket noi va khong dung ket noi da dong.
      */
-    protected Connection connection;
-
-    private static final ThreadLocal<List<Connection>> REQUEST_CONNECTIONS = ThreadLocal.withInitial(ArrayList::new);
-
-    public DBContext() {
-        try { connection = getConnection(); }
-        catch (SQLException e) { throw new IllegalStateException("Unable to connect to database", e); }
-        REQUEST_CONNECTIONS.get().add(connection);
-    }
+    protected final Connection connection = REQUEST_CONNECTION_PROXY;
 
     @Override
     public void close() {
-        closeQuietly(connection);
-        REQUEST_CONNECTIONS.get().remove(connection);
+        closeRequestConnections();
     }
 
-    /** Dong moi ket noi DAO da mo trong request hien tai. */
+    /** Dong ket noi DAO cua request hien tai. */
     public static void closeRequestConnections() {
-        for (Connection c : REQUEST_CONNECTIONS.get()) closeQuietly(c);
-        REQUEST_CONNECTIONS.remove();
-    }
-
-    private static void closeQuietly(Connection c) {
+        Connection real = REQUEST_CONNECTION.get();
+        REQUEST_CONNECTION.remove();
         try {
-            if (c != null && !c.isClosed()) c.close();
+            if (real != null && !real.isClosed()) real.close();
         } catch (SQLException ignored) {
             // ket noi da hong: khong con gi de dong
         }
