@@ -44,6 +44,7 @@
         roleLabel = "Soát vé";
     }
 %>
+<%@ include file="/WEB-INF/fragments/theme.jspf" %>
 <header class="cf-topbar">
     <div class="cf-topbar-breadcrumb">
         <div class="cf-topbar-title">

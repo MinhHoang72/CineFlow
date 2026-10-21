@@ -10,7 +10,7 @@
                                    or cfRole == 'MANAGER' or cfRole == 'ADMIN'}" scope="request"/>
 <c:if test="${empty pageBreadcrumb}"><c:set var="pageBreadcrumb" value="Đặt vé và thanh toán" scope="request"/></c:if>
 <!DOCTYPE html>
-<html lang="vi" data-bs-theme="dark">
+<html lang="vi" data-bs-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
