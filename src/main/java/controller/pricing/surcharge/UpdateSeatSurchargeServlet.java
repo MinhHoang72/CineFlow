@@ -4,7 +4,7 @@ import dao.SurchargeDAO;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 import java.io.IOException;
-import model.Surcharge;
+import model.entity.Surcharge;
 
 @WebServlet("/pricing/seat-surcharges/update")
 public class UpdateSeatSurchargeServlet
@@ -38,7 +38,7 @@ public class UpdateSeatSurchargeServlet
                             )
                     );
 
-            int managerId = utils.FE04Context.requireUserId(request);
+            int managerId = service.ShowtimeService.requireUserId(request);
 
             if (!Double.isFinite(amount) || amount < 0) {
 

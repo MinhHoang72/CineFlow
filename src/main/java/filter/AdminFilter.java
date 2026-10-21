@@ -8,7 +8,7 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import model.User;
+import model.entity.User;
 
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -96,7 +96,7 @@ public class AdminFilter implements Filter {
                 fullPath = fullPath.substring(httpRequest.getContextPath().length());
             }
             String encoded = URLEncoder.encode(fullPath, StandardCharsets.UTF_8);
-            String loginUrl = httpRequest.getContextPath() + "/auth/login.jsp?redirect=" + encoded;
+            String loginUrl = httpRequest.getContextPath() + "/login?redirect=" + encoded;
             httpResponse.sendRedirect(httpResponse.encodeRedirectURL(loginUrl));
             return;
         }

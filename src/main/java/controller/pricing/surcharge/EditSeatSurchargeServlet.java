@@ -5,7 +5,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 import java.io.IOException;
-import model.Surcharge;
+import model.entity.Surcharge;
 
 @WebServlet("/pricing/seat-surcharges/edit")
 public class EditSeatSurchargeServlet
@@ -46,7 +46,7 @@ public class EditSeatSurchargeServlet
             );
 
             request.getRequestDispatcher(
-                    "/pricing/edit-seat-surcharge.jsp"
+                    "/WEB-INF/views/pricing/seatSurchargeEdit.jsp"
             ).forward(
                     request,
                     response

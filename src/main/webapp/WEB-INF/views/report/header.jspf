@@ -1,0 +1,127 @@
+﻿<%@ page pageEncoding="UTF-8" %>
+<%@ page import="model.entity.User" %>
+<%!
+    static String esc(Object value) {
+        if (value == null) {
+            return "";
+        }
+        return value.toString().replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+                .replace("\"", "&quot;").replace("'", "&#39;");
+    }
+
+    static String pager(String ctx, String base, int page, int totalPages) {
+        if (totalPages <= 1) {
+            return "";
+        }
+        StringBuilder html = new StringBuilder("<nav class=\"rp-pages\">");
+        html.append(page > 1 ? "<a href=\"" + ctx + base + (page - 1) + "\">&lsaquo;</a>" : "<span class=\"disabled\">&lsaquo;</span>");
+        int last = 0;
+        for (int i = 1; i <= totalPages; i++) {
+            if (i == 1 || i == totalPages || Math.abs(i - page) <= 1) {
+                if (last != 0 && i - last > 1) {
+                    html.append("<span class=\"gap\">&hellip;</span>");
+                }
+                html.append(i == page ? "<span class=\"active\">" + i + "</span>" : "<a href=\"" + ctx + base + i + "\">" + i + "</a>");
+                last = i;
+            }
+        }
+        html.append(page < totalPages ? "<a href=\"" + ctx + base + (page + 1) + "\">&rsaquo;</a>" : "<span class=\"disabled\">&rsaquo;</span>");
+        return html.append("</nav>").toString();
+    }
+
+    static String pct(double value) {
+        return String.format(java.util.Locale.US, "%.1f%%", value);
+    }
+
+    static String num(long value) {
+        return String.format(java.util.Locale.GERMANY, "%,d", value);
+    }
+
+    static String money(java.math.BigDecimal value) {
+        if (value == null) {
+            return "";
+        }
+        return new java.text.DecimalFormat("#,##0", new java.text.DecimalFormatSymbols(java.util.Locale.GERMANY)).format(value) + " đ";
+    }
+%>
+<%
+    String ctx = request.getContextPath();
+    User currentUser = (User) session.getAttribute("user");
+    boolean adminUser = currentUser != null && "ADMIN".equals(currentUser.getRole());
+    request.setAttribute("activeNav", "report-hub");
+    String shellTitle = (String) request.getAttribute("pageTitle");
+    String flashType = (String) request.getAttribute("flashType");
+    String flashMessage = (String) request.getAttribute("flashMessage");
+%>
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= esc(shellTitle) %> | CineFlow</title>
+    <link rel="stylesheet" href="<%= ctx %>/css/common/reset.css">
+    <link rel="stylesheet" href="<%= ctx %>/css/common/variables.css">
+    <link rel="stylesheet" href="<%= ctx %>/css/common/buttons.css">
+    <link rel="stylesheet" href="<%= ctx %>/css/common/badges.css">
+    <link rel="stylesheet" href="<%= ctx %>/css/common/forms.css">
+    <link rel="stylesheet" href="<%= ctx %>/css/common/tables.css">
+    <link rel="stylesheet" href="<%= ctx %>/css/manager/shell.css">
+    <link rel="stylesheet" href="<%= ctx %>/css/admin/dashboard.css">
+    <style>
+        .rp-flash { padding: 10px 14px; border-radius: 8px; margin-bottom: 14px; font-weight: 600; }
+        .rp-flash.success { background: #dcfce7; color: #166534; }
+        .rp-flash.error { background: #fee2e2; color: #991b1b; }
+        .rp-filter { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; padding: 14px; }
+        .rp-filter label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; }
+        .rp-pager { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 18px; flex-wrap: wrap; border-top: 1px solid rgba(148, 163, 184, .18); }
+        .rp-pager .info { color: #94a3b8; font-size: 13px; }
+        .rp-pages { display: flex; gap: 6px; align-items: center; }
+        .rp-pages a, .rp-pages span { min-width: 34px; height: 34px; padding: 0 10px; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; border: 1px solid rgba(148, 163, 184, .25); color: #cbd5e1; font-weight: 600; font-size: 14px; text-decoration: none; }
+        .rp-pages a:hover { background: rgba(255, 42, 84, .15); border-color: #ff2a54; color: #fff; }
+        .rp-pages .active { background: #ff2a54; border-color: #ff2a54; color: #fff; }
+        .rp-pages .disabled { opacity: .35; }
+        .rp-pages .gap { border: 0; min-width: 20px; padding: 0; }
+        .cf-form-group label.cf-form-label, .cf-form-label { display: block; margin-bottom: 6px; color: #e2e8f0; font-weight: 600; font-size: 14px; }
+        .cf-help { color: #94a3b8; font-size: 12px; margin-top: 4px; }
+        .cf-form-group { margin-bottom: 16px; }
+        .rp-form .cf-btn[type=submit] { margin-top: 6px; }
+        .rp-error { color: #fca5a5; font-size: 13px; margin-top: 4px; font-weight: 600; }
+        .rp-filter { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin-bottom: 18px; }
+        .rp-filter label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: #e2e8f0; }
+        .rp-scope { color: #94a3b8; font-size: 13px; align-self: center; }
+        .rp-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-bottom: 18px; }
+        .rp-kpi { padding: 16px 18px; border-radius: 12px; background: rgba(148, 163, 184, .08); border: 1px solid rgba(148, 163, 184, .18); }
+        .rp-kpi .label { color: #94a3b8; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+        .rp-kpi .value { color: #fff; font-size: 26px; font-weight: 800; margin-top: 6px; }
+        .rp-kpi .note { color: #94a3b8; font-size: 12px; margin-top: 4px; }
+        .rp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 16px; margin-top: 16px; }
+        .rp-card-title { padding: 14px 18px 0; font-size: 16px; font-weight: 700; color: #fff; }
+        .rp-bar { height: 8px; min-width: 90px; background: rgba(148, 163, 184, .2); border-radius: 4px; overflow: hidden; }
+        .rp-bar span { display: block; height: 100%; background: #ff2a54; }
+        .rp-bar.good span { background: #22c55e; }
+        .rp-bar.warn span { background: #f59e0b; }
+        .rp-trend { display: flex; align-items: flex-end; gap: 4px; height: 160px; padding: 18px; }
+        .rp-trend .col { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; height: 100%; }
+        .rp-trend .col span { display: block; background: #ff2a54; border-radius: 4px 4px 0 0; min-height: 2px; }
+        .rp-trend .col span.fnb { background: #38bdf8; border-radius: 0; }
+        .rp-legend { padding: 0 18px 14px; color: #94a3b8; font-size: 12px; display: flex; gap: 16px; }
+        .rp-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; }
+        .rp-num { text-align: right; }
+        .rp-inline { display: inline; }
+        .rp-lines { display: flex; flex-direction: column; gap: 8px; }
+        .rp-line { display: flex; gap: 8px; align-items: center; }
+        .rp-thumb { width: 48px; height: 48px; object-fit: cover; border-radius: 8px; display: inline-flex; vertical-align: middle; }
+        .rp-noimg { align-items: center; justify-content: center; background: rgba(148, 163, 184, .15); font-size: 22px; }
+        .rp-preview { max-width: 180px; max-height: 140px; border-radius: 10px; object-fit: cover; display: block; }
+        .rp-form { max-width: 720px; padding: 18px; }
+    </style>
+</head>
+<body>
+<div class="cf-manager-shell">
+    <jsp:include page="<%= adminUser ? \"/WEB-INF/fragments/adminSidebar.jspf\" : \"/WEB-INF/fragments/managerSidebar.jspf\" %>" />
+    <div class="cf-manager-main">
+        <jsp:include page="/WEB-INF/fragments/adminTopbar.jspf" />
+        <main class="cf-content">
+            <% if (flashMessage != null) { %>
+                <div class="rp-flash <%= "success".equals(flashType) ? "success" : "error" %>"><%= esc(flashMessage) %></div>
+            <% } %>

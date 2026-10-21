@@ -1,8 +1,8 @@
 package dao;
 
-import model.Booking;
-import model.Seat;
-import model.Showtime;
+import model.entity.Booking;
+import model.entity.Seat;
+import model.entity.Showtime;
 import utils.DBContext;
 import java.math.BigDecimal;
 import java.security.SecureRandom;

@@ -1,4 +1,4 @@
-package dao;
+﻿package dao;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -9,9 +9,8 @@ import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
-import model.Centre;
-import model.PageDTO;
-import model.Voucher;
+import model.dto.common.PageDTO;
+import model.entity.Voucher;
 import utils.DBContext;
 
 public class VoucherDAO {

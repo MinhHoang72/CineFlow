@@ -5,7 +5,7 @@ import java.io.IOException;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
-import model.TimeSlotPricing;
+import model.entity.TimeSlotPricing;
 
 @WebServlet("/pricing/time-slots/edit")
 public class EditTimeSlotPricingServlet
@@ -46,7 +46,7 @@ public class EditTimeSlotPricingServlet
             );
 
             request.getRequestDispatcher(
-                    "/pricing/edit-time-slot-pricing.jsp"
+                    "/WEB-INF/views/pricing/timeSlotEdit.jsp"
             ).forward(
                     request,
                     response

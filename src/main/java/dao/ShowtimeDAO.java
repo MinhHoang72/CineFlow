@@ -1,15 +1,17 @@
 package dao;
 import java.sql.*;
 import java.time.LocalDateTime;
-import model.SeatAvailability;
+import model.entity.SeatAvailability;
 
-import model.Showtime;
+import model.entity.Centre;
+import model.entity.Showtime;
 import utils.DBContext;
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -130,13 +132,73 @@ public class ShowtimeDAO {
         return list;
     }
 
+    /** Thanh pho cua rap; rap chua nhap thanh pho duoc xep vao nhom nay. */
+    public static final String OTHER_CITY = "Khác";
+    private static final String CITY = "ISNULL(NULLIF(LTRIM(RTRIM(b.City)), ''), N'" + OTHER_CITY + "')";
+
+    static final String BOOKABLE_FROM =
+            "FROM Showtimes s JOIN Movies m ON m.MovieID = s.MovieID "
+          + "JOIN Halls h ON h.HallID = s.HallID JOIN Centres b ON b.CentreID = h.CentreID "
+          + "WHERE " + BOOKABLE;
+
+    /** Thanh pho dang co suat mo ban va so rap co suat. */
+    public record CityOption(String name, int centreCount) {}
+
+    /** Buoc 1: thanh pho con suat mo ban. @param movieId != null: chi thanh pho co chieu phim nay */
+    public List<CityOption> getCities(Integer movieId) throws SQLException {
+        String sql = "SELECT " + CITY + " AS City, COUNT(DISTINCT b.CentreID) AS Centres " + BOOKABLE_FROM
+                   + "AND (? IS NULL OR s.MovieID = ?) GROUP BY " + CITY + " ORDER BY City";
+        List<CityOption> list = new ArrayList<>();
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            setNullableInt(ps, 1, movieId);
+            setNullableInt(ps, 2, movieId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) list.add(new CityOption(rs.getString("City"), rs.getInt("Centres")));
+            }
+        }
+        return list;
+    }
+
+    /** Buoc 2: rap trong thanh pho con suat mo ban. @param movieId != null: chi rap co chieu phim nay */
+    public List<Centre> getCentresInCity(String city, Integer movieId) throws SQLException {
+        String sql = "SELECT DISTINCT b.CentreID, b.CentreName, b.Address, " + CITY + " AS City " + BOOKABLE_FROM
+                   + "AND " + CITY + " = ? AND (? IS NULL OR s.MovieID = ?) ORDER BY b.CentreName";
+        List<Centre> list = new ArrayList<>();
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, city);
+            setNullableInt(ps, 2, movieId);
+            setNullableInt(ps, 3, movieId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Centre centre = new Centre();
+                    centre.setCentreId(rs.getInt("CentreID"));
+                    centre.setCentreName(rs.getString("CentreName"));
+                    centre.setAddress(rs.getString("Address"));
+                    centre.setCity(rs.getString("City"));
+                    list.add(centre);
+                }
+            }
+        }
+        return list;
+    }
+
+    /** Thanh pho cua rap (theo cach nhom o getCities), null neu khong co rap. */
+    public String getCityOfCentre(int centreId) throws SQLException {
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(
+                     "SELECT " + CITY + " FROM Centres b WHERE b.CentreID = ?")) {
+            ps.setInt(1, centreId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getString(1) : null;
+            }
+        }
+    }
+
     /** Rap co suat chieu som nhat con mo ban cua phim, null neu phim khong con suat nao. */
     public Integer findFirstCentreForMovie(int movieId) throws SQLException {
-        String sql = "SELECT TOP 1 b.CentreID FROM Showtimes s "
-                   + "JOIN Movies m ON m.MovieID = s.MovieID "
-                   + "JOIN Halls h ON h.HallID = s.HallID "
-                   + "JOIN Centres b ON b.CentreID = h.CentreID "
-                   + "WHERE " + BOOKABLE + "AND s.MovieID = ? ORDER BY s.StartTime";
+        String sql = "SELECT TOP 1 b.CentreID " + BOOKABLE_FROM + "AND s.MovieID = ? ORDER BY s.StartTime";
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, movieId);
@@ -144,6 +206,11 @@ public class ShowtimeDAO {
                 return rs.next() ? rs.getInt(1) : null;
             }
         }
+    }
+
+    private static void setNullableInt(PreparedStatement ps, int index, Integer value) throws SQLException {
+        if (value == null) ps.setNull(index, Types.INTEGER);
+        else ps.setInt(index, value);
     }
 
     /** Suat chieu con mo ban, null neu khong ton tai hoac da qua gio. */

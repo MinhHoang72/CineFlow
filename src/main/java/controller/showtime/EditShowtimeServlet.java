@@ -7,7 +7,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 import java.io.IOException;
-import model.Showtime;
+import model.entity.Showtime;
 
 @WebServlet("/showtimes/edit")
 public class EditShowtimeServlet
@@ -65,7 +65,7 @@ public class EditShowtimeServlet
                 return;
             }
 
-            int centreId = utils.FE04Context.requireCentreId(request);
+            int centreId = service.ShowtimeService.requireCentreId(request);
 
             MovieDAO movieDAO =
                     new MovieDAO();
@@ -95,7 +95,7 @@ public class EditShowtimeServlet
             );
 
             request.getRequestDispatcher(
-                    "/showtime/edit-showtime.jsp"
+                    "/WEB-INF/views/showtime/showtimeEdit.jsp"
             ).forward(
                     request,
                     response

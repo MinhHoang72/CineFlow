@@ -12,7 +12,7 @@ package dao;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
-import model.BranchPricing;
+import model.entity.BranchPricing;
 import utils.DBContext;
 
 public class BranchPricingDAO extends DBContext {

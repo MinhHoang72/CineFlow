@@ -1,9 +1,9 @@
 package dao;
 
-import model.BookingHistory;
-import model.ManagerAssignment;
-import model.StaffTransfer;
-import model.User;
+import model.dto.booking.BookingHistoryDTO;
+import model.entity.ManagerAssignment;
+import model.entity.StaffTransfer;
+import model.entity.User;
 import utils.DBContext;
 
 import java.sql.Connection;
@@ -515,7 +515,7 @@ public class UserDAO {
      * @param userId mã định danh khách hàng
      * @return danh sách lịch sử đặt vé
      */
-    public List<BookingHistory> getBookingHistory(int userId) {
+    public List<BookingHistoryDTO> getBookingHistory(int userId) {
         String sql = "SELECT b.BookingCode, m.Title, br.CentreName, s.StartTime, "
                 + "b.BookingStatus, b.TotalAmount, b.CreatedAt "
                 + "FROM Bookings b "
@@ -524,13 +524,13 @@ public class UserDAO {
                 + "JOIN Halls h ON h.HallID = s.HallID "
                 + "JOIN Centres br ON br.CentreID = h.CentreID "
                 + "WHERE b.UserID = ? ORDER BY b.CreatedAt DESC";
-        List<BookingHistory> history = new ArrayList<>();
+        List<BookingHistoryDTO> history = new ArrayList<>();
         try (Connection connection = DBContext.getConnection();
              PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, userId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    BookingHistory item = new BookingHistory();
+                    BookingHistoryDTO item = new BookingHistoryDTO();
                     item.setBookingCode(rs.getString("BookingCode"));
                     item.setMovieTitle(rs.getString("Title"));
                     item.setCentreName(rs.getString("CentreName"));
@@ -1880,5 +1880,34 @@ public class UserDAO {
             LOGGER.log(Level.SEVERE, "Không thể đếm số lượng khách hàng", e);
         }
         return 0;
+    }
+
+    /**
+     * Lay vai tro va ID rap chieu duoc phan cong cua nguoi dung.
+     *
+     * @param userId ID nguoi dung
+     * @return mang String [Role, CentreId] hoac null neu khong tim thay
+     */
+    public String[] getUserRoleAndAssignedCentre(int userId) {
+        String sql = "SELECT u.Role, u.CentreID, a.CentreID AS AssignedCentreID "
+                + "FROM Users u LEFT JOIN CentreManagerAssignments a ON a.ManagerID = u.UserID "
+                + "AND a.Status = 'ACTIVE' AND a.StartDate <= GETDATE() "
+                + "AND (a.EndDate IS NULL OR a.EndDate > GETDATE()) "
+                + "WHERE u.UserID = ?";
+        try (Connection connection = DBContext.getConnection();
+             PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, userId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    String role = rs.getString("Role");
+                    int centre = rs.getInt("MANAGER".equalsIgnoreCase(role) ? "AssignedCentreID" : "CentreID");
+                    String centreStr = (!rs.wasNull() && centre > 0) ? String.valueOf(centre) : null;
+                    return new String[]{role, centreStr};
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Loi khi lay thong tin phan cong rap cua nguoi dung: " + userId, e);
+        }
+        return null;
     }
 }

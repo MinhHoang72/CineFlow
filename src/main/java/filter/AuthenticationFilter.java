@@ -50,7 +50,7 @@ public class AuthenticationFilter implements Filter {
                 fullPath = fullPath.substring(httpRequest.getContextPath().length());
             }
             String encoded = java.net.URLEncoder.encode(fullPath, "UTF-8");
-            String loginUrl = httpRequest.getContextPath() + "/auth/login.jsp?error=session&redirect=" + encoded;
+            String loginUrl = httpRequest.getContextPath() + "/login?error=session&redirect=" + encoded;
             httpResponse.sendRedirect(httpResponse.encodeRedirectURL(loginUrl));
         }
     }

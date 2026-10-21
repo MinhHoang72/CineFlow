@@ -8,13 +8,13 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
-import model.ComboLine;
-import model.FnbCombo;
-import model.FnbItem;
-import model.FnbRowDTO;
-import model.OptionDTO;
-import model.PageDTO;
-import model.StockRowDTO;
+import model.entity.ComboLine;
+import model.entity.FnbCombo;
+import model.entity.FnbItem;
+import model.dto.fnb.FnbRowDTO;
+import model.dto.common.OptionDTO;
+import model.dto.common.PageDTO;
+import model.dto.fnb.StockRowDTO;
 import utils.DBContext;
 
 public class FnbDAO {

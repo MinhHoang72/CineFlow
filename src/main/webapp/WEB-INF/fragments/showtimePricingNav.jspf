@@ -1,0 +1,23 @@
+<%@ page pageEncoding="UTF-8" %>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<c:set var="tab" value="${not empty activeTab ? activeTab : 'showtimes'}" />
+<c:set var="centresList" value="${not empty centres ? centres : cinemaCentres}" />
+<c:set var="currentCentreId" value="${not empty selectedCentreId ? selectedCentreId : (not empty centreId ? centreId : cinemaCentreId)}" />
+
+<nav class="st-tabs" aria-label="Suất chiếu và giá vé">
+<a class="${tab == 'showtimes' ? 'is-active' : ''}" href="${pageContext.request.contextPath}/showtimes" ${tab == 'showtimes' ? 'aria-current="page"' : ''}>Suất chiếu</a>
+<a class="${tab == 'base' ? 'is-active' : ''}" href="${pageContext.request.contextPath}/pricing" ${tab == 'base' ? 'aria-current="page"' : ''}>Giá cơ bản</a>
+<a class="${tab == 'time' ? 'is-active' : ''}" href="${pageContext.request.contextPath}/pricing/time-slots" ${tab == 'time' ? 'aria-current="page"' : ''}>Phụ thu khung giờ</a>
+<a class="${tab == 'surcharge' ? 'is-active' : ''}" href="${pageContext.request.contextPath}/pricing/seat-surcharges" ${tab == 'surcharge' ? 'aria-current="page"' : ''}>Phụ thu ghế & phòng</a>
+</nav>
+
+<%-- Chọn cụm rạp --%>
+<c:if test="${not empty centresList}">
+<form class="st-create-form" method="get" style="margin-bottom:16px"
+      action="${pageContext.request.contextPath}${tab == 'showtimes' ? '/showtimes' : (tab == 'time' ? '/pricing/time-slots' : (tab == 'surcharge' ? '/pricing/seat-surcharges' : '/pricing'))}">
+<div class="st-field"><label for="cinema-centre">Cụm rạp</label>
+<select id="cinema-centre" name="centreId" onchange="this.form.submit()">
+<c:forEach var="ce" items="${centresList}"><option value="${ce.centreId}" ${ce.centreId == currentCentreId ? 'selected' : ''}><c:out value="${ce.centreName}" /> · <c:out value="${ce.city}" /></option></c:forEach>
+</select></div>
+</form>
+</c:if>

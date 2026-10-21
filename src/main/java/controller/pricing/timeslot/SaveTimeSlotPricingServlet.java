@@ -7,7 +7,7 @@ import java.time.LocalTime;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
-import model.TimeSlotPricing;
+import model.entity.TimeSlotPricing;
 
 @WebServlet("/pricing/time-slots/save")
 public class SaveTimeSlotPricingServlet
@@ -21,7 +21,7 @@ public class SaveTimeSlotPricingServlet
 
         try {
 
-            int centreId = utils.FE04Context.requireCentreId(request);
+            int centreId = service.ShowtimeService.requireCentreId(request);
 
             String slotName =
                     request.getParameter(
@@ -49,7 +49,7 @@ public class SaveTimeSlotPricingServlet
                             )
                     );
 
-            int managerId = utils.FE04Context.requireUserId(request);
+            int managerId = service.ShowtimeService.requireUserId(request);
 
             if (!endTime.isAfter(startTime)) {
 

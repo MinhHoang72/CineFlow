@@ -1,8 +1,8 @@
 package dao;
 
-import model.Centre;
-import model.Movie;
-import model.ShowtimeView;
+import model.entity.Centre;
+import model.entity.Movie;
+import model.dto.showtime.ShowtimeDetailDTO;
 import utils.DBContext;
 
 import java.sql.Connection;
@@ -475,7 +475,7 @@ public class CinemaDAO {
      *
      * @return danh sách các suất chiếu đã lên lịch
      */
-    public List<ShowtimeView> getScheduledShowtimes() {
+    public List<ShowtimeDetailDTO> getScheduledShowtimes() {
         String sql = "SELECT s.ShowtimeID, m.MovieID, b.CentreID, m.Title, "
                 + "b.CentreName, b.City, h.HallName, s.StartTime, "
                 + DYNAMIC_PRICE_SELECT
@@ -486,13 +486,13 @@ public class CinemaDAO {
                 + DYNAMIC_PRICE_APPLY
                 + "WHERE s.Status = 'SCHEDULED' AND s.StartTime > SYSDATETIME() AND m.Status IN ('NOW_SHOWING', 'COMING_SOON') "
                 + "ORDER BY s.StartTime";
-        List<ShowtimeView> showtimes = new ArrayList<>();
+        List<ShowtimeDetailDTO> showtimes = new ArrayList<>();
 
         try (Connection connection = DBContext.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql);
              ResultSet resultSet = statement.executeQuery()) {
             while (resultSet.next()) {
-                ShowtimeView showtime = new ShowtimeView();
+                ShowtimeDetailDTO showtime = new ShowtimeDetailDTO();
                 showtime.setShowtimeId(resultSet.getInt("ShowtimeID"));
                 showtime.setMovieId(resultSet.getInt("MovieID"));
                 showtime.setCentreId(resultSet.getInt("CentreID"));
@@ -517,7 +517,7 @@ public class CinemaDAO {
      * @param movieId mã định danh phim
      * @return danh sách các suất chiếu của phim
      */
-    public List<ShowtimeView> getScheduledShowtimesByMovieId(int movieId) {
+    public List<ShowtimeDetailDTO> getScheduledShowtimesByMovieId(int movieId) {
         String sql = "SELECT s.ShowtimeID, m.MovieID, b.CentreID, m.Title, "
                 + "b.CentreName, b.City, h.HallName, s.StartTime, "
                 + DYNAMIC_PRICE_SELECT
@@ -528,14 +528,14 @@ public class CinemaDAO {
                 + DYNAMIC_PRICE_APPLY
                 + "WHERE s.Status = 'SCHEDULED' AND s.StartTime > SYSDATETIME() AND s.MovieID = ? "
                 + "ORDER BY s.StartTime";
-        List<ShowtimeView> showtimes = new ArrayList<>();
+        List<ShowtimeDetailDTO> showtimes = new ArrayList<>();
 
         try (Connection connection = DBContext.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql);) {
             statement.setInt(1, movieId);
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
-                    ShowtimeView showtime = new ShowtimeView();
+                    ShowtimeDetailDTO showtime = new ShowtimeDetailDTO();
                     showtime.setShowtimeId(resultSet.getInt("ShowtimeID"));
                     showtime.setMovieId(resultSet.getInt("MovieID"));
                     showtime.setCentreId(resultSet.getInt("CentreID"));
@@ -561,7 +561,7 @@ public class CinemaDAO {
      * @param centreId mã định danh trung tâm
      * @return danh sách suất chiếu tại trung tâm
      */
-    public List<ShowtimeView> getScheduledShowtimesByCentreId(int centreId) {
+    public List<ShowtimeDetailDTO> getScheduledShowtimesByCentreId(int centreId) {
         String sql = "SELECT s.ShowtimeID, m.MovieID, b.CentreID, m.Title, m.PosterURL, m.AgeRating, m.Duration, m.Genre, "
                 + "b.CentreName, b.City, h.HallName, s.StartTime, "
                 + DYNAMIC_PRICE_SELECT
@@ -572,14 +572,14 @@ public class CinemaDAO {
                 + DYNAMIC_PRICE_APPLY
                 + "WHERE s.Status = 'SCHEDULED' AND s.StartTime > SYSDATETIME() AND m.Status IN ('NOW_SHOWING', 'COMING_SOON') AND b.CentreID = ? "
                 + "ORDER BY s.StartTime";
-        List<ShowtimeView> showtimes = new ArrayList<>();
+        List<ShowtimeDetailDTO> showtimes = new ArrayList<>();
 
         try (Connection connection = DBContext.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, centreId);
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
-                    ShowtimeView showtime = new ShowtimeView();
+                    ShowtimeDetailDTO showtime = new ShowtimeDetailDTO();
                     showtime.setShowtimeId(resultSet.getInt("ShowtimeID"));
                     showtime.setMovieId(resultSet.getInt("MovieID"));
                     showtime.setCentreId(resultSet.getInt("CentreID"));

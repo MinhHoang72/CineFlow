@@ -1,0 +1,521 @@
+﻿<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ page import="model.entity.Movie" %>
+<%
+    String authRole = (String) session.getAttribute("role");
+    if (authRole == null && session.getAttribute("user") instanceof model.entity.User) {
+        authRole = ((model.entity.User) session.getAttribute("user")).getRole();
+    }
+    if (!"ADMIN".equalsIgnoreCase(authRole)) {
+        response.sendError(HttpServletResponse.SC_FORBIDDEN, "Chỉ Quản trị viên (ADMIN) mới có quyền truy cập trang này.");
+        return;
+    }
+%>
+<%!
+    private String esc(String v) {
+        if (v == null) return "";
+        return v.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;");
+    }
+%>
+<%
+    Movie movie = (Movie) request.getAttribute("movie");
+    boolean editing = movie != null;
+    String age = editing && movie.getAgeRating() != null ? movie.getAgeRating() : "P";
+    String status = editing && movie.getStatus() != null ? movie.getStatus() : "COMING_SOON";
+    String posterUrl = editing && movie.getPosterUrl() != null ? movie.getPosterUrl() : "";
+    String trailerUrl = editing && movie.getTrailerUrl() != null ? movie.getTrailerUrl() : "";
+    String errorParam = request.getParameter("error");
+
+    request.setAttribute("activeNav", "movies");
+    request.setAttribute("pageTitle", editing ? "Chỉnh sửa phim: " + movie.getTitle() : "Tạo phim mới");
+    request.setAttribute("pageBreadcrumb", editing ? "Chỉnh sửa phim" : "Thêm mới");
+%>
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= editing ? "Chỉnh sửa: " + esc(movie.getTitle()) : "Thêm phim mới" %> | CineFlow Admin</title>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/reset.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/variables.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/buttons.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/badges.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/forms.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/alerts.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/manager/shell.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin/dashboard.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin/movie-form.css">
+</head>
+<body>
+<div class="cf-manager-shell">
+    <jsp:include page="/WEB-INF/fragments/adminSidebar.jspf" />
+
+    <div class="cf-manager-main">
+        <jsp:include page="/WEB-INF/fragments/adminTopbar.jspf" />
+
+        <main class="cf-content">
+            <!-- TIÊU ĐỀ TRANG -->
+            <div class="cf-page-header">
+                <div>
+                    <h1><%= editing ? "Chỉnh sửa thông tin phim" : "Thêm phim mới" %></h1>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <a href="${pageContext.request.contextPath}/admin/movies" class="cf-btn cf-btn-secondary">
+                        Danh mục phim
+                    </a>
+                </div>
+            </div>
+
+            <!-- THÔNG BÁO LỖI VALIDATION NẾU CÓ -->
+            <% if ("missing_title".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
+                    <span>⚠</span> <strong>Lỗi:</strong> Vui lòng nhập tên phim (không được để trống).
+                </div>
+            <% } else if ("invalid_duration".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
+                    <span>⚠</span> <strong>Lỗi:</strong> Thời lượng phim không hợp lệ (phải là số nguyên từ 1 đến 600 phút).
+                </div>
+            <% } else if ("invalid_age_rating".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
+                    <span>⚠</span> <strong>Lỗi:</strong> Độ tuổi khuyến nghị không thuộc danh mục hợp lệ (P, K, T13, T16, T18, C).
+                </div>
+            <% } else if ("invalid_status".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
+                    <span>⚠</span> <strong>Lỗi:</strong> Trạng thái phát hành không hợp lệ.
+                </div>
+            <% } else if ("invalid_date_range".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
+                    <span>⚠</span> <strong>Lỗi:</strong> Khoảng thời gian phát hành không hợp lệ: Ngày kết thúc phải sau hoặc bằng ngày khởi chiếu.
+                </div>
+            <% } else if ("coming_soon_in_past".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
+                    <span>⚠</span> <strong>Lỗi ngày phát hành:</strong> Không thể đặt trạng thái "Sắp khởi chiếu" khi ngày khởi chiếu ở trong quá khứ. Vui lòng chọn ngày tương lai hoặc đổi trạng thái sang "Đang chiếu".
+                </div>
+            <% } else if ("now_showing_in_future".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
+                    <span>⚠</span> <strong>Lỗi ngày phát hành:</strong> Phim có ngày khởi chiếu ở tương lai chưa thể đặt trạng thái "Đang chiếu". Vui lòng chọn trạng thái "Sắp khởi chiếu".
+                </div>
+            <% } else if ("invalid_poster_file".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
+                    <span>⚠</span> <strong>Lỗi tệp:</strong> Áp phích (poster) phải là tệp hình ảnh (.jpg, .jpeg, .png, .webp).
+                </div>
+            <% } else if ("invalid_trailer_file".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
+                    <span>⚠</span> <strong>Lỗi tệp:</strong> Trailer phải là tệp video (.mp4, .webm, .ogg).
+                </div>
+            <% } else if (errorParam != null) { %>
+                <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
+                    <span>⚠</span> Thao tác lưu phim thất bại. Vui lòng kiểm tra lại thông tin.
+                </div>
+            <% } %>
+
+            <!-- FORM THÔNG TIN PHIM -->
+            <form id="movieForm" method="post" action="${pageContext.request.contextPath}/admin/movie" enctype="multipart/form-data">
+                <input type="hidden" name="action" value="save">
+                <% if (editing) { %>
+                    <input type="hidden" name="movieId" value="<%= movie.getMovieId() %>">
+                <% } %>
+
+                <div class="cf-movie-form-layout">
+                    <!-- ========================================================
+                         CỘT TRÁI (CHÍNH): TOÀN BỘ THÔNG TIN PHIM TRONG 1 THẺ LIỀN MẠCH
+                         ======================================================== -->
+                    <div class="cf-form-main-card">
+                        <!-- PHẦN 1: THÔNG TIN CƠ BẢN -->
+                        <div class="cf-form-section-header">
+                            <h3 class="cf-form-section-title">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line><line x1="2" y1="7" x2="7" y2="7"></line><line x1="2" y1="17" x2="7" y2="17"></line><line x1="17" y1="17" x2="22" y2="17"></line><line x1="17" y1="7" x2="22" y2="7"></line></svg>
+                                Thông tin cơ bản
+                            </h3>
+                        </div>
+
+                        <div class="cf-fields-grid">
+                            <div class="cf-form-group cf-field-span-2">
+                                <label class="cf-form-label">Tên phim <span class="req">*</span></label>
+                                <input class="cf-form-control" name="title" value="<%= editing ? esc(movie.getTitle()) : "" %>" required placeholder="Ví dụ: Đào, Phở và Piano">
+                            </div>
+
+                            <div class="cf-form-group">
+                                <label class="cf-form-label">Thể loại phim</label>
+                                <input class="cf-form-control" name="genre" value="<%= editing ? esc(movie.getGenre()) : "" %>" placeholder="Ví dụ: Hành động, Tình cảm">
+                            </div>
+
+                            <div class="cf-form-group">
+                                <label class="cf-form-label">Mã phim (ID)</label>
+                                <input class="cf-form-control" value="<%= editing ? movie.getMovieId() : "Tự động tạo khi lưu" %>" readonly>
+                            </div>
+
+                            <div class="cf-form-group">
+                                <label class="cf-form-label">Thời lượng (phút) <span class="req">*</span></label>
+                                <input class="cf-form-control" name="duration" type="number" min="1" max="600" value="<%= editing ? movie.getDuration() : "120" %>" required>
+                            </div>
+
+                            <div class="cf-form-group">
+                                <label class="cf-form-label">Độ tuổi khuyến nghị <span class="req">*</span></label>
+                                <select class="cf-form-control" name="ageRating">
+                                    <option value="P" <%= "P".equals(age) ? "selected" : "" %>>P - Phổ biến cho mọi lứa tuổi</option>
+                                    <option value="K" <%= "K".equals(age) ? "selected" : "" %>>K - Khán giả dưới 13 tuổi có người giám hộ</option>
+                                    <option value="T13" <%= "T13".equals(age) ? "selected" : "" %>>T13 - Khán giả từ 13 tuổi trở lên</option>
+                                    <option value="T16" <%= "T16".equals(age) ? "selected" : "" %>>T16 - Khán giả từ 16 tuổi trở lên</option>
+                                    <option value="T18" <%= "T18".equals(age) ? "selected" : "" %>>T18 - Khán giả từ 18 tuổi trở lên</option>
+                                    <option value="C" <%= "C".equals(age) ? "selected" : "" %>>C - Cấm phổ biến</option>
+                                </select>
+                            </div>
+
+                            <div class="cf-form-group cf-field-span-2">
+                                <label class="cf-form-label">Trạng thái phát hành <span class="req">*</span></label>
+                                <select class="cf-form-control" name="status">
+                                    <option value="COMING_SOON" <%= "COMING_SOON".equals(status) ? "selected" : "" %>>Sắp khởi chiếu (COMING_SOON)</option>
+                                    <option value="NOW_SHOWING" <%= "NOW_SHOWING".equals(status) ? "selected" : "" %>>Đang chiếu (NOW_SHOWING)</option>
+                                    <option value="ENDED" <%= "ENDED".equals(status) ? "selected" : "" %>>Đã kết thúc (ENDED)</option>
+                                    <option value="ARCHIVED" <%= "ARCHIVED".equals(status) ? "selected" : "" %>>Lưu trữ (ARCHIVED)</option>
+                                </select>
+                                <p style="margin: 6px 0 0; font-size: 12px; color: #64748B; line-height: 1.4;">
+                                    💡 <strong>Vòng đời phim:</strong> 
+                                    <strong>Sắp khởi chiếu</strong> (chờ phát hành) → 
+                                    <strong>Đang chiếu</strong> (mở bán vé) → 
+                                    <strong>Đã kết thúc</strong> (dừng chiếu, không tạo suất chiếu mới) → 
+                                    <strong>Lưu trữ</strong> (giữ hồ sơ quản lý bản quyền/lịch sử và cân nhắc tái phát hành).
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- ĐƯỜNG PHÂN CÁCH -->
+                        <div class="cf-form-divider"></div>
+
+                        <!-- PHẦN 2: LỊCH PHÁT HÀNH -->
+                        <div class="cf-form-section-header">
+                            <h3 class="cf-form-section-title">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                                Lịch phát hành
+                            </h3>
+                        </div>
+
+                        <div class="cf-fields-grid">
+                            <div class="cf-form-group">
+                                <label class="cf-form-label">Ngày khởi chiếu</label>
+                                <input class="cf-form-control" name="releaseDate" type="date" value="<%= editing && movie.getReleaseDate() != null ? movie.getReleaseDate() : "" %>">
+                            </div>
+
+                            <div class="cf-form-group">
+                                <label class="cf-form-label">Ngày kết thúc dự kiến</label>
+                                <input class="cf-form-control" name="endDate" type="date" value="<%= editing && movie.getEndDate() != null ? movie.getEndDate() : "" %>">
+                            </div>
+                        </div>
+
+                        <!-- ĐƯỜNG PHÂN CÁCH -->
+                        <div class="cf-form-divider"></div>
+
+                        <!-- PHẦN 3: ĐỘI NGŨ & NGÔN NGỮ -->
+                        <div class="cf-form-section-header">
+                            <h3 class="cf-form-section-title">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                                Đội ngũ & Ngôn ngữ
+                            </h3>
+                        </div>
+
+                        <div class="cf-fields-grid">
+                            <div class="cf-form-group">
+                                <label class="cf-form-label">Đạo diễn</label>
+                                <input class="cf-form-control" name="director" value="<%= editing ? esc(movie.getDirector()) : "" %>" placeholder="Tên đạo diễn">
+                            </div>
+
+                            <div class="cf-form-group">
+                                <label class="cf-form-label">Ngôn ngữ & Phụ đề</label>
+                                <input class="cf-form-control" name="language" value="<%= editing ? esc(movie.getLanguage()) : "" %>" placeholder="Ví dụ: Tiếng Việt, Phụ đề Tiếng Anh">
+                            </div>
+
+                            <div class="cf-form-group cf-field-span-2">
+                                <label class="cf-form-label">Diễn viên chính</label>
+                                <input class="cf-form-control" name="cast" value="<%= editing ? esc(movie.getCast()) : "" %>" placeholder="Danh sách diễn viên, ngăn cách bởi dấu phẩy">
+                            </div>
+                        </div>
+
+                        <!-- ĐƯỜNG PHÂN CÁCH -->
+                        <div class="cf-form-divider"></div>
+
+                        <!-- PHẦN 4: NỘI DUNG TÓM TẮT PHIM -->
+                        <div class="cf-form-section-header">
+                            <h3 class="cf-form-section-title">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                                Nội dung tóm tắt phim
+                            </h3>
+                        </div>
+
+                        <div class="cf-form-group">
+                            <textarea class="cf-form-textarea" name="description" rows="4" placeholder="Nhập tóm tắt kịch bản và câu chuyện của bộ phim..."><%= editing ? esc(movie.getDescription()) : "" %></textarea>
+                        </div>
+                    </div>
+
+                    <!-- ========================================================
+                         CỘT PHẢI (PHƯƠNG TIỆN): GỌN GÀNG, KHÔNG PHÙNG PHÌNH
+                         ======================================================== -->
+                    <div>
+                        <!-- ÁP PHÍCH PHIM (POSTER) -->
+                        <div class="cf-side-card">
+                            <div class="cf-side-header">
+                                <span class="cf-side-title">
+                                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                                    Áp phích phim (Poster)
+                                </span>
+                            </div>
+                            <div class="cf-side-body">
+                                <div class="cf-poster-compact-wrap">
+                                    <div class="cf-poster-thumb-preview" id="posterPreviewFrame">
+                                        <% if (!posterUrl.isBlank()) { %>
+                                            <img src="<%= esc(posterUrl) %>" alt="Poster preview" id="posterPreviewImg" onerror="handlePosterError()">
+                                        <% } else { %>
+                                            <div class="cf-poster-placeholder" id="posterPlaceholder">
+                                                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                                                <span>Chưa có ảnh</span>
+                                            </div>
+                                        <% } %>
+                                    </div>
+
+                                    <div class="cf-poster-controls">
+                                        <input type="hidden" name="posterUrl" id="posterUrlInput" value="<%= esc(posterUrl) %>">
+                                        <label class="cf-file-picker-btn">
+                                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"></path><polyline points="7 9 12 4 17 9"></polyline><line x1="12" y1="4" x2="12" y2="16"></line></svg>
+                                            <span>Tải ảnh poster...</span>
+                                            <input type="file" name="posterFile" id="posterFileInput" accept="image/png,image/jpeg,image/webp" style="display: none;">
+                                        </label>
+                                        <div class="cf-file-name-hint" id="posterFileName"></div>
+                                        <p class="cf-file-support-hint">Định dạng hỗ trợ: JPG, PNG, WEBP (Tỉ lệ 2:3, tối đa 5MB).</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TRAILER PHIM -->
+                        <div class="cf-side-card" style="margin-top: 18px;">
+                            <div class="cf-side-header">
+                                <span class="cf-side-title">
+                                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+                                    Trailer phim
+                                </span>
+                            </div>
+                            <div class="cf-side-body">
+                                <div class="cf-trailer-compact-wrap">
+                                    <input type="hidden" name="trailerUrl" id="trailerUrlInput" value="<%= esc(trailerUrl) %>">
+
+                                    <!-- Khung xem trước Trailer (16:9) -->
+                                    <div class="cf-trailer-preview-frame" id="trailerPreviewFrame">
+                                        <div class="cf-trailer-placeholder" id="trailerPlaceholder">
+                                            <span>Xem trước trailer</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="cf-trailer-file-row">
+                                        <label class="cf-file-picker-btn">
+                                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"></path><polyline points="7 9 12 4 17 9"></polyline><line x1="12" y1="4" x2="12" y2="16"></line></svg>
+                                            <span>Tải video trailer...</span>
+                                            <input type="file" name="trailerFile" id="trailerFileInput" accept="video/mp4,video/webm,video/ogg" style="display: none;">
+                                        </label>
+                                        <div class="cf-file-name-hint" id="trailerFileName"></div>
+                                        <p class="cf-file-support-hint">Định dạng hỗ trợ: MP4, WebM, OGG.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- THANH HÀNH ĐỘNG CỐ ĐỊNH (FIXED SAFE FOOTER) -->
+                <div class="cf-form-sticky-bar">
+                    <div class="cf-form-sticky-info">
+                        <%= editing ? ("Chỉnh sửa phim: <strong>" + esc(movie.getTitle()) + "</strong> (Mã: " + movie.getMovieId() + ")") : "Tạo phim mới vào danh mục hệ thống" %>
+                    </div>
+
+                    <div class="cf-form-actions">
+                        <a href="${pageContext.request.contextPath}/admin/movies" class="cf-btn cf-btn-secondary">
+                            Hủy bỏ
+                        </a>
+                        <button type="submit" class="cf-btn cf-btn-primary" id="btnSubmitMovie">
+                            <%= editing ? "Lưu thay đổi" : "Tạo phim mới" %>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </main>
+    </div>
+</div>
+
+<!-- MÃ JAVASCRIPT ĐIỀU KHIỂN PHÍA CLIENT -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const urlInput = document.getElementById('posterUrlInput');
+    const fileInput = document.getElementById('posterFileInput');
+    const frame = document.getElementById('posterPreviewFrame');
+    const posterFileName = document.getElementById('posterFileName');
+    const trailerFileInput = document.getElementById('trailerFileInput');
+    const trailerFileName = document.getElementById('trailerFileName');
+    const movieForm = document.getElementById('movieForm');
+    const btnSubmitMovie = document.getElementById('btnSubmitMovie');
+
+    function updatePosterPreview(src) {
+        if (!src) {
+            frame.innerHTML = '<div class="cf-poster-placeholder" id="posterPlaceholder">' +
+                '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>' +
+                '<span>Chưa có ảnh</span></div>';
+            return;
+        }
+        frame.innerHTML = '<img src="' + src + '" alt="Poster preview" id="posterPreviewImg" onerror="handlePosterError()">';
+    }
+
+    window.handlePosterError = function() {
+        frame.innerHTML = '<div class="cf-poster-placeholder" style="color: var(--cf-danger);">' +
+            '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>' +
+            '<span>Lỗi tải ảnh</span></div>';
+    };
+
+    if (fileInput) {
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const sizeKB = Math.round(file.size / 1024);
+                const sizeDisplay = sizeKB > 1024 ? (sizeKB / 1024).toFixed(1) + ' MB' : sizeKB + ' KB';
+                if (posterFileName) {
+                    posterFileName.style.display = 'flex';
+                    posterFileName.innerHTML = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <span>' + file.name + ' (' + sizeDisplay + ')</span>';
+                }
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    updatePosterPreview(evt.target.result);
+                };
+                reader.readAsDataURL(file);
+            } else {
+                if (posterFileName) posterFileName.style.display = 'none';
+            }
+        });
+    }
+
+    const trailerUrlInput = document.getElementById('trailerUrlInput');
+    const trailerFrame = document.getElementById('trailerPreviewFrame');
+
+    function extractYouTubeId(url) {
+        if (!url) return null;
+        url = url.trim();
+        const regExp = /^.*(?:youtu\.be\/|v\/|u\/\w\/|embed\/|shorts\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+        const match = url.match(regExp);
+        return (match && match[1].length === 11) ? match[1] : null;
+    }
+
+    function isDirectVideo(url) {
+        return /\.(mp4|webm|ogg|m4v)(\?.*)?$/i.test(url);
+    }
+
+    function updateTrailerPreview(src, isLocalFile) {
+        if (!trailerFrame) return;
+
+        if (!src) {
+            trailerFrame.innerHTML = '<div class="cf-trailer-placeholder" id="trailerPlaceholder">' +
+                '<span>Xem trước trailer</span></div>';
+            return;
+        }
+
+        if (isLocalFile) {
+            trailerFrame.innerHTML = '<video controls playsinline preload="metadata" style="width:100%;height:100%;background:#000;display:block;">' +
+                '<source src="' + src + '">' +
+                'Trình duyệt không hỗ trợ phát video này.' +
+                '</video>';
+            return;
+        }
+
+        const ytId = extractYouTubeId(src);
+        if (ytId) {
+            trailerFrame.innerHTML = '<iframe src="https://www.youtube-nocookie.com/embed/' + ytId + '?rel=0&enablejsapi=1" ' +
+                'title="Trailer YouTube Preview" ' +
+                'frameborder="0" ' +
+                'allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" ' +
+                'allowfullscreen ' +
+                'style="width:100%;height:100%;border:none;display:block;"></iframe>';
+            return;
+        }
+
+        if (isDirectVideo(src) || src.startsWith('/') || src.startsWith('http')) {
+            trailerFrame.innerHTML = '<video controls playsinline preload="metadata" style="width:100%;height:100%;background:#000;display:block;">' +
+                '<source src="' + src + '">' +
+                'Trình duyệt không hỗ trợ phát video này.' +
+                '</video>';
+            return;
+        }
+
+        trailerFrame.innerHTML = '<div class="cf-trailer-placeholder">' +
+            '<span>Xem trước trailer</span></div>';
+    }
+
+    // Khởi tạo xem trước trailer ban đầu (nếu đã có dữ liệu)
+    if (trailerUrlInput && trailerUrlInput.value.trim()) {
+        updateTrailerPreview(trailerUrlInput.value.trim(), false);
+    }
+
+    // Lắng nghe khi tải lên tệp video
+    if (trailerFileInput) {
+        trailerFileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+                if (trailerFileName) {
+                    trailerFileName.style.display = 'flex';
+                    trailerFileName.innerHTML = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <span>' + file.name + ' (' + sizeMB + ' MB)</span>';
+                }
+                const objectUrl = URL.createObjectURL(file);
+                updateTrailerPreview(objectUrl, true);
+            } else {
+                if (trailerFileName) trailerFileName.style.display = 'none';
+                if (trailerUrlInput && trailerUrlInput.value.trim()) {
+                    updateTrailerPreview(trailerUrlInput.value.trim(), false);
+                } else {
+                    updateTrailerPreview('', false);
+                }
+            }
+        });
+    }
+
+    // Tự động gán ngày kết thúc khi chọn trạng thái "Đã kết thúc" (ENDED)
+    const statusSelect = document.querySelector('select[name="status"]');
+    const releaseDateInput = document.querySelector('input[name="releaseDate"]');
+    const endDateInput = document.querySelector('input[name="endDate"]');
+    if (statusSelect && endDateInput) {
+        statusSelect.addEventListener('change', function() {
+            if (this.value === 'ENDED') {
+                const todayStr = new Date().toISOString().split('T')[0];
+                if (!endDateInput.value || endDateInput.value > todayStr) {
+                    endDateInput.value = todayStr;
+                }
+            }
+        });
+    }
+
+    if (movieForm && btnSubmitMovie) {
+        movieForm.addEventListener('submit', function(e) {
+            const status = statusSelect ? statusSelect.value : '';
+            const relVal = releaseDateInput ? releaseDateInput.value : '';
+            const endVal = endDateInput ? endDateInput.value : '';
+            const todayStr = new Date().toISOString().split('T')[0];
+
+            if (relVal && endVal && endVal < relVal) {
+                alert('Ngày kết thúc phải lớn hơn hoặc bằng ngày khởi chiếu.');
+                e.preventDefault();
+                return;
+            }
+
+            if (status === 'COMING_SOON' && relVal && relVal < todayStr) {
+                alert('Phim có ngày khởi chiếu trong quá khứ không thể đặt trạng thái "Sắp khởi chiếu". Vui lòng chọn ngày tương lai hoặc đổi sang "Đang chiếu".');
+                e.preventDefault();
+                return;
+            }
+
+            if (status === 'NOW_SHOWING' && relVal && relVal > todayStr) {
+                alert('Phim có ngày khởi chiếu ở tương lai chưa thể đặt trạng thái "Đang chiếu". Vui lòng chọn trạng thái "Sắp khởi chiếu".');
+                e.preventDefault();
+                return;
+            }
+
+            btnSubmitMovie.classList.add('is-submitting');
+            btnSubmitMovie.textContent = 'Đang lưu phim...';
+        });
+    }
+});
+</script>
+</body>
+</html>

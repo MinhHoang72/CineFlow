@@ -1,7 +1,7 @@
 import dao.CinemaDAO;
 import dao.UserDAO;
-import model.Centre;
-import model.User;
+import model.entity.Centre;
+import model.entity.User;
 import utils.DBContext;
 
 import java.sql.Connection;
@@ -606,7 +606,7 @@ public class CodexVerificationRunner {
                 "UPDATE CentreManagerAssignments SET Status = 'ENDED', EndDate = GETDATE() WHERE ManagerID = " + managerId + " AND Status = 'ACTIVE'"
             );
             conn.createStatement().executeUpdate(
-                "UPDATE Users SET CentreID = NULL WHERE UserID = " + managerId
+                "UPDATE Users SET CentreID = NULL, Status = 'ACTIVE' WHERE UserID = " + managerId
             );
         }
     }

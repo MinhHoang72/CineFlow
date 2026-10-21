@@ -8,9 +8,9 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import model.CheckInLogDTO;
-import model.CheckInResultDTO;
-import model.TicketInfoDTO;
+import model.dto.checkin.CheckInLogDTO;
+import model.dto.checkin.CheckInResultDTO;
+import model.dto.booking.TicketInfoDTO;
 import utils.DBContext;
 
 public class CheckInDAO {

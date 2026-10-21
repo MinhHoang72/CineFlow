@@ -1,9 +1,9 @@
 package dao;
 import java.sql.*;
 import java.time.LocalDateTime;
-import model.SeatAvailability;
+import model.entity.SeatAvailability;
 
-import model.Movie;
+import model.entity.Movie;
 import utils.DBContext;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -14,17 +14,13 @@ import java.util.List;
 
 public class MovieDAO {
 
-    /** Phim dang chieu tai chi nhanh va con it nhat mot suat chua chieu. */
+    /** Buoc 3: phim con it nhat mot suat mo ban tai rap (cung dieu kien voi buoc chon thanh pho / rap). */
     public List<Movie> getMoviesShowingAt(int branchId) throws SQLException {
-        String sql = "SELECT m.MovieID, m.Title, m.Genre, m.Duration, m.AgeRating "
-                   + "FROM Movies m "
-                   + "JOIN CentreMovies bm ON bm.MovieID = m.MovieID AND bm.IsActive = 1 "
-                   + "WHERE bm.CentreID = ? AND m.Status = 'NOW_SHOWING' "
-                   + "  AND EXISTS (SELECT 1 FROM Showtimes s JOIN Halls h ON h.HallID = s.HallID "
-                   + "              WHERE s.MovieID = m.MovieID AND h.CentreID = bm.CentreID "
-                   + "                AND h.Status = 'AVAILABLE' AND s.Status = 'SCHEDULED' "
-                   + "                AND s.StartTime > SYSDATETIME()) "
-                   + "ORDER BY m.Title";
+        String sql = "SELECT mv.MovieID, mv.Title, mv.Genre, mv.Duration, mv.AgeRating "
+                   + "FROM Movies mv "
+                   + "WHERE EXISTS (SELECT 1 " + ShowtimeDAO.BOOKABLE_FROM
+                   + "              AND s.MovieID = mv.MovieID AND b.CentreID = ?) "
+                   + "ORDER BY mv.Title";
         List<Movie> list = new ArrayList<>();
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {

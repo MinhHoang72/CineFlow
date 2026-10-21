@@ -1,6 +1,6 @@
 package dao;
 
-import model.Hall;
+import model.entity.Hall;
 import utils.DBContext;
 
 import java.sql.Connection;

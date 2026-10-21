@@ -1,7 +1,7 @@
 package dao;
 
-import model.Centre;
-import model.Hall;
+import model.entity.Centre;
+import model.entity.Hall;
 import utils.DBContext;
 
 import java.sql.Connection;

@@ -1,5 +1,5 @@
 <%@ page pageEncoding="UTF-8" %>
-<%@ page import="model.User" %>
+<%@ page import="model.entity.User" %>
 <%
     User footerUser = (User) session.getAttribute("user");
     String fCtx = request.getContextPath();
@@ -7,7 +7,7 @@
 <footer class="footer">
     <div class="footer-inner">
         <div class="footer-brand">
-            <a class="logo" href="<%= fCtx %>/home/index.jsp" aria-label="CineFlow Cinema">
+            <a class="logo" href="<%= fCtx %>/home" aria-label="CineFlow Cinema">
                 <span class="logo-mark">C</span>
                 <span class="logo-word">Cine<span>Flow</span></span>
             </a>
@@ -15,25 +15,25 @@
         </div>
         <div>
             <h4>CINEFLOW</h4>
-            <a href="<%= fCtx %>/home/index.jsp#movies">Phim đang chiếu</a>
-            <a href="<%= fCtx %>/booking/booking.jsp?view=schedule">Lịch chiếu</a>
-            <a href="<%= fCtx %>/cinema/index.jsp">Rạp chiếu phim</a>
-            <a href="<%= fCtx %>/home/index.jsp#promotions">Tin mới &amp; ưu đãi</a>
+            <a href="<%= fCtx %>/home#movies">Phim đang chiếu</a>
+            <a href="<%= fCtx %>/booking?view=schedule">Lịch chiếu</a>
+            <a href="<%= fCtx %>/cinema">Rạp chiếu phim</a>
+            <a href="<%= fCtx %>/home#promotions">Tin mới &amp; ưu đãi</a>
         </div>
         <div id="support">
             <h4>HỖ TRỢ</h4>
-            <a href="<%= fCtx %>/home/index.jsp#support">Hỗ trợ khách hàng</a>
-            <a href="<%= fCtx %>/home/index.jsp#support">Câu hỏi thường gặp</a>
-            <a href="<%= fCtx %>/home/index.jsp#support">Liên hệ</a>
+            <a href="<%= fCtx %>/home#support">Hỗ trợ khách hàng</a>
+            <a href="<%= fCtx %>/home#support">Câu hỏi thường gặp</a>
+            <a href="<%= fCtx %>/home#support">Liên hệ</a>
         </div>
         <div>
             <h4>TÀI KHOẢN</h4>
             <% if (footerUser == null) { %>
-                <a href="<%= fCtx %>/auth/login.jsp">Đăng nhập</a>
-                <a href="<%= fCtx %>/auth/register.jsp">Tạo tài khoản</a>
+                <a href="<%= fCtx %>/login">Đăng nhập</a>
+                <a href="<%= fCtx %>/register">Tạo tài khoản</a>
             <% } else { %>
                 <a href="<%= fCtx %>/account">Tài khoản của tôi</a>
-                <a href="<%= fCtx %>/auth/change-password.jsp">Đổi mật khẩu</a>
+                <a href="<%= fCtx %>/change-password">Đổi mật khẩu</a>
             <% } %>
         </div>
     </div>
