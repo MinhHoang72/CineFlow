@@ -1,4 +1,4 @@
-﻿package dao;
+package dao;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -33,6 +33,10 @@ public class VoucherDAO {
     // ─────────────────────────────────────────────────────────────────────────
     // SEARCH
     // ─────────────────────────────────────────────────────────────────────────
+
+    public PageDTO<Voucher> search(String key, String status, String type, int page, int size) {
+        return search(key, status, type, null, page, size);
+    }
 
     /**
      * Tìm kiếm voucher có phân trang.

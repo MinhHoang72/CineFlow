@@ -1,4 +1,4 @@
-﻿package controller.voucher;
+package controller.voucher;
 
 import dao.VoucherDAO;
 import jakarta.servlet.ServletException;
@@ -21,7 +21,91 @@ import model.dto.common.PageDTO;
 import model.entity.User;
 import model.entity.Voucher;
 
-String redirect = request.getRequestURI();
+/**
+ * Servlet quản lý Voucher cho hai vai trò:
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ ADMIN   → /admin/vouchers/*   → CRUD voucher toàn chuỗi (CentreID=NULL) │
+ * │ MANAGER → /manager/vouchers/* → CRUD voucher tại chi nhánh của mình     │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ *
+ * Manager chỉ thấy và chỉ có thể thao tác voucher gắn với centreId của mình.
+ * Admin xem và quản lý TẤT CẢ voucher (bao gồm cả voucher chi nhánh nếu muốn).
+ */
+@WebServlet(name = "VoucherManagementServlet", urlPatterns = {"/admin/vouchers/*", "/admin/vouchers", "/manager/vouchers/*", "/manager/vouchers"})
+public class VoucherManagementServlet extends HttpServlet {
+
+    private static final int PAGE_SIZE = 10;
+    private static final BigDecimal MAX_MONEY = new BigDecimal("100000000");
+    private final VoucherDAO dao = new VoucherDAO();
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // HTTP GET / POST
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        User user = authorizedUser(request, response);
+        if (user == null) {
+            return;
+        }
+        String path = request.getPathInfo() == null ? "/" : request.getPathInfo();
+        switch (path) {
+            case "/":
+                showList(request, response, user);
+                break;
+            case "/form":
+                showForm(request, response, user);
+                break;
+            default:
+                response.sendError(HttpServletResponse.SC_NOT_FOUND);
+        }
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        request.setCharacterEncoding("UTF-8");
+        User user = authorizedUser(request, response);
+        if (user == null) {
+            return;
+        }
+        HttpSession session = request.getSession(false);
+        String expected = session == null ? null : (String) session.getAttribute("voucherCsrf");
+        if (expected == null || !expected.equals(request.getParameter("_csrf"))) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Phiên làm việc không hợp lệ, hãy tải lại trang.");
+            return;
+        }
+        String path = request.getPathInfo() == null ? "/" : request.getPathInfo();
+        switch (path) {
+            case "/save":
+                save(request, response, user);
+                break;
+            case "/status":
+                changeStatus(request, response, user);
+                break;
+            default:
+                response.sendError(HttpServletResponse.SC_NOT_FOUND);
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // AUTH HELPER
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Kiểm tra phiên đăng nhập và phân quyền.
+     * Cho phép ADMIN và MANAGER (manager phải có centreId).
+     *
+     * @return User nếu hợp lệ; null nếu đã redirect/error
+     */
+    private User authorizedUser(HttpServletRequest request, HttpServletResponse response)
+            throws IOException {
+        HttpSession session = request.getSession(false);
+        User user = session == null ? null : (User) session.getAttribute("user");
+        if (user == null) {
+            String redirect = request.getRequestURI();
             response.sendRedirect(request.getContextPath() + "/login?redirect="
                     + URLEncoder.encode(redirect, StandardCharsets.UTF_8));
             return null;
@@ -195,7 +279,7 @@ String redirect = request.getRequestURI();
         request.setAttribute("csrf", csrfToken(request));
         request.setAttribute("pageTitle", voucher.getVoucherId() == 0 ? "Thêm voucher" : "Sửa voucher");
         request.setAttribute("pageBreadcrumb", "Khuyến mãi");
-request.setAttribute("baseUrl", base);
+        request.setAttribute("baseUrl", base);
         request.setAttribute("currentUser", user);
         request.setAttribute("isAdminScope", user.isAdmin() && request.getRequestURI().contains("/admin/"));
         request.getRequestDispatcher("/WEB-INF/views/voucher/voucherForm.jsp").forward(request, response);
