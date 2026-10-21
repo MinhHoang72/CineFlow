@@ -137,7 +137,7 @@ public class FnbDAO {
         }
         return new PageDTO<>(rows, page, size, total);
     }
-
+// sửa món 
     public FnbItem findItem(int fnbItemId) {
         String sql = "SELECT FnbItemID, CategoryID, ItemName, Description, Price, ImageURL, Status, CentreID "
                 + "FROM FnbItems WHERE FnbItemID = ?";
@@ -188,7 +188,7 @@ public class FnbDAO {
         }
         return items;
     }
-
+// thêm món mới ->thêm món 
     public void insertItem(FnbItem item) throws SQLException {
         String sql = "INSERT INTO FnbItems (CategoryID, ItemName, Description, Price, ImageURL, Status, CentreID) "
                 + "VALUES (?, ?, ?, ?, ?, ?, ?)";
@@ -203,7 +203,7 @@ public class FnbDAO {
             statement.executeUpdate();
         }
     }
-
+//lưu món mới 
     public void updateItem(FnbItem item) throws SQLException {
         String sql = "UPDATE FnbItems SET CategoryID = ?, ItemName = ?, Description = ?, Price = ?, "
                 + "ImageURL = ?, Status = ?, UpdatedAt = SYSDATETIME() WHERE FnbItemID = ?";
@@ -234,7 +234,7 @@ public class FnbDAO {
         }
         return 0;
     }
-
+//mở form commbo
     public FnbCombo findCombo(int comboId) {
         String comboSql = "SELECT ComboID, ComboName, Description, Price, ImageURL, Status, CentreID "
                 + "FROM FnbCombos WHERE ComboID = ?";
@@ -270,7 +270,7 @@ public class FnbDAO {
         }
         return null;
     }
-
+//sửa combo 
     public void saveCombo(FnbCombo combo) throws SQLException {
         try (Connection connection = DBContext.getConnection()) {
             connection.setAutoCommit(false);
@@ -340,12 +340,19 @@ public class FnbDAO {
         }
     }
 
+    /**
+     * Lấy danh sách tồn kho của một chi nhánh.
+     * Bao gồm StockQuantity và IsAvailable từ CentreFnbInventory.
+     * Nếu chưa có bản ghi inventory → mặc định quantity=0, available=false.
+     */
     public List<StockRowDTO> stock(int centreId) {
         String sql = "SELECT i.FnbItemID, i.ItemName, cat.CategoryName, "
+                + "ISNULL(inv.StockQuantity, 0) AS StockQuantity, "
                 + "CAST(ISNULL(inv.IsAvailable, 0) AS bit) AS IsAvailable "
                 + "FROM FnbItems i "
                 + "JOIN FnbCategories cat ON cat.CategoryID = i.CategoryID "
-                + "LEFT JOIN CentreFnbInventory inv ON inv.FnbItemID = i.FnbItemID AND inv.CentreID = ? "
+                + "LEFT JOIN CentreFnbInventory inv "
+                + "    ON inv.FnbItemID = i.FnbItemID AND inv.CentreID = ? "
                 + "WHERE i.Status = 'ACTIVE' AND i.CentreID = ? "
                 + "ORDER BY cat.CategoryName, i.ItemName";
         List<StockRowDTO> rows = new ArrayList<>();
@@ -359,6 +366,7 @@ public class FnbDAO {
                     row.setFnbItemId(resultSet.getInt("FnbItemID"));
                     row.setItemName(resultSet.getString("ItemName"));
                     row.setCategoryName(resultSet.getString("CategoryName"));
+                    row.setStockQuantity(resultSet.getInt("StockQuantity"));
                     row.setAvailable(resultSet.getBoolean("IsAvailable"));
                     rows.add(row);
                 }
@@ -370,7 +378,8 @@ public class FnbDAO {
     }
 
     public boolean isStockableItem(int fnbItemId, int centreId) {
-        String sql = "SELECT COUNT(*) FROM FnbItems WHERE FnbItemID = ? AND Status = 'ACTIVE' AND CentreID = ?";
+        String sql = "SELECT COUNT(*) FROM FnbItems "
+                + "WHERE FnbItemID = ? AND Status = 'ACTIVE' AND CentreID = ?";
         try (Connection connection = DBContext.getConnection();
                 PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, fnbItemId);
@@ -385,9 +394,50 @@ public class FnbDAO {
         return false;
     }
 
+    /**
+     * Cập nhật số lượng tồn kho (Manager nhập tay).
+     * Khi quantity = 0 → tự động IsAvailable = false.
+     * Khi quantity > 0 → tự động IsAvailable = true.
+     * Nếu chưa có bản ghi → INSERT mới (upsert).
+     */
+    public void updateStockQuantity(int centreId, int fnbItemId, int quantity) throws SQLException {
+        boolean autoAvailable = quantity > 0;
+        try (Connection connection = DBContext.getConnection()) {
+            String updateSql = "UPDATE CentreFnbInventory "
+                    + "SET StockQuantity = ?, IsAvailable = ?, UpdatedAt = SYSDATETIME() "
+                    + "WHERE CentreID = ? AND FnbItemID = ?";
+            try (PreparedStatement statement = connection.prepareStatement(updateSql)) {
+                statement.setInt(1, quantity);
+                statement.setBoolean(2, autoAvailable);
+                statement.setInt(3, centreId);
+                statement.setInt(4, fnbItemId);
+                if (statement.executeUpdate() > 0) {
+                    return;
+                }
+            }
+            // Chưa có bản ghi → INSERT
+            String insertSql = "INSERT INTO CentreFnbInventory "
+                    + "(CentreID, FnbItemID, StockQuantity, IsAvailable) VALUES (?, ?, ?, ?)";
+            try (PreparedStatement statement = connection.prepareStatement(insertSql)) {
+                statement.setInt(1, centreId);
+                statement.setInt(2, fnbItemId);
+                statement.setInt(3, quantity);
+                statement.setBoolean(4, autoAvailable);
+                statement.executeUpdate();
+            }
+        }
+    }
+
+    /**
+     * Toggle IsAvailable thủ công (Manager override).
+     * Không thay đổi StockQuantity.
+     * Dùng khi Manager muốn tắt món dù còn hàng (ví dụ: hàng lỗi, hết nguyên liệu đột xuất).
+     * Nếu chưa có bản ghi → INSERT với quantity = 0.
+     */
     public void setAvailability(int centreId, int fnbItemId, boolean available) throws SQLException {
         try (Connection connection = DBContext.getConnection()) {
-            String updateSql = "UPDATE CentreFnbInventory SET IsAvailable = ?, UpdatedAt = SYSDATETIME() "
+            String updateSql = "UPDATE CentreFnbInventory "
+                    + "SET IsAvailable = ?, UpdatedAt = SYSDATETIME() "
                     + "WHERE CentreID = ? AND FnbItemID = ?";
             try (PreparedStatement statement = connection.prepareStatement(updateSql)) {
                 statement.setBoolean(1, available);
@@ -397,13 +447,45 @@ public class FnbDAO {
                     return;
                 }
             }
-            String insertSql = "INSERT INTO CentreFnbInventory (CentreID, FnbItemID, IsAvailable) VALUES (?, ?, ?)";
+            String insertSql = "INSERT INTO CentreFnbInventory "
+                    + "(CentreID, FnbItemID, StockQuantity, IsAvailable) VALUES (?, ?, 0, ?)";
             try (PreparedStatement statement = connection.prepareStatement(insertSql)) {
                 statement.setInt(1, centreId);
                 statement.setInt(2, fnbItemId);
                 statement.setBoolean(3, available);
                 statement.executeUpdate();
             }
+        }
+    }
+
+    /**
+     * Tự động trừ số lượng tồn kho khi có giao dịch bán bắp nước thành công.
+     * Nếu sau khi trừ StockQuantity <= 0:
+     *   - Đặt StockQuantity = 0
+     *   - Tự động chuyển IsAvailable = 0 (Hết hàng)
+     *
+     * @param centreId ID chi nhánh
+     * @param fnbItemId ID món bắp nước
+     * @param quantity Số lượng khách đã mua
+     * @return true nếu trừ thành công, false nếu không đủ hàng hoặc lỗi
+     */
+    public boolean deductStock(int centreId, int fnbItemId, int quantity) throws SQLException {
+        if (quantity <= 0) {
+            return true;
+        }
+        String sql = "UPDATE CentreFnbInventory "
+                + "SET StockQuantity = CASE WHEN StockQuantity - ? <= 0 THEN 0 ELSE StockQuantity - ? END, "
+                + "    IsAvailable = CASE WHEN StockQuantity - ? <= 0 THEN 0 ELSE IsAvailable END, "
+                + "    UpdatedAt = SYSDATETIME() "
+                + "WHERE CentreID = ? AND FnbItemID = ?";
+        try (Connection connection = DBContext.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, quantity);
+            statement.setInt(2, quantity);
+            statement.setInt(3, quantity);
+            statement.setInt(4, centreId);
+            statement.setInt(5, fnbItemId);
+            return statement.executeUpdate() > 0;
         }
     }
 

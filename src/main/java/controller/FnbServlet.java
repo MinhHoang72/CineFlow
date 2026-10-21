@@ -77,10 +77,6 @@ public class FnbServlet extends HttpServlet {
         if (user == null || !canEnter(user, response)) {
             return;
         }
-        if (!"MANAGER".equals(user.getRole())) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Chỉ Manager của Centre mới được thay đổi thực đơn.");
-            return;
-        }
         String contentType = request.getContentType();
         if (contentType != null && contentType.toLowerCase().startsWith("multipart/")) {
             try {
@@ -96,6 +92,29 @@ public class FnbServlet extends HttpServlet {
             return;
         }
         String path = request.getPathInfo() == null ? "/" : request.getPathInfo();
+        // Các action kho: chỉ MANAGER được POST
+        if ("/stock/toggle".equals(path) || "/stock/quantity".equals(path)) {
+            if (!"MANAGER".equals(user.getRole())) {
+                response.sendError(HttpServletResponse.SC_FORBIDDEN,
+                        "Chỉ Manager của Centre mới được cập nhật kho.");
+                return;
+            }
+            switch (path) {
+                case "/stock/toggle":
+                    toggleStock(request, response, user);
+                    break;
+                case "/stock/quantity":
+                    updateQuantity(request, response, user);
+                    break;
+            }
+            return;
+        }
+        // Các action thực đơn (item/combo): chỉ MANAGER được POST
+        if (!"MANAGER".equals(user.getRole())) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN,
+                    "Chỉ Manager của Centre mới được thay đổi thực đơn.");
+            return;
+        }
         switch (path) {
             case "/item/save":
                 saveItem(request, response, user);
@@ -105,9 +124,6 @@ public class FnbServlet extends HttpServlet {
                 break;
             case "/status":
                 changeStatus(request, response, user);
-                break;
-            case "/stock/toggle":
-                toggleStock(request, response, user);
                 break;
             default:
                 response.sendError(HttpServletResponse.SC_NOT_FOUND);
@@ -701,16 +717,22 @@ public class FnbServlet extends HttpServlet {
         response.sendRedirect(target);
     }
 
+    /**
+     * Hiển thị trang Kho theo Centre.
+     * Quyền: MANAGER (xem + sửa), TICKET_SALES_STAFF (chỉ xem).
+     * ADMIN không được truy cập (không gắn với centre cụ thể).
+     */
     private void showStock(HttpServletRequest request, HttpServletResponse response, User user)
             throws ServletException, IOException {
         boolean manager = "MANAGER".equals(user.getRole());
         boolean staff = "TICKET_SALES_STAFF".equals(user.getRole());
         if (!manager && !staff) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Trang kho chỉ dành cho Manager và Staff của Centre.");
+            response.sendError(HttpServletResponse.SC_FORBIDDEN,
+                    "Trang kho chỉ dành cho Manager và nhân viên bán vé của chi nhánh.");
             return;
         }
         request.setAttribute("rows", dao.stock(user.getCentreId()));
-        request.setAttribute("canEdit", manager);
+        request.setAttribute("canEdit", manager);   // chỉ Manager mới được cập nhật kho
         request.setAttribute("csrf", csrfToken(request));
         request.setAttribute("pageTitle", "Kho theo Centre");
         request.setAttribute("pageBreadcrumb", crumb(user, "Bắp nước"));
@@ -718,6 +740,11 @@ public class FnbServlet extends HttpServlet {
         request.getRequestDispatcher("/WEB-INF/views/fnb/stock.jsp").forward(request, response);
     }
 
+    /**
+     * Toggle IsAvailable thủ công (Manager override).
+     * Không thay đổi StockQuantity.
+     * Dùng khi Manager muốn tắt món dù còn hàng (hàng lỗi, hết đột xuất).
+     */
     private void toggleStock(HttpServletRequest request, HttpServletResponse response, User user)
             throws IOException {
         int centreId = user.getCentreId();
@@ -741,6 +768,46 @@ public class FnbServlet extends HttpServlet {
         } catch (SQLException exception) {
             exception.printStackTrace();
             flash(request, "error", "Không cập nhật được kho, vui lòng thử lại.");
+        }
+        response.sendRedirect(target);
+    }
+
+    /**
+     * Cập nhật số lượng tồn kho (Manager nhập tay).
+     * Khi quantity = 0 → hệ thống tự đặt IsAvailable = false.
+     * Khi quantity > 0 → tự đặt IsAvailable = true.
+     */
+    private void updateQuantity(HttpServletRequest request, HttpServletResponse response, User user)
+            throws IOException {
+        int centreId = user.getCentreId();
+        String itemText = request.getParameter("itemId");
+        String qtyText = request.getParameter("quantity") == null ? "" : request.getParameter("quantity").trim();
+        String target = request.getContextPath() + "/fnb/stock";
+        if (itemText == null || !itemText.matches("[0-9]+") || itemText.length() >= 10) {
+            flash(request, "error", "Yêu cầu không hợp lệ.");
+            response.sendRedirect(target);
+            return;
+        }
+        if (!qtyText.matches("[0-9]+") || qtyText.length() > 6) {
+            flash(request, "error", "Số lượng phải là số nguyên không âm (tối đa 999999).");
+            response.sendRedirect(target);
+            return;
+        }
+        int itemId = Integer.parseInt(itemText);
+        int quantity = Integer.parseInt(qtyText);
+        if (!dao.isStockableItem(itemId, centreId)) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Món này không thuộc kho của Centre bạn.");
+            return;
+        }
+        try {
+            dao.updateStockQuantity(centreId, itemId, quantity);
+            String msg = quantity == 0
+                    ? "Đã cập nhật số lượng về 0 – món tự động chuyển sang Hết hàng."
+                    : "Đã cập nhật số lượng: " + quantity + " → Còn hàng.";
+            flash(request, "success", msg);
+        } catch (SQLException exception) {
+            exception.printStackTrace();
+            flash(request, "error", "Không cập nhật được số lượng, vui lòng thử lại.");
         }
         response.sendRedirect(target);
     }
