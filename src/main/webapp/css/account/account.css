@@ -727,6 +727,28 @@
     color: #34D399;
 }
 
+/* Chờ thanh toán / hết hạn - đã huỷ */
+.booking-status-tag.is-pending {
+    background: rgba(251, 191, 36, 0.12);
+    border-color: rgba(251, 191, 36, 0.35);
+    color: #FBBF24;
+}
+
+.booking-status-tag.is-muted {
+    background: rgba(148, 163, 184, 0.12);
+    border-color: rgba(148, 163, 184, 0.3);
+    color: #94A3B8;
+}
+
+.history-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.history-actions .new-booking-btn {
+    padding: 5px 12px;
+}
+
 /* ==========================================================================
    Thiết kế tương thích thiết bị di động (Responsive)
    ========================================================================== */

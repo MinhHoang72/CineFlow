@@ -153,24 +153,6 @@ public class BookingDAO {
         }
     }
 
-    /** Lich su dat ve cua khach, moi nhat truoc (toi da 50 don). */
-    public List<Booking> getUserBookings(int userId) throws SQLException {
-        List<Integer> ids = new ArrayList<>();
-        try (Connection conn = DBContext.getConnection()) {
-            releaseExpiredHolds(conn);
-            try (PreparedStatement ps = conn.prepareStatement(
-                    "SELECT TOP 50 BookingID FROM Bookings WHERE UserID = ? ORDER BY CreatedAt DESC, BookingID DESC")) {
-                ps.setInt(1, userId);
-                try (ResultSet rs = ps.executeQuery()) {
-                    while (rs.next()) ids.add(rs.getInt(1));
-                }
-            }
-        }
-        List<Booking> list = new ArrayList<>();
-        for (int id : ids) list.add(getBooking(id));
-        return list;
-    }
-
     /** Nguoi dung tu huy booking dang cho thanh toan. */
     public boolean cancelPending(int bookingId, int userId) throws SQLException {
         try (Connection conn = DBContext.getConnection()) {

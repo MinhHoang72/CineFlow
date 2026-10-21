@@ -87,12 +87,6 @@ public class BookingService {
         return bookingDAO.getBooking(bookingId);
     }
 
-    /**
-     * Lấy lịch sử tất cả các đơn đặt vé của người dùng.
-     */
-    public List<Booking> getUserBookings(int userId) throws SQLException {
-        return bookingDAO.getUserBookings(userId);
-    }
 
     /**
      * Kiểm tra tính hợp lệ của danh sách ghế lựa chọn.

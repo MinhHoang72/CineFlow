@@ -17,7 +17,7 @@
             <a href="${ctx}/booking?action=checkout&bookingId=${booking.id}" class="btn btn-warning">Tiếp tục thanh toán</a>
         </c:if>
         <c:if test="${isOwner}">
-            <a href="${ctx}/booking?action=history" class="btn btn-outline-primary">← Lịch sử đặt vé</a>
+            <a href="${ctx}/account" class="btn btn-outline-primary">← Lịch sử đặt vé</a>
         </c:if>
     </div>
 </div>

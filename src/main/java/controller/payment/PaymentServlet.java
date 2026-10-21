@@ -166,7 +166,7 @@ public class PaymentServlet extends HttpServlet {
         Booking booking = p.bookingId() == null ? null : bookingDAO.getBooking(p.bookingId());
         if (booking == null || p.result() == VnpayResult.INVALID_AMOUNT) {
             WebUtil.flash(req, "danger", "Dữ liệu thanh toán từ VNPay không hợp lệ.");
-            resp.sendRedirect(ctx + "/booking?action=history");
+            resp.sendRedirect(ctx + "/account");
             return;
         }
         if (booking.isCounter()) {
