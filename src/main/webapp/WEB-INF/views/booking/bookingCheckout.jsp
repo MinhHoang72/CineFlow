@@ -20,7 +20,7 @@
 
                 <table class="table mb-3">
                     <tr><th>Phim</th><td><c:out value="${st.movieTitle}"/></td></tr>
-                    <tr><th>Rạp</th><td><c:out value="${st.branchName}"/> · <c:out value="${st.hallName}"/></td></tr>
+                    <tr><th>Rạp</th><td><c:out value="${st.centreName}"/> · <c:out value="${st.hallName}"/></td></tr>
                     <tr><th>Suất chiếu</th><td><fmt:formatDate value="${st.startTime}" pattern="HH:mm, dd/MM/yyyy"/></td></tr>
                     <tr><th>Ghế</th>
                         <td>

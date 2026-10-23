@@ -42,7 +42,7 @@
     String contextPath = request.getContextPath();
 
     String centreIdParam = request.getParameter("centreId");
-    if (centreIdParam == null || centreIdParam.trim().isEmpty()) centreIdParam = request.getParameter("branchId");
+    if (centreIdParam == null || centreIdParam.trim().isEmpty()) centreIdParam = request.getParameter("centreId");
     if (centreIdParam != null && !centreIdParam.trim().isEmpty()) {
         response.sendRedirect(contextPath + "/cinema/details?centreId=" + URLEncoder.encode(centreIdParam.trim(), "UTF-8"));
         return;

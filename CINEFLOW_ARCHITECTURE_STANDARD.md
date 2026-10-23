@@ -90,7 +90,7 @@ src/main/java/
 │   │   ├── CancelShowtimeServlet.java
 │   │   └── ViewShowtimeSeatsServlet.java
 │   ├── pricing/                      # Bảng giá & Phụ thu (Chính sách tiền tệ, tách biệt với Ghế vật lý)
-│   │   ├── BranchPricingServlet.java     # Quản lý giá vé cơ bản của từng chi nhánh
+│   │   ├── CentrePricingServlet.java     # Quản lý giá vé cơ bản của từng chi nhánh
 │   │   ├── TimeSlotPricingServlet.java   # Quản lý bảng giá theo khung giờ (Sáng / Tối / Cuối tuần)
 │   │   └── SurchargePricingServlet.java  # Quản lý chính sách phụ thu tiền hạng ghế VIP/Sweetbox
 │   │   # (LƯU Ý: Sơ đồ ghế vật lý nằm ở manager/SeatConfigurationServlet, không nhét vào pricing)
@@ -134,7 +134,7 @@ src/main/java/
 │   ├── SeatDAO.java
 │   ├── MovieDAO.java
 │   ├── ShowtimeDAO.java
-│   ├── BranchPricingDAO.java
+│   ├── CentrePricingDAO.java
 │   ├── TimeSlotPricingDAO.java
 │   ├── SurchargeDAO.java
 │   ├── BookingDAO.java
@@ -153,7 +153,7 @@ src/main/java/
 │   │   ├── Seat.java                 # Bảng Seats
 │   │   ├── Movie.java                # Bảng Movies
 │   │   ├── Showtime.java             # Bảng Showtimes
-│   │   ├── BranchPricing.java        # Bảng BranchPricing
+│   │   ├── CentrePricing.java        # Bảng CentrePricing
 │   │   ├── TimeSlotPricing.java      # Bảng TimeSlotPricing
 │   │   ├── Surcharge.java            # Bảng Surcharges
 │   │   ├── Booking.java              # Bảng Bookings

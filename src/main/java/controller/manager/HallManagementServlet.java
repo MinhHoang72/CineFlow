@@ -104,7 +104,6 @@ public class HallManagementServlet extends HttpServlet {
             // Admin có toàn quyền quản lý mọi rạp -> Lấy danh sách tất cả cụm rạp để chọn qua Dropdown
             allCentres = centreDAO.getAllCentres(null, "ALL");
             String centreParam = request.getParameter("centreId");
-            if (centreParam == null || centreParam.trim().isEmpty()) centreParam = request.getParameter("branchId");
             if (centreParam != null && !centreParam.trim().isEmpty()) {
                 try {
                     targetCentreId = Integer.parseInt(centreParam.trim());
@@ -222,7 +221,6 @@ public class HallManagementServlet extends HttpServlet {
         int centreId = 0;
         if (isAdmin) {
             String centreParam = request.getParameter("centreId");
-            if (centreParam == null || centreParam.trim().isEmpty()) centreParam = request.getParameter("branchId");
             try {
                 centreId = Integer.parseInt(centreParam.trim());
             } catch (Exception ignored) {

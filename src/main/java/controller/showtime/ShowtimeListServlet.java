@@ -23,6 +23,12 @@ public class ShowtimeListServlet
         ShowtimeDAO showtimeDAO =
                 new ShowtimeDAO();
 
+        try {
+            showtimeDAO.synchronizeStatuses();
+        } catch (java.sql.SQLException e) {
+            throw new ServletException("Unable to synchronize showtime statuses", e);
+        }
+
         MovieDAO movieDAO =
                 new MovieDAO();
 

@@ -139,13 +139,13 @@ public class PaymentDAO {
 
     /**
      * Ghi nhan da nhan tien (tien mat tai quay, hoac VNPay bao thanh cong) va xuat ve. Goi lap lai van an toan.
-     * @param branchId chi nhanh cua nhan vien; null = moi chi nhanh (VNPay)
+     * @param centreId chi nhanh cua nhan vien; null = moi chi nhanh (VNPay)
      */
-    public Outcome confirmPaid(int paymentId, Integer branchId) throws SQLException {
+    public Outcome confirmPaid(int paymentId, Integer centreId) throws SQLException {
         try (Connection conn = DBContext.getConnection()) {
             conn.setAutoCommit(false);
             try {
-                Outcome outcome = confirm(conn, paymentId, branchId);
+                Outcome outcome = confirm(conn, paymentId, centreId);
                 conn.commit();
                 return outcome;
             } catch (SQLException | RuntimeException e) {
@@ -155,7 +155,7 @@ public class PaymentDAO {
         }
     }
 
-    private Outcome confirm(Connection conn, int paymentId, Integer branchId) throws SQLException {
+    private Outcome confirm(Connection conn, int paymentId, Integer centreId) throws SQLException {
         int bookingId;
         String paymentStatus;
         boolean amountMatches;
@@ -166,8 +166,8 @@ public class PaymentDAO {
               + "JOIN Showtimes s ON s.ShowtimeID = b.ShowtimeID JOIN Halls h ON h.HallID = s.HallID "
               + "WHERE p.PaymentID = ? AND (? IS NULL OR h.CentreID = ?)")) {
             ps.setInt(1, paymentId);
-            setNullableInt(ps, 2, branchId);
-            setNullableInt(ps, 3, branchId);
+            setNullableInt(ps, 2, centreId);
+            setNullableInt(ps, 3, centreId);
             try (ResultSet rs = ps.executeQuery()) {
                 if (!rs.next()) return new Outcome(Status.NOT_FOUND, null);
                 bookingId = rs.getInt("BookingID");
@@ -208,11 +208,11 @@ public class PaymentDAO {
 
     /**
      * Theo doi giao dich thanh toan ve (VNPay + tien mat), moi nhat truoc.
-     * @param branchId null = moi chi nhanh
+     * @param centreId null = moi chi nhanh
      * @param status null = moi trang thai
      * @param method null = moi phuong thuc (QR = VNPay, CASH = tien mat)
      */
-    public List<Payment> getTransactionsForTracking(Integer branchId, String status, String method, int days)
+    public List<Payment> getTransactionsForTracking(Integer centreId, String status, String method, int days)
             throws SQLException {
         String sql = "SELECT TOP 300 p.PaymentID, p.TransactionCode, p.PaymentMethod, p.Amount, p.PaymentStatus, "
                    + "  p.CreatedAt, p.PaidAt, b.BookingID, b.BookingCode, b.BookingType, b.BookingStatus, "
@@ -234,8 +234,8 @@ public class PaymentDAO {
             BookingDAO.releaseExpiredHolds(conn);
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setInt(1, -days);
-                setNullableInt(ps, 2, branchId);
-                setNullableInt(ps, 3, branchId);
+                setNullableInt(ps, 2, centreId);
+                setNullableInt(ps, 3, centreId);
                 ps.setString(4, status);
                 ps.setString(5, status);
                 ps.setString(6, method);

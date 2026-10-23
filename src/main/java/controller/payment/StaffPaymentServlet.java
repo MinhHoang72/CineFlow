@@ -44,7 +44,7 @@ public class StaffPaymentServlet extends HttpServlet {
 
         List<Payment> payments;
         try {
-            payments = paymentDAO.getTransactionsForTracking(branchScope(staff), status, method, days);
+            payments = paymentDAO.getTransactionsForTracking(centreScope(staff), status, method, days);
         } catch (SQLException e) {
             throw new ServletException(e);
         }
@@ -71,7 +71,7 @@ public class StaffPaymentServlet extends HttpServlet {
     }
 
     /** null = moi chi nhanh. Nhan vien ban ve chua duoc gan chi nhanh thi khong thay giao dich nao (-1). */
-    private static Integer branchScope(User staff) {
+    private static Integer centreScope(User staff) {
         if (!WebUtil.isSalesStaff(staff)) return null;
         return staff.getCentreId() != null ? staff.getCentreId() : -1;
     }

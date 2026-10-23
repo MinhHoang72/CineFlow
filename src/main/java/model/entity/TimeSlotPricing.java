@@ -9,7 +9,7 @@ import java.util.Locale;
 public class TimeSlotPricing {
 
     private int timeSlotPricingId;
-    private int branchId;
+    private int centreId;
     private String slotName;
 
     private LocalTime startTime;
@@ -34,16 +34,12 @@ public class TimeSlotPricing {
         this.timeSlotPricingId = timeSlotPricingId;
     }
 
-    public int getCentreId() { return branchId; }
-    public void setCentreId(int centreId) { this.branchId = centreId; }
+    public int getCentreId() { return centreId; }
+    public void setCentreId(int centreId) { this.centreId = centreId; }
 
-    public int getBranchId() {
-        return branchId;
-    }
 
-    public void setBranchId(int branchId) {
-        this.branchId = branchId;
-    }
+
+
 
     public String getSlotName() {
         return slotName;

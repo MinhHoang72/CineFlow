@@ -118,7 +118,7 @@ public class UpdateTimeSlotPricingServlet
             TimeSlotPricing rule =
                     new TimeSlotPricing();
 
-            rule.setBranchId(
+            rule.setCentreId(
                     centreId
             );
 

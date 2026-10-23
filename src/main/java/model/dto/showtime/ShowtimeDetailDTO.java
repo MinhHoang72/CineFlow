@@ -69,8 +69,8 @@ public class ShowtimeDetailDTO {
     public int getCentreID() { return centreId; }
     public void setCentreID(int centreId) { this.centreId = centreId; }
 
-    public int getBranchId() { return centreId; }
-    public void setBranchId(int branchId) { this.centreId = branchId; }
+
+
 
     public Timestamp getStartTime() { return startTime; }
     public void setStartTime(Timestamp startTime) { this.startTime = startTime; }
@@ -105,8 +105,8 @@ public class ShowtimeDetailDTO {
     public String getCentreName() { return centreName; }
     public void setCentreName(String centreName) { this.centreName = centreName; }
 
-    public String getBranchName() { return centreName; }
-    public void setBranchName(String branchName) { this.centreName = branchName; }
+
+
 
     public String getPosterUrl() { return posterUrl; }
     public void setPosterUrl(String posterUrl) { this.posterUrl = posterUrl; }

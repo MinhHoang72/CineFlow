@@ -1,12 +1,12 @@
 package controller.pricing;
 
-import dao.BranchPricingDAO;
+import dao.CentrePricingDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import model.entity.BranchPricing;
+import model.entity.CentrePricing;
 import service.ShowtimeService;
 
 import java.io.IOException;
@@ -18,10 +18,10 @@ import java.util.List;
  * - GET  /pricing: Hiển thị giá cơ bản hiện tại và lịch sử điều chỉnh
  * - POST /pricing/update: Cập nhật mức giá vé cơ bản mới
  */
-@WebServlet(name = "BranchPricingServlet", urlPatterns = {"/pricing", "/pricing/update"})
-public class BranchPricingServlet extends HttpServlet {
+@WebServlet(name = "CentrePricingServlet", urlPatterns = {"/pricing", "/pricing/update"})
+public class CentrePricingServlet extends HttpServlet {
 
-    private final BranchPricingDAO dao = new BranchPricingDAO();
+    private final CentrePricingDAO dao = new CentrePricingDAO();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -29,8 +29,8 @@ public class BranchPricingServlet extends HttpServlet {
 
         int centreId = ShowtimeService.requireCentreId(request);
 
-        BranchPricing currentPrice = dao.getCurrentPrice(centreId);
-        List<BranchPricing> history = dao.getPriceHistory(centreId);
+        CentrePricing currentPrice = dao.getCurrentPrice(centreId);
+        List<CentrePricing> history = dao.getPriceHistory(centreId);
 
         request.setAttribute("currentPrice", currentPrice);
         request.setAttribute("history", history);
@@ -54,7 +54,7 @@ public class BranchPricingServlet extends HttpServlet {
                 return;
             }
 
-            BranchPricing current = dao.getCurrentPrice(centreId);
+            CentrePricing current = dao.getCurrentPrice(centreId);
             if (current != null && current.getBasePrice() == newPrice) {
                 request.getSession().setAttribute("error", "Mức giá mới phải khác giá đang áp dụng.");
                 response.sendRedirect(request.getContextPath() + "/pricing");

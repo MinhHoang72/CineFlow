@@ -49,7 +49,7 @@
     int centreId = -1;
     try {
         String idParam = request.getParameter("centreId");
-        if (idParam == null || idParam.trim().isEmpty()) idParam = request.getParameter("branchId");
+        if (idParam == null || idParam.trim().isEmpty()) idParam = request.getParameter("centreId");
         if (idParam != null && !idParam.trim().isEmpty()) {
             centreId = Integer.parseInt(idParam.trim());
         }

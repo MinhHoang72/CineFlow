@@ -19,9 +19,6 @@ public class CinemaServlet extends HttpServlet {
             throws ServletException, IOException {
         String uri = request.getRequestURI();
         String centreId = request.getParameter("centreId");
-        if (centreId == null || centreId.isBlank()) {
-            centreId = request.getParameter("branchId");
-        }
 
         if (uri.endsWith("/details") || uri.endsWith("/details.jsp") || (centreId != null && !centreId.isBlank())) {
             request.getRequestDispatcher("/WEB-INF/views/cinema/cinemaDetail.jsp").forward(request, response);

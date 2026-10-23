@@ -27,7 +27,7 @@
 
 ---
 
-## 📌 Phân Công Chức Năng Theo Nhánh (Branch Features)
+## 📌 Phân Công Chức Năng Theo Nhánh (Centre Features)
 
 ### 🌟 Nhánh `ThaiDQHE181794` (Dương Quốc Thái)
 Phụ trách các phân hệ cốt lõi về **Quản trị Người dùng & Nhân sự**, **Quản lý Phim & Phân phối Phim**, **Quản trị Cụm rạp** và **Chuẩn hoá Kiến trúc Hệ thống**:
@@ -60,3 +60,9 @@ Phụ trách các phân hệ cốt lõi về **Quản trị Người dùng & Nh�
 | **Đặt vé & Thanh toán** | `/booking`<br>`/payment` | Customer, Staff (Counter) | Chọn suất chiếu, sơ đồ ghế ngồi trực quan, áp dụng voucher, thanh toán VNPay và in vé tại quầy. |
 
 *Lưu ý*: Nếu cơ sở dữ liệu đã nạp nhưng danh mục F&B chưa có dữ liệu, hãy chạy thêm script phụ `database/fnb_seed_per_centre.sql`.
+
+## Chuyển database hiện có sang tên Centre
+
+Source hiện tại sử dụng bảng `CentrePricing`, khóa `CentrePricingID` và cột `CentreID` trong cả `CentrePricing` lẫn `TimeSlotPricing`.
+Nếu database được tạo từ phiên bản trước, chạy `database/migrate_centre_naming.sql` trước khi triển khai source mới. Script đổi tên tại chỗ trong transaction, giữ dữ liệu và có thể chạy lại.
+Nếu cài mới bằng `database/Cine_Flow.sql` hiện tại thì không cần migration này. Không chạy lại script khởi tạo trên database cần giữ dữ liệu.

@@ -18,7 +18,7 @@
             <div class="small text-muted">Đưa mã này cho nhân viên soát vé</div>
         </div>
         <div class="col">
-            <div class="text-muted small">CINEFLOW · <c:out value="${booking.showtime.branchName}"/></div>
+            <div class="text-muted small">CINEFLOW · <c:out value="${booking.showtime.centreName}"/></div>
             <div class="fs-4 fw-bold"><c:out value="${booking.showtime.movieTitle}"/></div>
             <div class="mb-3">
                 <fmt:formatDate value="${booking.showtime.startTime}" pattern="HH:mm - dd/MM/yyyy"/> ·

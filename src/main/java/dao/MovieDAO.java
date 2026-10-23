@@ -15,7 +15,7 @@ import java.util.List;
 public class MovieDAO {
 
     /** Buoc 3: phim con it nhat mot suat mo ban tai rap (cung dieu kien voi buoc chon thanh pho / rap). */
-    public List<Movie> getMoviesShowingAt(int branchId) throws SQLException {
+    public List<Movie> getMoviesShowingAt(int centreId) throws SQLException {
         String sql = "SELECT mv.MovieID, mv.Title, mv.Genre, mv.Duration, mv.AgeRating "
                    + "FROM Movies mv "
                    + "WHERE EXISTS (SELECT 1 " + ShowtimeDAO.BOOKABLE_FROM
@@ -24,7 +24,7 @@ public class MovieDAO {
         List<Movie> list = new ArrayList<>();
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, branchId);
+            ps.setInt(1, centreId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Movie movie = new Movie();

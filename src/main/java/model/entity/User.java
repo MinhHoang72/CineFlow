@@ -182,8 +182,8 @@ public class User {
     public void setCentreId(Integer centreId) { this.centreId = centreId; }
     public Integer getCentreID() { return centreId; }
     public void setCentreID(Integer centreId) { this.centreId = centreId; }
-    public Integer getBranchId() { return centreId; }
-    public void setBranchId(Integer branchId) { this.centreId = branchId; }
+
+
 
     public Timestamp getCreatedAt() {
         return createdAt;

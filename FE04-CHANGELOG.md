@@ -15,9 +15,9 @@ Phần dưới là báo cáo trước merge; đường dẫn và nhận xét v�
 - Hall: centreId. Showtime: hallName/hallType, map cả danh sách và chi tiết.
 - Surcharge/SurchargeDAO: SurchargeType + TargetValue; truy vấn SEAT/HALL theo thời điểm; thêm getHallSurchargeAt. Cập nhật rule vẫn đóng bản cũ và thêm bản mới trong transaction.
 - PricingService: Base + TimeSlot + Seat + Hall. API 4 tham số nhận hallType. API 3 tham số được giữ tương thích, mặc định phòng 2D.
-- Servlet FE-04: bỏ ID centre/manager cố định, sử dụng userId/session và CentreManagerAssignments. ADMIN chọn centre qua centreId (có nhận branchId cũ); lựa chọn được giữ trong session. MANAGER dùng phân công ACTIVE có hiệu lực.
+- Servlet FE-04: bỏ ID centre/manager cố định, sử dụng userId/session và CentreManagerAssignments. ADMIN chọn centre qua centreId (có nhận centreId cũ); lựa chọn được giữ trong session. MANAGER dùng phân công ACTIVE có hiệu lực.
 - Sửa các đường dẫn forward JSP theo thư mục hiện tại. Màn phụ thu hiển thị và chỉnh sửa cả SEAT/HALL; giữ loại/đối tượng từ rule gốc khi sửa.
-- Sửa mapping UserDAO đọc CentreID để đăng nhập hoạt động với schema mới; thêm alias centreId vào User, giữ API branchId cho các module cũ.
+- Sửa mapping UserDAO đọc CentreID để đăng nhập hoạt động với schema mới; thêm alias centreId vào User, giữ API centreId cho các module cũ.
 - Giữ nguyên logic kiểm tra trùng lịch, cleaning buffer, hủy suất và lịch sử giá.
 
 ## Các file đã chỉnh trong lần này (tính từ thư mục project)
@@ -25,7 +25,7 @@ Phần dưới là báo cáo trước merge; đường dẫn và nhận xét v�
 - src/java/dao/MovieDAO.java
 - src/java/dao/ShowtimeDAO.java
 - src/java/dao/SurchargeDAO.java
-- src/java/dao/BranchPricingDAO.java
+- src/java/dao/CentrePricingDAO.java
 - src/java/dao/TimeSlotPricingDAO.java
 - src/java/dao/UserDAO.java
 - src/java/model/Hall.java
@@ -58,6 +58,6 @@ Phần dưới là báo cáo trước merge; đường dẫn và nhận xét v�
 - Biên dịch toàn bộ src/java bằng javac 17, thư viện lib và Tomcat 10.1.44: PASS (exit 0).
 - git diff --check: PASS.
 - Chưa build WAR qua NetBeans/Ant (ant không có trên PATH), chưa deploy Tomcat hay chạy truy vấn trên SQL Server thực tế. Biên dịch không xác nhận hoạt động SQL/JSP lúc chạy.
-- BranchPricing và TimeSlotPricing trong SQL hiện tại vẫn có cột vật lý BranchID; CentreID là computed column. Vì vậy DAO giá vẫn ghi BranchID đúng schema, biến Java dùng centreId.
-- Ngoài phạm vi FE-04, CinemaDAO, ReportDAO và một số chức năng của UserDAO (lịch sử đặt vé, danh sách/cập nhật nhân viên) vẫn tham chiếu Branches/BranchMovies/BranchID cũ. Chưa di chuyển các module này; chúng có thể lỗi SQL với schema mới.
+- CentrePricing và TimeSlotPricing trong SQL hiện tại vẫn có cột vật lý CentreID; CentreID là computed column. Vì vậy DAO giá vẫn ghi CentreID đúng schema, biến Java dùng centreId.
+- Ngoài phạm vi FE-04, CinemaDAO, ReportDAO và một số chức năng của UserDAO (lịch sử đặt vé, danh sách/cập nhật nhân viên) vẫn tham chiếu Centres/CentreMovies/CentreID cũ. Chưa di chuyển các module này; chúng có thể lỗi SQL với schema mới.
 - Các thay đổi có sẵn tại DBContext, trang xem ghế và database được giữ nguyên. Không chỉnh CineFlowDemo.

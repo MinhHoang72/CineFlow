@@ -30,7 +30,7 @@
     <c:otherwise>
         <div class="card mb-3"><div class="card-body">
             <div class="fs-5 fw-bold"><c:out value="${st.movieTitle}"/></div>
-            <div><c:out value="${st.branchName}"/> · <c:out value="${st.hallName}"/> (${st.hallType}) ·
+            <div><c:out value="${st.centreName}"/> · <c:out value="${st.hallName}"/> (${st.hallType}) ·
                 <fmt:formatDate value="${st.startTime}" pattern="HH:mm dd/MM/yyyy"/></div>
             <table class="table table-sm mt-3 mb-0">
                 <thead><tr><th>Hạng mục</th><th>Chi tiết</th><th class="text-end">Thành tiền</th></tr></thead>

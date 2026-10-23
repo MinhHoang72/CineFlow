@@ -18,8 +18,8 @@ public class TimeSlotPricingDAO extends DBContext {
                 rs.getInt("TimeSlotPricingID")
         );
 
-        item.setBranchId(
-                rs.getInt("BranchID")
+        item.setCentreId(
+                rs.getInt("CentreID")
         );
 
         item.setSlotName(
@@ -86,7 +86,7 @@ public class TimeSlotPricingDAO extends DBContext {
         String sql
                 = "SELECT * "
                 + "FROM TimeSlotPricing "
-                + "WHERE BranchID = ? "
+                + "WHERE CentreID = ? "
                 + "AND EffectiveTo IS NULL "
                 + "ORDER BY StartTime";
 
@@ -118,7 +118,7 @@ public class TimeSlotPricingDAO extends DBContext {
         String sql
                 = "SELECT * "
                 + "FROM TimeSlotPricing "
-                + "WHERE BranchID = ? "
+                + "WHERE CentreID = ? "
                 + "ORDER BY EffectiveFrom DESC, StartTime";
 
         try (PreparedStatement ps
@@ -147,7 +147,7 @@ public class TimeSlotPricingDAO extends DBContext {
         Integer excludeId) {
 
     System.out.println("===== CHECK OVERLAP =====");
-    System.out.println("BranchID: " + centreId);
+    System.out.println("CentreID: " + centreId);
     System.out.println("New Start: " + startTime);
     System.out.println("New End: " + endTime);
     System.out.println("Exclude ID: " + excludeId);
@@ -159,7 +159,7 @@ public class TimeSlotPricingDAO extends DBContext {
             + "StartTime, "
             + "EndTime "
             + "FROM TimeSlotPricing "
-            + "WHERE BranchID = ? "
+            + "WHERE CentreID = ? "
             + "AND EffectiveTo IS NULL "
             + "AND StartTime < CAST(? AS TIME) "
             + "AND EndTime > CAST(? AS TIME) ";
@@ -237,7 +237,7 @@ public class TimeSlotPricingDAO extends DBContext {
 
         String sql
                 = "INSERT INTO TimeSlotPricing "
-                + "(BranchID, SlotName, "
+                + "(CentreID, SlotName, "
                 + "StartTime, EndTime, "
                 + "Surcharge, EffectiveFrom, "
                 + "EffectiveTo, UpdatedBy) "
@@ -249,7 +249,7 @@ public class TimeSlotPricingDAO extends DBContext {
 
             ps.setInt(
                     1,
-                    item.getBranchId()
+                    item.getCentreId()
             );
 
             ps.setString(
@@ -302,7 +302,7 @@ public class TimeSlotPricingDAO extends DBContext {
 
         String insertNew
                 = "INSERT INTO TimeSlotPricing "
-                + "(BranchID, SlotName, "
+                + "(CentreID, SlotName, "
                 + "StartTime, EndTime, "
                 + "Surcharge, EffectiveFrom, "
                 + "EffectiveTo, UpdatedBy) "
@@ -337,7 +337,7 @@ public class TimeSlotPricingDAO extends DBContext {
 
                         psInsert.setInt(
                                 1,
-                                newRule.getBranchId()
+                                newRule.getCentreId()
                         );
 
                         psInsert.setString(
@@ -436,7 +436,7 @@ public class TimeSlotPricingDAO extends DBContext {
         String sql
                 = "SELECT TOP 1 Surcharge "
                 + "FROM TimeSlotPricing "
-                + "WHERE BranchID = ? "
+                + "WHERE CentreID = ? "
                 + "AND EffectiveFrom <= ? "
                 + "AND (EffectiveTo IS NULL "
                 + "OR ? < EffectiveTo) "

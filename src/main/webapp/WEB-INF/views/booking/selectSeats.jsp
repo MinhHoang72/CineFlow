@@ -8,7 +8,7 @@
 <%-- Ban tai quay truyen seatFormAction/seatBackUrl; dat ve online dung mac dinh --%>
 <c:if test="${empty seatFormAction}"><c:set var="seatFormAction" value="${ctx}/booking"/></c:if>
 <c:if test="${empty seatBackUrl}">
-    <c:set var="seatBackUrl" value="${ctx}/booking?branchId=${showtime.branchId}&movieId=${showtime.movieId}"/>
+    <c:set var="seatBackUrl" value="${ctx}/booking?centreId=${showtime.centreId}&movieId=${showtime.movieId}"/>
 </c:if>
 
 <style>
@@ -28,7 +28,7 @@
     <div class="card-body">
         <h5 class="mb-1"><c:out value="${showtime.movieTitle}"/></h5>
         <div class="text-muted">
-            <c:out value="${showtime.branchName}"/> · <c:out value="${showtime.hallName}"/> (${showtime.hallType}) ·
+            <c:out value="${showtime.centreName}"/> · <c:out value="${showtime.hallName}"/> (${showtime.hallType}) ·
             <fmt:formatDate value="${showtime.startTime}" pattern="HH:mm dd/MM/yyyy"/>
         </div>
     </div>

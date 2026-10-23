@@ -73,8 +73,8 @@ public class BookingDetailDTO {
     public String getCentreName() { return centreName; }
     public void setCentreName(String centreName) { this.centreName = centreName; }
 
-    public String getBranchName() { return centreName; }
-    public void setBranchName(String branchName) { this.centreName = branchName; }
+
+
 
     public String getHallName() { return hallName; }
     public void setHallName(String hallName) { this.hallName = hallName; }
