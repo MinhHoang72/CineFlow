@@ -9,16 +9,18 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import model.entity.User;
+import utils.WebUtil;
 
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
 /**
- * Filter bảo vệ toàn bộ khu vực quản trị Admin (/admin/*).
+ * Filter bảo vệ toàn bộ khu vực quản trị Admin (/admin/*, /admin).
  * Quy tắc:
  * - Nếu chưa đăng nhập: chuyển hướng về trang đăng nhập kèm URL chuyển hướng ban đầu.
- * - Nếu đã đăng nhập nhưng không phải ADMIN: chặn truy cập với HTTP 403 Forbidden.
+ * - Nếu đã đăng nhập nhưng không phải ADMIN: tự động chuyển hướng ngay lập tức (Silent Redirect)
+ *   về trang phù hợp với vai trò của tài khoản, không hiển thị trang lỗi.
  * - Nếu có vai trò ADMIN: cho phép tiếp tục chuỗi filter.
  */
 public class AdminFilter implements Filter {
@@ -102,8 +104,10 @@ public class AdminFilter implements Filter {
         }
 
         // 2. Kiểm tra vai trò ADMIN (Role-Based Access Control - RBAC)
+        // Nếu không phải ADMIN, tự động chuyển hướng ngay lập tức (Silent Redirect) về trang đúng vai trò, không hiện lỗi
         if (!isAdmin(session)) {
-            httpResponse.sendError(HttpServletResponse.SC_FORBIDDEN, "Bạn không có quyền truy cập khu vực Quản trị viên (Admin).");
+            String targetPath = WebUtil.getRoleDefaultPath(session);
+            httpResponse.sendRedirect(httpResponse.encodeRedirectURL(httpRequest.getContextPath() + targetPath));
             return;
         }
 

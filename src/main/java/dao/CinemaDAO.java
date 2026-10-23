@@ -364,6 +364,28 @@ public class CinemaDAO {
      * @param enabled  trạng thái kích hoạt phân phối
      * @return true nếu lưu thành công, ngược lại false
      */
+    /**
+     * Kiểm tra xem bộ phim đã từng được cấu hình phân phối trong CSDL hay chưa.
+     *
+     * @param movieId mã định danh phim
+     * @return true nếu đã có ít nhất một bản ghi phân phối trong CentreMovies, ngược lại false
+     */
+    public boolean hasDistributionConfig(int movieId) {
+        String sql = "SELECT COUNT(*) FROM CentreMovies WHERE MovieID = ?";
+        try (Connection connection = DBContext.getConnection();
+             PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, movieId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+            }
+        } catch (Exception exception) {
+            exception.printStackTrace();
+        }
+        return false;
+    }
+
     public boolean saveMovieDistributionForCentre(int movieId, int centreId, boolean enabled) {
         String sql = "MERGE CentreMovies AS target USING (SELECT ? AS CentreID, ? AS MovieID) AS source "
                 + "ON target.CentreID = source.CentreID AND target.MovieID = source.MovieID "

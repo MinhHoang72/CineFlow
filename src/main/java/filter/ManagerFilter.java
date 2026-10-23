@@ -9,16 +9,18 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import model.entity.User;
+import utils.WebUtil;
 
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
 /**
- * Filter: Bảo vệ khu vực Quản lý (Manager): /manager/*, /staff, /reports.
+ * Filter: Bảo vệ khu vực Quản lý (Manager): /manager/*, /manager, /staff, /reports.
  * Quy tắc:
  * - Chưa đăng nhập: chuyển hướng về /login kèm URL redirect.
- * - Đã đăng nhập nhưng không có vai trò MANAGER hoặc ADMIN: từ chối với HTTP 403 Forbidden.
+ * - Đã đăng nhập nhưng không có vai trò MANAGER hoặc ADMIN: tự động chuyển hướng ngay lập tức (Silent Redirect)
+ *   về trang của vai trò hiện tại, không hiển thị trang lỗi.
  * - Có vai trò MANAGER hoặc ADMIN: cho phép tiếp tục.
  */
 public class ManagerFilter implements Filter {
@@ -102,8 +104,10 @@ public class ManagerFilter implements Filter {
         }
 
         // 2. Kiểm tra quyền hạn vai trò MANAGER hoặc ADMIN
+        // Nếu không có quyền, tự động chuyển hướng ngay lập tức (Silent Redirect) về trang đúng vai trò, không hiện lỗi
         if (!isManagerOrAdmin(session)) {
-            httpResponse.sendError(HttpServletResponse.SC_FORBIDDEN, "Bạn không có quyền truy cập khu vực Quản lý (Manager).");
+            String targetPath = WebUtil.getRoleDefaultPath(session);
+            httpResponse.sendRedirect(httpResponse.encodeRedirectURL(httpRequest.getContextPath() + targetPath));
             return;
         }
 

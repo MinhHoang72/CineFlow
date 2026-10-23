@@ -67,7 +67,7 @@
 <header class="cf-main-header" id="cfMainHeader">
     <div class="cf-header-container">
         <!-- Logo thương hiệu -->
-        <a class="cf-brand" href="<%= ctx %>/home" aria-label="CineFlow Cinema Home">
+        <% String homeBrandLink = "ADMIN".equalsIgnoreCase(headerRole) ? (ctx + "/dashboard") : (ctx + "/home"); %><a class="cf-brand" href="<%= homeBrandLink %>" aria-label="CineFlow Cinema Home">
             <span class="cf-brand-icon">C</span>
             <span class="cf-brand-name">Cine<span class="cf-brand-glow">Flow</span></span>
         </a>
@@ -78,7 +78,7 @@
             <a class="cf-nav-item <%= "booking".equalsIgnoreCase(activeNav) ? "active" : "" %>" href="<%= ctx %>/booking">MUA VÉ</a>
             <a class="cf-nav-item <%= "promotions".equalsIgnoreCase(activeNav) ? "active" : "" %>" href="<%= ctx %>/home#promotions">TIN MỚI &amp; ƯU ĐÃI</a>
             <a class="cf-nav-item <%= "cinema".equalsIgnoreCase(activeNav) ? "active" : "" %>" href="<%= ctx %>/cinema">RẠP CHIẾU PHIM</a>
-            <a class="cf-nav-item <%= "support".equalsIgnoreCase(activeNav) ? "active" : "" %>" href="<%= ctx %>/home#support">HỖ TRỢ</a>
+            <a class="cf-nav-item <%= "support".equalsIgnoreCase(activeNav) ? "active" : "" %>" href="<%= ctx %>/support">HỖ TRỢ</a>
         </nav>
 
         <!-- Khu vực tài khoản và xác thực bên phải -->
@@ -88,7 +88,7 @@
                 <a class="cf-auth-btn" href="<%= ctx %>/register">Đăng ký</a>
             <% } else { %>
                 <% if ("ADMIN".equals(headerRole)) { %>
-                    <a class="cf-badge-role admin" href="<%= ctx %>/admin/movies" title="Bảng quản trị hệ thống">Admin</a>
+                    <a class="cf-badge-role admin" href="<%= ctx %>/dashboard" title="Bảng quản trị hệ thống">Admin</a>
                 <% } else if ("MANAGER".equals(headerRole)) { %>
                     <a class="cf-badge-role manager" href="<%= ctx %>/staff" title="Quản lý cụm rạp">Quản lý</a>
                 <% } %>

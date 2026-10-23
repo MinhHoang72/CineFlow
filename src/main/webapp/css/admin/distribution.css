@@ -460,6 +460,39 @@
     border-color: rgba(255, 255, 255, 0.2);
 }
 
+.cf-dist-quick-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+}
+
+.cf-btn-tool {
+    height: 38px;
+    background: #17202e;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    padding: 0 14px;
+    color: #cbd5e1;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.cf-btn-tool:hover {
+    background: #1e293b;
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.25);
+}
+
+.cf-btn-tool svg {
+    flex-shrink: 0;
+}
+
 /* Distribution Table */
 .cf-dist-table-wrap {
     border: 1px solid rgba(255, 255, 255, 0.08);
