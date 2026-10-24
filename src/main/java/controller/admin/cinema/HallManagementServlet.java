@@ -1,4 +1,4 @@
-﻿package controller.admin.cinema;
+package controller.admin.cinema;
 
 import dao.CentreDAO;
 import dao.HallDAO;

@@ -1,4 +1,4 @@
-﻿package controller.admin.cinema;
+package controller.admin.cinema;
 
 import com.google.gson.Gson;
 import dao.CentreDAO;
@@ -108,7 +108,7 @@ public class CentreManagementServlet extends HttpServlet {
         request.setAttribute("activeNav", "centres");
         request.setAttribute("pageTitle", "Quan ly Cum rap");
 
-package controller.admin.cinema;
+        request.getRequestDispatcher("/WEB-INF/views/admin/cinema/centreList.jsp").forward(request, response);
     }
 
     @Override

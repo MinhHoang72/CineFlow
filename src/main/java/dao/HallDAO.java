@@ -1,4 +1,4 @@
-﻿package dao;
+package dao;
 
 import model.dto.common.PageDTO;
 import model.entity.Hall;
@@ -16,6 +16,14 @@ import java.util.List;
  * Phục vụ Use Case UC-FE-03.2 (Manage Cinema Halls) và các quy tắc nghiệp vụ BR-HS-01, Alt 1, Alt 2.
  */
 public class HallDAO {
+
+    public PageDTO<Hall> search(int centreId, String search, String status, int page, int size) {
+        if (page < 1) page = 1;
+        if (size < 1) size = 6;
+        int total = countHallsByCentre(centreId, search, status);
+        List<Hall> items = getHallsByCentrePaged(centreId, search, status, page, size);
+        return new PageDTO<>(items, page, size, total);
+    }
 
     /**
      * Lấy danh sách các phòng chiếu trực thuộc một Cụm rạp (Centre).

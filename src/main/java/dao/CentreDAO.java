@@ -1,4 +1,4 @@
-﻿package dao;
+package dao;
 
 import model.dto.common.PageDTO;
 import model.entity.Centre;
