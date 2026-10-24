@@ -5,6 +5,9 @@ import dao.HallDAO;
 import dao.MovieDAO;
 import dao.ShowtimeDAO;
 import dao.UserDAO;
+import jakarta.servlet.ServletContextEvent;
+import jakarta.servlet.ServletContextListener;
+import jakarta.servlet.annotation.WebListener;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import model.entity.Centre;
@@ -14,6 +17,9 @@ import model.entity.User;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Service: Xử lý toàn bộ logic nghiệp vụ về Lịch chiếu (Showtime) và Ngữ cảnh Cụm rạp (Cinema Context).
@@ -23,15 +29,40 @@ import java.util.List;
  * - Kiểm tra xung đột thời gian chiếu (Schedule Conflict) kèm thời gian đệm dọn phòng (Cleaning Buffer).
  * - Thực hiện thêm, cập nhật, hủy suất chiếu.
  */
-public class ShowtimeService {
+@WebListener
+public class ShowtimeService implements ServletContextListener {
 
     private static final ShowtimeDAO showtimeDAO = new ShowtimeDAO();
     private static final MovieDAO movieDAO = new MovieDAO();
     private static final HallDAO hallDAO = new HallDAO();
     private static final CentreDAO centreDAO = new CentreDAO();
     private static final UserDAO userDAO = new UserDAO();
+    private ScheduledExecutorService statusExecutor;
 
     public ShowtimeService() {
+    }
+
+    /** Tomcat starts this task once when the application starts. */
+    @Override
+    public void contextInitialized(ServletContextEvent event) {
+        statusExecutor = Executors.newSingleThreadScheduledExecutor(task -> {
+            Thread thread = new Thread(task, "cineflow-showtime-status");
+            thread.setDaemon(true);
+            return thread;
+        });
+        statusExecutor.scheduleWithFixedDelay(() -> {
+            try {
+                showtimeDAO.synchronizeStatuses();
+            } catch (Exception e) {
+                // A temporary database failure must not stop subsequent runs.
+                event.getServletContext().log("Unable to synchronize showtime statuses", e);
+            }
+        }, 0, 30, TimeUnit.SECONDS);
+    }
+
+    @Override
+    public void contextDestroyed(ServletContextEvent event) {
+        if (statusExecutor != null) statusExecutor.shutdownNow();
     }
 
     /**

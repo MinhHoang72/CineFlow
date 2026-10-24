@@ -1,0 +1,85 @@
+/* Only showtime seat maps: hall configuration keeps its existing styles. */
+.st-seat-view {
+    --seat-standard-bg: #263449;
+    --seat-standard-ink: #f1f5f9;
+    --seat-standard-border: #64748b;
+    --seat-vip-bg: #fde9b8;
+    --seat-vip-ink: #2d3748;
+    --seat-vip-border: #c0780c;
+    --seat-sweet-bg: #fbcfe8;
+    --seat-sweet-ink: #701a49;
+    --seat-sweet-border: #be3c85;
+    --seat-booked-bg: #475569;
+    --seat-booked-ink: #fff;
+    --seat-held-bg: #fed7aa;
+    --seat-held-ink: #7c2d12;
+    --seat-maintenance-bg: #9a4438;
+}
+html[data-theme="light"] .st-seat-view {
+    --seat-standard-bg: #f1f5f9;
+    --seat-standard-ink: #1e293b;
+    --seat-standard-border: #94a3b8;
+}
+.st-seat-view .cf-seat-box { cursor: default; position: relative; }
+.st-seat-view .cf-seat-box:hover { filter: none; box-shadow: none; }
+html[data-theme] .st-seat-view .cf-seat-box.STANDARD.AVAILABLE,
+.st-seat-view .st-type-standard {
+    background: var(--seat-standard-bg); color: var(--seat-standard-ink); border: 1px solid var(--seat-standard-border);
+}
+html[data-theme] .st-seat-view .cf-seat-box.VIP.AVAILABLE,
+.st-seat-view .st-type-vip {
+    background: var(--seat-vip-bg); color: var(--seat-vip-ink); border: 1px solid var(--seat-vip-border);
+}
+html[data-theme] .st-seat-view .cf-seat-box.SWEETBOX.AVAILABLE,
+.st-seat-view .st-type-sweetbox {
+    background: var(--seat-sweet-bg); color: var(--seat-sweet-ink); border: 1px solid var(--seat-sweet-border);
+}
+/* State colors override type colors, including the shared theme hover rules. */
+.st-seat-view .cf-seat-box.BOOKED,
+.st-seat-view .st-state-booked,
+.st-seat-view .cf-stat-pill.st-pill-booked {
+    background: var(--seat-booked-bg) !important;
+    color: var(--seat-booked-ink) !important;
+    border: 1px solid #64748b !important;
+    opacity: 1; box-shadow: none;
+}
+.st-seat-view .cf-seat-box.HELD,
+.st-seat-view .st-state-held,
+.st-seat-view .cf-stat-pill.st-pill-held {
+    background: var(--seat-held-bg) !important;
+    color: var(--seat-held-ink) !important;
+    border: 1px solid #c2681b !important;
+    opacity: 1; box-shadow: none;
+}
+html[data-theme] .st-seat-view .cf-seat-box.MAINTENANCE,
+.st-seat-view .st-state-maintenance,
+.st-seat-view .cf-stat-pill.st-pill-maintenance {
+    background: var(--seat-maintenance-bg) !important;
+    color: #fff !important;
+    border: 1px solid #b86b59 !important;
+    opacity: 1; box-shadow: none;
+}
+.st-seat-view .st-seat-marker {
+    position: absolute; top: -7px; right: -6px; width: 16px; height: 16px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%; background: #7c2d12; color: #fff;
+    font-size: 10px; line-height: 1; box-shadow: 0 0 0 2px var(--seat-standard-bg);
+}
+.st-seat-view .BOOKED .st-seat-marker { top: 1px; right: 2px; width: 10px; height: 10px; border-radius: 0; background: transparent; color: #fff; font-size: 11px; box-shadow: none; }
+.st-seat-view .st-pill-available { background: #d1fae5; border: 1px solid #23785b; color: #065f46; }
+.st-seat-view .st-readonly-label,
+.st-seat-view .st-seat-note { color: var(--cf-muted,#94a3b8); font-size: 12px; line-height: 1.7; }
+.st-seat-view .st-seat-legends { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; width: 100%; margin-top: 28px; }
+.st-seat-view .st-legend-group { min-width: 0; padding: 16px; border: 1px solid var(--seat-standard-border); border-radius: 10px; }
+.st-seat-view .st-legend-group h3 { margin: 0 0 12px; font-size: 12px; color: var(--seat-standard-ink); }
+.st-seat-view .st-legend-items { display: flex; flex-wrap: wrap; gap: 12px 18px; font-size: 12px; color: var(--seat-standard-ink); }
+.st-seat-view .st-legend-items > span { display: inline-flex; align-items: center; gap: 7px; }
+.st-seat-view .st-legend-swatch { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 18px; border-radius: 4px; font-style: normal; font-weight: 700; flex-shrink: 0; }
+.st-seat-view .st-type-aisle { background: transparent; border: 1px dashed var(--seat-standard-border); color: var(--seat-standard-ink); }
+.st-seat-view .cf-seat-canvas-wrapper:focus-visible { outline: 2px solid #60a5fa; outline-offset: 3px; }
+@media(max-width:650px) {
+    .st-seat-view .cf-hall-banner { align-items: flex-start; gap: 16px; }
+    .st-seat-view .cf-hall-meta h2 { font-size: 16px; }
+    .st-seat-view .cf-hall-meta p { line-height: 1.8; }
+    .st-seat-view .st-seat-legends { grid-template-columns: minmax(0, 1fr); }
+}

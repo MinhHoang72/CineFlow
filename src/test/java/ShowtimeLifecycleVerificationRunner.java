@@ -48,6 +48,27 @@ public class ShowtimeLifecycleVerificationRunner {
                 }
                 if (dao.synchronizeStatuses(connection) != 0) throw new AssertionError("Repeated synchronization should not rewrite unchanged states");
                 System.out.println("PASS: 8 lifecycle cases, cleaning buffer, cancelled states and idempotence");
+
+                int centreId;
+                try (PreparedStatement ps = connection.prepareStatement("SELECT CentreID FROM Halls WHERE HallID = ?")) {
+                    ps.setInt(1, hallId);
+                    try (ResultSet rs = ps.executeQuery()) { rs.next(); centreId = rs.getInt(1); }
+                }
+                LocalDateTime previewDay = LocalDateTime.of(2099, 1, 1, 0, 0);
+                int first = insert(connection, movieId, hallId, previewDay.plusHours(10), previewDay.plusHours(12), "SCHEDULED");
+                int second = insert(connection, movieId, hallId, previewDay.plusHours(14), previewDay.plusHours(16), "SCHEDULED");
+                insert(connection, movieId, hallId, previewDay.plusHours(17), previewDay.plusHours(18), "CANCELLED");
+                if (!dao.findScheduleConflicts(connection, centreId, hallId, previewDay.plusHours(12).plusMinutes(15), previewDay.plusHours(13).plusMinutes(45), 15).isEmpty())
+                    throw new AssertionError("Touching cleaning boundaries must be allowed");
+                if (dao.findScheduleConflicts(connection, centreId, hallId, previewDay.plusHours(12).plusMinutes(14), previewDay.plusHours(13).plusMinutes(45), 15).stream().noneMatch(s -> s.getShowtimeId() == first))
+                    throw new AssertionError("Existing cleaning buffer must block the preview");
+                if (dao.findScheduleConflicts(connection, centreId, hallId, previewDay.plusHours(13), previewDay.plusHours(13).plusMinutes(46), 15).stream().noneMatch(s -> s.getShowtimeId() == second))
+                    throw new AssertionError("New cleaning buffer must not overlap the next showtime");
+                if (!dao.findScheduleConflicts(connection, centreId, hallId, previewDay.plusHours(17), previewDay.plusHours(18), 15).isEmpty())
+                    throw new AssertionError("Cancelled showtimes must not block the preview");
+                if (!dao.findScheduleConflicts(connection, -1, hallId, previewDay.plusHours(10), previewDay.plusHours(12), 15).isEmpty())
+                    throw new AssertionError("Other centres must be excluded from preview");
+                System.out.println("PASS: live preview, both cleaning boundaries, cancellation and centre scope");
             } finally {
                 connection.rollback();
             }
