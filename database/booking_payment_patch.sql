@@ -5,7 +5,7 @@
      1. BookingSeats.ShowtimeID + unique index chong dat trung ghe
      2. Payments.CashReceived (tien khach dua khi tra tien mat tai quay)
      3. Tai khoan customer1 de test 2 khach dat trung ghe
-   Gia ve lay tu BranchPricing + TimeSlotPricing + Surcharges cua nhom (khong can bo sung).
+   Gia ve lay tu CentrePricing + TimeSlotPricing + Surcharges cua nhom (khong can bo sung).
    ========================================================= */
 USE CineFlowDB;
 GO

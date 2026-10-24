@@ -101,13 +101,13 @@ public class CounterShowtimeServlet extends HttpServlet {
 
     private void showtimes(HttpServletRequest req, HttpServletResponse resp, User staff)
             throws SQLException, ServletException, IOException {
-        List<LocalDate> dates = showtimeDAO.getShowDatesAtBranch(staff.getCentreId());
+        List<LocalDate> dates = showtimeDAO.getShowDatesAtCentre(staff.getCentreId());
         LocalDate date = parseDate(req.getParameter("date"));
         if ((date == null || !dates.contains(date)) && !dates.isEmpty()) date = dates.get(0);
 
         Map<String, List<Showtime>> byMovie = new LinkedHashMap<>();
         if (date != null) {
-            for (Showtime s : showtimeDAO.getShowtimesAtBranch(staff.getCentreId(), date)) {
+            for (Showtime s : showtimeDAO.getShowtimesAtCentre(staff.getCentreId(), date)) {
                 byMovie.computeIfAbsent(s.getMovieTitle(), k -> new ArrayList<>()).add(s);
             }
         }
@@ -121,7 +121,7 @@ public class CounterShowtimeServlet extends HttpServlet {
             throws SQLException, ServletException, IOException {
         Integer showtimeId = WebUtil.parseInt(req.getParameter("showtimeId"));
         Showtime showtime = showtimeId == null ? null : showtimeDAO.getBookableById(showtimeId);
-        if (showtime == null || showtime.getBranchId() != staff.getCentreId()) {
+        if (showtime == null || showtime.getCentreId() != staff.getCentreId()) {
             WebUtil.flash(req, "warning", "Suất chiếu không tồn tại, đã ngừng bán hoặc không thuộc rạp của bạn.");
             resp.sendRedirect(req.getContextPath() + "/staff/counter");
             return;
@@ -148,7 +148,7 @@ public class CounterShowtimeServlet extends HttpServlet {
     private void hold(HttpServletRequest req, HttpServletResponse resp, User staff) throws SQLException, IOException {
         Integer showtimeId = WebUtil.parseInt(req.getParameter("showtimeId"));
         Showtime showtime = showtimeId == null ? null : showtimeDAO.getBookableById(showtimeId);
-        if (showtime == null || showtime.getBranchId() != staff.getCentreId()) {
+        if (showtime == null || showtime.getCentreId() != staff.getCentreId()) {
             resp.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;
         }
@@ -298,7 +298,7 @@ public class CounterShowtimeServlet extends HttpServlet {
         Integer bookingId = WebUtil.parseInt(req.getParameter("bookingId"));
         if (bookingId == null) return null;
         Booking booking = bookingDAO.getBooking(bookingId);
-        if (booking == null || !booking.isCounter() || booking.getShowtime().getBranchId() != staff.getCentreId()) {
+        if (booking == null || !booking.isCounter() || booking.getShowtime().getCentreId() != staff.getCentreId()) {
             return null;
         }
         return booking;

@@ -74,7 +74,6 @@ public class StaffTransferServlet extends HttpServlet {
         // 3. Đọc các bộ lọc tìm kiếm từ request (lọc theo cụm rạp, từ khóa tên/email, vai trò nhân sự)
         Integer centreFilter = null;
         String centreParam = request.getParameter("centreId");
-        if (centreParam == null || centreParam.trim().isEmpty()) centreParam = request.getParameter("branchId");
         if (centreParam != null && !centreParam.trim().isEmpty()) {
             try {
                 centreFilter = Integer.parseInt(centreParam.trim());

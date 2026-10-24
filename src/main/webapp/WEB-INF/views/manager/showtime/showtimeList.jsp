@@ -65,7 +65,7 @@
                     <table class="st-table"><thead><tr><th scope="col">Phim / Mã suất</th><th scope="col">Phòng chiếu</th><th scope="col">Bắt đầu</th><th scope="col">Kết thúc</th><th scope="col">Dọn phòng</th><th scope="col">Trạng thái</th><th scope="col">Thao tác</th></tr></thead>
                         <tbody id="st-rows">
                         <c:forEach var="s" items="${showtimes}">
-                            <tr data-showtime data-title="<c:out value='${s.movieTitle}' />" data-hall-id="${s.hallId}" data-hall="<c:out value='${s.hallName}' />" data-date="${fn:substring(s.startTimeInputFormatted, 0, 10)}" data-status="<c:out value='${s.status}' />">
+                            <tr data-showtime data-showtime-id="${s.showtimeId}" data-title="<c:out value='${s.movieTitle}' />" data-hall-id="${s.hallId}" data-hall="<c:out value='${s.hallName}' />" data-date="${fn:substring(s.startTimeInputFormatted, 0, 10)}" data-status="<c:out value='${s.status}' />">
                                 <td><strong class="st-movie"><c:out value="${s.movieTitle}" /></strong><span class="st-id">#${s.showtimeId}</span></td>
                                 <td><span class="st-hall-name"><c:out value="${s.hallName}" /></span><span class="st-format"><c:out value="${s.hallType}" /></span></td>
                                 <td class="st-time"><c:out value="${s.startTimeFormatted}" /></td><td class="st-time"><c:out value="${s.endTimeFormatted}" /></td>
@@ -78,7 +78,7 @@
                     </table>
                 </div>
                 <div class="st-empty" id="st-empty" ${not empty showtimes ? 'hidden' : ''}><span class="st-empty-icon" aria-hidden="true">▤</span><h3>${empty showtimes ? 'Chưa có suất chiếu' : 'Không tìm thấy suất chiếu'}</h3><p>${empty showtimes ? 'Tạo suất chiếu đầu tiên bằng biểu mẫu phía trên.' : 'Thử đổi từ khóa hoặc xóa bộ lọc để xem lại danh sách.'}</p></div>
-                <footer class="st-list-footer"><span id="st-result-count" role="status" aria-live="polite">Hiển thị ${fn:length(showtimes)} suất chiếu</span><span>Lịch chiếu theo cụm rạp hiện tại</span></footer>
+                <footer class="st-list-footer"><span id="st-result-count" role="status" aria-live="polite">Hiển thị ${fn:length(showtimes)} suất chiếu</span><span>Trạng thái tự cập nhật mỗi 30 giây</span></footer>
             </section>
         </main>
     </div>

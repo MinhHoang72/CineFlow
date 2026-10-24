@@ -41,7 +41,7 @@
                 </p>
 
                 <div class="small text-muted mb-3">
-                    <c:out value="${st.movieTitle}"/> · <c:out value="${st.branchName}"/> ·
+                    <c:out value="${st.movieTitle}"/> · <c:out value="${st.centreName}"/> ·
                     <fmt:formatDate value="${st.startTime}" pattern="HH:mm dd/MM/yyyy"/> · Ghế ${booking.seatLabels} ·
                     <fmt:formatNumber value="${booking.totalAmount}" pattern="#,##0"/> đ
                 </div>

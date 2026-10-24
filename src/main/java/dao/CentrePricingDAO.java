@@ -12,17 +12,17 @@ package dao;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
-import model.entity.BranchPricing;
+import model.entity.CentrePricing;
 import utils.DBContext;
 
-public class BranchPricingDAO extends DBContext {
+public class CentrePricingDAO extends DBContext {
 
-    public BranchPricing getCurrentPrice(int centreId) {
+    public CentrePricing getCurrentPrice(int centreId) {
 
         String sql =
             "SELECT TOP 1 * "
-            + "FROM BranchPricing "
-            + "WHERE BranchID = ? "
+            + "FROM CentrePricing "
+            + "WHERE CentreID = ? "
             + "AND EffectiveTo IS NULL "
             + "ORDER BY EffectiveFrom DESC";
 
@@ -35,14 +35,14 @@ public class BranchPricingDAO extends DBContext {
 
             if (rs.next()) {
 
-                BranchPricing bp = new BranchPricing();
+                CentrePricing bp = new CentrePricing();
 
-                bp.setBranchPricingId(
-                        rs.getInt("BranchPricingID")
+                bp.setCentrePricingId(
+                        rs.getInt("CentrePricingID")
                 );
 
-                bp.setBranchId(
-                        rs.getInt("BranchID")
+                bp.setCentreId(
+                        rs.getInt("CentreID")
                 );
 
                 bp.setBasePrice(
@@ -92,17 +92,17 @@ public class BranchPricingDAO extends DBContext {
 
         return null;
     }
-        public List<BranchPricing> getPriceHistory(
+        public List<CentrePricing> getPriceHistory(
             int centreId) {
 
-        List<BranchPricing> list =
+        List<CentrePricing> list =
                 new ArrayList<>();
 
         String sql =
-            "SELECT * "
-            + "FROM BranchPricing "
-            + "WHERE BranchID = ? "
-            + "ORDER BY EffectiveFrom DESC";
+            "SELECT bp.*, u.FullName AS UpdatedByName "
+            + "FROM CentrePricing bp LEFT JOIN Users u ON u.UserID = bp.UpdatedBy "
+            + "WHERE bp.CentreID = ? "
+            + "ORDER BY bp.EffectiveFrom DESC, bp.CentrePricingID DESC";
 
         try (PreparedStatement ps =
                 connection.prepareStatement(sql)) {
@@ -113,15 +113,15 @@ public class BranchPricingDAO extends DBContext {
 
             while (rs.next()) {
 
-                BranchPricing bp =
-                        new BranchPricing();
+                CentrePricing bp =
+                        new CentrePricing();
 
-                bp.setBranchPricingId(
-                        rs.getInt("BranchPricingID")
+                bp.setCentrePricingId(
+                        rs.getInt("CentrePricingID")
                 );
 
-                bp.setBranchId(
-                        rs.getInt("BranchID")
+                bp.setCentreId(
+                        rs.getInt("CentreID")
                 );
 
                 bp.setBasePrice(
@@ -162,6 +162,7 @@ public class BranchPricingDAO extends DBContext {
                     );
                 }
 
+                bp.setUpdatedByName(rs.getString("UpdatedByName"));
                 list.add(bp);
             }
 
@@ -177,14 +178,14 @@ public class BranchPricingDAO extends DBContext {
             int managerId) {
 
         String closeOldPrice =
-            "UPDATE BranchPricing "
+            "UPDATE CentrePricing "
             + "SET EffectiveTo = GETDATE() "
-            + "WHERE BranchID = ? "
+            + "WHERE CentreID = ? "
             + "AND EffectiveTo IS NULL";
 
         String insertNewPrice =
-            "INSERT INTO BranchPricing "
-            + "(BranchID, BasePrice, "
+            "INSERT INTO CentrePricing "
+            + "(CentreID, BasePrice, "
             + "EffectiveFrom, EffectiveTo, "
             + "UpdatedBy) "
             + "VALUES (?, ?, GETDATE(), NULL, ?)";
@@ -249,8 +250,8 @@ public class BranchPricingDAO extends DBContext {
 
     String sql =
         "SELECT TOP 1 BasePrice "
-        + "FROM BranchPricing "
-        + "WHERE BranchID = ? "
+        + "FROM CentrePricing "
+        + "WHERE CentreID = ? "
         + "AND EffectiveFrom <= ? "
         + "AND (EffectiveTo IS NULL "
         + "OR ? < EffectiveTo) "

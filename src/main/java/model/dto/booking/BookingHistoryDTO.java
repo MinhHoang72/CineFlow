@@ -66,8 +66,8 @@ public class BookingHistoryDTO {
     public String getCentreName() { return centreName; }
     public void setCentreName(String centreName) { this.centreName = centreName; }
 
-    public String getBranchName() { return centreName; }
-    public void setBranchName(String branchName) { this.centreName = branchName; }
+
+
 
     public Timestamp getStartTime() { return startTime; }
     public void setStartTime(Timestamp startTime) { this.startTime = startTime; }

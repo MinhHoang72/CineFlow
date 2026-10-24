@@ -22,7 +22,7 @@
         <%-- Hoa don --%>
         <div class="eticket mt-3" data-bs-theme="light" style="max-width: 420px">
             <div class="text-center">
-                <div class="fw-bold">CINEFLOW · <c:out value="${st.branchName}"/></div>
+                <div class="fw-bold">CINEFLOW · <c:out value="${st.centreName}"/></div>
                 <div class="fs-5 fw-bold">HOÁ ĐƠN THANH TOÁN</div>
                 <div class="small">Đơn <c:out value="${booking.code}"/></div>
                 <div class="small text-muted">

@@ -1,6 +1,6 @@
 package service;
 
-import dao.BranchPricingDAO;
+import dao.CentrePricingDAO;
 import dao.SurchargeDAO;
 import dao.TimeSlotPricingDAO;
 
@@ -9,15 +9,15 @@ import java.time.LocalDateTime;
 
 public class PricingService {
 
-    private BranchPricingDAO branchPricingDAO;
+    private CentrePricingDAO centrePricingDAO;
     private TimeSlotPricingDAO timeSlotPricingDAO;
     private SurchargeDAO surchargeDAO;
 
 
     public PricingService() {
 
-        branchPricingDAO =
-                new BranchPricingDAO();
+        centrePricingDAO =
+                new CentrePricingDAO();
 
         timeSlotPricingDAO =
                 new TimeSlotPricingDAO();
@@ -44,7 +44,7 @@ public class PricingService {
                 );
 
         double basePrice =
-                branchPricingDAO
+                centrePricingDAO
                     .getBasePriceAt(
                         centreId,
                         time

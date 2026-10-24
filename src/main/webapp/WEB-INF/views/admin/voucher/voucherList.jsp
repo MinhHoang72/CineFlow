@@ -1,4 +1,4 @@
-﻿<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ page import="model.dto.common.PageDTO, model.entity.Voucher, model.entity.User" %>
 <%@ include file="header.jspf" %>
 <%
@@ -104,7 +104,7 @@
                         <% if (v.isGlobal()) { %>
                             <span class="vc-scope-badge vc-scope-global">&#127759; Toàn chuỗi</span>
                         <% } else { %>
-                            <span class="vc-scope-badge vc-scope-branch">&#127970; <%= esc(v.getCentreName() != null ? v.getCentreName() : "Chi nhánh #" + v.getCentreId()) %></span>
+                            <span class="vc-scope-badge vc-scope-centre">&#127970; <%= esc(v.getCentreName() != null ? v.getCentreName() : "Chi nhánh #" + v.getCentreId()) %></span>
                         <% } %>
                     </td>
                     <% } %>

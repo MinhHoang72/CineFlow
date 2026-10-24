@@ -87,7 +87,7 @@ public class SaveTimeSlotPricingServlet
                             Time.valueOf(endTime),
                             null
                     );
-            System.out.println("Servlet BranchID = " + centreId);
+            System.out.println("Servlet CentreID = " + centreId);
 System.out.println("Servlet Start = " + startTime);
 System.out.println("Servlet End = " + endTime);
 System.out.println("Servlet Overlap = " + overlap);
@@ -108,7 +108,7 @@ System.out.println("Servlet Overlap = " + overlap);
             TimeSlotPricing item =
                     new TimeSlotPricing();
 
-            item.setBranchId(centreId);
+            item.setCentreId(centreId);
             item.setSlotName(slotName);
             item.setStartTime(startTime);
             item.setEndTime(endTime);

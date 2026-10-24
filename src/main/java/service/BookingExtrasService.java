@@ -34,7 +34,7 @@ public class BookingExtrasService {
 
     /** Menu bap nuoc dang ban tai rap cua suat chieu. */
     public List<FnbMenuItemDTO> getMenu(Booking booking) throws SQLException {
-        return fnbOrderDAO.getMenu(booking.getShowtime().getBranchId());
+        return fnbOrderDAO.getMenu(booking.getShowtime().getCentreId());
     }
 
     /**
@@ -55,7 +55,7 @@ public class BookingExtrasService {
             cart.put(e.getKey().substring(4), qty);
         }
         String orderType = booking.isCounter() ? "COUNTER" : "ONLINE";
-        fnbOrderDAO.replaceCart(booking.getId(), booking.getShowtime().getBranchId(), booking.getUserId(), orderType, cart);
+        fnbOrderDAO.replaceCart(booking.getId(), booking.getShowtime().getCentreId(), booking.getUserId(), orderType, cart);
     }
 
     /**
@@ -73,7 +73,7 @@ public class BookingExtrasService {
                 voucherService.applyVoucher(voucher, booking.getSubTotal(), LocalDateTime.now());
         if (!result.isValid()) throw new IllegalArgumentException(result.getMessage());
 
-        String scopeError = voucherDAO.checkScope(voucher, booking.getShowtime().getBranchId(),
+        String scopeError = voucherDAO.checkScope(voucher, booking.getShowtime().getCentreId(),
                 booking.getShowtime().getMovieId(), booking.getShowtime().getStartTime().toLocalDateTime().toLocalDate());
         if (scopeError != null) throw new IllegalArgumentException(scopeError);
 

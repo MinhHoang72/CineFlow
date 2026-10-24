@@ -171,8 +171,7 @@ public class BookingServlet extends HttpServlet {
             throws SQLException, ServletException, IOException {
         String city = req.getParameter("city");
         if (city != null && city.isBlank()) city = null;
-        Integer branchId = WebUtil.parseInt(req.getParameter("branchId"));
-        if (branchId == null) branchId = WebUtil.parseInt(req.getParameter("centreId"));
+        Integer centreId = WebUtil.parseInt(req.getParameter("centreId"));
         Integer movieId = WebUtil.parseInt(req.getParameter("movieId"));
 
         // Da chon phim (tu trang chu / chi tiet phim, hoac o buoc 3): thanh pho va rap chi hien noi chieu phim do
@@ -184,39 +183,39 @@ public class BookingServlet extends HttpServlet {
         if (movieId == null) cities = showtimeDAO.getCities(null);
 
         // Chi co phim: chon san rap co suat som nhat cua phim
-        if (movieId != null && city == null && branchId == null) {
-            branchId = showtimeDAO.findFirstCentreForMovie(movieId);
+        if (movieId != null && city == null && centreId == null) {
+            centreId = showtimeDAO.findFirstCentreForMovie(movieId);
         }
-        // Link cu chi co branchId (booking/booking.jsp?centreId=...): suy ra thanh pho cua rap
-        if (city == null && branchId != null) city = showtimeDAO.getCityOfCentre(branchId);
+        // Link cu chi co centreId (booking/booking.jsp?centreId=...): suy ra thanh pho cua rap
+        if (city == null && centreId != null) city = showtimeDAO.getCityOfCentre(centreId);
         final String chosenCity = city;
         if (city != null && cities.stream().noneMatch(c -> c.name().equals(chosenCity))) city = null;
         if (city == null && cities.size() == 1) city = cities.get(0).name();
 
         List<Centre> centres = city == null ? List.of() : showtimeDAO.getCentresInCity(city, movieId);
-        final Integer chosenBranch = branchId;
-        if (branchId != null && centres.stream().noneMatch(c -> c.getCentreId() == chosenBranch)) branchId = null;
-        if (branchId == null && centres.size() == 1) branchId = centres.get(0).getCentreId();
+        final Integer chosenCentre = centreId;
+        if (centreId != null && centres.stream().noneMatch(c -> c.getCentreId() == chosenCentre)) centreId = null;
+        if (centreId == null && centres.size() == 1) centreId = centres.get(0).getCentreId();
 
         req.setAttribute("cities", cities);
         req.setAttribute("selectedCity", city);
         req.setAttribute("centres", centres);
-        req.setAttribute("selectedBranchId", branchId);
-        req.setAttribute("selectedCentreId", branchId);
+        req.setAttribute("selectedCentreId", centreId);
+        req.setAttribute("selectedCentreId", centreId);
         req.setAttribute("selectedMovieId", movieId);
 
-        if (branchId != null) {
-            req.setAttribute("movies", movieDAO.getMoviesShowingAt(branchId));
+        if (centreId != null) {
+            req.setAttribute("movies", movieDAO.getMoviesShowingAt(centreId));
         }
-        if (branchId != null && movieId != null) {
-            List<LocalDate> dates = showtimeDAO.getShowDates(branchId, movieId);
+        if (centreId != null && movieId != null) {
+            List<LocalDate> dates = showtimeDAO.getShowDates(centreId, movieId);
             LocalDate date = parseDate(req.getParameter("date"));
             if ((date == null || !dates.contains(date)) && !dates.isEmpty()) date = dates.get(0);
 
             req.setAttribute("dateOptions", toDateOptions(dates));
             if (date != null) {
                 req.setAttribute("selectedDate", date.toString());
-                req.setAttribute("showtimes", showtimeDAO.getShowtimes(branchId, movieId, date));
+                req.setAttribute("showtimes", showtimeDAO.getShowtimes(centreId, movieId, date));
             }
         }
         req.getRequestDispatcher(VIEW_DIR + "booking/selectShowtime.jsp").forward(req, resp);
@@ -342,7 +341,7 @@ public class BookingServlet extends HttpServlet {
     /** Khach xem don cua minh; nhan vien ban ve/MANAGER xem don cua chi nhanh minh (MANAGER chua gan chi nhanh: tat ca); ADMIN tat ca. */
     private static boolean canView(User user, Booking booking) {
         if (booking.getUserId() != null && booking.getUserId() == user.getUserId()) return true;
-        int centreId = booking.getShowtime().getBranchId();
+        int centreId = booking.getShowtime().getCentreId();
         if ("ADMIN".equals(user.getRole())) return true;
         if ("MANAGER".equals(user.getRole())) return user.getCentreId() == null || user.getCentreId() == centreId;
         if (WebUtil.isSalesStaff(user)) return user.getCentreId() != null && user.getCentreId() == centreId;

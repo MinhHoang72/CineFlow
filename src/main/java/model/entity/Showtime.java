@@ -152,25 +152,25 @@ public String getStartTimeInputFormatted() {
             )
     );
 }
-    private int branchId;
-    private String branchName;
+    private int centreId;
+    private String centreName;
     private BigDecimal basePrice;
     public int getId() { return showtimeId; }
-    public int getCentreId() { return branchId; }
-    public void setCentreId(int centreId) { this.branchId = centreId; }
-    public String getCentreName() { return branchName; }
-    public void setCentreName(String centreName) { this.branchName = centreName; }
-    public int getBranchId() { return branchId; }
-    public String getBranchName() { return branchName; }
+    public int getCentreId() { return centreId; }
+    public void setCentreId(int centreId) { this.centreId = centreId; }
+    public String getCentreName() { return centreName; }
+    public void setCentreName(String centreName) { this.centreName = centreName; }
+
+
     public BigDecimal getBasePrice() { return basePrice; }
-    public Showtime(int id, int movieId, String movieTitle, int branchId, String branchName,
+    public Showtime(int id, int movieId, String movieTitle, int centreId, String centreName,
             int hallId, String hallName, String hallType, Timestamp startTime, Timestamp endTime,
             BigDecimal basePrice) {
         this.showtimeId = id;
         this.movieId = movieId;
         this.movieTitle = movieTitle;
-        this.branchId = branchId;
-        this.branchName = branchName;
+        this.centreId = centreId;
+        this.centreName = centreName;
         this.hallId = hallId;
         this.hallName = hallName;
         this.hallType = hallType;

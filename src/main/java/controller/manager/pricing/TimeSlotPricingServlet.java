@@ -18,7 +18,7 @@ public class TimeSlotPricingServlet
 
         /*
          * Demo trước:
-         * BranchID = 1
+         * CentreID = 1
          */
 
         int centreId = service.ShowtimeService.requireCentreId(request);

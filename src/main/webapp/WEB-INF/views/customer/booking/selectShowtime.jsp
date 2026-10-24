@@ -39,11 +39,11 @@
                     <c:forEach var="b" items="${centres}">
                         <c:url var="centreUrl" value="/booking">
                             <c:param name="city" value="${selectedCity}"/>
-                            <c:param name="branchId" value="${b.centreId}"/>
+                            <c:param name="centreId" value="${b.centreId}"/>
                             <c:if test="${not empty selectedMovieId}"><c:param name="movieId" value="${selectedMovieId}"/></c:if>
                         </c:url>
                         <a href="${centreUrl}"
-                           class="list-group-item list-group-item-action ${b.centreId == selectedBranchId ? 'active' : ''}">
+                           class="list-group-item list-group-item-action ${b.centreId == selectedCentreId ? 'active' : ''}">
                             <strong><c:out value="${b.centreName}"/></strong><br>
                             <small><c:out value="${b.address}"/></small>
                         </a>
@@ -57,7 +57,7 @@
     <div class="col-lg-4">
         <h5>Phim</h5>
         <c:choose>
-            <c:when test="${empty selectedBranchId}">
+            <c:when test="${empty selectedCentreId}">
                 <div class="alert alert-info">Chọn một rạp để xem phim đang chiếu.</div>
             </c:when>
             <c:when test="${empty movies}">
@@ -68,7 +68,7 @@
                     <c:forEach var="m" items="${movies}">
                         <c:url var="movieUrl" value="/booking">
                             <c:param name="city" value="${selectedCity}"/>
-                            <c:param name="branchId" value="${selectedBranchId}"/>
+                            <c:param name="centreId" value="${selectedCentreId}"/>
                             <c:param name="movieId" value="${m.movieId}"/>
                         </c:url>
                         <a href="${movieUrl}"
@@ -89,7 +89,7 @@
     <div class="col-lg-5">
         <h5>Ngày &amp; suất chiếu</h5>
         <c:choose>
-            <c:when test="${empty selectedMovieId or empty selectedBranchId}">
+            <c:when test="${empty selectedMovieId or empty selectedCentreId}">
                 <div class="alert alert-info">Chọn phim để xem lịch chiếu.</div>
             </c:when>
             <c:when test="${empty dateOptions}">
@@ -100,7 +100,7 @@
                     <c:forEach var="d" items="${dateOptions}">
                         <c:url var="dateUrl" value="/booking">
                             <c:param name="city" value="${selectedCity}"/>
-                            <c:param name="branchId" value="${selectedBranchId}"/>
+                            <c:param name="centreId" value="${selectedCentreId}"/>
                             <c:param name="movieId" value="${selectedMovieId}"/>
                             <c:param name="date" value="${d.key}"/>
                         </c:url>

@@ -183,46 +183,29 @@ GO
 
 
 /* =========================================================
-   9.1. BRANCH PRICING (CENTRE PRICING)
+   9.1. CENTRE PRICING (CENTRE PRICING)
    ========================================================= */
-CREATE TABLE BranchPricing (
-    BranchPricingID INT IDENTITY(1,1) PRIMARY KEY,
-    BranchID INT NOT NULL,
-    CentreID AS BranchID,
+CREATE TABLE CentrePricing (
+    CentrePricingID INT IDENTITY(1,1) PRIMARY KEY,
+    CentreID INT NOT NULL,
     BasePrice DECIMAL(12,2) NOT NULL,
     EffectiveFrom DATETIME2 NOT NULL,
     EffectiveTo DATETIME2 NULL,
     UpdatedBy INT NULL,
     CreatedAt DATETIME2 NOT NULL DEFAULT GETDATE(),
-    CONSTRAINT FK_BranchPricing_Centres FOREIGN KEY (BranchID) REFERENCES Centres(CentreID),
-    CONSTRAINT FK_BranchPricing_Users FOREIGN KEY (UpdatedBy) REFERENCES Users(UserID),
-    CONSTRAINT CK_BranchPricing_BasePrice CHECK (BasePrice >= 0),
-    CONSTRAINT CK_BranchPricing_Period CHECK (EffectiveTo IS NULL OR EffectiveTo > EffectiveFrom)
+    CONSTRAINT FK_CentrePricing_Centres FOREIGN KEY (CentreID) REFERENCES Centres(CentreID),
+    CONSTRAINT FK_CentrePricing_Users FOREIGN KEY (UpdatedBy) REFERENCES Users(UserID),
+    CONSTRAINT CK_CentrePricing_BasePrice CHECK (BasePrice >= 0),
+    CONSTRAINT CK_CentrePricing_Period CHECK (EffectiveTo IS NULL OR EffectiveTo > EffectiveFrom)
 );
 GO
-
-CREATE VIEW CentrePricing AS
-SELECT 
-    BranchPricingID AS CentrePricingID,
-    BranchPricingID,
-    BranchID AS CentreID,
-    BranchID,
-    BasePrice,
-    EffectiveFrom,
-    EffectiveTo,
-    UpdatedBy,
-    CreatedAt
-FROM BranchPricing;
-GO
-
 
 /* =========================================================
    9.2. TIME SLOT PRICING
    ========================================================= */
 CREATE TABLE TimeSlotPricing (
     TimeSlotPricingID INT IDENTITY(1,1) PRIMARY KEY,
-    BranchID INT NOT NULL,
-    CentreID AS BranchID,
+    CentreID INT NOT NULL,
     SlotName NVARCHAR(100) NOT NULL,
     StartTime TIME NOT NULL,
     EndTime TIME NOT NULL,
@@ -231,7 +214,7 @@ CREATE TABLE TimeSlotPricing (
     EffectiveTo DATETIME2 NULL,
     UpdatedBy INT NULL,
     CreatedAt DATETIME2 NOT NULL DEFAULT GETDATE(),
-    CONSTRAINT FK_TimeSlotPricing_Centres FOREIGN KEY (BranchID) REFERENCES Centres(CentreID),
+    CONSTRAINT FK_TimeSlotPricing_Centres FOREIGN KEY (CentreID) REFERENCES Centres(CentreID),
     CONSTRAINT FK_TimeSlotPricing_Users FOREIGN KEY (UpdatedBy) REFERENCES Users(UserID),
     CONSTRAINT CK_TimeSlotPricing_Surcharge CHECK (Surcharge >= 0),
     CONSTRAINT CK_TimeSlotPricing_Period CHECK (EffectiveTo IS NULL OR EffectiveTo > EffectiveFrom)
@@ -1155,7 +1138,7 @@ CREATE TABLE CentreManagerAssignments (
 );
 GO
 
--- Filtered Unique Indexes b?o d?m t?i m?t th?i di?m m?i Manager ch? có t?i da 1 phân công ACTIVE và m?i Centre ch? có 1 Manager ACTIVE
+-- Filtered Unique Indexes b?o d?m t?i m?t th?i di?m m?i Manager ch? cï¿½ t?i da 1 phï¿½n cï¿½ng ACTIVE vï¿½ m?i Centre ch? cï¿½ 1 Manager ACTIVE
 CREATE UNIQUE NONCLUSTERED INDEX UQ_CMA_Active_Manager 
 ON CentreManagerAssignments(ManagerID) 
 WHERE Status = 'ACTIVE' AND EndDate IS NULL;
@@ -1169,10 +1152,10 @@ GO
 /* ====================================================================================
 
 /* ====================================================================================
-   B? D? LI?U M?U CHU?N HÓA TOÀN DI?N (COMPREHENSIVE MASTER & SAMPLE SEED DATA)
+   B? D? LI?U M?U CHU?N Hï¿½A TOï¿½N DI?N (COMPREHENSIVE MASTER & SAMPLE SEED DATA)
    H? th?ng: CineFlow - Multi-Centre Cinema Management System
-   Bao g?m: 16 C?m r?p (4 r?p/thành ph?), B?ng giá chi nhánh & khung gi?, Su?t chi?u, Vé & F&B
-   M?t kh?u m?c d?nh c?a t?t c? tài kho?n m?u: 123456
+   Bao g?m: 16 C?m r?p (4 r?p/thï¿½nh ph?), B?ng giï¿½ chi nhï¿½nh & khung gi?, Su?t chi?u, Vï¿½ & F&B
+   M?t kh?u m?c d?nh c?a t?t c? tï¿½i kho?n m?u: 123456
    ==================================================================================== */
 
 
@@ -1182,22 +1165,22 @@ GO
 SET IDENTITY_INSERT Centres ON;
 GO
 INSERT INTO Centres (CentreID, CentreName, Address, City, Phone, Status, CreatedAt, UpdatedAt) VALUES
-(1, N'CineFlow C?u Gi?y', N'123 C?u Gi?y', N'Hà N?i', N'02411111111', N'ACTIVE', '2026-10-03 23:08:30', NULL),
-(2, N'CineFlow Hà Ðông', N'456 Nguy?n Trãi', N'Hà N?i', N'02422222222', N'ACTIVE', '2026-10-03 23:08:30', NULL),
-(3, N'CineFlow Hoàn Ki?m', N'88 Hàng Bài, Hoàn Ki?m', N'Hà N?i', N'02433333333', N'ACTIVE', '2026-10-03 23:08:31', NULL),
-(4, N'CineFlow Qu?n 1', N'120 Nguy?n Hu?, Qu?n 1', N'TP. H? Chí Minh', N'02844444444', N'ACTIVE', '2026-10-03 23:08:31', NULL),
-(5, N'CineFlow H?i Châu', N'50 B?ch Ð?ng, H?i Châu', N'Ðà N?ng', N'02365555555', N'ACTIVE', '2026-10-03 23:08:31', NULL),
-(6, N'CineFlow Ngô Quy?n', N'20 L?ch Tray, Ngô Quy?n', N'H?i Phòng', N'02256666666', N'ACTIVE', '2026-10-03 23:08:31', NULL),
-(17, N'CineFlow Hai Bà Trung', N'191 Bà Tri?u, Hai Bà Trung', N'Hà N?i', N'02437777777', N'ACTIVE', '2026-10-13 22:59:54', NULL),
-(18, N'CineFlow Son Trà', N'150 Võ Nguyên Giáp, Son Trà', N'Ðà N?ng', N'02438888888', N'ACTIVE', '2026-10-13 22:59:54', NULL),
-(19, N'CineFlow Landmark 81', N'Vinhomes Central Park, Bình Th?nh', N'TP. H? Chí Minh', N'02855555555', N'ACTIVE', '2026-10-13 22:59:54', NULL),
-(20, N'CineFlow Gò V?p', N'304 Quang Trung, Gò V?p', N'TP. H? Chí Minh', N'02866666666', N'ACTIVE', '2026-10-13 22:59:54', NULL),
-(21, N'CineFlow Th? Ð?c', N'216 Võ Van Ngân, TP. Th? Ð?c', N'TP. H? Chí Minh', N'02877777777', N'ACTIVE', '2026-10-13 22:59:54', NULL),
-(22, N'CineFlow C?m L?', N'100 Cách M?ng Tháng 8, C?m L?', N'Ðà N?ng', N'02366666666', N'ACTIVE', '2026-10-13 22:59:54', NULL),
-(23, N'CineFlow Thanh Khê', N'250 Ði?n Biên Ph?, Thanh Khê', N'Ðà N?ng', N'02367777777', N'ACTIVE', '2026-10-17 21:58:18', NULL),
-(24, N'CineFlow Lê Chân', N'10 Võ Nguyên Giáp, Kênh Duong, Lê Chân', N'H?i Phòng', N'02257777777', N'ACTIVE', '2026-10-17 21:58:18', NULL),
-(25, N'CineFlow H?ng Bàng', N'88 Ðinh Tiên Hoàng, Hoàng Van Th?, H?ng Bàng', N'H?i Phòng', N'02258888888', N'ACTIVE', '2026-10-17 21:58:18', NULL),
-(26, N'CineFlow H?i An', N'32 Lê H?ng Phong, Ð?ng H?i, H?i An', N'H?i Phòng', N'02259999999', N'ACTIVE', '2026-10-17 21:58:18', NULL);
+(1, N'CineFlow C?u Gi?y', N'123 C?u Gi?y', N'Hï¿½ N?i', N'02411111111', N'ACTIVE', '2026-10-03 23:08:30', NULL),
+(2, N'CineFlow Hï¿½ ï¿½ï¿½ng', N'456 Nguy?n Trï¿½i', N'Hï¿½ N?i', N'02422222222', N'ACTIVE', '2026-10-03 23:08:30', NULL),
+(3, N'CineFlow Hoï¿½n Ki?m', N'88 Hï¿½ng Bï¿½i, Hoï¿½n Ki?m', N'Hï¿½ N?i', N'02433333333', N'ACTIVE', '2026-10-03 23:08:31', NULL),
+(4, N'CineFlow Qu?n 1', N'120 Nguy?n Hu?, Qu?n 1', N'TP. H? Chï¿½ Minh', N'02844444444', N'ACTIVE', '2026-10-03 23:08:31', NULL),
+(5, N'CineFlow H?i Chï¿½u', N'50 B?ch ï¿½?ng, H?i Chï¿½u', N'ï¿½ï¿½ N?ng', N'02365555555', N'ACTIVE', '2026-10-03 23:08:31', NULL),
+(6, N'CineFlow Ngï¿½ Quy?n', N'20 L?ch Tray, Ngï¿½ Quy?n', N'H?i Phï¿½ng', N'02256666666', N'ACTIVE', '2026-10-03 23:08:31', NULL),
+(17, N'CineFlow Hai Bï¿½ Trung', N'191 Bï¿½ Tri?u, Hai Bï¿½ Trung', N'Hï¿½ N?i', N'02437777777', N'ACTIVE', '2026-10-13 22:59:54', NULL),
+(18, N'CineFlow Son Trï¿½', N'150 Vï¿½ Nguyï¿½n Giï¿½p, Son Trï¿½', N'ï¿½ï¿½ N?ng', N'02438888888', N'ACTIVE', '2026-10-13 22:59:54', NULL),
+(19, N'CineFlow Landmark 81', N'Vinhomes Central Park, Bï¿½nh Th?nh', N'TP. H? Chï¿½ Minh', N'02855555555', N'ACTIVE', '2026-10-13 22:59:54', NULL),
+(20, N'CineFlow Gï¿½ V?p', N'304 Quang Trung, Gï¿½ V?p', N'TP. H? Chï¿½ Minh', N'02866666666', N'ACTIVE', '2026-10-13 22:59:54', NULL),
+(21, N'CineFlow Th? ï¿½?c', N'216 Vï¿½ Van Ngï¿½n, TP. Th? ï¿½?c', N'TP. H? Chï¿½ Minh', N'02877777777', N'ACTIVE', '2026-10-13 22:59:54', NULL),
+(22, N'CineFlow C?m L?', N'100 Cï¿½ch M?ng Thï¿½ng 8, C?m L?', N'ï¿½ï¿½ N?ng', N'02366666666', N'ACTIVE', '2026-10-13 22:59:54', NULL),
+(23, N'CineFlow Thanh Khï¿½', N'250 ï¿½i?n Biï¿½n Ph?, Thanh Khï¿½', N'ï¿½ï¿½ N?ng', N'02367777777', N'ACTIVE', '2026-10-17 21:58:18', NULL),
+(24, N'CineFlow Lï¿½ Chï¿½n', N'10 Vï¿½ Nguyï¿½n Giï¿½p, Kï¿½nh Duong, Lï¿½ Chï¿½n', N'H?i Phï¿½ng', N'02257777777', N'ACTIVE', '2026-10-17 21:58:18', NULL),
+(25, N'CineFlow H?ng Bï¿½ng', N'88 ï¿½inh Tiï¿½n Hoï¿½ng, Hoï¿½ng Van Th?, H?ng Bï¿½ng', N'H?i Phï¿½ng', N'02258888888', N'ACTIVE', '2026-10-17 21:58:18', NULL),
+(26, N'CineFlow H?i An', N'32 Lï¿½ H?ng Phong, ï¿½?ng H?i, H?i An', N'H?i Phï¿½ng', N'02259999999', N'ACTIVE', '2026-10-17 21:58:18', NULL);
 GO
 SET IDENTITY_INSERT Centres OFF;
 GO
@@ -1208,129 +1191,129 @@ GO
 SET IDENTITY_INSERT Users ON;
 GO
 INSERT INTO Users (UserID, FullName, Account, Email, Password, Phone, Avatar, Role, Status, CentreID, ResetToken, ResetTokenExpiry, EmailVerified, PhoneVerified, LastLoginAt, CreatedAt, UpdatedAt) VALUES
-(1, N'Duong Quy?t Thái', N'customer', N'customer@gmail.com', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0972049598', N'/Cine_Flow/uploads/avatars/641b4853-e378-420f-8b2b-a9e53a8b7996.jpg', N'CUSTOMER', N'ACTIVE', NULL, N'058005', '2026-10-13 22:06:03', 1, 0, '2026-10-13 21:03:33', '2026-10-03 23:08:30', '2026-10-13 21:51:03'),
+(1, N'Duong Quy?t Thï¿½i', N'customer', N'customer@gmail.com', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0972049598', N'/Cine_Flow/uploads/avatars/641b4853-e378-420f-8b2b-a9e53a8b7996.jpg', N'CUSTOMER', N'ACTIVE', NULL, N'058005', '2026-10-13 22:06:03', 1, 0, '2026-10-13 21:03:33', '2026-10-03 23:08:30', '2026-10-13 21:51:03'),
 (2, N'Nguy?n Van Staff', N'staff', N'staff@gmail.com', N'$2a$10$DgDVtZ6KKKTSWbRb0.pxpeXhwgUYnnYsm7v0.gK5xKMxTYQwZzoLi', N'0900000002', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 1, NULL, NULL, 1, 0, '2026-10-12 22:52:03', '2026-10-03 23:08:30', '2026-10-12 22:52:06'),
 (3, N'Nguy?n Van Manager', N'manager', N'manager@gmail.com', N'$2a$10$t0EGXUJ09K1EEHwVVXtNCuFG40Wpv0ILErFvqxdUYUi8uIiogfCM6', N'0900000003', NULL, N'MANAGER', N'ACTIVE', 21, NULL, NULL, 1, 0, '2026-10-17 21:28:30', '2026-10-03 23:08:30', '2026-10-17 21:28:30'),
 (4, N'Administrator', N'admin', N'admin@gmail.com', N'$2a$10$A1HeMkposFAqeqnLfimaR.AyagdCIo4z8WDsvp3yz2tnri6dL7JZu', N'0900000004', N'', N'ADMIN', N'ACTIVE', NULL, NULL, NULL, 1, 0, '2026-10-17 21:29:54', '2026-10-03 23:08:30', '2026-10-17 21:29:54'),
-(5, N'Lê Hoàng Nhân Viên', N'staff_caugiay', N'staff.caugiay@cineflow.vn', N'123456', N'0911000002', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 17, NULL, NULL, 1, 0, NULL, '2026-10-03 23:08:31', '2026-10-14 17:52:49'),
-(6, N'Ph?m Ng?c Nhân Viên', N'staff_hadong', N'staff.hadong@cineflow.vn', N'123456', N'0911000003', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 2, NULL, NULL, 1, 0, NULL, '2026-10-03 23:08:31', '2026-10-14 16:48:15'),
-(7, N'Tr?n Minh Qu?n Lý', N'manager_hanoi', N'manager.hanoi@cineflow.vn', N'123456', N'0911000001', NULL, N'MANAGER', N'ACTIVE', 22, NULL, NULL, 1, 0, NULL, '2026-10-03 23:08:31', '2026-10-14 21:03:45'),
-(8, N'Nguy?n Thu Nhân Viên', N'staff_quan1', N'staff.quan1@cineflow.vn', N'123456', N'0911000004', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 4, NULL, NULL, 1, 0, NULL, '2026-10-03 23:08:31', NULL),
-(9, N'Duong quy?t thái', N'quyetthaix2@gmail.com', N'quyetthaix2@gmail.com', N'$2a$10$R9pVSyewXfcSSYK8nBGIyOlJLmRbaq21W7iFgvh2RtX2nncVIEH9O', NULL, NULL, N'CUSTOMER', N'ACTIVE', NULL, N'429397', '2026-10-13 17:25:53', 0, 0, '2026-10-08 11:02:00', '2026-10-08 08:52:50', '2026-10-08 11:36:55'),
-(10, N'Duong quy?t thái', N'quyetthaix1@gmail.com', N'quyetthaix1@gmail.com', N'$2a$10$lYTuc4U954e24qY2RQyav.C7FLGCj/OV/aTTbeh.qx4LOMeiOHH.G', NULL, NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 0, 0, NULL, '2026-10-08 09:00:25', NULL),
-(11, N'Duong Công An', N'quyetthaix12@gmail.com', N'quyetthaix12@gmail.com', N'$2a$10$sTQxHll1gC3/vJ0n8TlV1.2T7pCiomNZlV61cN4wGHRGz4sy8hDCy', N'0972049598', N'', N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 0, 0, '2026-10-08 10:31:54', '2026-10-08 10:31:42', '2026-10-08 10:33:28'),
-(12, N'Duong quy?t thái', N'quyetthai@gmail.com', N'quyetthai@gmail.com', N'$2a$10$nmjqmLo60zsRRq0w79GAceNlPBfvIyfBXiKIhkSS2jN.Gkx6SZdcy', NULL, NULL, N'CUSTOMER', N'ACTIVE', NULL, N'866022', '2026-10-13 22:25:29', 0, 0, NULL, '2026-10-13 21:32:37', '2026-10-15 18:00:34'),
-(13, N'Duong quy?t thái', N'duongquyetthai@gmail.com', N'duongquyetthai@gmail.com', N'$2a$10$IORqbveGOTFWsJAdvhUJhOssEaMBMP7UU1TTboeOBoyknhGf9sidO', N'0972049598', N'', N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 0, '2026-10-15 21:15:17', '2026-10-13 21:34:28', '2026-10-15 21:15:17'),
-(14, N'Tr?n Ðình Tr?ng', N'manager_caugiay', N'manager.caugiay@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0911000001', NULL, N'MANAGER', N'ACTIVE', 1, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:21:53'),
-(15, N'Lê Minh Tu?n', N'manager_hadong', N'manager.hadong@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0911000002', NULL, N'MANAGER', N'ACTIVE', 2, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(16, N'Vu Th? Bích Ng?c', N'manager_hoankiem', N'manager.hoankiem@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0911000003', NULL, N'MANAGER', N'ACTIVE', 3, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(17, N'Phan Thanh Tùng', N'manager_quan1', N'manager.quan1@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0911000004', NULL, N'MANAGER', N'ACTIVE', 4, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(18, N'Ð?ng Phuong Nam', N'manager_haichau', N'manager.haichau@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0911000005', NULL, N'MANAGER', N'ACTIVE', 5, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(19, N'Bùi Quang Dung', N'manager_ngoquyen', N'manager.ngoquyen@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0911000006', NULL, N'MANAGER', N'ACTIVE', 6, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 21:16:41'),
-(20, N'Ð? Hoài Phuong', N'manager_haibatrung', N'manager.haibatrung@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0911000017', NULL, N'MANAGER', N'ACTIVE', 17, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(21, N'Ngô Gia Khánh', N'manager_tayho', N'manager.tayho@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0911000018', NULL, N'MANAGER', N'ACTIVE', 18, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(22, N'Truong M? Duyên', N'manager_landmark81', N'manager.landmark81@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0911000019', NULL, N'MANAGER', N'ACTIVE', 19, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(5, N'Lï¿½ Hoï¿½ng Nhï¿½n Viï¿½n', N'staff_caugiay', N'staff.caugiay@cineflow.vn', N'123456', N'0911000002', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 17, NULL, NULL, 1, 0, NULL, '2026-10-03 23:08:31', '2026-10-14 17:52:49'),
+(6, N'Ph?m Ng?c Nhï¿½n Viï¿½n', N'staff_hadong', N'staff.hadong@cineflow.vn', N'123456', N'0911000003', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 2, NULL, NULL, 1, 0, NULL, '2026-10-03 23:08:31', '2026-10-14 16:48:15'),
+(7, N'Tr?n Minh Qu?n Lï¿½', N'manager_hanoi', N'manager.hanoi@cineflow.vn', N'123456', N'0911000001', NULL, N'MANAGER', N'ACTIVE', 22, NULL, NULL, 1, 0, NULL, '2026-10-03 23:08:31', '2026-10-14 21:03:45'),
+(8, N'Nguy?n Thu Nhï¿½n Viï¿½n', N'staff_quan1', N'staff.quan1@cineflow.vn', N'123456', N'0911000004', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 4, NULL, NULL, 1, 0, NULL, '2026-10-03 23:08:31', NULL),
+(9, N'Duong quy?t thï¿½i', N'quyetthaix2@gmail.com', N'quyetthaix2@gmail.com', N'$2a$10$R9pVSyewXfcSSYK8nBGIyOlJLmRbaq21W7iFgvh2RtX2nncVIEH9O', NULL, NULL, N'CUSTOMER', N'ACTIVE', NULL, N'429397', '2026-10-13 17:25:53', 0, 0, '2026-10-08 11:02:00', '2026-10-08 08:52:50', '2026-10-08 11:36:55'),
+(10, N'Duong quy?t thï¿½i', N'quyetthaix1@gmail.com', N'quyetthaix1@gmail.com', N'$2a$10$lYTuc4U954e24qY2RQyav.C7FLGCj/OV/aTTbeh.qx4LOMeiOHH.G', NULL, NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 0, 0, NULL, '2026-10-08 09:00:25', NULL),
+(11, N'Duong Cï¿½ng An', N'quyetthaix12@gmail.com', N'quyetthaix12@gmail.com', N'$2a$10$sTQxHll1gC3/vJ0n8TlV1.2T7pCiomNZlV61cN4wGHRGz4sy8hDCy', N'0972049598', N'', N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 0, 0, '2026-10-08 10:31:54', '2026-10-08 10:31:42', '2026-10-08 10:33:28'),
+(12, N'Duong quy?t thï¿½i', N'quyetthai@gmail.com', N'quyetthai@gmail.com', N'$2a$10$nmjqmLo60zsRRq0w79GAceNlPBfvIyfBXiKIhkSS2jN.Gkx6SZdcy', NULL, NULL, N'CUSTOMER', N'ACTIVE', NULL, N'866022', '2026-10-13 22:25:29', 0, 0, NULL, '2026-10-13 21:32:37', '2026-10-15 18:00:34'),
+(13, N'Duong quy?t thï¿½i', N'duongquyetthai@gmail.com', N'duongquyetthai@gmail.com', N'$2a$10$IORqbveGOTFWsJAdvhUJhOssEaMBMP7UU1TTboeOBoyknhGf9sidO', N'0972049598', N'', N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 0, '2026-10-15 21:15:17', '2026-10-13 21:34:28', '2026-10-15 21:15:17'),
+(14, N'Tr?n ï¿½ï¿½nh Tr?ng', N'manager_caugiay', N'manager.caugiay@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0911000001', NULL, N'MANAGER', N'ACTIVE', 1, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:21:53'),
+(15, N'Lï¿½ Minh Tu?n', N'manager_hadong', N'manager.hadong@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0911000002', NULL, N'MANAGER', N'ACTIVE', 2, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(16, N'Vu Th? Bï¿½ch Ng?c', N'manager_hoankiem', N'manager.hoankiem@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0911000003', NULL, N'MANAGER', N'ACTIVE', 3, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(17, N'Phan Thanh Tï¿½ng', N'manager_quan1', N'manager.quan1@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0911000004', NULL, N'MANAGER', N'ACTIVE', 4, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(18, N'ï¿½?ng Phuong Nam', N'manager_haichau', N'manager.haichau@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0911000005', NULL, N'MANAGER', N'ACTIVE', 5, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(19, N'Bï¿½i Quang Dung', N'manager_ngoquyen', N'manager.ngoquyen@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0911000006', NULL, N'MANAGER', N'ACTIVE', 6, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 21:16:41'),
+(20, N'ï¿½? Hoï¿½i Phuong', N'manager_haibatrung', N'manager.haibatrung@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0911000017', NULL, N'MANAGER', N'ACTIVE', 17, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(21, N'Ngï¿½ Gia Khï¿½nh', N'manager_tayho', N'manager.tayho@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0911000018', NULL, N'MANAGER', N'ACTIVE', 18, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(22, N'Truong M? Duyï¿½n', N'manager_landmark81', N'manager.landmark81@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0911000019', NULL, N'MANAGER', N'ACTIVE', 19, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
 (23, N'H? Qu?c B?o', N'manager_govap', N'manager.govap@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0911000020', NULL, N'MANAGER', N'ACTIVE', 20, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(24, N'Hoàng Thu? Linh', N'staff_cg_02', N'staff.cg02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921010002', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 1, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(25, N'Ð? Qu?c Hùng', N'staff_cg_03', N'staff.cg03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921010003', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 1, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(26, N'Lê Minh Trang', N'staff_cg_04', N'staff.cg04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921010004', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 1, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(24, N'Hoï¿½ng Thu? Linh', N'staff_cg_02', N'staff.cg02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921010002', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 1, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(25, N'ï¿½? Qu?c Hï¿½ng', N'staff_cg_03', N'staff.cg03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921010003', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 1, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(26, N'Lï¿½ Minh Trang', N'staff_cg_04', N'staff.cg04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921010004', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 1, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
 (27, N'Tr?n B?o Nam', N'staff_cg_05', N'staff.cg05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921010005', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 1, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(28, N'Vu Khánh Linh', N'staff_hd_02', N'staff.hd02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921020002', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 2, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(29, N'Nguy?n Ð?c Huy', N'staff_hd_03', N'staff.hd03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921020003', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 2, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(30, N'Ðinh Lan Huong', N'staff_hd_04', N'staff.hd04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921020004', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 2, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(31, N'Bùi Thanh Tùng', N'staff_hd_05', N'staff.hd05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921020005', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 2, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(32, N'Ngô Mai Phuong', N'staff_hk_01', N'staff.hk01@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921030001', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 3, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(33, N'Phan Ti?n Ð?t', N'staff_hk_02', N'staff.hk02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921030002', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 3, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(28, N'Vu Khï¿½nh Linh', N'staff_hd_02', N'staff.hd02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921020002', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 2, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(29, N'Nguy?n ï¿½?c Huy', N'staff_hd_03', N'staff.hd03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921020003', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 2, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(30, N'ï¿½inh Lan Huong', N'staff_hd_04', N'staff.hd04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921020004', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 2, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(31, N'Bï¿½i Thanh Tï¿½ng', N'staff_hd_05', N'staff.hd05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921020005', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 2, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(32, N'Ngï¿½ Mai Phuong', N'staff_hk_01', N'staff.hk01@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921030001', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 3, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(33, N'Phan Ti?n ï¿½?t', N'staff_hk_02', N'staff.hk02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921030002', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 3, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
 (34, N'Truong M? Hoa', N'staff_hk_03', N'staff.hk03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921030003', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 3, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(35, N'Hà Anh Tu?n', N'staff_hk_04', N'staff.hk04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921030004', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 3, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(35, N'Hï¿½ Anh Tu?n', N'staff_hk_04', N'staff.hk04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921030004', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 3, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
 (36, N'Luong Th?o My', N'staff_hk_05', N'staff.hk05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921030005', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 3, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(37, N'Võ Hoàng Y?n', N'staff_q1_02', N'staff.q102@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921040002', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 4, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(38, N'Ð?ng Kh?c Ti?p', N'staff_q1_03', N'staff.q103@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921040003', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 4, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(39, N'Cao Thái Hà', N'staff_q1_04', N'staff.q104@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921040004', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 4, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(40, N'Lý Quí Khánh', N'staff_q1_05', N'staff.q105@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921040005', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 4, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(37, N'Vï¿½ Hoï¿½ng Y?n', N'staff_q1_02', N'staff.q102@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921040002', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 4, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(38, N'ï¿½?ng Kh?c Ti?p', N'staff_q1_03', N'staff.q103@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921040003', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 4, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(39, N'Cao Thï¿½i Hï¿½', N'staff_q1_04', N'staff.q104@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921040004', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 4, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(40, N'Lï¿½ Quï¿½ Khï¿½nh', N'staff_q1_05', N'staff.q105@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921040005', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 4, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
 (41, N'Duong Tri?u Vu', N'staff_hc_01', N'staff.hc01@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921050001', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 5, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(42, N'Tô Ng?c Vân', N'staff_hc_02', N'staff.hc02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921050002', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 5, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(43, N'Mai Phuong Thúy', N'staff_hc_03', N'staff.hc03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921050003', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 5, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(44, N'Hu?nh Tr?ng Phát', N'staff_hc_04', N'staff.hc04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921050004', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 5, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(45, N'Lê Di?p Ki?u', N'staff_hc_05', N'staff.hc05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921050005', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 5, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(46, N'Ðoàn Van H?u', N'staff_nq_01', N'staff.nq01@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921060001', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 6, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(42, N'Tï¿½ Ng?c Vï¿½n', N'staff_hc_02', N'staff.hc02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921050002', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 5, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(43, N'Mai Phuong Thï¿½y', N'staff_hc_03', N'staff.hc03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921050003', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 5, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(44, N'Hu?nh Tr?ng Phï¿½t', N'staff_hc_04', N'staff.hc04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921050004', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 5, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(45, N'Lï¿½ Di?p Ki?u', N'staff_hc_05', N'staff.hc05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921050005', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 5, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(46, N'ï¿½oï¿½n Van H?u', N'staff_nq_01', N'staff.nq01@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921060001', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 6, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
 (47, N'Nguy?n Quang H?i', N'staff_nq_02', N'staff.nq02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921060002', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 6, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(48, N'Bùi Ti?n Dung', N'staff_nq_03', N'staff.nq03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921060003', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 6, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(48, N'Bï¿½i Ti?n Dung', N'staff_nq_03', N'staff.nq03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921060003', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 6, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
 (49, N'Ph?m H?i Y?n', N'staff_nq_04', N'staff.nq04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921060004', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 6, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(50, N'Chu Ng?c Hà', N'staff_nq_05', N'staff.nq05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921060005', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 6, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(51, N'Hà Ki?u Anh', N'staff_hbt_02', N'staff.hbt02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921170002', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 17, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(50, N'Chu Ng?c Hï¿½', N'staff_nq_05', N'staff.nq05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921060005', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 6, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(51, N'Hï¿½ Ki?u Anh', N'staff_hbt_02', N'staff.hbt02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921170002', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 17, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
 (52, N'Vu Tr?ng Ph?ng', N'staff_hbt_03', N'staff.hbt03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921170003', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 17, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
 (53, N'Nguy?n Du', N'staff_hbt_04', N'staff.hbt04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921170004', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 17, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(54, N'H? Xuân Huong', N'staff_hbt_05', N'staff.hbt05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921170005', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 17, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(55, N'Tr?n Ðang Khoa', N'staff_th_01', N'staff.th01@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921180001', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 18, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(56, N'Xuân Di?u', N'staff_th_02', N'staff.th02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921180002', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 18, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(54, N'H? Xuï¿½n Huong', N'staff_hbt_05', N'staff.hbt05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921170005', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 17, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(55, N'Tr?n ï¿½ang Khoa', N'staff_th_01', N'staff.th01@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921180001', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 18, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(56, N'Xuï¿½n Di?u', N'staff_th_02', N'staff.th02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921180002', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 18, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
 (57, N'Huy C?n', N'staff_th_03', N'staff.th03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921180003', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 18, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(58, N'Hàn M?c T?', N'staff_th_04', N'staff.th04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921180004', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 18, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(59, N'Ch? Lan Viên', N'staff_th_05', N'staff.th05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921180005', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 18, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(60, N'Lê L?i', N'staff_lm_01', N'staff.lm01@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921190001', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 19, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(61, N'Tr?n Hung Ð?o', N'staff_lm_02', N'staff.lm02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921190002', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 19, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(62, N'Ngô Quy?n', N'staff_lm_03', N'staff.lm03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921190003', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 19, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(63, N'Lý Thu?ng Ki?t', N'staff_lm_04', N'staff.lm04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921190004', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 19, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(58, N'Hï¿½n M?c T?', N'staff_th_04', N'staff.th04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921180004', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 18, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(59, N'Ch? Lan Viï¿½n', N'staff_th_05', N'staff.th05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921180005', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 18, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(60, N'Lï¿½ L?i', N'staff_lm_01', N'staff.lm01@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921190001', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 19, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(61, N'Tr?n Hung ï¿½?o', N'staff_lm_02', N'staff.lm02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921190002', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 19, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(62, N'Ngï¿½ Quy?n', N'staff_lm_03', N'staff.lm03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921190003', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 19, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(63, N'Lï¿½ Thu?ng Ki?t', N'staff_lm_04', N'staff.lm04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921190004', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 19, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
 (64, N'Quang Trung', N'staff_lm_05', N'staff.lm05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921190005', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 19, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(65, N'Võ Th? Sáu', N'staff_gv_01', N'staff.gv01@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921200001', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 20, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(65, N'Vï¿½ Th? Sï¿½u', N'staff_gv_01', N'staff.gv01@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921200001', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 20, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
 (66, N'Nguy?n Van Tr?i', N'staff_gv_02', N'staff.gv02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921200002', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 20, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(67, N'Kim Ð?ng', N'staff_gv_03', N'staff.gv03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921200003', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 20, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(68, N'Lê Van Tám', N'staff_gv_04', N'staff.gv04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921200004', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 20, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(69, N'B? Van Ðàn', N'staff_gv_05', N'staff.gv05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921200005', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 20, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(70, N'Phan B?i Châu', N'staff_td_01', N'staff.td01@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921210001', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 21, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(71, N'Phan Châu Trinh', N'staff_td_02', N'staff.td02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921210002', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 21, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(72, N'Hu?nh Thúc Kháng', N'staff_td_03', N'staff.td03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921210003', NULL, N'TICKET_SALES_STAFF', N'INACTIVE', 21, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 21:17:51'),
+(67, N'Kim ï¿½?ng', N'staff_gv_03', N'staff.gv03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921200003', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 20, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(68, N'Lï¿½ Van Tï¿½m', N'staff_gv_04', N'staff.gv04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921200004', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 20, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(69, N'B? Van ï¿½ï¿½n', N'staff_gv_05', N'staff.gv05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921200005', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 20, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(70, N'Phan B?i Chï¿½u', N'staff_td_01', N'staff.td01@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921210001', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 21, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(71, N'Phan Chï¿½u Trinh', N'staff_td_02', N'staff.td02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921210002', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 21, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(72, N'Hu?nh Thï¿½c Khï¿½ng', N'staff_td_03', N'staff.td03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921210003', NULL, N'TICKET_SALES_STAFF', N'INACTIVE', 21, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 21:17:51'),
 (73, N'Luong Van Can', N'staff_td_04', N'staff.td04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921210004', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 21, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
 (74, N'Nguy?n An Ninh', N'staff_td_05', N'staff.td05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921210005', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 21, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(75, N'Hoàng Hoa Thám', N'staff_cl_01', N'staff.cl01@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921220001', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 22, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(76, N'Truong Ð?nh', N'staff_cl_02', N'staff.cl02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921220002', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 22, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(75, N'Hoï¿½ng Hoa Thï¿½m', N'staff_cl_01', N'staff.cl01@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921220001', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 22, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(76, N'Truong ï¿½?nh', N'staff_cl_02', N'staff.cl02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921220002', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 22, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
 (77, N'Nguy?n Trung Tr?c', N'staff_cl_03', N'staff.cl03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921220003', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 22, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(78, N'Võ Duy Duong', N'staff_cl_04', N'staff.cl04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921220004', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 22, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(79, N'Th? Khoa Huân', N'staff_cl_05', N'staff.cl05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921220005', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 22, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(78, N'Vï¿½ Duy Duong', N'staff_cl_04', N'staff.cl04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921220004', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 22, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(79, N'Th? Khoa Huï¿½n', N'staff_cl_05', N'staff.cl05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921220005', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 22, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
 (80, N'Tr?n Th? Mai', N'cust_01', N'tranthimai@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000001', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-10-14 20:10:06', '2026-10-15 20:10:06'),
-(81, N'Lê Van Long', N'cust_02', N'levanlong@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000002', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-10-13 20:10:06', '2026-10-15 20:10:06'),
+(81, N'Lï¿½ Van Long', N'cust_02', N'levanlong@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000002', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-10-13 20:10:06', '2026-10-15 20:10:06'),
 (82, N'Ph?m Thu Trang', N'cust_03', N'phamthutrang@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000003', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-10-12 20:10:06', '2026-10-15 20:10:06'),
-(83, N'Hoàng Minh Ð?c', N'cust_04', N'hoangminhduc@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000004', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-10-11 20:10:06', '2026-10-15 20:10:06'),
-(84, N'Vu Khánh Linh', N'cust_05', N'vukhanhlinh@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000005', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-10-10 20:10:06', '2026-10-15 20:10:06'),
-(85, N'Ð?ng Qu?c Huy', N'cust_06', N'dangquochuy@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000006', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-10-09 20:10:06', '2026-10-15 20:10:06'),
-(86, N'Bùi Th? H?nh', N'cust_07', N'buithihanh@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000007', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-10-08 20:10:06', '2026-10-15 20:10:06'),
-(87, N'Ngô Tu?n Anh', N'cust_08', N'ngotuananh@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000008', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-10-07 20:10:06', '2026-10-15 20:10:06'),
-(88, N'Ð? Lan Anh', N'cust_09', N'dolananh@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000009', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-10-06 20:10:06', '2026-10-15 20:10:06'),
-(89, N'Ðinh Gia B?o', N'cust_10', N'dinhgiabao@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000010', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-10-05 20:10:06', '2026-10-15 20:10:06'),
+(83, N'Hoï¿½ng Minh ï¿½?c', N'cust_04', N'hoangminhduc@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000004', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-10-11 20:10:06', '2026-10-15 20:10:06'),
+(84, N'Vu Khï¿½nh Linh', N'cust_05', N'vukhanhlinh@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000005', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-10-10 20:10:06', '2026-10-15 20:10:06'),
+(85, N'ï¿½?ng Qu?c Huy', N'cust_06', N'dangquochuy@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000006', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-10-09 20:10:06', '2026-10-15 20:10:06'),
+(86, N'Bï¿½i Th? H?nh', N'cust_07', N'buithihanh@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000007', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-10-08 20:10:06', '2026-10-15 20:10:06'),
+(87, N'Ngï¿½ Tu?n Anh', N'cust_08', N'ngotuananh@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000008', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-10-07 20:10:06', '2026-10-15 20:10:06'),
+(88, N'ï¿½? Lan Anh', N'cust_09', N'dolananh@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000009', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-10-06 20:10:06', '2026-10-15 20:10:06'),
+(89, N'ï¿½inh Gia B?o', N'cust_10', N'dinhgiabao@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000010', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-10-05 20:10:06', '2026-10-15 20:10:06'),
 (90, N'Mai Di?u Th?o', N'cust_11', N'maidieuthao@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000011', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-10-04 20:10:06', '2026-10-15 20:10:06'),
-(91, N'Lý H?i Nam', N'cust_12', N'lyhainam@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000012', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-10-03 20:10:06', '2026-10-15 20:10:06'),
-(92, N'Duong Thùy Chi', N'cust_13', N'duongthuychi@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000013', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-10-02 20:10:06', '2026-10-15 20:10:06'),
-(93, N'Phan Ðình Phùng', N'cust_14', N'phandinhphung@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000014', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-10-01 20:10:06', '2026-10-15 20:10:06'),
-(94, N'Nguy?n Thanh Tùng', N'cust_15', N'nguyenthanhtung@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000015', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-30 20:10:06', '2026-10-15 20:10:06'),
-(95, N'Tr?nh Thang Bình', N'cust_16', N'trinhthangbinh@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000016', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-29 20:10:06', '2026-10-15 20:10:06'),
-(96, N'H? Ng?c Hà', N'cust_17', N'hongocha@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000017', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-28 20:10:06', '2026-10-15 20:10:06'),
-(97, N'Ðàm Vinh Hung', N'cust_18', N'damvinhhung@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000018', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-27 20:10:06', '2026-10-15 20:10:06'),
-(98, N'M? Tâm', N'cust_19', N'mytam@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000019', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-26 20:10:06', '2026-10-15 20:10:06'),
-(99, N'Son Tùng M-TP', N'cust_20', N'sontungmtp@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000020', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-25 20:10:06', '2026-10-15 20:10:06'),
-(100, N'Soobin Hoàng Son', N'cust_21', N'soobinhoangson@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000021', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-24 20:10:06', '2026-10-15 20:10:06'),
-(101, N'Vu Cát Tu?ng', N'cust_22', N'vucattuong@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000022', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-23 20:10:06', '2026-10-15 20:10:06'),
-(102, N'Ðen Vâu', N'cust_23', N'denvau@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000023', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-22 20:10:06', '2026-10-15 20:10:06'),
-(103, N'Bích Phuong', N'cust_24', N'bichphuong@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000024', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-21 20:10:06', '2026-10-15 20:10:06'),
-(104, N'Ð?c Phúc', N'cust_25', N'ducphuc@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000025', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-20 20:10:06', '2026-10-15 20:10:06'),
-(105, N'Erik Lê', N'cust_26', N'erikle@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000026', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-19 20:10:06', '2026-10-15 20:10:06'),
-(106, N'Hòa Minzy', N'cust_27', N'hoaminzy@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000027', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-18 20:10:06', '2026-10-15 20:10:06'),
-(107, N'Trúc Nhân', N'cust_28', N'trucnhan@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000028', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-17 20:10:06', '2026-10-15 20:10:06'),
+(91, N'Lï¿½ H?i Nam', N'cust_12', N'lyhainam@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000012', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-10-03 20:10:06', '2026-10-15 20:10:06'),
+(92, N'Duong Thï¿½y Chi', N'cust_13', N'duongthuychi@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000013', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-10-02 20:10:06', '2026-10-15 20:10:06'),
+(93, N'Phan ï¿½ï¿½nh Phï¿½ng', N'cust_14', N'phandinhphung@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000014', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-10-01 20:10:06', '2026-10-15 20:10:06'),
+(94, N'Nguy?n Thanh Tï¿½ng', N'cust_15', N'nguyenthanhtung@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000015', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-30 20:10:06', '2026-10-15 20:10:06'),
+(95, N'Tr?nh Thang Bï¿½nh', N'cust_16', N'trinhthangbinh@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000016', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-29 20:10:06', '2026-10-15 20:10:06'),
+(96, N'H? Ng?c Hï¿½', N'cust_17', N'hongocha@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000017', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-28 20:10:06', '2026-10-15 20:10:06'),
+(97, N'ï¿½ï¿½m Vinh Hung', N'cust_18', N'damvinhhung@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000018', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-27 20:10:06', '2026-10-15 20:10:06'),
+(98, N'M? Tï¿½m', N'cust_19', N'mytam@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000019', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-26 20:10:06', '2026-10-15 20:10:06'),
+(99, N'Son Tï¿½ng M-TP', N'cust_20', N'sontungmtp@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000020', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-25 20:10:06', '2026-10-15 20:10:06'),
+(100, N'Soobin Hoï¿½ng Son', N'cust_21', N'soobinhoangson@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000021', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-24 20:10:06', '2026-10-15 20:10:06'),
+(101, N'Vu Cï¿½t Tu?ng', N'cust_22', N'vucattuong@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000022', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-23 20:10:06', '2026-10-15 20:10:06'),
+(102, N'ï¿½en Vï¿½u', N'cust_23', N'denvau@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000023', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-22 20:10:06', '2026-10-15 20:10:06'),
+(103, N'Bï¿½ch Phuong', N'cust_24', N'bichphuong@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000024', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-21 20:10:06', '2026-10-15 20:10:06'),
+(104, N'ï¿½?c Phï¿½c', N'cust_25', N'ducphuc@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000025', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-20 20:10:06', '2026-10-15 20:10:06'),
+(105, N'Erik Lï¿½', N'cust_26', N'erikle@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000026', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-19 20:10:06', '2026-10-15 20:10:06'),
+(106, N'Hï¿½a Minzy', N'cust_27', N'hoaminzy@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000027', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-18 20:10:06', '2026-10-15 20:10:06'),
+(107, N'Trï¿½c Nhï¿½n', N'cust_28', N'trucnhan@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000028', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-17 20:10:06', '2026-10-15 20:10:06'),
 (108, N'Noo Phu?c Th?nh', N'cust_29', N'noophuocthinh@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000029', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-16 20:10:06', '2026-10-15 20:10:06'),
-(109, N'Ðông Nhi', N'cust_30', N'dongnhi@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000030', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-15 20:10:06', '2026-10-15 20:10:06'),
-(110, N'Tóc Tiên', N'cust_31', N'toctien@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000031', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-14 20:10:06', '2026-10-15 20:10:06'),
+(109, N'ï¿½ï¿½ng Nhi', N'cust_30', N'dongnhi@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000030', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-15 20:10:06', '2026-10-15 20:10:06'),
+(110, N'Tï¿½c Tiï¿½n', N'cust_31', N'toctien@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000031', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-14 20:10:06', '2026-10-15 20:10:06'),
 (111, N'B?o Anh', N'cust_32', N'baoanh@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000032', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-13 20:10:06', '2026-10-15 20:10:06'),
 (112, N'Chi Pu', N'cust_33', N'chipu@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000033', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-12 20:10:06', '2026-10-15 20:10:06'),
 (113, N'Isaac Ph?m', N'cust_34', N'isaacpham@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000034', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-11 20:10:06', '2026-10-15 20:10:06'),
 (114, N'Min Nguy?n', N'cust_35', N'minnguyen@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000035', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-10 20:10:06', '2026-10-15 20:10:06'),
 (115, N'Karik Ph?m', N'cust_36', N'karikpham@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000036', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-09 20:10:06', '2026-10-15 20:10:06'),
-(116, N'Suboi Hàng Huyên', N'cust_37', N'suboi@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000037', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-08 20:10:06', '2026-10-15 20:10:06'),
+(116, N'Suboi Hï¿½ng Huyï¿½n', N'cust_37', N'suboi@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000037', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-08 20:10:06', '2026-10-15 20:10:06'),
 (117, N'JustaTee Thanh', N'cust_38', N'justatee@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000038', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-07 20:10:06', '2026-10-15 20:10:06'),
 (118, N'Rhymastic Vu', N'cust_39', N'rhymastic@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000039', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-06 20:10:06', '2026-10-15 20:10:06'),
-(119, N'Binz Lê', N'cust_40', N'binzle@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000040', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-05 20:10:06', '2026-10-15 20:10:06'),
-(120, N'Thùy Chi', N'cust_41', N'thuychi@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000041', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-04 20:10:06', '2026-10-15 20:10:06'),
+(119, N'Binz Lï¿½', N'cust_40', N'binzle@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000040', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-05 20:10:06', '2026-10-15 20:10:06'),
+(120, N'Thï¿½y Chi', N'cust_41', N'thuychi@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000041', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-04 20:10:06', '2026-10-15 20:10:06'),
 (121, N'Van Mai Huong', N'cust_42', N'vanmaihuong@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000042', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-03 20:10:06', '2026-10-15 20:10:06'),
-(122, N'Uyên Linh', N'cust_43', N'uyenlinh@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000043', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-02 20:10:06', '2026-10-15 20:10:06'),
-(123, N'Trung Quân Idol', N'cust_44', N'trungquan@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000044', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-01 20:10:06', '2026-10-15 20:10:06');
+(122, N'Uyï¿½n Linh', N'cust_43', N'uyenlinh@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000043', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-02 20:10:06', '2026-10-15 20:10:06'),
+(123, N'Trung Quï¿½n Idol', N'cust_44', N'trungquan@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000044', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-01 20:10:06', '2026-10-15 20:10:06');
 GO
 SET IDENTITY_INSERT Users OFF;
 GO
@@ -1341,15 +1324,15 @@ GO
 SET IDENTITY_INSERT Halls ON;
 GO
 INSERT INTO Halls (HallID, CentreID, HallName, HallType, Capacity, Status, CreatedAt) VALUES
-(1, 1, N'Phòng 01', N'2D', 60, N'AVAILABLE', '2026-10-03 23:08:30'),
-(2, 1, N'Phòng 02', N'2D', 50, N'AVAILABLE', '2026-10-03 23:08:30'),
-(3, 2, N'Phòng 01', N'2D', 60, N'AVAILABLE', '2026-10-03 23:08:30'),
-(4, 2, N'Phòng 02', N'3D', 70, N'AVAILABLE', '2026-10-03 23:08:30'),
-(5, 3, N'Phòng IMAX 01', N'3D', 120, N'AVAILABLE', '2026-10-03 23:08:31'),
-(6, 3, N'Phòng Premium 01', N'2D', 80, N'AVAILABLE', '2026-10-03 23:08:31'),
-(7, 4, N'Phòng Premium 01', N'2D', 90, N'AVAILABLE', '2026-10-03 23:08:31'),
-(8, 5, N'Phòng 01', N'2D', 70, N'AVAILABLE', '2026-10-03 23:08:31'),
-(9, 6, N'Phòng 01', N'2D', 70, N'AVAILABLE', '2026-10-03 23:08:31'),
+(1, 1, N'Phï¿½ng 01', N'2D', 60, N'AVAILABLE', '2026-10-03 23:08:30'),
+(2, 1, N'Phï¿½ng 02', N'2D', 50, N'AVAILABLE', '2026-10-03 23:08:30'),
+(3, 2, N'Phï¿½ng 01', N'2D', 60, N'AVAILABLE', '2026-10-03 23:08:30'),
+(4, 2, N'Phï¿½ng 02', N'3D', 70, N'AVAILABLE', '2026-10-03 23:08:30'),
+(5, 3, N'Phï¿½ng IMAX 01', N'3D', 120, N'AVAILABLE', '2026-10-03 23:08:31'),
+(6, 3, N'Phï¿½ng Premium 01', N'2D', 80, N'AVAILABLE', '2026-10-03 23:08:31'),
+(7, 4, N'Phï¿½ng Premium 01', N'2D', 90, N'AVAILABLE', '2026-10-03 23:08:31'),
+(8, 5, N'Phï¿½ng 01', N'2D', 70, N'AVAILABLE', '2026-10-03 23:08:31'),
+(9, 6, N'Phï¿½ng 01', N'2D', 70, N'AVAILABLE', '2026-10-03 23:08:31'),
 (19, 5, N'PhÃ²ng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:56:37'),
 (20, 5, N'PhÃ²ng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:56:37'),
 (21, 5, N'PhÃ²ng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:56:37'),
@@ -1368,54 +1351,54 @@ INSERT INTO Halls (HallID, CentreID, HallName, HallType, Capacity, Status, Creat
 (58, 4, N'PhÃ²ng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:56:37'),
 (59, 4, N'PhÃ²ng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:56:37'),
 (60, 4, N'PhÃ²ng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:56:37'),
-(61, 1, N'Phòng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:59:54'),
-(62, 1, N'Phòng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:59:54'),
-(63, 1, N'Phòng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:59:54'),
-(64, 2, N'Phòng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:59:54'),
-(65, 2, N'Phòng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:59:54'),
-(66, 2, N'Phòng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:59:54'),
-(67, 3, N'Phòng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:59:54'),
-(68, 3, N'Phòng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:59:54'),
-(69, 3, N'Phòng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:59:54'),
-(70, 4, N'Phòng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:59:54'),
-(71, 4, N'Phòng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:59:54'),
-(72, 4, N'Phòng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:59:54'),
-(73, 5, N'Phòng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:59:54'),
-(74, 5, N'Phòng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:59:54'),
-(75, 5, N'Phòng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:59:54'),
-(76, 6, N'Phòng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:59:54'),
-(77, 6, N'Phòng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:59:54'),
-(78, 6, N'Phòng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:59:54'),
-(79, 17, N'Phòng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:59:54'),
-(80, 17, N'Phòng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:59:54'),
-(81, 17, N'Phòng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:59:54'),
-(82, 18, N'Phòng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:59:54'),
-(83, 18, N'Phòng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:59:54'),
-(84, 18, N'Phòng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:59:54'),
-(85, 19, N'Phòng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:59:54'),
-(86, 19, N'Phòng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:59:54'),
-(87, 19, N'Phòng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:59:54'),
-(88, 20, N'Phòng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:59:54'),
-(89, 20, N'Phòng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:59:54'),
-(90, 20, N'Phòng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:59:54'),
-(91, 21, N'Phòng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:59:54'),
-(92, 21, N'Phòng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:59:54'),
-(93, 21, N'Phòng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:59:54'),
-(94, 22, N'Phòng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:59:54'),
-(95, 22, N'Phòng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:59:54'),
-(96, 22, N'Phòng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:59:54'),
-(97, 23, N'Phòng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-17 21:58:18'),
-(98, 23, N'Phòng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-17 21:58:18'),
-(99, 23, N'Phòng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-17 21:58:18'),
-(100, 24, N'Phòng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-17 21:58:18'),
-(101, 24, N'Phòng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-17 21:58:18'),
-(102, 24, N'Phòng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-17 21:58:18'),
-(103, 25, N'Phòng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-17 21:58:18'),
-(104, 25, N'Phòng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-17 21:58:18'),
-(105, 25, N'Phòng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-17 21:58:18'),
-(106, 26, N'Phòng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-17 21:58:18'),
-(107, 26, N'Phòng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-17 21:58:18'),
-(108, 26, N'Phòng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-17 21:58:18');
+(61, 1, N'Phï¿½ng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:59:54'),
+(62, 1, N'Phï¿½ng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:59:54'),
+(63, 1, N'Phï¿½ng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:59:54'),
+(64, 2, N'Phï¿½ng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:59:54'),
+(65, 2, N'Phï¿½ng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:59:54'),
+(66, 2, N'Phï¿½ng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:59:54'),
+(67, 3, N'Phï¿½ng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:59:54'),
+(68, 3, N'Phï¿½ng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:59:54'),
+(69, 3, N'Phï¿½ng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:59:54'),
+(70, 4, N'Phï¿½ng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:59:54'),
+(71, 4, N'Phï¿½ng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:59:54'),
+(72, 4, N'Phï¿½ng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:59:54'),
+(73, 5, N'Phï¿½ng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:59:54'),
+(74, 5, N'Phï¿½ng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:59:54'),
+(75, 5, N'Phï¿½ng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:59:54'),
+(76, 6, N'Phï¿½ng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:59:54'),
+(77, 6, N'Phï¿½ng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:59:54'),
+(78, 6, N'Phï¿½ng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:59:54'),
+(79, 17, N'Phï¿½ng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:59:54'),
+(80, 17, N'Phï¿½ng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:59:54'),
+(81, 17, N'Phï¿½ng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:59:54'),
+(82, 18, N'Phï¿½ng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:59:54'),
+(83, 18, N'Phï¿½ng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:59:54'),
+(84, 18, N'Phï¿½ng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:59:54'),
+(85, 19, N'Phï¿½ng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:59:54'),
+(86, 19, N'Phï¿½ng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:59:54'),
+(87, 19, N'Phï¿½ng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:59:54'),
+(88, 20, N'Phï¿½ng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:59:54'),
+(89, 20, N'Phï¿½ng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:59:54'),
+(90, 20, N'Phï¿½ng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:59:54'),
+(91, 21, N'Phï¿½ng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:59:54'),
+(92, 21, N'Phï¿½ng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:59:54'),
+(93, 21, N'Phï¿½ng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:59:54'),
+(94, 22, N'Phï¿½ng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:59:54'),
+(95, 22, N'Phï¿½ng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:59:54'),
+(96, 22, N'Phï¿½ng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:59:54'),
+(97, 23, N'Phï¿½ng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-17 21:58:18'),
+(98, 23, N'Phï¿½ng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-17 21:58:18'),
+(99, 23, N'Phï¿½ng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-17 21:58:18'),
+(100, 24, N'Phï¿½ng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-17 21:58:18'),
+(101, 24, N'Phï¿½ng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-17 21:58:18'),
+(102, 24, N'Phï¿½ng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-17 21:58:18'),
+(103, 25, N'Phï¿½ng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-17 21:58:18'),
+(104, 25, N'Phï¿½ng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-17 21:58:18'),
+(105, 25, N'Phï¿½ng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-17 21:58:18'),
+(106, 26, N'Phï¿½ng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-17 21:58:18'),
+(107, 26, N'Phï¿½ng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-17 21:58:18'),
+(108, 26, N'Phï¿½ng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-17 21:58:18');
 GO
 SET IDENTITY_INSERT Halls OFF;
 GO
@@ -5304,20 +5287,20 @@ INSERT INTO CentreManagerAssignments (AssignmentID, CentreID, ManagerID, Assigne
 (8, 21, 3, 4, '2026-10-14 21:39:51', '2026-10-15 10:26:46', N'REPLACED', N'', '2026-10-14 21:39:51'),
 (9, 20, 3, 4, '2026-10-15 10:26:46', '2026-10-15 10:32:34', N'REPLACED', N'', '2026-10-15 10:26:46'),
 (10, 21, 3, 4, '2026-10-15 10:32:34', '2026-10-15 20:17:39', N'REPLACED', N'', '2026-10-15 10:32:34'),
-(11, 1, 14, 4, '2026-09-15 20:10:06', '2026-10-15 20:17:39', N'REPLACED', N'B? nhi?m Qu?n lý chi nhánh duong nhi?m', '2026-10-15 20:10:06'),
-(12, 2, 15, 4, '2026-09-15 20:10:06', NULL, N'ACTIVE', N'B? nhi?m Qu?n lý chi nhánh duong nhi?m', '2026-10-15 20:10:06'),
-(13, 3, 16, 4, '2026-09-15 20:10:06', NULL, N'ACTIVE', N'B? nhi?m Qu?n lý chi nhánh duong nhi?m', '2026-10-15 20:10:06'),
-(14, 4, 17, 4, '2026-09-15 20:10:06', NULL, N'ACTIVE', N'B? nhi?m Qu?n lý chi nhánh duong nhi?m', '2026-10-15 20:10:06'),
-(15, 5, 18, 4, '2026-09-15 20:10:06', NULL, N'ACTIVE', N'B? nhi?m Qu?n lý chi nhánh duong nhi?m', '2026-10-15 20:10:06'),
-(16, 6, 19, 4, '2026-09-15 20:10:06', NULL, N'ACTIVE', N'B? nhi?m Qu?n lý chi nhánh duong nhi?m', '2026-10-15 20:10:06'),
-(17, 17, 20, 4, '2026-09-15 20:10:06', NULL, N'ACTIVE', N'B? nhi?m Qu?n lý chi nhánh duong nhi?m', '2026-10-15 20:10:06'),
-(18, 18, 21, 4, '2026-09-15 20:10:06', NULL, N'ACTIVE', N'B? nhi?m Qu?n lý chi nhánh duong nhi?m', '2026-10-15 20:10:06'),
-(19, 19, 22, 4, '2026-09-15 20:10:06', NULL, N'ACTIVE', N'B? nhi?m Qu?n lý chi nhánh duong nhi?m', '2026-10-15 20:10:06'),
-(20, 20, 23, 4, '2026-09-15 20:10:06', NULL, N'ACTIVE', N'B? nhi?m Qu?n lý chi nhánh duong nhi?m', '2026-10-15 20:10:06'),
-(21, 1, 3, 4, '2026-10-15 20:17:39', '2026-10-15 20:21:37', N'REPLACED', N'B? nhi?m Qu?n lý chi nhánh duong nhi?m', '2026-10-15 20:17:39'),
+(11, 1, 14, 4, '2026-09-15 20:10:06', '2026-10-15 20:17:39', N'REPLACED', N'B? nhi?m Qu?n lï¿½ chi nhï¿½nh duong nhi?m', '2026-10-15 20:10:06'),
+(12, 2, 15, 4, '2026-09-15 20:10:06', NULL, N'ACTIVE', N'B? nhi?m Qu?n lï¿½ chi nhï¿½nh duong nhi?m', '2026-10-15 20:10:06'),
+(13, 3, 16, 4, '2026-09-15 20:10:06', NULL, N'ACTIVE', N'B? nhi?m Qu?n lï¿½ chi nhï¿½nh duong nhi?m', '2026-10-15 20:10:06'),
+(14, 4, 17, 4, '2026-09-15 20:10:06', NULL, N'ACTIVE', N'B? nhi?m Qu?n lï¿½ chi nhï¿½nh duong nhi?m', '2026-10-15 20:10:06'),
+(15, 5, 18, 4, '2026-09-15 20:10:06', NULL, N'ACTIVE', N'B? nhi?m Qu?n lï¿½ chi nhï¿½nh duong nhi?m', '2026-10-15 20:10:06'),
+(16, 6, 19, 4, '2026-09-15 20:10:06', NULL, N'ACTIVE', N'B? nhi?m Qu?n lï¿½ chi nhï¿½nh duong nhi?m', '2026-10-15 20:10:06'),
+(17, 17, 20, 4, '2026-09-15 20:10:06', NULL, N'ACTIVE', N'B? nhi?m Qu?n lï¿½ chi nhï¿½nh duong nhi?m', '2026-10-15 20:10:06'),
+(18, 18, 21, 4, '2026-09-15 20:10:06', NULL, N'ACTIVE', N'B? nhi?m Qu?n lï¿½ chi nhï¿½nh duong nhi?m', '2026-10-15 20:10:06'),
+(19, 19, 22, 4, '2026-09-15 20:10:06', NULL, N'ACTIVE', N'B? nhi?m Qu?n lï¿½ chi nhï¿½nh duong nhi?m', '2026-10-15 20:10:06'),
+(20, 20, 23, 4, '2026-09-15 20:10:06', NULL, N'ACTIVE', N'B? nhi?m Qu?n lï¿½ chi nhï¿½nh duong nhi?m', '2026-10-15 20:10:06'),
+(21, 1, 3, 4, '2026-10-15 20:17:39', '2026-10-15 20:21:37', N'REPLACED', N'B? nhi?m Qu?n lï¿½ chi nhï¿½nh duong nhi?m', '2026-10-15 20:17:39'),
 (22, 1, 3, 4, '2026-10-15 20:21:37', '2026-10-15 20:21:53', N'REPLACED', N'Ki?m tra b? nhi?m', '2026-10-15 20:21:37'),
-(23, 1, 14, 4, '2026-10-15 20:21:53', NULL, N'ACTIVE', N'Khôi ph?c phân công Qu?n lý C?u Gi?y', '2026-10-15 20:21:53'),
-(24, 21, 3, 4, '2026-10-15 20:21:53', NULL, N'ACTIVE', N'Khôi ph?c phân công Qu?n lý Th? Ð?c', '2026-10-15 20:21:53');
+(23, 1, 14, 4, '2026-10-15 20:21:53', NULL, N'ACTIVE', N'Khï¿½i ph?c phï¿½n cï¿½ng Qu?n lï¿½ C?u Gi?y', '2026-10-15 20:21:53'),
+(24, 21, 3, 4, '2026-10-15 20:21:53', NULL, N'ACTIVE', N'Khï¿½i ph?c phï¿½n cï¿½ng Qu?n lï¿½ Th? ï¿½?c', '2026-10-15 20:21:53');
 GO
 SET IDENTITY_INSERT CentreManagerAssignments OFF;
 GO
@@ -5328,7 +5311,7 @@ GO
 SET IDENTITY_INSERT StaffTransferHistory ON;
 GO
 INSERT INTO StaffTransferHistory (TransferID, UserID, FromCentreID, ToCentreID, TransferredBy, TransferDate, EffectiveDate, OldRole, NewRole, Reason, Notes) VALUES
-(1, 5, 1, 17, 4, '2026-10-14 17:52:49', '2026-10-15', 'TICKET_SALES_STAFF', 'TICKET_SALES_STAFF', N'Luân chuy?n d?nh k?', N'');
+(1, 5, 1, 17, 4, '2026-10-14 17:52:49', '2026-10-15', 'TICKET_SALES_STAFF', 'TICKET_SALES_STAFF', N'Luï¿½n chuy?n d?nh k?', N'');
 GO
 SET IDENTITY_INSERT StaffTransferHistory OFF;
 GO
@@ -5339,22 +5322,22 @@ GO
 SET IDENTITY_INSERT Movies ON;
 GO
 INSERT INTO Movies (MovieID, Title, Description, Duration, Genre, Director, Cast, Language, ReleaseDate, EndDate, PosterURL, TrailerURL, AgeRating, Status, CreatedAt, UpdatedAt) VALUES
-(1, N'Avatar: Dòng Ch?y C?a Nu?c', N'Hon m?t th?p k? sau các s? ki?n c?a ph?n d?u tiên, Avatar: Dòng Ch?y C?a Nu?c k? câu chuy?n v? gia dình Sully, nh?ng r?c r?i bám theo h?, nh?ng n? l?c d? gi? an toàn cho nhau và nh?ng tr?n chi?n sinh t? d? b?o v? gi?ng loài Na''vi.', 192, N'Khoa H?c Vi?n Tu?ng, Hành Ð?ng, Phiêu Luu', N'James Cameron', N'Sam Worthington, Zoe Saldana, Sigourney Weaver, Stephen Lang, Kate Winslet', N'Ti?ng Anh - Ph? d? Ti?ng Vi?t', '2022-12-16', '2026-12-31', N'/Cine_Flow/uploads/movies/poster-avatar-2.jpg', N'https://www.youtube.com/watch?v=d9MyW72ELq0', N'T13', N'NOW_SHOWING', '2026-10-03 23:08:30', '2026-10-13 10:43:17'),
-(2, N'Inception (K? Ðánh C?p Gi?c Mo)', N'Dom Cobb là m?t d?o chích b?c th?y chuyên dánh c?p các bí m?t sâu kín nh?t trong ti?m th?c khi d?i tu?ng dang ng? mo. Co h?i chu?c l?i cu?c d?i d?n khi anh nh?n nhi?m v? b?t kh? thi: c?y ghép m?t ý tu?ng vào tâm trí ngu?i khác thay vì dánh c?p.', 148, N'Khoa H?c Vi?n Tu?ng, Hành Ð?ng, Gi?t Gân', N'Christopher Nolan', N'Leonardo DiCaprio, Joseph Gordon-Levitt, Elliot Page, Tom Hardy, Ken Watanabe, Cillian Murphy', N'Ti?ng Anh - Ph? d? Ti?ng Vi?t', '2010-07-16', '2026-12-31', N'/Cine_Flow/uploads/movies/poster-inception.jpg', N'https://www.youtube.com/watch?v=YoHD9XEInc0', N'T16', N'NOW_SHOWING', '2026-10-03 23:08:30', '2026-10-13 10:43:17'),
-(3, N'Ð?a Ð?o: M?t Tr?i Trong Bóng T?i', N'Tác ph?m di?n ?nh l?ch s? quy mô l?n tái hi?n cu?c s?ng kiên cu?ng và tinh th?n chi?n d?u b?t khu?t c?a quân và dân C? Chi sâu trong mê cung lòng d?t anh hùng th?i kháng chi?n ch?ng M? c?u nu?c.', 125, N'Chi?n Tranh, L?ch S?, Hành Ð?ng', N'Bùi Th?c Chuyên', N'Thái Hòa, Quang Tu?n, H? Thu Anh, Di?m H?ng', N'Ti?ng Vi?t', '2025-04-30', '2026-12-31', N'/Cine_Flow/uploads/movies/poster-dia-dao.jpg', N'https://www.youtube.com/watch?v=3g8z4b8mNlA', N'T16', N'NOW_SHOWING', '2026-10-03 23:08:31', '2026-10-13 10:43:17'),
-(4, N'K? Tr?m M?t Trang 4 (Despicable Me 4)', N'Gia dình Gru và Lucy chào dón quý t? Gru Jr., c?u bé chuyên gây khó d? cho b?. Cu?c s?ng êm d?m b? d?o l?n khi k? thù Maxime Le Mal tr?n thoát và tuyên th? tr? thù, bu?c c? gia dình ph?i di lánh n?n.', 94, N'Ho?t Hình, Hài Hu?c, Gia Ðình, Phiêu Luu', N'Chris Renaud', N'Steve Carell, Kristen Wiig, Will Ferrell, Joey King, Sofia Vergara', N'Ti?ng Anh - L?ng ti?ng & Ph? d? Ti?ng Vi?t', '2024-07-05', '2026-12-31', N'/Cine_Flow/uploads/movies/poster-despicable-me-4.jpg', N'https://www.youtube.com/watch?v=qQlr9-rF32A', N'P', N'NOW_SHOWING', '2026-10-03 23:08:31', '2026-10-13 10:43:17'),
-(5, N'Deadpool & Wolverine', N'Wade Wilson dang t?n hu?ng cu?c s?ng bình l?ng thì t? ch?c TVA kéo anh vào s? m?nh gi?i c?u vu tr? c?a mình kh?i s? di?t vong, bu?c anh ph?i h?p tác cùng phiên b?n b?t c?n d?i c?a Wolverine.', 128, N'Hành Ð?ng, Hài Hu?c, Khoa H?c Vi?n Tu?ng', N'Shawn Levy', N'Ryan Reynolds, Hugh Jackman, Emma Corrin, Matthew Macfadyen, Morena Baccarin', N'Ti?ng Anh - Ph? d? Ti?ng Vi?t', '2024-07-26', '2026-12-31', N'/Cine_Flow/uploads/movies/poster-deadpool-wolverine.jpg', N'https://www.youtube.com/watch?v=73_1biulkYk', N'T18', N'NOW_SHOWING', '2026-10-03 23:08:31', '2026-10-13 10:43:17'),
-(6, N'Dune: Hành Tinh Cát - Ph?n 2', N'Paul Atreides d?ng hành cùng Chani và t?c ngu?i Fremen trên sa m?c Arrakis nh?m tr? thù nh?ng k? dã âm muu tiêu di?t gia t?c Atreides, d?ng th?i gánh vác s? m?nh d?nh do?t tuong lai toàn cõi thiên hà.', 166, N'Khoa H?c Vi?n Tu?ng, Phiêu Luu, Hành Ð?ng', N'Denis Villeneuve', N'Timothée Chalamet, Zendaya, Rebecca Ferguson, Javier Bardem, Austin Butler, Florence Pugh', N'Ti?ng Anh - Ph? d? Ti?ng Vi?t', '2024-03-01', '2026-12-31', N'/Cine_Flow/uploads/movies/poster-dune-2.jpg', N'https://www.youtube.com/watch?v=Way9Dexny3w', N'T16', N'NOW_SHOWING', '2026-10-03 23:08:31', '2026-10-13 10:43:17'),
-(7, N'Godzilla x Kong: Ð? Ch? M?i', N'Hai quái thú huy?n tho?i Godzilla và Kong ph?i g?t b? hi?m khích d? cùng liên minh ch?ng l?i m?i hi?m h?a di?t vong m?i n?i lên t? lòng Trái Ð?t R?ng, de d?a s? t?n vong c?a c? gi?ng loài titan và nhân lo?i.', 115, N'Hành Ð?ng, Khoa H?c Vi?n Tu?ng, Phiêu Luu', N'Adam Wingard', N'Rebecca Hall, Brian Tyree Henry, Dan Stevens, Kaylee Hottle, Alex Ferns', N'Ti?ng Anh - Ph? d? Ti?ng Vi?t', '2024-03-29', '2026-12-31', N'/Cine_Flow/uploads/movies/poster-godzilla-kong.jpg', N'https://www.youtube.com/watch?v=lV1OOlGwExg', N'T13', N'NOW_SHOWING', '2026-10-03 23:08:31', '2026-10-13 10:43:17'),
-(8, N'Transformers M?t (Transformers One)', N'B? phim ho?t hình bom t?n hé l? ngu?n g?c sâu xa m?i quan h? h?u ngh? keo son gi?a Orion Pax và D-16 trên hành tinh Cybertron tru?c khi h? tr? thành t? thù Optimus Prime và Megatron.', 104, N'Ho?t Hình, Khoa H?c Vi?n Tu?ng, Hành Ð?ng', N'Josh Cooley', N'Chris Hemsworth, Brian Tyree Henry, Scarlett Johansson, Keegan-Michael Key, Steve Buscemi', N'Ti?ng Anh - L?ng ti?ng & Ph? d? Ti?ng Vi?t', '2024-09-20', '2026-12-31', N'/Cine_Flow/uploads/movies/poster-transformers-one.jpg', N'https://www.youtube.com/watch?v=u2NuUVuuWO4', N'K', N'ARCHIVED', '2026-10-03 23:08:31', '2026-10-13 12:06:25'),
-(9, N'Mai', N'Chuy?n tình d?y tr?c tr? gi?a Mai - m?t ph? n? làm ngh? massage tr? li?u ch?u nhi?u d?nh ki?n xã h?i v?i Duong - chàng thi?u gia lãng t? mê âm nh?c. Khi quá kh? dau thuong ùa v?, li?u tình yêu có d? l?n d? vu?t qua rào c?n?', 131, N'Tâm Lý, Tình C?m, Chính K?ch', N'Tr?n Thành', N'Phuong Anh Ðào, Tu?n Tr?n, Tr?n Thành, H?ng Ðào, Uy?n Ân, Qu?c Khánh', N'Ti?ng Vi?t', '2024-02-10', '2026-12-31', N'/Cine_Flow/uploads/movies/poster-mai.jpg', N'https://www.youtube.com/watch?v=845b4B1u4n0', N'T18', N'NOW_SHOWING', '2026-10-03 23:08:31', '2026-10-13 10:43:17'),
-(10, N'Oppenheimer', N'B? phim l?ch s? d?nh cao tái hi?n cu?c d?i thang tr?m c?a J. Robert Oppenheimer, nhà v?t lý ch? huy d? án Manhattan phát minh ra bom nguyên t?, và nh?ng gi?ng xé luong tâm khi thay d?i vinh vi?n v?n m?nh nhân lo?i.', 180, N'L?ch S?, Chính K?ch, Ti?u S?', N'Christopher Nolan', N'Cillian Murphy, Emily Blunt, Matt Damon, Robert Downey Jr., Florence Pugh', N'Ti?ng Anh - Ph? d? Ti?ng Vi?t', '2023-07-21', '2026-12-31', N'/Cine_Flow/uploads/movies/poster-oppenheimer.jpg', N'https://www.youtube.com/watch?v=uYPbbksJxIg', N'T18', N'NOW_SHOWING', '2026-10-03 23:08:31', '2026-10-13 10:43:17'),
-(11, N'Kung Fu Panda 4', N'Po chu?n b? tr? thành Th? linh Tinh th?n c?a Thung lung Bình Yên và c?n tìm ki?m ngu?i k? v? Th?n Long Ð?i Hi?p. Ðúng lúc này, m? phù th?y T?c Kè Bông v?i thu?t bi?n hình qu? quy?t xu?t hi?n de d?a hòa bình th? gi?i.', 94, N'Ho?t Hình, Hành Ð?ng, Hài Hu?c, Gia Ðình', N'Mike Mitchell', N'Jack Black, Awkwafina, Viola Davis, Dustin Hoffman, Bryan Cranston, James Hong', N'Ti?ng Anh - L?ng ti?ng & Ph? d? Ti?ng Vi?t', '2024-03-08', '2026-12-31', N'/Cine_Flow/uploads/movies/poster-kung-fu-panda-4.jpg', N'https://www.youtube.com/watch?v=_inKs4eeHiI', N'P', N'NOW_SHOWING', '2026-10-03 23:08:31', '2026-10-13 10:43:17'),
-(12, N'L?t M?t 7: M?t Ði?u U?c', N'Câu chuy?n c?m d?ng v? bà Hai 73 tu?i s?ng cô qu?nh t?i vùng quê h?o lánh và 5 ngu?i con dã l?p gia dình ? t? x?. Khi ngu?i m? g?p n?n gãy chân, cu?c h?p gia dình d?y éo le m? ra nh?ng góc khu?t tình thân sâu s?c.', 138, N'Gia Ðình, Chính K?ch, Hài Hu?c', N'Lý H?i', N'Thanh Hi?n, Truong Minh Cu?ng, Ðinh Y Nhung, Quách Ng?c Tuyên, Trâm Anh', N'Ti?ng Vi?t', '2024-04-26', '2026-12-31', N'/Cine_Flow/uploads/movies/poster-lat-mat-7.jpg', N'https://www.youtube.com/watch?v=d_k8kI0u_pE', N'K', N'NOW_SHOWING', '2026-10-03 23:08:31', '2026-10-13 10:43:17'),
-(13, N'Nh?ng M?nh Ghép C?m Xúc 2 (Inside Out 2)', N'Riley bu?c vào tu?i d?y thì cung là lúc t?ng hành dinh tâm trí xu?t hi?n các c?m xúc v? thành niên ph?c t?p: Lo Âu, Ganh T?, X?u H? và Chán N?n. M?t cu?c d?i chi?n c?m xúc bùng n? d? d?nh hình b?n ngã c?a cô bé.', 96, N'Ho?t Hình, Hài Hu?c, Gia Ðình, Phiêu Luu', N'Kelsey Mann', N'Amy Poehler, Maya Hawke, Kensington Tallman, Liza Lapira, Tony Hale, Phyllis Smith', N'Ti?ng Anh - L?ng ti?ng & Ph? d? Ti?ng Vi?t', '2024-06-14', '2026-12-31', N'/Cine_Flow/uploads/movies/poster-inside-out-2.jpg', N'https://www.youtube.com/watch?v=LEjhY15eCx0', N'P', N'NOW_SHOWING', '2026-10-03 23:08:31', '2026-10-13 10:43:17'),
-(14, N'Ð?t R?ng Phuong Nam', N'Hành trình tìm cha giàu c?m xúc c?a c?u bé An gi?a vùng sông nu?c Nam B? trù phú và hào s?ng d?u th? k? 20, noi tôi luy?n ý chí kiên cu?ng và lòng yêu quê huong d?t nu?c qua bao thang tr?m th?i cu?c.', 134, N'Phiêu Luu, L?ch S?, Chính K?ch', N'Nguy?n Quang Dung', N'H?o Khang, Tu?n Tr?n, Tr?n Thành, Ti?n Lu?t, Bang Di, H?a Vi Van', N'Ti?ng Vi?t', '2023-10-20', '2026-12-31', N'/Cine_Flow/uploads/movies/poster-dat-rung-phuong-nam.jpg', N'https://www.youtube.com/watch?v=hkn9tKIb3w4', N'K', N'ENDED', '2026-10-03 23:08:31', '2026-10-13 10:43:17'),
-(15, N'B? Già', N'Chuy?n d?i thu?ng nh?t d?y c?m xúc và ti?ng cu?i noi con h?m nghèo Sài Gòn c?a ba Sang và c?u con trai Qu?n. S? hy sinh th?m l?ng c?a b?c làm cha và nh?ng b?t d?ng th? h? kh?c h?a nên tình ph? t? thiêng liêng.', 128, N'Gia Ðình, Hài Hu?c, Chính K?ch', N'Tr?n Thành, Vu Ng?c Ðãng', N'Tr?n Thành, Tu?n Tr?n, Ngân Chi, NSND Ng?c Giàu, Lê Giang, Lan Phuong, Hoàng Mèo', N'Ti?ng Vi?t', '2021-03-05', '2026-12-31', N'/Cine_Flow/uploads/movies/poster-bo-gia.jpg', N'https://www.youtube.com/watch?v=jluSu8Rw6YE', N'T13', N'ARCHIVED', '2026-10-03 23:08:31', '2026-10-13 11:36:46'),
-(18, N'Piano', N'phim v? c?u bé dánh dàn piano làm c?m hoá k? b? tha hoá', 120, N'Tâm lý, Tình c?m', N'Tr?n Thành, Vu Ng?c Ðãng', N'H?ng Ánh, Lê Xuân Ti?n', N'Ti?ng Vi?t', '2026-10-20', '2026-12-24', N'', N'', N'P', N'COMING_SOON', '2026-10-13 11:49:48', '2026-10-13 11:50:35');
+(1, N'Avatar: Dï¿½ng Ch?y C?a Nu?c', N'Hon m?t th?p k? sau cï¿½c s? ki?n c?a ph?n d?u tiï¿½n, Avatar: Dï¿½ng Ch?y C?a Nu?c k? cï¿½u chuy?n v? gia dï¿½nh Sully, nh?ng r?c r?i bï¿½m theo h?, nh?ng n? l?c d? gi? an toï¿½n cho nhau vï¿½ nh?ng tr?n chi?n sinh t? d? b?o v? gi?ng loï¿½i Na''vi.', 192, N'Khoa H?c Vi?n Tu?ng, Hï¿½nh ï¿½?ng, Phiï¿½u Luu', N'James Cameron', N'Sam Worthington, Zoe Saldana, Sigourney Weaver, Stephen Lang, Kate Winslet', N'Ti?ng Anh - Ph? d? Ti?ng Vi?t', '2022-12-16', '2026-12-31', N'/Cine_Flow/uploads/movies/poster-avatar-2.jpg', N'https://www.youtube.com/watch?v=d9MyW72ELq0', N'T13', N'NOW_SHOWING', '2026-10-03 23:08:30', '2026-10-13 10:43:17'),
+(2, N'Inception (K? ï¿½ï¿½nh C?p Gi?c Mo)', N'Dom Cobb lï¿½ m?t d?o chï¿½ch b?c th?y chuyï¿½n dï¿½nh c?p cï¿½c bï¿½ m?t sï¿½u kï¿½n nh?t trong ti?m th?c khi d?i tu?ng dang ng? mo. Co h?i chu?c l?i cu?c d?i d?n khi anh nh?n nhi?m v? b?t kh? thi: c?y ghï¿½p m?t ï¿½ tu?ng vï¿½o tï¿½m trï¿½ ngu?i khï¿½c thay vï¿½ dï¿½nh c?p.', 148, N'Khoa H?c Vi?n Tu?ng, Hï¿½nh ï¿½?ng, Gi?t Gï¿½n', N'Christopher Nolan', N'Leonardo DiCaprio, Joseph Gordon-Levitt, Elliot Page, Tom Hardy, Ken Watanabe, Cillian Murphy', N'Ti?ng Anh - Ph? d? Ti?ng Vi?t', '2010-07-16', '2026-12-31', N'/Cine_Flow/uploads/movies/poster-inception.jpg', N'https://www.youtube.com/watch?v=YoHD9XEInc0', N'T16', N'NOW_SHOWING', '2026-10-03 23:08:30', '2026-10-13 10:43:17'),
+(3, N'ï¿½?a ï¿½?o: M?t Tr?i Trong Bï¿½ng T?i', N'Tï¿½c ph?m di?n ?nh l?ch s? quy mï¿½ l?n tï¿½i hi?n cu?c s?ng kiï¿½n cu?ng vï¿½ tinh th?n chi?n d?u b?t khu?t c?a quï¿½n vï¿½ dï¿½n C? Chi sï¿½u trong mï¿½ cung lï¿½ng d?t anh hï¿½ng th?i khï¿½ng chi?n ch?ng M? c?u nu?c.', 125, N'Chi?n Tranh, L?ch S?, Hï¿½nh ï¿½?ng', N'Bï¿½i Th?c Chuyï¿½n', N'Thï¿½i Hï¿½a, Quang Tu?n, H? Thu Anh, Di?m H?ng', N'Ti?ng Vi?t', '2025-04-30', '2026-12-31', N'/Cine_Flow/uploads/movies/poster-dia-dao.jpg', N'https://www.youtube.com/watch?v=3g8z4b8mNlA', N'T16', N'NOW_SHOWING', '2026-10-03 23:08:31', '2026-10-13 10:43:17'),
+(4, N'K? Tr?m M?t Trang 4 (Despicable Me 4)', N'Gia dï¿½nh Gru vï¿½ Lucy chï¿½o dï¿½n quï¿½ t? Gru Jr., c?u bï¿½ chuyï¿½n gï¿½y khï¿½ d? cho b?. Cu?c s?ng ï¿½m d?m b? d?o l?n khi k? thï¿½ Maxime Le Mal tr?n thoï¿½t vï¿½ tuyï¿½n th? tr? thï¿½, bu?c c? gia dï¿½nh ph?i di lï¿½nh n?n.', 94, N'Ho?t Hï¿½nh, Hï¿½i Hu?c, Gia ï¿½ï¿½nh, Phiï¿½u Luu', N'Chris Renaud', N'Steve Carell, Kristen Wiig, Will Ferrell, Joey King, Sofia Vergara', N'Ti?ng Anh - L?ng ti?ng & Ph? d? Ti?ng Vi?t', '2024-07-05', '2026-12-31', N'/Cine_Flow/uploads/movies/poster-despicable-me-4.jpg', N'https://www.youtube.com/watch?v=qQlr9-rF32A', N'P', N'NOW_SHOWING', '2026-10-03 23:08:31', '2026-10-13 10:43:17'),
+(5, N'Deadpool & Wolverine', N'Wade Wilson dang t?n hu?ng cu?c s?ng bï¿½nh l?ng thï¿½ t? ch?c TVA kï¿½o anh vï¿½o s? m?nh gi?i c?u vu tr? c?a mï¿½nh kh?i s? di?t vong, bu?c anh ph?i h?p tï¿½c cï¿½ng phiï¿½n b?n b?t c?n d?i c?a Wolverine.', 128, N'Hï¿½nh ï¿½?ng, Hï¿½i Hu?c, Khoa H?c Vi?n Tu?ng', N'Shawn Levy', N'Ryan Reynolds, Hugh Jackman, Emma Corrin, Matthew Macfadyen, Morena Baccarin', N'Ti?ng Anh - Ph? d? Ti?ng Vi?t', '2024-07-26', '2026-12-31', N'/Cine_Flow/uploads/movies/poster-deadpool-wolverine.jpg', N'https://www.youtube.com/watch?v=73_1biulkYk', N'T18', N'NOW_SHOWING', '2026-10-03 23:08:31', '2026-10-13 10:43:17'),
+(6, N'Dune: Hï¿½nh Tinh Cï¿½t - Ph?n 2', N'Paul Atreides d?ng hï¿½nh cï¿½ng Chani vï¿½ t?c ngu?i Fremen trï¿½n sa m?c Arrakis nh?m tr? thï¿½ nh?ng k? dï¿½ ï¿½m muu tiï¿½u di?t gia t?c Atreides, d?ng th?i gï¿½nh vï¿½c s? m?nh d?nh do?t tuong lai toï¿½n cï¿½i thiï¿½n hï¿½.', 166, N'Khoa H?c Vi?n Tu?ng, Phiï¿½u Luu, Hï¿½nh ï¿½?ng', N'Denis Villeneuve', N'Timothï¿½e Chalamet, Zendaya, Rebecca Ferguson, Javier Bardem, Austin Butler, Florence Pugh', N'Ti?ng Anh - Ph? d? Ti?ng Vi?t', '2024-03-01', '2026-12-31', N'/Cine_Flow/uploads/movies/poster-dune-2.jpg', N'https://www.youtube.com/watch?v=Way9Dexny3w', N'T16', N'NOW_SHOWING', '2026-10-03 23:08:31', '2026-10-13 10:43:17'),
+(7, N'Godzilla x Kong: ï¿½? Ch? M?i', N'Hai quï¿½i thï¿½ huy?n tho?i Godzilla vï¿½ Kong ph?i g?t b? hi?m khï¿½ch d? cï¿½ng liï¿½n minh ch?ng l?i m?i hi?m h?a di?t vong m?i n?i lï¿½n t? lï¿½ng Trï¿½i ï¿½?t R?ng, de d?a s? t?n vong c?a c? gi?ng loï¿½i titan vï¿½ nhï¿½n lo?i.', 115, N'Hï¿½nh ï¿½?ng, Khoa H?c Vi?n Tu?ng, Phiï¿½u Luu', N'Adam Wingard', N'Rebecca Hall, Brian Tyree Henry, Dan Stevens, Kaylee Hottle, Alex Ferns', N'Ti?ng Anh - Ph? d? Ti?ng Vi?t', '2024-03-29', '2026-12-31', N'/Cine_Flow/uploads/movies/poster-godzilla-kong.jpg', N'https://www.youtube.com/watch?v=lV1OOlGwExg', N'T13', N'NOW_SHOWING', '2026-10-03 23:08:31', '2026-10-13 10:43:17'),
+(8, N'Transformers M?t (Transformers One)', N'B? phim ho?t hï¿½nh bom t?n hï¿½ l? ngu?n g?c sï¿½u xa m?i quan h? h?u ngh? keo son gi?a Orion Pax vï¿½ D-16 trï¿½n hï¿½nh tinh Cybertron tru?c khi h? tr? thï¿½nh t? thï¿½ Optimus Prime vï¿½ Megatron.', 104, N'Ho?t Hï¿½nh, Khoa H?c Vi?n Tu?ng, Hï¿½nh ï¿½?ng', N'Josh Cooley', N'Chris Hemsworth, Brian Tyree Henry, Scarlett Johansson, Keegan-Michael Key, Steve Buscemi', N'Ti?ng Anh - L?ng ti?ng & Ph? d? Ti?ng Vi?t', '2024-09-20', '2026-12-31', N'/Cine_Flow/uploads/movies/poster-transformers-one.jpg', N'https://www.youtube.com/watch?v=u2NuUVuuWO4', N'K', N'ARCHIVED', '2026-10-03 23:08:31', '2026-10-13 12:06:25'),
+(9, N'Mai', N'Chuy?n tï¿½nh d?y tr?c tr? gi?a Mai - m?t ph? n? lï¿½m ngh? massage tr? li?u ch?u nhi?u d?nh ki?n xï¿½ h?i v?i Duong - chï¿½ng thi?u gia lï¿½ng t? mï¿½ ï¿½m nh?c. Khi quï¿½ kh? dau thuong ï¿½a v?, li?u tï¿½nh yï¿½u cï¿½ d? l?n d? vu?t qua rï¿½o c?n?', 131, N'Tï¿½m Lï¿½, Tï¿½nh C?m, Chï¿½nh K?ch', N'Tr?n Thï¿½nh', N'Phuong Anh ï¿½ï¿½o, Tu?n Tr?n, Tr?n Thï¿½nh, H?ng ï¿½ï¿½o, Uy?n ï¿½n, Qu?c Khï¿½nh', N'Ti?ng Vi?t', '2024-02-10', '2026-12-31', N'/Cine_Flow/uploads/movies/poster-mai.jpg', N'https://www.youtube.com/watch?v=845b4B1u4n0', N'T18', N'NOW_SHOWING', '2026-10-03 23:08:31', '2026-10-13 10:43:17'),
+(10, N'Oppenheimer', N'B? phim l?ch s? d?nh cao tï¿½i hi?n cu?c d?i thang tr?m c?a J. Robert Oppenheimer, nhï¿½ v?t lï¿½ ch? huy d? ï¿½n Manhattan phï¿½t minh ra bom nguyï¿½n t?, vï¿½ nh?ng gi?ng xï¿½ luong tï¿½m khi thay d?i vinh vi?n v?n m?nh nhï¿½n lo?i.', 180, N'L?ch S?, Chï¿½nh K?ch, Ti?u S?', N'Christopher Nolan', N'Cillian Murphy, Emily Blunt, Matt Damon, Robert Downey Jr., Florence Pugh', N'Ti?ng Anh - Ph? d? Ti?ng Vi?t', '2023-07-21', '2026-12-31', N'/Cine_Flow/uploads/movies/poster-oppenheimer.jpg', N'https://www.youtube.com/watch?v=uYPbbksJxIg', N'T18', N'NOW_SHOWING', '2026-10-03 23:08:31', '2026-10-13 10:43:17'),
+(11, N'Kung Fu Panda 4', N'Po chu?n b? tr? thï¿½nh Th? linh Tinh th?n c?a Thung lung Bï¿½nh Yï¿½n vï¿½ c?n tï¿½m ki?m ngu?i k? v? Th?n Long ï¿½?i Hi?p. ï¿½ï¿½ng lï¿½c nï¿½y, m? phï¿½ th?y T?c Kï¿½ Bï¿½ng v?i thu?t bi?n hï¿½nh qu? quy?t xu?t hi?n de d?a hï¿½a bï¿½nh th? gi?i.', 94, N'Ho?t Hï¿½nh, Hï¿½nh ï¿½?ng, Hï¿½i Hu?c, Gia ï¿½ï¿½nh', N'Mike Mitchell', N'Jack Black, Awkwafina, Viola Davis, Dustin Hoffman, Bryan Cranston, James Hong', N'Ti?ng Anh - L?ng ti?ng & Ph? d? Ti?ng Vi?t', '2024-03-08', '2026-12-31', N'/Cine_Flow/uploads/movies/poster-kung-fu-panda-4.jpg', N'https://www.youtube.com/watch?v=_inKs4eeHiI', N'P', N'NOW_SHOWING', '2026-10-03 23:08:31', '2026-10-13 10:43:17'),
+(12, N'L?t M?t 7: M?t ï¿½i?u U?c', N'Cï¿½u chuy?n c?m d?ng v? bï¿½ Hai 73 tu?i s?ng cï¿½ qu?nh t?i vï¿½ng quï¿½ h?o lï¿½nh vï¿½ 5 ngu?i con dï¿½ l?p gia dï¿½nh ? t? x?. Khi ngu?i m? g?p n?n gï¿½y chï¿½n, cu?c h?p gia dï¿½nh d?y ï¿½o le m? ra nh?ng gï¿½c khu?t tï¿½nh thï¿½n sï¿½u s?c.', 138, N'Gia ï¿½ï¿½nh, Chï¿½nh K?ch, Hï¿½i Hu?c', N'Lï¿½ H?i', N'Thanh Hi?n, Truong Minh Cu?ng, ï¿½inh Y Nhung, Quï¿½ch Ng?c Tuyï¿½n, Trï¿½m Anh', N'Ti?ng Vi?t', '2024-04-26', '2026-12-31', N'/Cine_Flow/uploads/movies/poster-lat-mat-7.jpg', N'https://www.youtube.com/watch?v=d_k8kI0u_pE', N'K', N'NOW_SHOWING', '2026-10-03 23:08:31', '2026-10-13 10:43:17'),
+(13, N'Nh?ng M?nh Ghï¿½p C?m Xï¿½c 2 (Inside Out 2)', N'Riley bu?c vï¿½o tu?i d?y thï¿½ cung lï¿½ lï¿½c t?ng hï¿½nh dinh tï¿½m trï¿½ xu?t hi?n cï¿½c c?m xï¿½c v? thï¿½nh niï¿½n ph?c t?p: Lo ï¿½u, Ganh T?, X?u H? vï¿½ Chï¿½n N?n. M?t cu?c d?i chi?n c?m xï¿½c bï¿½ng n? d? d?nh hï¿½nh b?n ngï¿½ c?a cï¿½ bï¿½.', 96, N'Ho?t Hï¿½nh, Hï¿½i Hu?c, Gia ï¿½ï¿½nh, Phiï¿½u Luu', N'Kelsey Mann', N'Amy Poehler, Maya Hawke, Kensington Tallman, Liza Lapira, Tony Hale, Phyllis Smith', N'Ti?ng Anh - L?ng ti?ng & Ph? d? Ti?ng Vi?t', '2024-06-14', '2026-12-31', N'/Cine_Flow/uploads/movies/poster-inside-out-2.jpg', N'https://www.youtube.com/watch?v=LEjhY15eCx0', N'P', N'NOW_SHOWING', '2026-10-03 23:08:31', '2026-10-13 10:43:17'),
+(14, N'ï¿½?t R?ng Phuong Nam', N'Hï¿½nh trï¿½nh tï¿½m cha giï¿½u c?m xï¿½c c?a c?u bï¿½ An gi?a vï¿½ng sï¿½ng nu?c Nam B? trï¿½ phï¿½ vï¿½ hï¿½o s?ng d?u th? k? 20, noi tï¿½i luy?n ï¿½ chï¿½ kiï¿½n cu?ng vï¿½ lï¿½ng yï¿½u quï¿½ huong d?t nu?c qua bao thang tr?m th?i cu?c.', 134, N'Phiï¿½u Luu, L?ch S?, Chï¿½nh K?ch', N'Nguy?n Quang Dung', N'H?o Khang, Tu?n Tr?n, Tr?n Thï¿½nh, Ti?n Lu?t, Bang Di, H?a Vi Van', N'Ti?ng Vi?t', '2023-10-20', '2026-12-31', N'/Cine_Flow/uploads/movies/poster-dat-rung-phuong-nam.jpg', N'https://www.youtube.com/watch?v=hkn9tKIb3w4', N'K', N'ENDED', '2026-10-03 23:08:31', '2026-10-13 10:43:17'),
+(15, N'B? Giï¿½', N'Chuy?n d?i thu?ng nh?t d?y c?m xï¿½c vï¿½ ti?ng cu?i noi con h?m nghï¿½o Sï¿½i Gï¿½n c?a ba Sang vï¿½ c?u con trai Qu?n. S? hy sinh th?m l?ng c?a b?c lï¿½m cha vï¿½ nh?ng b?t d?ng th? h? kh?c h?a nï¿½n tï¿½nh ph? t? thiï¿½ng liï¿½ng.', 128, N'Gia ï¿½ï¿½nh, Hï¿½i Hu?c, Chï¿½nh K?ch', N'Tr?n Thï¿½nh, Vu Ng?c ï¿½ï¿½ng', N'Tr?n Thï¿½nh, Tu?n Tr?n, Ngï¿½n Chi, NSND Ng?c Giï¿½u, Lï¿½ Giang, Lan Phuong, Hoï¿½ng Mï¿½o', N'Ti?ng Vi?t', '2021-03-05', '2026-12-31', N'/Cine_Flow/uploads/movies/poster-bo-gia.jpg', N'https://www.youtube.com/watch?v=jluSu8Rw6YE', N'T13', N'ARCHIVED', '2026-10-03 23:08:31', '2026-10-13 11:36:46'),
+(18, N'Piano', N'phim v? c?u bï¿½ dï¿½nh dï¿½n piano lï¿½m c?m hoï¿½ k? b? tha hoï¿½', 120, N'Tï¿½m lï¿½, Tï¿½nh c?m', N'Tr?n Thï¿½nh, Vu Ng?c ï¿½ï¿½ng', N'H?ng ï¿½nh, Lï¿½ Xuï¿½n Ti?n', N'Ti?ng Vi?t', '2026-10-20', '2026-12-24', N'', N'', N'P', N'COMING_SOON', '2026-10-13 11:49:48', '2026-10-13 11:50:35');
 GO
 SET IDENTITY_INSERT Movies OFF;
 GO
@@ -5586,11 +5569,11 @@ SET IDENTITY_INSERT CentreMovies OFF;
 GO
 
 -- ====================================================================================
--- BranchPricing (16 b?n ghi)
+-- CentrePricing (16 b?n ghi)
 -- ====================================================================================
-SET IDENTITY_INSERT BranchPricing ON;
+SET IDENTITY_INSERT CentrePricing ON;
 GO
-INSERT INTO BranchPricing (BranchPricingID, BranchID, BasePrice, EffectiveFrom, EffectiveTo, UpdatedBy, CreatedAt) VALUES
+INSERT INTO CentrePricing (CentrePricingID, CentreID, BasePrice, EffectiveFrom, EffectiveTo, UpdatedBy, CreatedAt) VALUES
 (1, 1, 85000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (2, 2, 85000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (3, 3, 85000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
@@ -5608,7 +5591,7 @@ INSERT INTO BranchPricing (BranchPricingID, BranchID, BasePrice, EffectiveFrom, 
 (15, 25, 75000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (16, 26, 75000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00');
 GO
-SET IDENTITY_INSERT BranchPricing OFF;
+SET IDENTITY_INSERT CentrePricing OFF;
 GO
 
 -- ====================================================================================
@@ -5616,85 +5599,85 @@ GO
 -- ====================================================================================
 SET IDENTITY_INSERT TimeSlotPricing ON;
 GO
-INSERT INTO TimeSlotPricing (TimeSlotPricingID, BranchID, SlotName, StartTime, EndTime, Surcharge, EffectiveFrom, EffectiveTo, UpdatedBy, CreatedAt) VALUES
-(1, 1, N'Su?t sáng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+INSERT INTO TimeSlotPricing (TimeSlotPricingID, CentreID, SlotName, StartTime, EndTime, Surcharge, EffectiveFrom, EffectiveTo, UpdatedBy, CreatedAt) VALUES
+(1, 1, N'Su?t sï¿½ng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (2, 1, N'Su?t chi?u', N'12:00:00.0000000', N'17:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
-(3, 1, N'Khung gi? vàng t?i', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(3, 1, N'Khung gi? vï¿½ng t?i', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (4, 1, N'Su?t t?i mu?n', N'22:00:00.0000000', N'23:59:59.0000000', 10000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (5, 1, N'Su?t khuya', N'00:00:00.0000000', N'06:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
-(6, 2, N'Su?t sáng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(6, 2, N'Su?t sï¿½ng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (7, 2, N'Su?t chi?u', N'12:00:00.0000000', N'17:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
-(8, 2, N'Khung gi? vàng t?i', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(8, 2, N'Khung gi? vï¿½ng t?i', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (9, 2, N'Su?t t?i mu?n', N'22:00:00.0000000', N'23:59:59.0000000', 10000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (10, 2, N'Su?t khuya', N'00:00:00.0000000', N'06:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
-(11, 3, N'Su?t sáng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(11, 3, N'Su?t sï¿½ng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (12, 3, N'Su?t chi?u', N'12:00:00.0000000', N'17:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
-(13, 3, N'Khung gi? vàng t?i', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(13, 3, N'Khung gi? vï¿½ng t?i', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (14, 3, N'Su?t t?i mu?n', N'22:00:00.0000000', N'23:59:59.0000000', 10000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (15, 3, N'Su?t khuya', N'00:00:00.0000000', N'06:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
-(16, 4, N'Su?t sáng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(16, 4, N'Su?t sï¿½ng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (17, 4, N'Su?t chi?u', N'12:00:00.0000000', N'17:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
-(18, 4, N'Khung gi? vàng t?i', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(18, 4, N'Khung gi? vï¿½ng t?i', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (19, 4, N'Su?t t?i mu?n', N'22:00:00.0000000', N'23:59:59.0000000', 10000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (20, 4, N'Su?t khuya', N'00:00:00.0000000', N'06:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
-(21, 5, N'Su?t sáng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(21, 5, N'Su?t sï¿½ng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (22, 5, N'Su?t chi?u', N'12:00:00.0000000', N'17:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
-(23, 5, N'Khung gi? vàng t?i', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(23, 5, N'Khung gi? vï¿½ng t?i', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (24, 5, N'Su?t t?i mu?n', N'22:00:00.0000000', N'23:59:59.0000000', 10000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (25, 5, N'Su?t khuya', N'00:00:00.0000000', N'06:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
-(26, 6, N'Su?t sáng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(26, 6, N'Su?t sï¿½ng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (27, 6, N'Su?t chi?u', N'12:00:00.0000000', N'17:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
-(28, 6, N'Khung gi? vàng t?i', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(28, 6, N'Khung gi? vï¿½ng t?i', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (29, 6, N'Su?t t?i mu?n', N'22:00:00.0000000', N'23:59:59.0000000', 10000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (30, 6, N'Su?t khuya', N'00:00:00.0000000', N'06:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
-(31, 17, N'Su?t sáng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(31, 17, N'Su?t sï¿½ng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (32, 17, N'Su?t chi?u', N'12:00:00.0000000', N'17:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
-(33, 17, N'Khung gi? vàng t?i', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(33, 17, N'Khung gi? vï¿½ng t?i', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (34, 17, N'Su?t t?i mu?n', N'22:00:00.0000000', N'23:59:59.0000000', 10000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (35, 17, N'Su?t khuya', N'00:00:00.0000000', N'06:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
-(36, 18, N'Su?t sáng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(36, 18, N'Su?t sï¿½ng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (37, 18, N'Su?t chi?u', N'12:00:00.0000000', N'17:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
-(38, 18, N'Khung gi? vàng t?i', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(38, 18, N'Khung gi? vï¿½ng t?i', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (39, 18, N'Su?t t?i mu?n', N'22:00:00.0000000', N'23:59:59.0000000', 10000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (40, 18, N'Su?t khuya', N'00:00:00.0000000', N'06:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
-(41, 19, N'Su?t sáng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(41, 19, N'Su?t sï¿½ng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (42, 19, N'Su?t chi?u', N'12:00:00.0000000', N'17:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
-(43, 19, N'Khung gi? vàng t?i', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(43, 19, N'Khung gi? vï¿½ng t?i', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (44, 19, N'Su?t t?i mu?n', N'22:00:00.0000000', N'23:59:59.0000000', 10000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (45, 19, N'Su?t khuya', N'00:00:00.0000000', N'06:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
-(46, 20, N'Su?t sáng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(46, 20, N'Su?t sï¿½ng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (47, 20, N'Su?t chi?u', N'12:00:00.0000000', N'17:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
-(48, 20, N'Khung gi? vàng t?i', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(48, 20, N'Khung gi? vï¿½ng t?i', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (49, 20, N'Su?t t?i mu?n', N'22:00:00.0000000', N'23:59:59.0000000', 10000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (50, 20, N'Su?t khuya', N'00:00:00.0000000', N'06:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
-(51, 21, N'Su?t sáng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(51, 21, N'Su?t sï¿½ng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (52, 21, N'Su?t chi?u', N'12:00:00.0000000', N'17:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
-(53, 21, N'Khung gi? vàng t?i', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(53, 21, N'Khung gi? vï¿½ng t?i', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (54, 21, N'Su?t t?i mu?n', N'22:00:00.0000000', N'23:59:59.0000000', 10000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (55, 21, N'Su?t khuya', N'00:00:00.0000000', N'06:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
-(56, 22, N'Su?t sáng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(56, 22, N'Su?t sï¿½ng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (57, 22, N'Su?t chi?u', N'12:00:00.0000000', N'17:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
-(58, 22, N'Khung gi? vàng t?i', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(58, 22, N'Khung gi? vï¿½ng t?i', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (59, 22, N'Su?t t?i mu?n', N'22:00:00.0000000', N'23:59:59.0000000', 10000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (60, 22, N'Su?t khuya', N'00:00:00.0000000', N'06:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
-(61, 23, N'Su?t sáng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(61, 23, N'Su?t sï¿½ng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (62, 23, N'Su?t chi?u', N'12:00:00.0000000', N'17:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
-(63, 23, N'Khung gi? vàng t?i', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(63, 23, N'Khung gi? vï¿½ng t?i', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (64, 23, N'Su?t t?i mu?n', N'22:00:00.0000000', N'23:59:59.0000000', 10000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (65, 23, N'Su?t khuya', N'00:00:00.0000000', N'06:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
-(66, 24, N'Su?t sáng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(66, 24, N'Su?t sï¿½ng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (67, 24, N'Su?t chi?u', N'12:00:00.0000000', N'17:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
-(68, 24, N'Khung gi? vàng t?i', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(68, 24, N'Khung gi? vï¿½ng t?i', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (69, 24, N'Su?t t?i mu?n', N'22:00:00.0000000', N'23:59:59.0000000', 10000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (70, 24, N'Su?t khuya', N'00:00:00.0000000', N'06:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
-(71, 25, N'Su?t sáng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(71, 25, N'Su?t sï¿½ng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (72, 25, N'Su?t chi?u', N'12:00:00.0000000', N'17:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
-(73, 25, N'Khung gi? vàng t?i', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(73, 25, N'Khung gi? vï¿½ng t?i', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (74, 25, N'Su?t t?i mu?n', N'22:00:00.0000000', N'23:59:59.0000000', 10000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (75, 25, N'Su?t khuya', N'00:00:00.0000000', N'06:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
-(76, 26, N'Su?t sáng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(76, 26, N'Su?t sï¿½ng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (77, 26, N'Su?t chi?u', N'12:00:00.0000000', N'17:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
-(78, 26, N'Khung gi? vàng t?i', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(78, 26, N'Khung gi? vï¿½ng t?i', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (79, 26, N'Su?t t?i mu?n', N'22:00:00.0000000', N'23:59:59.0000000', 10000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (80, 26, N'Su?t khuya', N'00:00:00.0000000', N'06:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00');
 GO
@@ -23943,9 +23926,9 @@ SET IDENTITY_INSERT Surcharges ON;
 GO
 INSERT INTO Surcharges (SurchargeID, SurchargeName, SurchargeType, TargetValue, Amount, EffectiveFrom, EffectiveTo, UpdatedBy, CreatedAt) VALUES
 (1, N'Gh? VIP', N'SEAT', N'VIP', 20000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
-(2, N'Gh? Sweetbox dôi', N'SEAT', N'SWEETBOX', 50000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
-(3, N'Phòng chi?u 3D', N'HALL', N'3D', 20000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
-(4, N'Phòng chi?u IMAX', N'HALL', N'IMAX', 40000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00');
+(2, N'Gh? Sweetbox dï¿½i', N'SEAT', N'SWEETBOX', 50000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(3, N'Phï¿½ng chi?u 3D', N'HALL', N'3D', 20000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(4, N'Phï¿½ng chi?u IMAX', N'HALL', N'IMAX', 40000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00');
 GO
 SET IDENTITY_INSERT Surcharges OFF;
 GO
@@ -23957,7 +23940,7 @@ SET IDENTITY_INSERT FnbCategories ON;
 GO
 INSERT INTO FnbCategories (CategoryID, CategoryName, Status) VALUES
 (1, N'Popcorn', N'ACTIVE'),
-(2, N'Ð? u?ng', N'ACTIVE'),
+(2, N'ï¿½? u?ng', N'ACTIVE'),
 (3, N'Snack', N'ACTIVE');
 GO
 SET IDENTITY_INSERT FnbCategories OFF;
@@ -23973,14 +23956,14 @@ INSERT INTO FnbItems (FnbItemID, CategoryID, ItemName, Description, Price, Image
 (2, 1, N'B?p caramel', N'B?p caramel ng?t', 60000.00, NULL, N'ACTIVE', '2026-10-03 23:08:30', NULL),
 (3, 2, N'Coca Cola', N'Nu?c ng?t Coca Cola', 35000.00, NULL, N'ACTIVE', '2026-10-03 23:08:30', NULL),
 (4, 2, N'Sprite', N'Nu?c ng?t Sprite', 35000.00, NULL, N'ACTIVE', '2026-10-03 23:08:30', NULL),
-(5, 3, N'Snack khoai tây', N'Snack khoai tây', 30000.00, NULL, N'ACTIVE', '2026-10-03 23:08:30', NULL),
-(6, 1, N'B?p phô mai', N'B?p rang v? phô mai', 65000.00, NULL, N'ACTIVE', '2026-10-03 23:08:31', NULL),
+(5, 3, N'Snack khoai tï¿½y', N'Snack khoai tï¿½y', 30000.00, NULL, N'ACTIVE', '2026-10-03 23:08:30', NULL),
+(6, 1, N'B?p phï¿½ mai', N'B?p rang v? phï¿½ mai', 65000.00, NULL, N'ACTIVE', '2026-10-03 23:08:31', NULL),
 (7, 1, N'B?p chocolate', N'B?p rang v? chocolate', 70000.00, NULL, N'ACTIVE', '2026-10-03 23:08:31', NULL),
 (8, 2, N'Pepsi', N'Nu?c ng?t Pepsi', 35000.00, NULL, N'ACTIVE', '2026-10-03 23:08:31', NULL),
-(9, 2, N'Trà dào', N'Trà dào mát l?nh', 40000.00, NULL, N'ACTIVE', '2026-10-03 23:08:31', NULL),
-(10, 2, N'Nu?c su?i', N'Nu?c su?i dóng chai', 20000.00, NULL, N'ACTIVE', '2026-10-03 23:08:31', NULL),
-(11, 3, N'Xúc xích nu?ng', N'Xúc xích nu?ng an nhanh', 45000.00, NULL, N'ACTIVE', '2026-10-03 23:08:31', NULL),
-(12, 3, N'Khoai tây chiên', N'Khoai tây chiên giòn', 50000.00, NULL, N'ACTIVE', '2026-10-03 23:08:31', NULL);
+(9, 2, N'Trï¿½ dï¿½o', N'Trï¿½ dï¿½o mï¿½t l?nh', 40000.00, NULL, N'ACTIVE', '2026-10-03 23:08:31', NULL),
+(10, 2, N'Nu?c su?i', N'Nu?c su?i dï¿½ng chai', 20000.00, NULL, N'ACTIVE', '2026-10-03 23:08:31', NULL),
+(11, 3, N'Xï¿½c xï¿½ch nu?ng', N'Xï¿½c xï¿½ch nu?ng an nhanh', 45000.00, NULL, N'ACTIVE', '2026-10-03 23:08:31', NULL),
+(12, 3, N'Khoai tï¿½y chiï¿½n', N'Khoai tï¿½y chiï¿½n giï¿½n', 50000.00, NULL, N'ACTIVE', '2026-10-03 23:08:31', NULL);
 GO
 SET IDENTITY_INSERT FnbItems OFF;
 GO
@@ -23993,7 +23976,7 @@ GO
 INSERT INTO FnbCombos (ComboID, ComboName, Description, Price, ImageURL, Status, CreatedAt, UpdatedAt) VALUES
 (1, N'Combo Couple', N'1 b?p + 2 nu?c', 110000.00, NULL, N'ACTIVE', '2026-10-03 23:08:30', NULL),
 (2, N'Combo Family', N'2 b?p + 4 nu?c', 200000.00, NULL, N'ACTIVE', '2026-10-03 23:08:30', NULL),
-(3, N'Combo Movie Night', N'1 b?p phô mai + 2 nu?c ng?t', 125000.00, NULL, N'ACTIVE', '2026-10-03 23:08:31', NULL),
+(3, N'Combo Movie Night', N'1 b?p phï¿½ mai + 2 nu?c ng?t', 125000.00, NULL, N'ACTIVE', '2026-10-03 23:08:31', NULL),
 (4, N'Combo Solo', N'1 b?p caramel + 1 nu?c ng?t', 85000.00, NULL, N'ACTIVE', '2026-10-03 23:08:31', NULL),
 (5, N'Combo Premium', N'2 b?p + 4 nu?c + 1 snack', 250000.00, NULL, N'ACTIVE', '2026-10-03 23:08:31', NULL);
 GO
@@ -24102,10 +24085,10 @@ GO
 SET IDENTITY_INSERT Vouchers ON;
 GO
 INSERT INTO Vouchers (VoucherID, VoucherCode, VoucherName, Description, CentreID, CreatedBy, DiscountType, DiscountValue, MinimumOrderValue, MaximumDiscount, StartDate, EndDate, UsageLimit, UsedCount, PerCustomerLimit, Status) VALUES
-(1, N'WELCOME10', N'Gi?m 10% cho khách hàng m?i', N'Voucher chào m?ng', NULL, 4, N'PERCENT', 10.00, 100000.00, 50000.00, '2026-01-01 00:00:00', '2026-12-31 00:00:00', 1000, 0, 1, N'ACTIVE'),
+(1, N'WELCOME10', N'Gi?m 10% cho khï¿½ch hï¿½ng m?i', N'Voucher chï¿½o m?ng', NULL, 4, N'PERCENT', 10.00, 100000.00, 50000.00, '2026-01-01 00:00:00', '2026-12-31 00:00:00', 1000, 0, 1, N'ACTIVE'),
 (2, N'SAVE50000', N'Gi?m 50.000d', N'Voucher gi?m tr?c ti?p', NULL, 4, N'FIXED', 50000.00, 200000.00, 50000.00, '2026-01-01 00:00:00', '2026-12-31 00:00:00', 500, 0, 1, N'ACTIVE'),
-(3, N'CINEFLOW20', N'Uu dãi CineFlow 20%', N'Gi?m 20% cho don hàng t? 150.000d', NULL, 4, N'PERCENT', 20.00, 150000.00, 70000.00, '2026-01-01 00:00:00', '2026-12-31 00:00:00', 1000, 0, 1, N'ACTIVE'),
-(4, N'NEWUSER100', N'Khách hàng m?i gi?m 100.000d', N'Áp d?ng cho khách hàng m?i', NULL, 4, N'FIXED', 100000.00, 300000.00, 100000.00, '2026-01-01 00:00:00', '2026-12-31 00:00:00', 500, 0, 1, N'ACTIVE');
+(3, N'CINEFLOW20', N'Uu dï¿½i CineFlow 20%', N'Gi?m 20% cho don hï¿½ng t? 150.000d', NULL, 4, N'PERCENT', 20.00, 150000.00, 70000.00, '2026-01-01 00:00:00', '2026-12-31 00:00:00', 1000, 0, 1, N'ACTIVE'),
+(4, N'NEWUSER100', N'Khï¿½ch hï¿½ng m?i gi?m 100.000d', N'ï¿½p d?ng cho khï¿½ch hï¿½ng m?i', NULL, 4, N'FIXED', 100000.00, 300000.00, 100000.00, '2026-01-01 00:00:00', '2026-12-31 00:00:00', 500, 0, 1, N'ACTIVE');
 GO
 SET IDENTITY_INSERT Vouchers OFF;
 GO
@@ -24116,8 +24099,8 @@ GO
 SET IDENTITY_INSERT Promotions ON;
 GO
 INSERT INTO Promotions (PromotionID, PromotionName, Description, DiscountPercentage, StartDate, EndDate, Status, CreatedAt) VALUES
-(1, N'Th? 4 vui v?', N'Gi?m giá vé vào th? 4', 10.00, '2026-01-01 00:00:00', '2026-12-31 00:00:00', N'ACTIVE', '2026-10-03 23:08:30'),
-(2, N'Weekend Cinema', N'Uu dãi cu?i tu?n', 5.00, '2026-01-01 00:00:00', '2026-12-31 00:00:00', N'ACTIVE', '2026-10-03 23:08:30');
+(1, N'Th? 4 vui v?', N'Gi?m giï¿½ vï¿½ vï¿½o th? 4', 10.00, '2026-01-01 00:00:00', '2026-12-31 00:00:00', N'ACTIVE', '2026-10-03 23:08:30'),
+(2, N'Weekend Cinema', N'Uu dï¿½i cu?i tu?n', 5.00, '2026-01-01 00:00:00', '2026-12-31 00:00:00', N'ACTIVE', '2026-10-03 23:08:30');
 GO
 SET IDENTITY_INSERT Promotions OFF;
 GO
@@ -24361,29 +24344,29 @@ GO
 SET IDENTITY_INSERT CheckInLogs ON;
 GO
 INSERT INTO CheckInLogs (CheckInID, TicketID, CheckedBy, CheckInTime, Result, Note) VALUES
-(1, 2, 75, '2026-10-15 19:57:12', N'SUCCESS', N'Khách hàng quét mã QR qua c?ng soát vé thành công'),
-(2, 4, 70, '2026-10-15 19:57:12', N'SUCCESS', N'Khách hàng quét mã QR qua c?ng soát vé thành công'),
-(3, 6, 70, '2026-10-15 19:57:12', N'SUCCESS', N'Khách hàng quét mã QR qua c?ng soát vé thành công'),
-(4, 8, 60, '2026-10-15 19:57:12', N'SUCCESS', N'Khách hàng quét mã QR qua c?ng soát vé thành công'),
-(5, 10, 55, '2026-10-15 19:57:12', N'SUCCESS', N'Khách hàng quét mã QR qua c?ng soát vé thành công'),
-(6, 12, 5, '2026-10-15 19:57:12', N'SUCCESS', N'Khách hàng quét mã QR qua c?ng soát vé thành công'),
-(7, 14, 46, '2026-10-15 19:57:12', N'SUCCESS', N'Khách hàng quét mã QR qua c?ng soát vé thành công'),
-(8, 16, 41, '2026-10-15 19:57:12', N'SUCCESS', N'Khách hàng quét mã QR qua c?ng soát vé thành công'),
-(9, 18, 32, '2026-10-15 19:57:12', N'SUCCESS', N'Khách hàng quét mã QR qua c?ng soát vé thành công'),
-(10, 20, 6, '2026-10-15 19:57:12', N'SUCCESS', N'Khách hàng quét mã QR qua c?ng soát vé thành công'),
-(11, 22, 2, '2026-10-15 19:57:12', N'SUCCESS', N'Khách hàng quét mã QR qua c?ng soát vé thành công'),
-(12, 24, 2, '2026-10-15 19:57:12', N'SUCCESS', N'Khách hàng quét mã QR qua c?ng soát vé thành công'),
-(13, 27, 70, '2026-10-15 19:57:43', N'SUCCESS', N'Khách hàng quét mã QR qua c?ng soát vé thành công'),
-(14, 28, 70, '2026-10-15 19:57:43', N'SUCCESS', N'Khách hàng quét mã QR qua c?ng soát vé thành công'),
-(15, 29, 65, '2026-10-15 19:57:43', N'SUCCESS', N'Khách hàng quét mã QR qua c?ng soát vé thành công'),
-(16, 31, 60, '2026-10-15 19:57:43', N'SUCCESS', N'Khách hàng quét mã QR qua c?ng soát vé thành công'),
-(17, 34, 5, '2026-10-15 19:57:43', N'SUCCESS', N'Khách hàng quét mã QR qua c?ng soát vé thành công'),
-(18, 36, 46, '2026-10-15 19:57:43', N'SUCCESS', N'Khách hàng quét mã QR qua c?ng soát vé thành công'),
-(19, 38, 8, '2026-10-15 19:57:43', N'SUCCESS', N'Khách hàng quét mã QR qua c?ng soát vé thành công'),
-(20, 40, 32, '2026-10-15 19:57:43', N'SUCCESS', N'Khách hàng quét mã QR qua c?ng soát vé thành công'),
-(21, 42, 2, '2026-10-15 19:57:43', N'SUCCESS', N'Khách hàng quét mã QR qua c?ng soát vé thành công'),
-(22, 43, 2, '2026-10-15 19:57:43', N'SUCCESS', N'Khách hàng quét mã QR qua c?ng soát vé thành công'),
-(23, 44, 75, '2026-10-15 19:57:43', N'SUCCESS', N'Khách hàng quét mã QR qua c?ng soát vé thành công');
+(1, 2, 75, '2026-10-15 19:57:12', N'SUCCESS', N'Khï¿½ch hï¿½ng quï¿½t mï¿½ QR qua c?ng soï¿½t vï¿½ thï¿½nh cï¿½ng'),
+(2, 4, 70, '2026-10-15 19:57:12', N'SUCCESS', N'Khï¿½ch hï¿½ng quï¿½t mï¿½ QR qua c?ng soï¿½t vï¿½ thï¿½nh cï¿½ng'),
+(3, 6, 70, '2026-10-15 19:57:12', N'SUCCESS', N'Khï¿½ch hï¿½ng quï¿½t mï¿½ QR qua c?ng soï¿½t vï¿½ thï¿½nh cï¿½ng'),
+(4, 8, 60, '2026-10-15 19:57:12', N'SUCCESS', N'Khï¿½ch hï¿½ng quï¿½t mï¿½ QR qua c?ng soï¿½t vï¿½ thï¿½nh cï¿½ng'),
+(5, 10, 55, '2026-10-15 19:57:12', N'SUCCESS', N'Khï¿½ch hï¿½ng quï¿½t mï¿½ QR qua c?ng soï¿½t vï¿½ thï¿½nh cï¿½ng'),
+(6, 12, 5, '2026-10-15 19:57:12', N'SUCCESS', N'Khï¿½ch hï¿½ng quï¿½t mï¿½ QR qua c?ng soï¿½t vï¿½ thï¿½nh cï¿½ng'),
+(7, 14, 46, '2026-10-15 19:57:12', N'SUCCESS', N'Khï¿½ch hï¿½ng quï¿½t mï¿½ QR qua c?ng soï¿½t vï¿½ thï¿½nh cï¿½ng'),
+(8, 16, 41, '2026-10-15 19:57:12', N'SUCCESS', N'Khï¿½ch hï¿½ng quï¿½t mï¿½ QR qua c?ng soï¿½t vï¿½ thï¿½nh cï¿½ng'),
+(9, 18, 32, '2026-10-15 19:57:12', N'SUCCESS', N'Khï¿½ch hï¿½ng quï¿½t mï¿½ QR qua c?ng soï¿½t vï¿½ thï¿½nh cï¿½ng'),
+(10, 20, 6, '2026-10-15 19:57:12', N'SUCCESS', N'Khï¿½ch hï¿½ng quï¿½t mï¿½ QR qua c?ng soï¿½t vï¿½ thï¿½nh cï¿½ng'),
+(11, 22, 2, '2026-10-15 19:57:12', N'SUCCESS', N'Khï¿½ch hï¿½ng quï¿½t mï¿½ QR qua c?ng soï¿½t vï¿½ thï¿½nh cï¿½ng'),
+(12, 24, 2, '2026-10-15 19:57:12', N'SUCCESS', N'Khï¿½ch hï¿½ng quï¿½t mï¿½ QR qua c?ng soï¿½t vï¿½ thï¿½nh cï¿½ng'),
+(13, 27, 70, '2026-10-15 19:57:43', N'SUCCESS', N'Khï¿½ch hï¿½ng quï¿½t mï¿½ QR qua c?ng soï¿½t vï¿½ thï¿½nh cï¿½ng'),
+(14, 28, 70, '2026-10-15 19:57:43', N'SUCCESS', N'Khï¿½ch hï¿½ng quï¿½t mï¿½ QR qua c?ng soï¿½t vï¿½ thï¿½nh cï¿½ng'),
+(15, 29, 65, '2026-10-15 19:57:43', N'SUCCESS', N'Khï¿½ch hï¿½ng quï¿½t mï¿½ QR qua c?ng soï¿½t vï¿½ thï¿½nh cï¿½ng'),
+(16, 31, 60, '2026-10-15 19:57:43', N'SUCCESS', N'Khï¿½ch hï¿½ng quï¿½t mï¿½ QR qua c?ng soï¿½t vï¿½ thï¿½nh cï¿½ng'),
+(17, 34, 5, '2026-10-15 19:57:43', N'SUCCESS', N'Khï¿½ch hï¿½ng quï¿½t mï¿½ QR qua c?ng soï¿½t vï¿½ thï¿½nh cï¿½ng'),
+(18, 36, 46, '2026-10-15 19:57:43', N'SUCCESS', N'Khï¿½ch hï¿½ng quï¿½t mï¿½ QR qua c?ng soï¿½t vï¿½ thï¿½nh cï¿½ng'),
+(19, 38, 8, '2026-10-15 19:57:43', N'SUCCESS', N'Khï¿½ch hï¿½ng quï¿½t mï¿½ QR qua c?ng soï¿½t vï¿½ thï¿½nh cï¿½ng'),
+(20, 40, 32, '2026-10-15 19:57:43', N'SUCCESS', N'Khï¿½ch hï¿½ng quï¿½t mï¿½ QR qua c?ng soï¿½t vï¿½ thï¿½nh cï¿½ng'),
+(21, 42, 2, '2026-10-15 19:57:43', N'SUCCESS', N'Khï¿½ch hï¿½ng quï¿½t mï¿½ QR qua c?ng soï¿½t vï¿½ thï¿½nh cï¿½ng'),
+(22, 43, 2, '2026-10-15 19:57:43', N'SUCCESS', N'Khï¿½ch hï¿½ng quï¿½t mï¿½ QR qua c?ng soï¿½t vï¿½ thï¿½nh cï¿½ng'),
+(23, 44, 75, '2026-10-15 19:57:43', N'SUCCESS', N'Khï¿½ch hï¿½ng quï¿½t mï¿½ QR qua c?ng soï¿½t vï¿½ thï¿½nh cï¿½ng');
 GO
 SET IDENTITY_INSERT CheckInLogs OFF;
 GO
@@ -24445,7 +24428,7 @@ UNION ALL SELECT 'CentreManagerAssignments', COUNT(*) FROM CentreManagerAssignme
 UNION ALL SELECT 'StaffTransferHistory', COUNT(*) FROM StaffTransferHistory
 UNION ALL SELECT 'Movies', COUNT(*) FROM Movies
 UNION ALL SELECT 'CentreMovies', COUNT(*) FROM CentreMovies
-UNION ALL SELECT 'BranchPricing', COUNT(*) FROM BranchPricing
+UNION ALL SELECT 'CentrePricing', COUNT(*) FROM CentrePricing
 UNION ALL SELECT 'TimeSlotPricing', COUNT(*) FROM TimeSlotPricing
 UNION ALL SELECT 'Showtimes', COUNT(*) FROM Showtimes
 UNION ALL SELECT 'Surcharges', COUNT(*) FROM Surcharges

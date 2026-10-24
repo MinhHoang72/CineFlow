@@ -16,9 +16,9 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * FE-07 Theo dõi giao dịch thanh toán (chỉ xem; VNPay tự xác nhận, tiền mặt xác nhận tại quầy):
+ * FE-07 Theo dÃµi giao dá»‹ch thanh toÃ¡n (chá»‰ xem; VNPay tá»± xÃ¡c nháº­n, tiá»n máº·t xÃ¡c nháº­n táº¡i quáº§y):
  *   GET /staff/payments?status=&method=&days=
- * Nhân viên bán vé chỉ thấy chi nhánh của mình; MANAGER/ADMIN thấy tất cả.
+ * NhÃ¢n viÃªn bÃ¡n vÃ© chá»‰ tháº¥y chi nhÃ¡nh cá»§a mÃ¬nh; MANAGER/ADMIN tháº¥y táº¥t cáº£.
  */
 @WebServlet(name = "StaffPaymentServlet", urlPatterns = {"/staff/payments"})
 public class StaffPaymentServlet extends HttpServlet {
@@ -44,7 +44,7 @@ public class StaffPaymentServlet extends HttpServlet {
 
         List<Payment> payments;
         try {
-            payments = paymentDAO.getTransactionsForTracking(branchScope(staff), status, method, days);
+            payments = paymentDAO.getTransactionsForTracking(centreScope(staff), status, method, days);
         } catch (SQLException e) {
             throw new ServletException(e);
         }
@@ -65,13 +65,13 @@ public class StaffPaymentServlet extends HttpServlet {
         req.getRequestDispatcher("/WEB-INF/views/staff/paymentHistory.jsp").forward(req, resp);
     }
 
-    /** Giá trị bộ lọc hợp lệ, null = không lọc (Set.of không nhận contains(null)). */
+    /** GiÃ¡ trá»‹ bá»™ lá»c há»£p lá»‡, null = khÃ´ng lá»c (Set.of khÃ´ng nháº­n contains(null)). */
     private static String allowed(Set<String> values, String value) {
         return value != null && values.contains(value) ? value : null;
     }
 
     /** null = mọi chi nhánh. Nhân viên bán vé chưa được gắn chi nhánh thì không thấy giao dịch nào (-1). */
-    private static Integer branchScope(User staff) {
+    private static Integer centreScope(User staff) {
         if (!WebUtil.isSalesStaff(staff)) return null;
         return staff.getCentreId() != null ? staff.getCentreId() : -1;
     }

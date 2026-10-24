@@ -79,7 +79,7 @@
                                 <span class="badge ${p.counter ? 'bg-info text-dark' : 'text-bg-secondary'}">${p.counter ? 'Tại quầy' : 'Online'}</span>
                             </td>
                             <td><c:out value="${p.customerName}" default="Khách tại quầy"/><br><small class="text-muted"><c:out value="${p.customerPhone}"/></small></td>
-                            <td><c:out value="${p.movieTitle}"/><br><small class="text-muted"><c:out value="${p.branchName}"/></small></td>
+                            <td><c:out value="${p.movieTitle}"/><br><small class="text-muted"><c:out value="${p.centreName}"/></small></td>
                             <td>${p.methodLabel}</td>
                             <td class="text-end fw-bold"><fmt:formatNumber value="${p.amount}" pattern="#,##0"/> đ</td>
                             <td><span class="badge ${p.statusBadge}">${p.statusLabel}</span></td>
