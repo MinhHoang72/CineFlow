@@ -137,6 +137,7 @@ public class VoucherManagementServlet extends HttpServlet {
      * Admin → /admin/vouchers  |  Manager → /manager/vouchers
      */
     private String baseUrl(HttpServletRequest request, User user) {
+        //tên ứng dụng wweb:/Cine_Flow
         return request.getContextPath()
                 + (user.isAdmin() && request.getRequestURI().contains("/admin/") 
                    ? "/admin/vouchers" : "/manager/vouchers");
@@ -211,8 +212,10 @@ public class VoucherManagementServlet extends HttpServlet {
         } catch (NumberFormatException ignored) {
         }
 
-        String base = baseUrl(request, user);
-        Integer scope = scopeCentreId(request, user);
+        
+        
+        String base = baseUrl(request, user);//tạo đường dẫn admin hoặc manager
+        Integer scope = scopeCentreId(request, user);//scope=null
         PageDTO<Voucher> result = dao.search(q, status, type, scope, page, PAGE_SIZE);
 
         String filters = "q=" + URLEncoder.encode(q, StandardCharsets.UTF_8)
@@ -499,9 +502,7 @@ request.setAttribute("baseUrl", base);
         response.sendRedirect(target);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // UTILS
-    // ─────────────────────────────────────────────────────────────────────────
+    
 
     private String param(HttpServletRequest request, String name) {
         String value = request.getParameter(name);

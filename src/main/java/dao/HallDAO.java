@@ -1,5 +1,6 @@
-package dao;
+﻿package dao;
 
+import model.dto.common.PageDTO;
 import model.entity.Hall;
 import utils.DBContext;
 

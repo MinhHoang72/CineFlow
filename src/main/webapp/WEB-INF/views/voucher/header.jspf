@@ -13,19 +13,20 @@
         if (totalPages <= 1) {
             return "";
         }
+        String prefix = (base != null && ctx != null && !ctx.isEmpty() && base.startsWith(ctx)) ? base : (ctx + base);
         StringBuilder html = new StringBuilder("<nav class=\"vc-pages\">");
-        html.append(page > 1 ? "<a href=\"" + ctx + base + (page - 1) + "\">&lsaquo;</a>" : "<span class=\"disabled\">&lsaquo;</span>");
+        html.append(page > 1 ? "<a href=\"" + prefix + (page - 1) + "\">&lsaquo;</a>" : "<span class=\"disabled\">&lsaquo;</span>");
         int last = 0;
         for (int i = 1; i <= totalPages; i++) {
             if (i == 1 || i == totalPages || Math.abs(i - page) <= 1) {
                 if (last != 0 && i - last > 1) {
                     html.append("<span class=\"gap\">&hellip;</span>");
                 }
-                html.append(i == page ? "<span class=\"active\">" + i + "</span>" : "<a href=\"" + ctx + base + i + "\">" + i + "</a>");
+                html.append(i == page ? "<span class=\"active\">" + i + "</span>" : "<a href=\"" + prefix + i + "\">" + i + "</a>");
                 last = i;
             }
         }
-        html.append(page < totalPages ? "<a href=\"" + ctx + base + (page + 1) + "\">&rsaquo;</a>" : "<span class=\"disabled\">&rsaquo;</span>");
+        html.append(page < totalPages ? "<a href=\"" + prefix + (page + 1) + "\">&rsaquo;</a>" : "<span class=\"disabled\">&rsaquo;</span>");
         return html.append("</nav>").toString();
     }
 

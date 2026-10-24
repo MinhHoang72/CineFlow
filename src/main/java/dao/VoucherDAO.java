@@ -73,6 +73,7 @@ public class VoucherDAO {
         } else if ("INACTIVE".equals(status)) {
             where.append(" AND v.Status = 'INACTIVE'");
         }
+        
         if ("FIXED".equals(type) || "PERCENT".equals(type)) {
             where.append(" AND v.DiscountType = ?");
             params.add(type);
@@ -84,24 +85,32 @@ public class VoucherDAO {
             try (PreparedStatement statement = connection.prepareStatement(
                     "SELECT COUNT(*)" + FROM_JOIN + where)) {
                 for (int i = 0; i < params.size(); i++) {
+                    //đang thiếu dấu ? setobject vào cho ? 
                     statement.setObject(i + 1, params.get(i));
                 }
                 try (ResultSet rs = statement.executeQuery()) {
                     if (rs.next()) {
-                        total = rs.getInt(1);
+                        //lấy dòng đầu tiên 
+                        total = rs.getInt(1);//45 phần từ 
                     }
                 }
             }
-            int pages = Math.max(1, (total + size - 1) / size);
+            // pages là số trang tính đc
+            int pages = Math.max(1, (total + size - 1) / size); 
+            // page này do người dùng nhập 
+            //lọc người dùng nhập vào 
             int current = Math.min(Math.max(1, page), pages);
             String sql = "SELECT " + COLUMNS + FROM_JOIN + where
+                    //asc
                     + " ORDER BY v.VoucherID DESC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
                 int index = 1;
                 for (Object param : params) {
                     statement.setObject(index++, param);
                 }
+                //tính 1 trang bao nhiêu dòng ,cút bn dòng 
                 statement.setInt(index++, (current - 1) * size);
+                //
                 statement.setInt(index, size);
                 try (ResultSet rs = statement.executeQuery()) {
                     while (rs.next()) {
@@ -143,6 +152,7 @@ public class VoucherDAO {
     public boolean codeExists(String code, int excludeId) {
         try (Connection connection = DBContext.getConnection();
              PreparedStatement statement = connection.prepareStatement(
+                     //bỏ qua <>mã hiện tại nếu đang sửa
                      "SELECT 1 FROM Vouchers WHERE VoucherCode = ? AND VoucherID <> ?")) {
             statement.setString(1, code);
             statement.setInt(2, excludeId);
