@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import model.entity.User;
+import utils.WebUtil;
 
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -17,8 +18,8 @@ import java.nio.charset.StandardCharsets;
 /**
  * Filter: Bảo vệ không gian nhân viên (/staff/dashboard.jsp).
  * Quy tắc:
- * - Chưa đăng nhập: chuyển hướng về trang đăng nhập.
- * - Khách hàng (CUSTOMER): chặn truy cập với HTTP 403 Forbidden.
+ * - Chưa đăng nhập: chuyển hướng về trang đăng nhập kèm URL chuyển hướng ban đầu.
+ * - Khách hàng (CUSTOMER): tự động chuyển hướng ngay lập tức (Silent Redirect) về trang chủ /home, không hiện lỗi.
  * - Nhân viên hoặc cấp trên (STAFF, MANAGER, ADMIN): cho phép truy cập.
  */
 public class StaffFilter implements Filter {
@@ -98,8 +99,10 @@ public class StaffFilter implements Filter {
         }
 
         // 2. Chặn các tài khoản khách hàng (CUSTOMER) truy cập vào khu vực nội bộ nhân viên
+        // Tự động chuyển hướng ngay lập tức (Silent Redirect) về trang chủ khách hàng, không hiện lỗi
         if (!isStaffOrAbove(session)) {
-            httpResponse.sendError(HttpServletResponse.SC_FORBIDDEN, "Khách hàng không có quyền truy cập không gian nhân viên.");
+            String targetPath = WebUtil.getRoleDefaultPath(session);
+            httpResponse.sendRedirect(httpResponse.encodeRedirectURL(httpRequest.getContextPath() + targetPath));
             return;
         }
 

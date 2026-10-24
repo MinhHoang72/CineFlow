@@ -92,7 +92,7 @@
                     </div>
                     <div class="cf-card-body">
                         <div class="cf-dashboard-links">
-                            <a class="cf-dashboard-link cf-dashboard-link-featured" href="${pageContext.request.contextPath}/home/index.jsp" title="Mở giao diện đặt vé trực tiếp">
+                            <a class="cf-dashboard-link cf-dashboard-link-featured" href="${pageContext.request.contextPath}/staff/counter" title="Mở giao diện đặt vé trực tiếp">
                                 <span class="cf-feature-tag tag-blue">Tác nghiệp quầy</span>
                                 <strong style="color: #38bdf8; font-size: 15px;">🎟 Bán vé tại quầy (Counter Booking)</strong>
                                 <span>Tra cứu suất chiếu đang mở bán trong ngày, chọn ghế ngồi trực tiếp theo sơ đồ rạp cho khách hàng.</span>
@@ -110,7 +110,7 @@
                                 <span>Tiếp nhận thanh toán tiền mặt, thẻ POS hoặc quét QR chuyển khoản. In vé xem phim và hóa đơn cho khách.</span>
                             </div>
 
-                            <a class="cf-dashboard-link" href="${pageContext.request.contextPath}/home/index.jsp">
+                            <a class="cf-dashboard-link" href="${pageContext.request.contextPath}/staff/counter">
                                 <span class="cf-feature-tag tag-blue">Tra cứu</span>
                                 <strong>🕒 Lịch chiếu & Ghế trống</strong>
                                 <span>Kiểm tra danh sách suất chiếu còn vé, số lượng ghế trống theo từng phòng chiếu tại <%= centreName %>.</span>
@@ -174,7 +174,7 @@
                                 <span>Kiểm tra trạng thái phòng chiếu tại <%= centreName %> (Đón khách, Đang chiếu, Kết thúc, Dọn vệ sinh).</span>
                             </div>
 
-                            <a class="cf-dashboard-link" href="${pageContext.request.contextPath}/home/index.jsp">
+                            <a class="cf-dashboard-link" href="${pageContext.request.contextPath}/checkin">
                                 <span class="cf-feature-tag tag-blue">Lịch trình</span>
                                 <strong>🕒 Lịch suất chiếu hôm nay</strong>
                                 <span>Xem toàn bộ lịch chiếu các phòng trong ngày để sắp xếp ca trực cửa kiểm soát vé.</span>

@@ -8,13 +8,13 @@ public class Payment {
 
     private final int id, bookingId;
     private final String transactionCode, method, status, bookingCode, bookingType, bookingStatus;
-    private final String customerName, customerPhone, branchName, movieTitle;
+    private final String customerName, customerPhone, centreName, movieTitle;
     private final BigDecimal amount;
     private final Timestamp createdAt, paidAt;
 
     public Payment(int id, String transactionCode, String method, BigDecimal amount, String status,
             Timestamp createdAt, Timestamp paidAt, int bookingId, String bookingCode, String bookingType,
-            String bookingStatus, String customerName, String customerPhone, String branchName, String movieTitle) {
+            String bookingStatus, String customerName, String customerPhone, String centreName, String movieTitle) {
         this.id = id;
         this.transactionCode = transactionCode;
         this.method = method;
@@ -28,7 +28,7 @@ public class Payment {
         this.bookingStatus = bookingStatus;
         this.customerName = customerName;
         this.customerPhone = customerPhone;
-        this.branchName = branchName;
+        this.centreName = centreName;
         this.movieTitle = movieTitle;
     }
 
@@ -65,6 +65,6 @@ public class Payment {
     public String getBookingStatus() { return bookingStatus; }
     public String getCustomerName() { return customerName; }
     public String getCustomerPhone() { return customerPhone; }
-    public String getBranchName() { return branchName; }
+    public String getCentreName() { return centreName; }
     public String getMovieTitle() { return movieTitle; }
 }

@@ -35,7 +35,7 @@ public class DBContext implements AutoCloseable {
             });
 
     /**
-     * Ket noi cho cac DAO ke thua DBContext (BranchPricingDAO, SurchargeDAO, TimeSlotPricingDAO).
+     * Ket noi cho cac DAO ke thua DBContext (CentrePricingDAO, SurchargeDAO, TimeSlotPricingDAO).
      * Moi request dung ket noi rieng, filter.DBConnectionFilter dong no khi request ket thuc, nen DAO
      * tao moi moi request hay giu lau trong servlet deu khong ro ket noi va khong dung ket noi da dong.
      */

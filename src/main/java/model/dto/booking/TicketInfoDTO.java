@@ -49,14 +49,14 @@ public class TicketInfoDTO {
     public int getCentreId() { return centreId; }
     public void setCentreId(int centreId) { this.centreId = centreId; }
 
-    public int getBranchId() { return centreId; }
-    public void setBranchId(int branchId) { this.centreId = branchId; }
+
+
 
     public String getCentreName() { return centreName; }
     public void setCentreName(String centreName) { this.centreName = centreName; }
 
-    public String getBranchName() { return centreName; }
-    public void setBranchName(String branchName) { this.centreName = branchName; }
+
+
 
     public Timestamp getStartTime() { return startTime; }
     public void setStartTime(Timestamp startTime) { this.startTime = startTime; }

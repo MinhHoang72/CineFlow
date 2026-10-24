@@ -364,6 +364,28 @@ public class CinemaDAO {
      * @param enabled  trạng thái kích hoạt phân phối
      * @return true nếu lưu thành công, ngược lại false
      */
+    /**
+     * Kiểm tra xem bộ phim đã từng được cấu hình phân phối trong CSDL hay chưa.
+     *
+     * @param movieId mã định danh phim
+     * @return true nếu đã có ít nhất một bản ghi phân phối trong CentreMovies, ngược lại false
+     */
+    public boolean hasDistributionConfig(int movieId) {
+        String sql = "SELECT COUNT(*) FROM CentreMovies WHERE MovieID = ?";
+        try (Connection connection = DBContext.getConnection();
+             PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, movieId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+            }
+        } catch (Exception exception) {
+            exception.printStackTrace();
+        }
+        return false;
+    }
+
     public boolean saveMovieDistributionForCentre(int movieId, int centreId, boolean enabled) {
         String sql = "MERGE CentreMovies AS target USING (SELECT ? AS CentreID, ? AS MovieID) AS source "
                 + "ON target.CentreID = source.CentreID AND target.MovieID = source.MovieID "
@@ -448,14 +470,14 @@ public class CinemaDAO {
 
     private static final String DYNAMIC_PRICE_SELECT = "(COALESCE(bp.BasePrice, 80000) + COALESCE(tsp.Surcharge, 0) + COALESCE(sur.Amount, 0)) AS BaseTicketPrice ";
     private static final String DYNAMIC_PRICE_APPLY = "OUTER APPLY ( "
-            + "    SELECT TOP 1 bp.BasePrice FROM BranchPricing bp "
-            + "    WHERE bp.BranchID = b.CentreID AND s.StartTime >= bp.EffectiveFrom "
+            + "    SELECT TOP 1 bp.BasePrice FROM CentrePricing bp "
+            + "    WHERE bp.CentreID = b.CentreID AND s.StartTime >= bp.EffectiveFrom "
             + "      AND (bp.EffectiveTo IS NULL OR s.StartTime <= bp.EffectiveTo) "
             + "    ORDER BY bp.EffectiveFrom DESC "
             + ") bp "
             + "OUTER APPLY ( "
             + "    SELECT TOP 1 tsp.Surcharge FROM TimeSlotPricing tsp "
-            + "    WHERE tsp.BranchID = b.CentreID "
+            + "    WHERE tsp.CentreID = b.CentreID "
             + "      AND CAST(s.StartTime AS TIME) >= tsp.StartTime "
             + "      AND CAST(s.StartTime AS TIME) < tsp.EndTime "
             + "      AND s.StartTime >= tsp.EffectiveFrom "

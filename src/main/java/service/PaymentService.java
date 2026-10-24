@@ -60,8 +60,8 @@ public class PaymentService {
     /**
      * Xác nhận đơn đặt vé đã thanh toán thành công và kích hoạt vé điện tử.
      */
-    public Outcome confirmPaymentSuccess(int paymentId, Integer branchId) throws SQLException {
-        return paymentDAO.confirmPaid(paymentId, branchId);
+    public Outcome confirmPaymentSuccess(int paymentId, Integer centreId) throws SQLException {
+        return paymentDAO.confirmPaid(paymentId, centreId);
     }
 
     /**
@@ -89,8 +89,8 @@ public class PaymentService {
     /**
      * Lấy danh sách giao dịch phục vụ tra cứu, đối soát.
      */
-    public List<Payment> getTransactionsForTracking(Integer branchId, String status, String method, int days)
+    public List<Payment> getTransactionsForTracking(Integer centreId, String status, String method, int days)
             throws SQLException {
-        return paymentDAO.getTransactionsForTracking(branchId, status, method, days);
+        return paymentDAO.getTransactionsForTracking(centreId, status, method, days);
     }
 }

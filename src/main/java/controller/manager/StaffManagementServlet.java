@@ -126,7 +126,6 @@ public class StaffManagementServlet extends HttpServlet {
         } else {
             // Đối với Admin: Có thể xem toàn bộ hoặc lọc theo một cụm rạp được chọn
             String cp = request.getParameter("centreId");
-            if (cp == null || cp.trim().isEmpty()) cp = request.getParameter("branchId");
             if (cp != null && !cp.trim().isEmpty()) {
                 try {
                     centreId = Integer.parseInt(cp.trim());
@@ -211,7 +210,6 @@ public class StaffManagementServlet extends HttpServlet {
             } else {
                 // Nếu là Admin: Phải chọn cụm rạp từ danh sách
                 String cp = request.getParameter("centreId");
-            if (cp == null || cp.trim().isEmpty()) cp = request.getParameter("branchId");
                 if (ValidationUtil.isBlank(cp)) {
                     response.sendRedirect(request.getContextPath() + "/staff?error=missing_centre");
                     return;

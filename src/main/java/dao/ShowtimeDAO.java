@@ -18,10 +18,28 @@ import java.util.List;
 
 public class ShowtimeDAO {
 
-    /** Gia goc cua rap (BranchPricing) dang hieu luc tai gio chieu; NULL neu rap chua co bang gia. */
+    /** Use the database clock so every application instance uses the same time. */
+    public int synchronizeStatuses() throws SQLException {
+        try (Connection connection = DBContext.getConnection()) {
+            return synchronizeStatuses(connection);
+        }
+    }
+
+    public int synchronizeStatuses(Connection connection) throws SQLException {
+        String sql = "DECLARE @Now DATETIME2 = SYSDATETIME(); "
+                + "UPDATE Showtimes SET Status = CASE WHEN EndTime <= @Now "
+                + "THEN 'COMPLETED' ELSE 'ONGOING' END, UpdatedAt = @Now "
+                + "WHERE Status IN ('SCHEDULED', 'ONGOING') AND StartTime <= @Now "
+                + "AND Status <> CASE WHEN EndTime <= @Now THEN 'COMPLETED' ELSE 'ONGOING' END";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            return ps.executeUpdate();
+        }
+    }
+
+    /** Gia goc cua rap (CentrePricing) dang hieu luc tai gio chieu; NULL neu rap chua co bang gia. */
     private static final String CENTRE_BASE_PRICE =
-            "(SELECT TOP 1 bp.BasePrice FROM BranchPricing bp "
-          + " WHERE bp.BranchID = b.CentreID AND bp.EffectiveFrom <= s.StartTime "
+            "(SELECT TOP 1 bp.BasePrice FROM CentrePricing bp "
+          + " WHERE bp.CentreID = b.CentreID AND bp.EffectiveFrom <= s.StartTime "
           + "   AND (bp.EffectiveTo IS NULL OR bp.EffectiveTo > s.StartTime) "
           + " ORDER BY bp.EffectiveFrom DESC)";
 
@@ -33,7 +51,7 @@ public class ShowtimeDAO {
     private static final String TICKET_PRICE =
             CENTRE_BASE_PRICE
           + " + ISNULL((SELECT TOP 1 tp.Surcharge FROM TimeSlotPricing tp "
-          + "     WHERE tp.BranchID = b.CentreID "
+          + "     WHERE tp.CentreID = b.CentreID "
           + "       AND CAST(s.StartTime AS TIME) BETWEEN tp.StartTime AND tp.EndTime "
           + "       AND tp.EffectiveFrom <= s.StartTime AND (tp.EffectiveTo IS NULL OR tp.EffectiveTo > s.StartTime) "
           + "     ORDER BY tp.StartTime DESC), 0)"
@@ -63,7 +81,7 @@ public class ShowtimeDAO {
     }
 
     /** Cac ngay con suat chieu cua phim tai chi nhanh. */
-    public List<LocalDate> getShowDates(int branchId, int movieId) throws SQLException {
+    public List<LocalDate> getShowDates(int centreId, int movieId) throws SQLException {
         String sql = "SELECT DISTINCT CAST(s.StartTime AS DATE) AS ShowDate "
                    + "FROM Showtimes s JOIN Movies m ON m.MovieID = s.MovieID "
                    + "JOIN Halls h ON h.HallID = s.HallID JOIN Centres b ON b.CentreID = h.CentreID "
@@ -71,7 +89,7 @@ public class ShowtimeDAO {
         List<LocalDate> list = new ArrayList<>();
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, branchId);
+            ps.setInt(1, centreId);
             ps.setInt(2, movieId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) list.add(rs.getDate("ShowDate").toLocalDate());
@@ -80,14 +98,14 @@ public class ShowtimeDAO {
         return list;
     }
 
-    public List<Showtime> getShowtimes(int branchId, int movieId, LocalDate date) throws SQLException {
+    public List<Showtime> getShowtimes(int centreId, int movieId, LocalDate date) throws SQLException {
         String sql = SELECT + "WHERE " + BOOKABLE
                    + "AND b.CentreID = ? AND s.MovieID = ? "
                    + "AND s.StartTime >= ? AND s.StartTime < ? ORDER BY s.StartTime";
         List<Showtime> list = new ArrayList<>();
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, branchId);
+            ps.setInt(1, centreId);
             ps.setInt(2, movieId);
             ps.setDate(3, Date.valueOf(date));
             ps.setDate(4, Date.valueOf(date.plusDays(1)));
@@ -99,7 +117,7 @@ public class ShowtimeDAO {
     }
 
     /** Cac ngay con suat chieu tai chi nhanh (ban tai quay). */
-    public List<LocalDate> getShowDatesAtBranch(int branchId) throws SQLException {
+    public List<LocalDate> getShowDatesAtCentre(int centreId) throws SQLException {
         String sql = "SELECT DISTINCT CAST(s.StartTime AS DATE) AS ShowDate "
                    + "FROM Showtimes s JOIN Movies m ON m.MovieID = s.MovieID "
                    + "JOIN Halls h ON h.HallID = s.HallID JOIN Centres b ON b.CentreID = h.CentreID "
@@ -107,7 +125,7 @@ public class ShowtimeDAO {
         List<LocalDate> list = new ArrayList<>();
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, branchId);
+            ps.setInt(1, centreId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) list.add(rs.getDate("ShowDate").toLocalDate());
             }
@@ -116,13 +134,13 @@ public class ShowtimeDAO {
     }
 
     /** Tat ca suat con mo ban cua chi nhanh trong ngay, sap theo phim roi gio chieu. */
-    public List<Showtime> getShowtimesAtBranch(int branchId, LocalDate date) throws SQLException {
+    public List<Showtime> getShowtimesAtCentre(int centreId, LocalDate date) throws SQLException {
         String sql = SELECT + "WHERE " + BOOKABLE
                    + "AND b.CentreID = ? AND s.StartTime >= ? AND s.StartTime < ? ORDER BY m.Title, s.StartTime";
         List<Showtime> list = new ArrayList<>();
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, branchId);
+            ps.setInt(1, centreId);
             ps.setDate(2, Date.valueOf(date));
             ps.setDate(3, Date.valueOf(date.plusDays(1)));
             try (ResultSet rs = ps.executeQuery()) {
@@ -515,7 +533,7 @@ public class ShowtimeDAO {
                 + "CleaningBufferMinutes = ?, "
                 + "UpdatedAt = GETDATE() "
                 + "WHERE ShowtimeID = ? "
-                + "AND Status = 'SCHEDULED'";
+                + "AND Status = 'SCHEDULED' AND StartTime > SYSDATETIME()";
 
         try (Connection connection = DBContext.getConnection();
              PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -607,7 +625,7 @@ public class ShowtimeDAO {
                 + "SET Status = 'CANCELLED', "
                 + "UpdatedAt = GETDATE() "
                 + "WHERE ShowtimeID = ? "
-                + "AND Status = 'SCHEDULED'";
+                + "AND Status = 'SCHEDULED' AND StartTime > SYSDATETIME()";
 
         try (Connection connection = DBContext.getConnection();
              PreparedStatement ps = connection.prepareStatement(sql)) {

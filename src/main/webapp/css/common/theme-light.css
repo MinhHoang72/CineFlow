@@ -4452,10 +4452,10 @@ html[data-theme="light"] .cf-nav-item:hover {
 }
 
 html[data-theme="light"] .cf-nav-item.active {
-    color: #0f172a;
-    background: rgba(255, 42, 84, 0.14);
-    border: 1px solid rgba(255, 42, 84, 0.35);
-    box-shadow: 0 0 14px rgba(255, 42, 84, 0.22);
+    color: var(--cf-red, #FF2855);
+    background: transparent;
+    border: none;
+    font-weight: 700;
 }
 
 html[data-theme="light"] .cf-auth-link {
@@ -7639,7 +7639,7 @@ html[data-theme="light"] .vc-scope-global {
     color: #a5b4fc;
 }
 
-html[data-theme="light"] .vc-scope-branch {
+html[data-theme="light"] .vc-scope-centre {
     background: rgba(16,185,129,.18);
     color: #6ee7b7;
 }

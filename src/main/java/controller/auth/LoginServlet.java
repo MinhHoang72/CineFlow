@@ -4,6 +4,7 @@ import jakarta.servlet.annotation.WebServlet;
 import dao.UserDAO;
 import model.entity.User;
 import utils.PasswordUtil;
+import utils.WebUtil;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -138,18 +139,15 @@ public class LoginServlet extends HttpServlet {
             if (redirect.startsWith(request.getContextPath())) {
                 redirect = redirect.substring(request.getContextPath().length());
             }
-            // Phòng chống lỗ hổng Open Redirect: Chỉ chấp nhận đường dẫn nội bộ hợp lệ
-            if (redirect.startsWith("/") && !redirect.startsWith("//")
-                    && !redirect.toLowerCase().contains("/login")
-                    && !redirect.toLowerCase().contains("/login")) {
+            // Kiem tra duong dan chuyen tiep hop le va dung phan quyen
+            if (WebUtil.isAllowedRedirect(redirect, user.getRole())) {
                 response.sendRedirect(request.getContextPath() + redirect);
                 return;
             }
         }
 
-        // 10. Điều hướng mặc định theo vai trò: Khách hàng về trang chủ, Cán bộ quản trị về Dashboard
-        String dashboard = "CUSTOMER".equalsIgnoreCase(user.getRole()) ? "/home" : "/dashboard";
-        response.sendRedirect(request.getContextPath() + dashboard);
+        // 10. Dieu huong mac dinh theo vai tro (Silent Redirect chuan hoa)
+        response.sendRedirect(request.getContextPath() + WebUtil.getRoleDefaultPath(user));
     }
 
     /**

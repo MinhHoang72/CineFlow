@@ -27,3 +27,12 @@ out/
 Thumbs.db
 Desktop.ini
 .DS_Store
+
+# Media uploads (large video trailers)
+resources/uploads/video_trailer/*.mp4
+!resources/uploads/video_trailer/trailer-the-pianist.mp4
+src/main/webapp/uploads/video_trailer/*.mp4
+!src/main/webapp/uploads/video_trailer/trailer-the-pianist.mp4
+
+# Demo / scratch assets
+/demo_assets/

@@ -22,9 +22,9 @@
         </div>
         <div id="support">
             <h4>HỖ TRỢ</h4>
-            <a href="<%= fCtx %>/home#support">Hỗ trợ khách hàng</a>
-            <a href="<%= fCtx %>/home#support">Câu hỏi thường gặp</a>
-            <a href="<%= fCtx %>/home#support">Liên hệ</a>
+            <a href="<%= fCtx %>/support">Hỗ trợ khách hàng</a>
+            <a href="<%= fCtx %>/support#faqList">Câu hỏi thường gặp</a>
+            <a href="<%= fCtx %>/support">Liên hệ CSKH</a>
         </div>
         <div>
             <h4>TÀI KHOẢN</h4>

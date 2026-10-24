@@ -75,9 +75,6 @@ public class ShowtimeService {
                     throw new IllegalStateException("Không thể tải danh sách cụm rạp hoạt động.", e);
                 }
                 Integer centre = parseCentre(request.getParameter("centreId"));
-                if (centre == null) {
-                    centre = parseCentre(request.getParameter("branchId"));
-                }
                 if (centre == null && request.getSession().getAttribute("centreId") != null) {
                     centre = parseCentre(request.getSession().getAttribute("centreId").toString());
                 }

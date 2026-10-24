@@ -183,46 +183,29 @@ GO
 
 
 /* =========================================================
-   9.1. BRANCH PRICING (CENTRE PRICING)
+   9.1. CENTRE PRICING (CENTRE PRICING)
    ========================================================= */
-CREATE TABLE BranchPricing (
-    BranchPricingID INT IDENTITY(1,1) PRIMARY KEY,
-    BranchID INT NOT NULL,
-    CentreID AS BranchID,
+CREATE TABLE CentrePricing (
+    CentrePricingID INT IDENTITY(1,1) PRIMARY KEY,
+    CentreID INT NOT NULL,
     BasePrice DECIMAL(12,2) NOT NULL,
     EffectiveFrom DATETIME2 NOT NULL,
     EffectiveTo DATETIME2 NULL,
     UpdatedBy INT NULL,
     CreatedAt DATETIME2 NOT NULL DEFAULT GETDATE(),
-    CONSTRAINT FK_BranchPricing_Centres FOREIGN KEY (BranchID) REFERENCES Centres(CentreID),
-    CONSTRAINT FK_BranchPricing_Users FOREIGN KEY (UpdatedBy) REFERENCES Users(UserID),
-    CONSTRAINT CK_BranchPricing_BasePrice CHECK (BasePrice >= 0),
-    CONSTRAINT CK_BranchPricing_Period CHECK (EffectiveTo IS NULL OR EffectiveTo > EffectiveFrom)
+    CONSTRAINT FK_CentrePricing_Centres FOREIGN KEY (CentreID) REFERENCES Centres(CentreID),
+    CONSTRAINT FK_CentrePricing_Users FOREIGN KEY (UpdatedBy) REFERENCES Users(UserID),
+    CONSTRAINT CK_CentrePricing_BasePrice CHECK (BasePrice >= 0),
+    CONSTRAINT CK_CentrePricing_Period CHECK (EffectiveTo IS NULL OR EffectiveTo > EffectiveFrom)
 );
 GO
-
-CREATE VIEW CentrePricing AS
-SELECT 
-    BranchPricingID AS CentrePricingID,
-    BranchPricingID,
-    BranchID AS CentreID,
-    BranchID,
-    BasePrice,
-    EffectiveFrom,
-    EffectiveTo,
-    UpdatedBy,
-    CreatedAt
-FROM BranchPricing;
-GO
-
 
 /* =========================================================
    9.2. TIME SLOT PRICING
    ========================================================= */
 CREATE TABLE TimeSlotPricing (
     TimeSlotPricingID INT IDENTITY(1,1) PRIMARY KEY,
-    BranchID INT NOT NULL,
-    CentreID AS BranchID,
+    CentreID INT NOT NULL,
     SlotName NVARCHAR(100) NOT NULL,
     StartTime TIME NOT NULL,
     EndTime TIME NOT NULL,
@@ -231,7 +214,7 @@ CREATE TABLE TimeSlotPricing (
     EffectiveTo DATETIME2 NULL,
     UpdatedBy INT NULL,
     CreatedAt DATETIME2 NOT NULL DEFAULT GETDATE(),
-    CONSTRAINT FK_TimeSlotPricing_Centres FOREIGN KEY (BranchID) REFERENCES Centres(CentreID),
+    CONSTRAINT FK_TimeSlotPricing_Centres FOREIGN KEY (CentreID) REFERENCES Centres(CentreID),
     CONSTRAINT FK_TimeSlotPricing_Users FOREIGN KEY (UpdatedBy) REFERENCES Users(UserID),
     CONSTRAINT CK_TimeSlotPricing_Surcharge CHECK (Surcharge >= 0),
     CONSTRAINT CK_TimeSlotPricing_Period CHECK (EffectiveTo IS NULL OR EffectiveTo > EffectiveFrom)
@@ -5585,11 +5568,11 @@ SET IDENTITY_INSERT CentreMovies OFF;
 GO
 
 -- ====================================================================================
--- BranchPricing (16 bản ghi)
+-- CentrePricing (16 bản ghi)
 -- ====================================================================================
-SET IDENTITY_INSERT BranchPricing ON;
+SET IDENTITY_INSERT CentrePricing ON;
 GO
-INSERT INTO BranchPricing (BranchPricingID, BranchID, BasePrice, EffectiveFrom, EffectiveTo, UpdatedBy, CreatedAt) VALUES
+INSERT INTO CentrePricing (CentrePricingID, CentreID, BasePrice, EffectiveFrom, EffectiveTo, UpdatedBy, CreatedAt) VALUES
 (1, 1, 85000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (2, 2, 85000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (3, 3, 85000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
@@ -5607,7 +5590,7 @@ INSERT INTO BranchPricing (BranchPricingID, BranchID, BasePrice, EffectiveFrom, 
 (15, 25, 75000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (16, 26, 75000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00');
 GO
-SET IDENTITY_INSERT BranchPricing OFF;
+SET IDENTITY_INSERT CentrePricing OFF;
 GO
 
 -- ====================================================================================
@@ -5615,7 +5598,7 @@ GO
 -- ====================================================================================
 SET IDENTITY_INSERT TimeSlotPricing ON;
 GO
-INSERT INTO TimeSlotPricing (TimeSlotPricingID, BranchID, SlotName, StartTime, EndTime, Surcharge, EffectiveFrom, EffectiveTo, UpdatedBy, CreatedAt) VALUES
+INSERT INTO TimeSlotPricing (TimeSlotPricingID, CentreID, SlotName, StartTime, EndTime, Surcharge, EffectiveFrom, EffectiveTo, UpdatedBy, CreatedAt) VALUES
 (1, 1, N'Suất sáng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (2, 1, N'Suất chiều', N'12:00:00.0000000', N'17:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
 (3, 1, N'Khung giờ vàng tối', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
@@ -24444,7 +24427,7 @@ UNION ALL SELECT 'CentreManagerAssignments', COUNT(*) FROM CentreManagerAssignme
 UNION ALL SELECT 'StaffTransferHistory', COUNT(*) FROM StaffTransferHistory
 UNION ALL SELECT 'Movies', COUNT(*) FROM Movies
 UNION ALL SELECT 'CentreMovies', COUNT(*) FROM CentreMovies
-UNION ALL SELECT 'BranchPricing', COUNT(*) FROM BranchPricing
+UNION ALL SELECT 'CentrePricing', COUNT(*) FROM CentrePricing
 UNION ALL SELECT 'TimeSlotPricing', COUNT(*) FROM TimeSlotPricing
 UNION ALL SELECT 'Showtimes', COUNT(*) FROM Showtimes
 UNION ALL SELECT 'Surcharges', COUNT(*) FROM Surcharges

@@ -1,28 +1,45 @@
 package model.entity;
 
-import java.io.Serializable;
-import java.math.BigDecimal;
-import java.sql.Timestamp;
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
+ */
 
 /**
- * Model đại diện cho bảng giá cơ sở theo cụm rạp / chi nhánh (BranchPricing / CentrePricing).
+ *
+ * @author vktuy
  */
-public class CentrePricing implements Serializable {
-    private static final long serialVersionUID = 1L;
 
-    private int pricingId;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.text.NumberFormat;
+import java.util.Locale;
+
+public class CentrePricing {
+
+    private int centrePricingId;
     private int centreId;
-    private BigDecimal basePrice;
-    private Timestamp effectiveFrom;
-    private Timestamp effectiveTo;
+    private double basePrice;
+
+    private LocalDateTime effectiveFrom;
+    private LocalDateTime effectiveTo;
+
     private Integer updatedBy;
-    private Timestamp createdAt;
+    private String updatedByName;
+    private LocalDateTime createdAt;
 
     public CentrePricing() {
     }
 
-    public CentrePricing(int pricingId, int centreId, BigDecimal basePrice, Timestamp effectiveFrom, Timestamp effectiveTo, Integer updatedBy, Timestamp createdAt) {
-        this.pricingId = pricingId;
+    public CentrePricing(int centrePricingId,
+                         int centreId,
+                         double basePrice,
+                         LocalDateTime effectiveFrom,
+                         LocalDateTime effectiveTo,
+                         Integer updatedBy,
+                         LocalDateTime createdAt) {
+
+        this.centrePricingId = centrePricingId;
         this.centreId = centreId;
         this.basePrice = basePrice;
         this.effectiveFrom = effectiveFrom;
@@ -31,59 +48,42 @@ public class CentrePricing implements Serializable {
         this.createdAt = createdAt;
     }
 
-    public int getPricingId() {
-        return pricingId;
+    public int getCentrePricingId() {
+        return centrePricingId;
     }
 
-    public void setPricingId(int pricingId) {
-        this.pricingId = pricingId;
+    public void setCentrePricingId(int centrePricingId) {
+        this.centrePricingId = centrePricingId;
     }
 
-    public int getBranchPricingId() {
-        return pricingId;
-    }
+    public int getCentreId() { return centreId; }
+    public void setCentreId(int centreId) { this.centreId = centreId; }
 
-    public void setBranchPricingId(int pricingId) {
-        this.pricingId = pricingId;
-    }
 
-    public int getCentreId() {
-        return centreId;
-    }
 
-    public void setCentreId(int centreId) {
-        this.centreId = centreId;
-    }
 
-    public int getBranchId() {
-        return centreId;
-    }
 
-    public void setBranchId(int branchId) {
-        this.centreId = branchId;
-    }
-
-    public BigDecimal getBasePrice() {
+    public double getBasePrice() {
         return basePrice;
     }
 
-    public void setBasePrice(BigDecimal basePrice) {
+    public void setBasePrice(double basePrice) {
         this.basePrice = basePrice;
     }
 
-    public Timestamp getEffectiveFrom() {
+    public LocalDateTime getEffectiveFrom() {
         return effectiveFrom;
     }
 
-    public void setEffectiveFrom(Timestamp effectiveFrom) {
+    public void setEffectiveFrom(LocalDateTime effectiveFrom) {
         this.effectiveFrom = effectiveFrom;
     }
 
-    public Timestamp getEffectiveTo() {
+    public LocalDateTime getEffectiveTo() {
         return effectiveTo;
     }
 
-    public void setEffectiveTo(Timestamp effectiveTo) {
+    public void setEffectiveTo(LocalDateTime effectiveTo) {
         this.effectiveTo = effectiveTo;
     }
 
@@ -91,15 +91,53 @@ public class CentrePricing implements Serializable {
         return updatedBy;
     }
 
+    public String getUpdatedByName() {
+        return updatedByName;
+    }
+
+    public void setUpdatedByName(String updatedByName) {
+        this.updatedByName = updatedByName;
+    }
+
     public void setUpdatedBy(Integer updatedBy) {
         this.updatedBy = updatedBy;
     }
 
-    public Timestamp getCreatedAt() {
+    public LocalDateTime getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(Timestamp createdAt) {
+    public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
     }
+
+    public String getEffectiveFromFormatted() {
+    if (effectiveFrom == null) {
+        return "";
+    }
+
+    DateTimeFormatter formatter =
+            DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+
+    return effectiveFrom.format(formatter);
+}
+
+public String getEffectiveToFormatted() {
+    if (effectiveTo == null) {
+        return "Current";
+    }
+
+    DateTimeFormatter formatter =
+            DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+
+    return effectiveTo.format(formatter);
+}
+
+public String getBasePriceFormatted() {
+    NumberFormat formatter =
+            NumberFormat.getNumberInstance(new Locale("vi", "VN"));
+
+    return formatter.format(basePrice) + " vnd";
+}
+
 }

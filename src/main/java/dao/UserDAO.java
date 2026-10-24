@@ -372,8 +372,8 @@ public class UserDAO {
             user.setCentreId(rs.wasNull() ? null : centreId);
         } catch (SQLException e) {
             try {
-                int branchId = rs.getInt("BranchID");
-                user.setCentreId(rs.wasNull() ? null : branchId);
+                int centreId = rs.getInt("CentreID");
+                user.setCentreId(rs.wasNull() ? null : centreId);
             } catch (SQLException ignored) {
                 user.setCentreId(null);
             }
@@ -391,7 +391,7 @@ public class UserDAO {
             user.setCentreName(rs.getString("CentreName"));
         } catch (SQLException ignored) {
             try {
-                user.setCentreName(rs.getString("BranchName"));
+                user.setCentreName(rs.getString("CentreName"));
             } catch (SQLException ignored2) {
                 // Cột tên cụm rạp không bắt buộc trong các truy vấn không thực hiện JOIN
             }

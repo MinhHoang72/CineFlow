@@ -87,6 +87,26 @@
         <url-pattern>/reports</url-pattern>
     </filter-mapping>
 
+    <filter-mapping>
+        <filter-name>ManagerFilter</filter-name>
+        <url-pattern>/showtimes</url-pattern>
+    </filter-mapping>
+
+    <filter-mapping>
+        <filter-name>ManagerFilter</filter-name>
+        <url-pattern>/showtimes/*</url-pattern>
+    </filter-mapping>
+
+    <filter-mapping>
+        <filter-name>ManagerFilter</filter-name>
+        <url-pattern>/pricing</url-pattern>
+    </filter-mapping>
+
+    <filter-mapping>
+        <filter-name>ManagerFilter</filter-name>
+        <url-pattern>/pricing/*</url-pattern>
+    </filter-mapping>
+
     <!-- ===================================================== -->
     <!-- 4. STAFF AUTHORIZATION FILTER -->
     <!-- ===================================================== -->

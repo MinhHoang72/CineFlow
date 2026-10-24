@@ -12,150 +12,354 @@
 /* ==========================================================================
    BẢNG QUẢN LÝ PHIM, KPI GRID 5 VÀ ACTION MENU
    ========================================================================== */
-        .cf-kpi-grid-5 {
-            display: grid;
-            grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-        @media (max-width: 1280px) {
-            .cf-kpi-grid-5 {
-                grid-template-columns: repeat(3, 1fr) !important;
-            }
-        }
-        @media (max-width: 768px) {
-            .cf-kpi-grid-5 {
-                grid-template-columns: repeat(2, 1fr) !important;
-            }
-        }
-        @media (max-width: 480px) {
-            .cf-kpi-grid-5 {
-                grid-template-columns: 1fr !important;
-            }
-        }
+.cf-kpi-grid-5 {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+@media (max-width: 1280px) {
+    .cf-kpi-grid-5 {
+        grid-template-columns: repeat(3, 1fr) !important;
+    }
+}
+@media (max-width: 768px) {
+    .cf-kpi-grid-5 {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+@media (max-width: 480px) {
+    .cf-kpi-grid-5 {
+        grid-template-columns: 1fr !important;
+    }
+}
 
-        /* KHU VỰC THAO TÁC BẢNG (OPTIMIZED UX) */
-        .cf-table-actions {
-            display: inline-flex;
-            align-items: center;
-            justify-content: flex-end;
-            gap: 8px;
-            position: relative;
-        }
+/* KHU VỰC THAO TÁC BẢNG (OPTIMIZED UX) */
+.cf-table-actions {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    position: relative;
+}
 
-        /* Nút Sửa: Rõ ràng, dễ nhìn, dễ bấm */
-        .cf-btn-edit {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 5px 12px;
-            height: 32px;
-            background: #182232;
-            border: 1px solid rgba(255, 255, 255, 0.14);
-            border-radius: 6px;
-            color: #e2e8f0;
-            font-size: 12.5px;
-            font-weight: 600;
-            text-decoration: none;
-            cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            white-space: nowrap;
-        }
+/* Nút Sửa: Rõ ràng, dễ nhìn, dễ bấm */
+.cf-btn-edit {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    height: 32px;
+    background: #182232;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 6px;
+    color: #e2e8f0;
+    font-size: 12.5px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+}
 
-        .cf-btn-edit svg {
-            color: #94a3b8;
-            transition: color 0.2s ease, transform 0.2s ease;
-        }
+.cf-btn-edit svg {
+    color: #94a3b8;
+    transition: color 0.2s ease, transform 0.2s ease;
+}
 
-        .cf-btn-edit:hover {
-            background: rgba(255, 40, 85, 0.14);
-            border-color: rgba(255, 40, 85, 0.45);
-            color: #ffffff;
-            box-shadow: 0 2px 10px rgba(255, 40, 85, 0.25);
-            transform: translateY(-1px);
-        }
+.cf-btn-edit:hover {
+    background: rgba(255, 40, 85, 0.14);
+    border-color: rgba(255, 40, 85, 0.45);
+    color: #ffffff;
+    box-shadow: 0 2px 10px rgba(255, 40, 85, 0.25);
+    transform: translateY(-1px);
+}
 
-        .cf-btn-edit:hover svg {
-            color: var(--cf-shell-accent, #ff2855);
-            transform: rotate(-10deg);
-        }
+.cf-btn-edit:hover svg {
+    color: var(--cf-shell-accent, #ff2855);
+    transform: rotate(-10deg);
+}
 
-        /* Nút Tùy chọn khác (⋮) */
-        .cf-action-dropdown-wrap {
-            position: relative;
-        }
+/* Nút Tùy chọn khác (⋮) */
+.cf-action-dropdown-wrap {
+    position: relative;
+}
 
-        .cf-btn-more {
-            width: 32px;
-            height: 32px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            background: #182232;
-            border: 1px solid rgba(255, 255, 255, 0.14);
-            border-radius: 6px;
-            color: #94a3b8;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
+.cf-btn-more {
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #182232;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 6px;
+    color: #94a3b8;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
 
-        .cf-btn-more:hover, .cf-btn-more.is-active {
-            background: #233147;
-            border-color: rgba(255, 255, 255, 0.25);
-            color: #ffffff;
-        }
+.cf-btn-more:hover, .cf-btn-more.is-active {
+    background: #233147;
+    border-color: rgba(255, 255, 255, 0.25);
+    color: #ffffff;
+}
 
-        /* Menu Popup thả xuống */
-        .cf-action-menu {
-            display: none;
-            position: absolute;
-            top: calc(100% + 6px);
-            right: 0;
-            z-index: 200;
-            min-width: 175px;
-            background: #182232;
-            border: 1px solid rgba(255, 255, 255, 0.14);
-            border-radius: 8px;
-            padding: 6px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.05);
-            animation: cfMenuFadeIn 0.15s ease-out;
-        }
+/* Menu Popup thả xuống */
+.cf-action-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: 200;
+    min-width: 175px;
+    background: #182232;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 8px;
+    padding: 6px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    animation: cfMenuFadeIn 0.15s ease-out;
+}
 
-        .cf-action-menu.show {
-            display: block;
-        }
+.cf-action-menu.show {
+    display: block;
+}
 
-        @keyframes cfMenuFadeIn {
-            from { opacity: 0; transform: translateY(-4px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+@keyframes cfMenuFadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
 
-        .cf-action-menu-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px 12px;
-            border-radius: 6px;
-            color: #cbd5e1;
-            font-size: 12.5px;
-            font-weight: 500;
-            text-decoration: none;
-            transition: all 0.15s ease;
-            white-space: nowrap;
-            text-align: left;
-        }
+.cf-action-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    color: #cbd5e1;
+    font-size: 12.5px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    text-align: left;
+}
 
-        .cf-action-menu-item:hover {
-            background: rgba(255, 255, 255, 0.08);
-            color: #ffffff;
-        }
+.cf-action-menu-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+}
 
-        .cf-action-menu-item svg {
-            color: #94a3b8;
-            flex-shrink: 0;
-            transition: color 0.15s ease;
-        }
+.cf-action-menu-item svg {
+    color: #94a3b8;
+    flex-shrink: 0;
+    transition: color 0.15s ease;
+}
 
-        .cf-action-menu-item:hover svg {
-            color: var(--cf-shell-accent, #ff2855);
-        }
+.cf-action-menu-item:hover svg {
+    color: var(--cf-shell-accent, #ff2855);
+}
+
+/* ==========================================================================
+   THANH CÔNG CỤ VÀ BỘ LỌC ĐA NĂNG (MÃ PHIM, ĐỘ TUỔI, NGÀY CHIẾU)
+   ========================================================================== */
+.cf-card-toolbar-multi {
+    padding: 14px 20px;
+    background: rgba(11, 15, 23, 0.4);
+    border-bottom: 1px solid var(--cf-border);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.cf-toolbar-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.cf-toolbar-row-filters {
+    padding-top: 10px;
+    border-top: 1px dashed rgba(255, 255, 255, 0.08);
+}
+
+.cf-filters-wrap {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.cf-code-search-box {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    width: 175px;
+}
+
+.cf-code-search-box input {
+    width: 100%;
+    min-height: 38px;
+    padding: 0 10px 0 28px;
+    background: #0f1623;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 6px;
+    color: #f8fafc;
+    font-size: 12.5px;
+    outline: none;
+    box-sizing: border-box;
+    transition: all 0.15s ease;
+}
+
+.cf-code-search-box input:focus {
+    border-color: var(--cf-primary, #ff2855);
+    box-shadow: 0 0 0 2px rgba(255, 40, 85, 0.15);
+}
+
+.cf-code-icon {
+    position: absolute;
+    left: 10px;
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 700;
+    pointer-events: none;
+}
+
+.cf-date-filter-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #0f1623;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 6px;
+    padding: 0 10px;
+    min-height: 38px;
+    box-sizing: border-box;
+}
+
+.cf-date-label {
+    font-size: 11px;
+    color: #64748b;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.cf-date-input {
+    background: transparent;
+    border: none;
+    color: #f8fafc;
+    font-size: 12px;
+    outline: none;
+    cursor: pointer;
+    padding: 2px 0;
+    width: 115px;
+}
+
+.cf-date-input::-webkit-calendar-picker-indicator {
+    filter: invert(0.8);
+    cursor: pointer;
+}
+
+.cf-btn-reset-filter {
+    width: 38px;
+    height: 38px;
+    background: #0f1623;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 6px;
+    color: #94a3b8;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+}
+
+.cf-btn-reset-filter:hover {
+    background: #1e293b;
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.25);
+    transform: rotate(-45deg);
+}
+
+/* Badge Độ tuổi đặc trưng (Cinema Vietnam Standards) */
+.cf-badge-age-p {
+    background: rgba(16, 185, 129, 0.15) !important;
+    color: #10b981 !important;
+    border: 1px solid rgba(16, 185, 129, 0.35) !important;
+}
+
+.cf-badge-age-k {
+    background: rgba(14, 165, 233, 0.15) !important;
+    color: #0ea5e9 !important;
+    border: 1px solid rgba(14, 165, 233, 0.35) !important;
+}
+
+.cf-badge-age-t13 {
+    background: rgba(234, 179, 8, 0.15) !important;
+    color: #eab308 !important;
+    border: 1px solid rgba(234, 179, 8, 0.35) !important;
+}
+
+.cf-badge-age-t16 {
+    background: rgba(249, 115, 22, 0.15) !important;
+    color: #f97316 !important;
+    border: 1px solid rgba(249, 115, 22, 0.35) !important;
+}
+
+.cf-badge-age-t18 {
+    background: rgba(239, 68, 68, 0.15) !important;
+    color: #ef4444 !important;
+    border: 1px solid rgba(239, 68, 68, 0.35) !important;
+}
+
+/* Tương thích Light Theme (Giao diện sáng) */
+html[data-theme="light"] .cf-card-toolbar-multi {
+    background: #ffffff;
+    border-bottom-color: #e2e8f0;
+}
+
+html[data-theme="light"] .cf-toolbar-row-filters {
+    border-top-color: #e2e8f0;
+}
+
+html[data-theme="light"] .cf-code-search-box input {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    color: #1e293b;
+}
+
+html[data-theme="light"] .cf-code-icon {
+    color: #64748b;
+}
+
+html[data-theme="light"] .cf-date-filter-wrap {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+}
+
+html[data-theme="light"] .cf-date-label {
+    color: #64748b;
+}
+
+html[data-theme="light"] .cf-date-input {
+    color: #1e293b;
+}
+
+html[data-theme="light"] .cf-date-input::-webkit-calendar-picker-indicator {
+    filter: none;
+}
+
+html[data-theme="light"] .cf-btn-reset-filter {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    color: #64748b;
+}
+
+html[data-theme="light"] .cf-btn-reset-filter:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+    border-color: #94a3b8;
+}
