@@ -1,5 +1,6 @@
 <%@ page pageEncoding="UTF-8" %>
-<%-- Giao dien sang / toi: nap mau sang (tu sinh) + nut doi giao dien. Dung chung cho moi trang. --%>
-<link rel="stylesheet" href="<%= request.getContextPath() %>/css/common/theme-toggle.css">
-<link rel="stylesheet" href="<%= request.getContextPath() %>/css/common/theme-light.css">
-<script src="<%= request.getContextPath() %>/js/theme.js"></script>
+<%-- Giao dien sang / toi: nap mau sang (tu sinh) + nut doi giao dien. Dung chung cho moi trang.
+     ?v= la thoi diem sua file: trinh duyet tai lai ngay khi file doi, tranh dung theme.js cu voi theme-light.css moi. --%>
+<link rel="stylesheet" href="<%= request.getContextPath() %>/css/common/theme-toggle.css?v=<%= application.getRealPath("/css/common/theme-toggle.css") == null ? "1" : new java.io.File(application.getRealPath("/css/common/theme-toggle.css")).lastModified() %>">
+<link rel="stylesheet" href="<%= request.getContextPath() %>/css/common/theme-light.css?v=<%= application.getRealPath("/css/common/theme-light.css") == null ? "1" : new java.io.File(application.getRealPath("/css/common/theme-light.css")).lastModified() %>">
+<script src="<%= request.getContextPath() %>/js/theme.js?v=<%= application.getRealPath("/js/theme.js") == null ? "1" : new java.io.File(application.getRealPath("/js/theme.js")).lastModified() %>"></script>
