@@ -74,6 +74,7 @@ public class TimeSlotPricingDAO extends DBContext {
             );
         }
 
+        item.setUpdatedByName(rs.getString("UpdatedByName"));
         return item;
     }
 
@@ -84,9 +85,9 @@ public class TimeSlotPricingDAO extends DBContext {
                 = new ArrayList<>();
 
         String sql
-                = "SELECT * "
-                + "FROM TimeSlotPricing "
-                + "WHERE CentreID = ? "
+                = "SELECT p.*, u.FullName AS UpdatedByName "
+                + "FROM TimeSlotPricing p LEFT JOIN Users u ON u.UserID = p.UpdatedBy "
+                + "WHERE p.CentreID = ? "
                 + "AND EffectiveTo IS NULL "
                 + "ORDER BY StartTime";
 
@@ -116,9 +117,9 @@ public class TimeSlotPricingDAO extends DBContext {
                 = new ArrayList<>();
 
         String sql
-                = "SELECT * "
-                + "FROM TimeSlotPricing "
-                + "WHERE CentreID = ? "
+                = "SELECT p.*, u.FullName AS UpdatedByName "
+                + "FROM TimeSlotPricing p LEFT JOIN Users u ON u.UserID = p.UpdatedBy "
+                + "WHERE p.CentreID = ? "
                 + "ORDER BY EffectiveFrom DESC, StartTime";
 
         try (PreparedStatement ps
@@ -407,8 +408,8 @@ public class TimeSlotPricingDAO extends DBContext {
     public TimeSlotPricing getById(int id) {
 
         String sql
-                = "SELECT * "
-                + "FROM TimeSlotPricing "
+                = "SELECT p.*, u.FullName AS UpdatedByName "
+                + "FROM TimeSlotPricing p LEFT JOIN Users u ON u.UserID = p.UpdatedBy "
                 + "WHERE TimeSlotPricingID = ?";
 
         try (PreparedStatement ps

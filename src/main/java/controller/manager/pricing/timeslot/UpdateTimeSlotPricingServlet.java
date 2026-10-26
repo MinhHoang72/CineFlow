@@ -48,7 +48,7 @@ public class UpdateTimeSlotPricingServlet
                 );
 
             double surcharge =
-                Double.parseDouble(
+                service.PricingService.parseVnd(
                     request.getParameter(
                         "surcharge"
                     )

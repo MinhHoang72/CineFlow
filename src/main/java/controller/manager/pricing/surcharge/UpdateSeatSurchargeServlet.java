@@ -32,7 +32,7 @@ public class UpdateSeatSurchargeServlet
             if (oldRule == null || oldRule.getEffectiveTo() != null) throw new IllegalArgumentException("Invalid surcharge rule");
 
             double amount =
-                    Double.parseDouble(
+                    service.PricingService.parseVnd(
                             request.getParameter(
                                     "amount"
                             )

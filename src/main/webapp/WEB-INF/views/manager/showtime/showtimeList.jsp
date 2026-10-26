@@ -20,7 +20,7 @@
     <title>Quản lý suất chiếu | CineFlow</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin/dashboard.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/showtime-pricing/showtimes.css?v=20261024-3">
-    <script src="${pageContext.request.contextPath}/js/showtimes.js?v=20261024-2" defer></script>
+    <script src="${pageContext.request.contextPath}/js/showtimes.js?v=20261027-1" defer></script>
 </head>
 <body class="st-showtimes-page">
 <div class="cf-manager-shell">
@@ -63,7 +63,7 @@
                     <button type="button" class="st-button st-button-muted" id="st-reset">Xóa lọc</button>
                 </div>
                 <div class="st-view-toolbar">
-                    <div class="st-quick-dates" role="group" aria-label="Lọc nhanh ngày chiếu"><button type="button" data-quick="today">Hôm nay</button><button type="button" data-quick="tomorrow">Ngày mai</button><button type="button" data-quick="week">Tuần này</button></div>
+                    <div class="st-quick-dates" role="group" aria-label="Lọc nhanh ngày chiếu"><button type="button" data-quick="today">Hôm nay</button><button type="button" data-quick="tomorrow">Ngày mai</button></div>
                     <div class="st-view-switch" role="group" aria-label="Chế độ hiển thị"><button type="button" data-view="table" aria-pressed="true">Dạng bảng</button><button type="button" data-view="timeline" aria-pressed="false">Dòng thời gian</button></div>
                 </div><p id="st-range-label" role="status" aria-live="polite"></p></div>
                 <div id="st-timeline" hidden>

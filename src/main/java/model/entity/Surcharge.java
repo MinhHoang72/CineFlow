@@ -19,6 +19,7 @@ public class Surcharge {
     private LocalDateTime effectiveTo;
 
     private Integer updatedBy;
+    private String updatedByName;
     private LocalDateTime createdAt;
 
     public Surcharge() {
@@ -70,6 +71,14 @@ public class Surcharge {
 
     public void setEffectiveTo(LocalDateTime effectiveTo) {
         this.effectiveTo = effectiveTo;
+    }
+
+    public String getUpdatedByName() {
+        return updatedByName;
+    }
+
+    public void setUpdatedByName(String updatedByName) {
+        this.updatedByName = updatedByName;
     }
 
     public Integer getUpdatedBy() {

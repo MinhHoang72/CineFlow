@@ -21,6 +21,7 @@ public class TimeSlotPricing {
     private LocalDateTime effectiveTo;
 
     private Integer updatedBy;
+    private String updatedByName;
     private LocalDateTime createdAt;
 
     public TimeSlotPricing() {
@@ -87,6 +88,14 @@ public class TimeSlotPricing {
 
     public void setEffectiveTo(LocalDateTime effectiveTo) {
         this.effectiveTo = effectiveTo;
+    }
+
+    public String getUpdatedByName() {
+        return updatedByName;
+    }
+
+    public void setUpdatedByName(String updatedByName) {
+        this.updatedByName = updatedByName;
     }
 
     public Integer getUpdatedBy() {

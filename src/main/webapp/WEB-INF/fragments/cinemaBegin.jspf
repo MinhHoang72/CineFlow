@@ -32,15 +32,15 @@
 <!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title><c:out value="${pageTitle}" /> | CineFlow</title>
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin/dashboard.css">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/showtime-pricing/showtimes.css">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/showtime-pricing/showtimes.css?v=20261027-1">
 <c:if test="${seatMatrixView}">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/css/manager/seat-config.css">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/css/showtime-pricing/seat-matrix.css?v=20261024-3">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/showtime-pricing/seat-matrix.css?v=20261027-2">
 </c:if>
-<script src="${pageContext.request.contextPath}/js/pricing.js" defer></script>
+<script src="${pageContext.request.contextPath}/js/pricing.js?v=20261027-3" defer></script>
 </head><body><div class="cf-manager-shell">
 <jsp:include page='<%= isAdmin ? "/WEB-INF/fragments/adminSidebar.jspf" : "/WEB-INF/fragments/managerSidebar.jspf" %>' />
-<div class="cf-manager-main"><jsp:include page="/WEB-INF/fragments/adminTopbar.jspf" /><main class="cf-content st-page">
+<div class="cf-manager-main"><jsp:include page="/WEB-INF/fragments/adminTopbar.jspf" /><main class="cf-content st-page ${activeTab != 'showtimes' ? 'pr-page' : ''}">
 <header class="st-heading"><div><span class="st-eyebrow">ĐIỀU HÀNH RẠP CHIẾU</span><h1><c:out value="${pageTitle}" /></h1><p><c:out value="${pageDescription}" /></p></div></header>
 <%@ include file="showtimePricingNav.jspf" %>
 <c:if test="${not empty sessionScope.message}"><div class="st-notice st-success" role="status"><c:out value="${sessionScope.message}" /></div><c:remove var="message" scope="session" /></c:if>

@@ -4,7 +4,7 @@
     const search = $('st-search'), date = $('st-date'), hall = $('st-hall'), status = $('st-status');
     if (!search || !date || !hall || !status) return;
     let rows = Array.from(document.querySelectorAll('[data-showtime]'));
-    let page = 1, view = 'table', week = null, refreshing = false;
+    let page = 1, view = 'table', refreshing = false;
     const normalize = value => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLocaleLowerCase('vi');
     const localDate = value => `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;
     const midnight = value => new Date(`${value}T00:00:00`);
@@ -29,7 +29,7 @@
             || (hall.value && row.dataset.hallId !== hall.value)
             || (status.value && row.dataset.status !== status.value)) return false;
         if (!withDate) return true;
-        const range = date.value ? [midnight(date.value), nextDay(midnight(date.value))] : week;
+        const range = date.value ? [midnight(date.value), nextDay(midnight(date.value))] : null;
         if (!range) return true;
         const { start, end } = bounds(row);
         return start < range[1] && end > range[0];
@@ -88,14 +88,12 @@
         $('st-prev-page').disabled = page <= 1; $('st-next-page').disabled = page >= pages;
         $('st-pagination').hidden = view !== 'table';
         const displayDate = value => value.toLocaleDateString('vi-VN');
-        const weekEnd = week ? new Date(week[1].getTime() - 1) : null;
         $('st-range-label').textContent = view === 'timeline'
             ? `Lịch phòng ngày ${displayDate(midnight($('st-timeline-date').value))}`
-            : `${week ? `Tuần này: ${displayDate(week[0])} – ${displayDate(weekEnd)}` : date.value ? `Ngày chiếu: ${displayDate(midnight(date.value))}` : 'Tất cả ngày chiếu'} · ${filtered.length} suất chiếu`;
+            : `${date.value ? `Ngày chiếu: ${displayDate(midnight(date.value))}` : 'Tất cả ngày chiếu'} · ${filtered.length} suất chiếu`;
         document.querySelectorAll('[data-quick]').forEach(button => {
             const tomorrow = localDate(nextDay(midnight(today())));
-            const selected = button.dataset.quick === 'week' ? !!week
-                : !week && date.value === (button.dataset.quick === 'today' ? today() : tomorrow);
+            const selected = date.value === (button.dataset.quick === 'today' ? today() : tomorrow);
             button.setAttribute('aria-pressed', String(selected));
         });
         $('st-table-view').hidden = view !== 'table'; $('st-timeline').hidden = view !== 'timeline';
@@ -104,21 +102,20 @@
     }
     const filter = () => { page = 1; render(); };
     search.addEventListener('input', filter); [hall, status].forEach(control => control.addEventListener('change', filter));
-    date.addEventListener('change', () => { week = null; if (date.value) $('st-timeline-date').value = date.value; document.querySelectorAll('[data-quick]').forEach(button => button.setAttribute('aria-pressed', 'false')); filter(); });
-    $('st-reset').addEventListener('click', () => { [search, date, hall, status].forEach(control => { control.value = ''; }); week = null; $('st-timeline-date').value = today(); document.querySelectorAll('[data-quick]').forEach(button => button.setAttribute('aria-pressed', 'false')); filter(); search.focus(); });
+    date.addEventListener('change', () => { if (date.value) $('st-timeline-date').value = date.value; document.querySelectorAll('[data-quick]').forEach(button => button.setAttribute('aria-pressed', 'false')); filter(); });
+    $('st-reset').addEventListener('click', () => { [search, date, hall, status].forEach(control => { control.value = ''; }); $('st-timeline-date').value = today(); document.querySelectorAll('[data-quick]').forEach(button => button.setAttribute('aria-pressed', 'false')); filter(); search.focus(); });
     document.querySelectorAll('[data-quick]').forEach(button => {
         button.setAttribute('aria-pressed', 'false');
         button.addEventListener('click', () => {
-            week = null; const selected = midnight(today());
+            const selected = midnight(today());
             if (button.dataset.quick === 'tomorrow') selected.setDate(selected.getDate() + 1);
-            if (button.dataset.quick === 'week') { const monday = midnight(today()); monday.setDate(monday.getDate() - (monday.getDay() + 6) % 7); const end = new Date(monday); end.setDate(end.getDate() + 7); week = [monday, end]; date.value = ''; }
-            else date.value = localDate(selected);
+            date.value = localDate(selected);
             $('st-timeline-date').value = localDate(selected);
             document.querySelectorAll('[data-quick]').forEach(item => item.setAttribute('aria-pressed', String(item === button))); filter();
         });
     });
     document.querySelectorAll('[data-view]').forEach(button => button.addEventListener('click', () => { view = button.dataset.view; render(); }));
-    $('st-timeline-date').addEventListener('change', () => { if (!$('st-timeline-date').value) $('st-timeline-date').value = today(); date.value = $('st-timeline-date').value; week = null; filter(); });
+    $('st-timeline-date').addEventListener('change', () => { if (!$('st-timeline-date').value) $('st-timeline-date').value = today(); date.value = $('st-timeline-date').value; filter(); });
     $('st-page-size').addEventListener('change', filter);
     $('st-prev-page').addEventListener('click', () => { page--; render(); }); $('st-next-page').addEventListener('click', () => { page++; render(); });
     document.addEventListener('submit', event => { if (event.target.matches('[data-cancel-showtime]') && !window.confirm('Bạn có chắc muốn hủy suất chiếu này?')) event.preventDefault(); });

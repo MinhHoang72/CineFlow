@@ -73,4 +73,18 @@ public class ShowtimeSeatMatrixDTO {
 
     public BigDecimal getPrice() { return price; }
     public void setPrice(BigDecimal price) { this.price = price; }
+    private BigDecimal basePrice, timeSurcharge, hallSurcharge, seatSurcharge, storedPrice;
+    public BigDecimal getBasePrice() { return basePrice; }
+    public void setBasePrice(BigDecimal value) { basePrice=value; }
+    public BigDecimal getTimeSurcharge() { return timeSurcharge; }
+    public void setTimeSurcharge(BigDecimal value) { timeSurcharge=value; }
+    public BigDecimal getHallSurcharge() { return hallSurcharge; }
+    public void setHallSurcharge(BigDecimal value) { hallSurcharge=value; }
+    public BigDecimal getSeatSurcharge() { return seatSurcharge; }
+    public void setSeatSurcharge(BigDecimal value) { seatSurcharge=value; }
+    public BigDecimal getStoredPrice() { return storedPrice; }
+    public void setStoredPrice(BigDecimal value) { storedPrice=value; }
+    public String getPriceFormatted() {
+        return price == null ? "Chưa có giá cơ bản" : java.text.NumberFormat.getNumberInstance(new java.util.Locale("vi","VN")).format(price) + " đ";
+    }
 }
