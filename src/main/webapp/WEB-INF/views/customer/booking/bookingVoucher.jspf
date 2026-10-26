@@ -1,0 +1,32 @@
+<%@ page pageEncoding="UTF-8" %>
+<%-- Ma giam gia + nut sua bap nuoc cho don dang giu ghe (dat ve online va ban tai quay).
+     Can co: booking, extrasAction (URL POST: /booking hoac /staff/counter), fnbUrl (trang chon bap nuoc). --%>
+<div class="mb-3">
+    <a href="${fnbUrl}" class="btn btn-outline-secondary btn-sm w-100">
+        🍿 ${empty booking.fnbLines ? 'Thêm bắp nước' : 'Sửa bắp nước'}
+    </a>
+</div>
+
+<div class="border rounded p-3 mb-3">
+    <h6 class="mb-2">🎟️ Mã giảm giá <small class="text-muted fw-normal">(chỉ áp dụng cho tiền vé)</small></h6>
+    <c:choose>
+        <c:when test="${not empty booking.voucherCode}">
+            <form method="post" action="${extrasAction}" class="d-flex justify-content-between align-items-center">
+                <input type="hidden" name="action" value="remove-voucher">
+                <input type="hidden" name="bookingId" value="${booking.id}">
+                <span>Đang dùng <strong><c:out value="${booking.voucherCode}"/></strong>:
+                    giảm <fmt:formatNumber value="${booking.discountAmount}" pattern="#,##0"/> đ</span>
+                <button type="submit" class="btn btn-outline-secondary btn-sm">Bỏ mã</button>
+            </form>
+        </c:when>
+        <c:otherwise>
+            <form method="post" action="${extrasAction}" class="d-flex gap-2">
+                <input type="hidden" name="action" value="apply-voucher">
+                <input type="hidden" name="bookingId" value="${booking.id}">
+                <input type="text" class="form-control form-control-sm text-uppercase" name="voucherCode"
+                       maxlength="50" placeholder="Nhập mã, ví dụ WELCOME10" required>
+                <button type="submit" class="btn btn-outline-primary btn-sm text-nowrap">Áp dụng</button>
+            </form>
+        </c:otherwise>
+    </c:choose>
+</div>

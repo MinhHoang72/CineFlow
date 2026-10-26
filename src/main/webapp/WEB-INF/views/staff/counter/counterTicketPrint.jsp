@@ -2,7 +2,7 @@
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <c:set var="pageTitle" value="In vé & hoá đơn" scope="request"/>
-<c:set var="pageStep" value="4" scope="request"/>
+<c:set var="pageStep" value="5" scope="request"/>
 <%@ include file="/WEB-INF/fragments/header.jspf" %>
 <c:set var="ctx" value="${pageContext.request.contextPath}"/>
 <c:set var="st" value="${booking.showtime}"/>

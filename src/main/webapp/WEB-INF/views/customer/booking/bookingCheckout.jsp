@@ -2,7 +2,7 @@
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <c:set var="pageTitle" value="Xác nhận & thanh toán" scope="request"/>
-<c:set var="pageStep" value="3" scope="request"/>
+<c:set var="pageStep" value="4" scope="request"/>
 <%@ include file="/WEB-INF/fragments/header.jspf" %>
 <c:set var="ctx" value="${pageContext.request.contextPath}"/>
 <c:set var="st" value="${booking.showtime}"/>
@@ -38,7 +38,7 @@
 
                 <c:choose>
                     <c:when test="${booking.holdActive}">
-                        <%@ include file="/WEB-INF/views/customer/booking/extras.jspf" %>
+                        <%@ include file="/WEB-INF/views/customer/booking/bookingVoucher.jspf" %>
                         <form method="post" action="${ctx}/payment/vnpay" class="mb-2">
                             <input type="hidden" name="bookingId" value="${booking.id}">
                             <button type="submit" class="btn btn-primary w-100 btn-lg">Thanh toán qua VNPay</button>

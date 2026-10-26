@@ -10,6 +10,9 @@
  *    duoi html[data-theme="light"], nen chi co hieu luc khi bat giao dien sang (js/theme.js).
  *  - Mau nhan (do, tim, xanh, vang...) giu nguyen; chu trang tren nen mau nhan giu nguyen.
  *  - Mau inline trong JSP (style="color:#f8fafc") duoc ghi de bang [style*=...] !important.
+ *  - Quy tac cua file CSS rieng tung trang (moi thu muc tru common/) chi ap tren trang co nap file do:
+ *    js/theme.js gan class cf-css-<duong-dan> (vd cf-css-auth-base) len <html> cho moi file CSS trang dang nap,
+ *    ke ca file @import. Khong co buoc nay, ".card button" cua trang dang nhap se ap len moi trang khac.
  */
 'use strict';
 const fs = require('fs');
@@ -20,6 +23,12 @@ const WEBAPP = path.join(ROOT, 'src', 'main', 'webapp');
 const CSS_DIR = path.join(WEBAPP, 'css');
 const OUT = path.join(CSS_DIR, 'common', 'theme-light.css');
 const SCOPE = 'html[data-theme="light"]';
+let scope = SCOPE;   // tien to cua file dang xu ly (them class cf-css-... voi file rieng tung trang)
+
+/** Class danh dau file CSS dang nap, phai khop voi cssClass() trong js/theme.js. */
+function cssClass(relPath) {
+    return 'cf-css-' + relPath.replace(/\.css$/i, '').replace(/[^a-z0-9]+/gi, '-').toLowerCase();
+}
 
 // ---------------------------------------------------------------- mau
 function parseColor(str) {
@@ -186,11 +195,11 @@ function parseDecls(body) {
 function scopeSelector(sel) {
     return splitTop(sel, ',').map(s => s.trim()).filter(Boolean).map(s => {
         if (s.includes('[data-theme')) return null;               // da viet tay cho tung giao dien: giu nguyen
-        if (s === ':root' || s === 'html') return SCOPE;
-        if (s.startsWith(':root')) return SCOPE + s.slice(5);
-        if (s.startsWith('html')) return SCOPE + s.slice(4);
+        if (s === ':root' || s === 'html') return scope;
+        if (s.startsWith(':root')) return scope + s.slice(5);
+        if (s.startsWith('html')) return scope + s.slice(4);
         if (s.startsWith('[data-bs-theme')) return null;          // khoi toi rieng cua Bootstrap (booking.css)
-        return SCOPE + ' ' + s;
+        return scope + ' ' + s;
     }).filter(Boolean).join(',\n');
 }
 
@@ -211,18 +220,7 @@ function keepOriginal(rule, decls) {
 let currentFile = '';
 const KEEP_ORIGINAL = s => /\b(eticket)\b/.test(s) || (OVER_IMAGE.test(s) && !currentFile.startsWith('auth/'));
 
-/** Quy tac viet tay bo sung cho nhung cho tu sinh khong xu ly duoc. */
-const EXTRA = `/* ---- bo sung viet tay ---- */
-/* .hero cua trang chu (home/index.css, nen den cho banner) trung ten voi cot chu o trang dang nhap */
-${SCOPE} .hero:not(#hero) {
-    background: transparent;
-}`;
-
 function convertRule(rule) {
-    // .hero cua trang auth: khong de anh huong banner trang chu (div#hero)
-    if (currentFile.startsWith('auth/') && /\.hero\b(?!-)/.test(rule.selector)) {
-        rule = { ...rule, selector: rule.selector.replace(/\.hero\b(?!-)/g, '.hero:not(#hero)') };
-    }
     // Tach selector gop: ve / hoa don (von nen trang) va khoi tren anh giu nguyen mau, phan con lai doi sang
     const sels = splitTop(rule.selector, ',').map(s => s.trim()).filter(Boolean);
     const keep = sels.filter(KEEP_ORIGINAL), conv = sels.filter(s => !KEEP_ORIGINAL(s));
@@ -310,12 +308,14 @@ const files = walk(CSS_DIR, ['.css']).filter(f => path.resolve(f) !== path.resol
 const parts = [];
 for (const f of files) {
     currentFile = path.relative(CSS_DIR, f).replace(/\\/g, '/');
+    scope = currentFile.startsWith('common/') ? SCOPE : `${SCOPE}.${cssClass(currentFile)}`;
     const rules = convertItems(parseBlocks(stripComments(fs.readFileSync(f, 'utf8'))));
     if (rules.length) parts.push(`/* ---- ${path.relative(CSS_DIR, f).replace(/\\/g, '/')} ---- */\n${rules.join('\n\n')}`);
 }
 // Khoi <style> viet thang trong JSP (vd views/report/header.jspf)
 for (const f of walk(WEBAPP, ['.jsp', '.jspf']).sort()) {
     currentFile = '';
+    scope = SCOPE;
     const src = fs.readFileSync(f, 'utf8');
     const css = [...src.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/gi)].map(m => m[1]).join('\n');
     if (!css.trim() || /<%|\$\{/.test(css)) continue;
@@ -331,5 +331,5 @@ const header = `/* =============================================================
    ========================================================================= */
 ${SCOPE} { color-scheme: light; }
 `;
-fs.writeFileSync(OUT, header + '\n' + parts.join('\n\n') + '\n\n/* ---- mau inline trong JSP ---- */\n' + inline.join('\n') + '\n\n' + EXTRA + '\n');
+fs.writeFileSync(OUT, header + '\n' + parts.join('\n\n') + '\n\n/* ---- mau inline trong JSP ---- */\n' + inline.join('\n') + '\n');
 console.log(`theme-light.css: ${files.length} file CSS, ${parts.reduce((n, p) => n + (p.match(/\{/g) || []).length, 0)} quy tac, ${inline.length} mau inline`);

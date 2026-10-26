@@ -2,7 +2,7 @@
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <c:set var="pageTitle" value="Bán vé tại quầy - Thu tiền" scope="request"/>
-<c:set var="pageStep" value="3" scope="request"/>
+<c:set var="pageStep" value="4" scope="request"/>
 <%@ include file="/WEB-INF/fragments/header.jspf" %>
 <c:set var="ctx" value="${pageContext.request.contextPath}"/>
 <c:set var="st" value="${booking.showtime}"/>
@@ -37,7 +37,7 @@
 
                 <c:choose>
                     <c:when test="${booking.holdActive}">
-                        <%@ include file="/WEB-INF/views/customer/booking/extras.jspf" %>
+                        <%@ include file="/WEB-INF/views/customer/booking/bookingVoucher.jspf" %>
                         <div class="border rounded p-3 mb-3">
                             <h6>💵 Thanh toán tiền mặt</h6>
                             <form method="post" action="${ctx}/staff/counter" id="cashForm">
