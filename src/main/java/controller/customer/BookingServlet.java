@@ -304,6 +304,7 @@ public class BookingServlet extends HttpServlet {
         if (booking.isHoldActive()) {
             req.setAttribute("extrasAction", req.getContextPath() + "/booking");
             req.setAttribute("fnbUrl", req.getContextPath() + "/booking?action=fnb&bookingId=" + booking.getId());
+            req.setAttribute("voucherOptions", extrasService.getVoucherOptions(booking));
         }
         req.getRequestDispatcher(VIEW_DIR + "booking/bookingCheckout.jsp").forward(req, resp);
     }

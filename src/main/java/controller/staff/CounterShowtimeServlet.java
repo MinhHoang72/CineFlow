@@ -191,6 +191,7 @@ public class CounterShowtimeServlet extends HttpServlet {
         if (booking.isHoldActive()) {
             req.setAttribute("extrasAction", ctx + "/staff/counter");
             req.setAttribute("fnbUrl", ctx + "/staff/counter?action=fnb&bookingId=" + booking.getId());
+            req.setAttribute("voucherOptions", extrasService.getVoucherOptions(booking));
         }
         req.getRequestDispatcher(VIEW_BASE + "counterCheckout.jsp").forward(req, resp);
     }

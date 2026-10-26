@@ -3,11 +3,15 @@ package service;
 import dao.BookingVoucherDAO;
 import dao.FnbOrderDAO;
 import model.dto.booking.FnbMenuItemDTO;
+import model.dto.booking.VoucherOptionDTO;
 import model.entity.Booking;
+import model.entity.Showtime;
 import model.entity.Voucher;
 import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +39,37 @@ public class BookingExtrasService {
     /** Menu bap nuoc dang ban tai rap cua suat chieu. */
     public List<FnbMenuItemDTO> getMenu(Booking booking) throws SQLException {
         return fnbOrderDAO.getMenu(booking.getShowtime().getCentreId());
+    }
+
+    /**
+     * Voucher khach chon duoc cho don nay (tru ma dang dung): ma dung duoc ngay truoc, giam nhieu truoc;
+     * sau do la ma chi con thieu gia tri don toi thieu (kem so tien ve con thieu).
+     */
+    public List<VoucherOptionDTO> getVoucherOptions(Booking booking) throws SQLException {
+        Showtime st = booking.getShowtime();
+        BigDecimal ticketTotal = booking.getSubTotal();
+        LocalDateTime now = LocalDateTime.now();
+        List<VoucherOptionDTO> options = new ArrayList<>();
+        for (Voucher v : voucherDAO.findAvailable(st.getCentreId(), st.getMovieId(),
+                st.getStartTime().toLocalDateTime().toLocalDate(), booking.getUserId())) {
+            if (v.getVoucherCode().equalsIgnoreCase(booking.getVoucherCode())) continue;
+            BigDecimal minimum = v.getMinimumOrderValue() == null ? BigDecimal.ZERO : v.getMinimumOrderValue();
+            BigDecimal missing = minimum.subtract(ticketTotal).max(BigDecimal.ZERO);
+            BigDecimal discount = BigDecimal.ZERO;
+            if (missing.signum() == 0) {
+                VoucherService.VoucherApplicationResult result = voucherService.applyVoucher(v, ticketTotal, now);
+                if (!result.isValid()) continue;
+                discount = result.getDiscountAmount().min(ticketTotal);
+            }
+            boolean percent = "PERCENT".equalsIgnoreCase(v.getDiscountType())
+                    || "PERCENTAGE".equalsIgnoreCase(v.getDiscountType());
+            options.add(new VoucherOptionDTO(v.getVoucherCode(), v.getVoucherName(), percent, v.getDiscountValue(),
+                    v.getMaximumDiscount(), minimum, v.getEndDate(), discount, missing));
+        }
+        options.sort(Comparator.comparing(VoucherOptionDTO::isUsable).reversed()
+                .thenComparing(VoucherOptionDTO::getDiscount, Comparator.reverseOrder())
+                .thenComparing(VoucherOptionDTO::getMissingAmount));
+        return options;
     }
 
     /**

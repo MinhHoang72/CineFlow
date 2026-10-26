@@ -4086,6 +4086,17 @@ html[data-theme="light"].cf-css-booking-booking .cf-booking .legend .seat-taken 
     border-color: #e2e8f0;
 }
 
+html[data-theme="light"].cf-css-booking-booking .cf-booking .voucher-option {
+    border: 1px dashed rgba(255, 40, 85, 0.5);
+    border-radius: 10px;
+    background: rgba(255, 40, 85, 0.06);
+}
+
+html[data-theme="light"].cf-css-booking-booking .cf-booking .voucher-option.is-locked {
+    border-color: rgba(15, 23, 42, 0.16);
+    background: transparent;
+}
+
 html[data-theme="light"].cf-css-booking-booking .cf-booking .eticket {
     background: #fff;
     color: #111827;
