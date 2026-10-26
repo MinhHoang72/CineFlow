@@ -15,6 +15,7 @@ public class ShowtimeSeatMatrixDTO {
     private String seatType;           // STANDARD, VIP, SWEETBOX
     private String availabilityStatus; // AVAILABLE, HELD, BOOKED, MAINTENANCE
     private BigDecimal price;
+    private String displayLabel;
 
     public ShowtimeSeatMatrixDTO() {
     }
@@ -32,6 +33,17 @@ public class ShowtimeSeatMatrixDTO {
 
     public String getLabel() {
         return (seatRow != null ? seatRow : "") + seatNumber;
+    }
+
+    public String getDisplayLabel() { return displayLabel != null ? displayLabel : getLabel(); }
+    public void setDisplayLabel(String displayLabel) { this.displayLabel = displayLabel; }
+
+    public String getAvailabilityLabel() {
+        if ("AVAILABLE".equals(availabilityStatus)) return "Trống";
+        if ("HELD".equals(availabilityStatus)) return "Đang giữ";
+        if ("BOOKED".equals(availabilityStatus)) return "Đã đặt";
+        if ("MAINTENANCE".equals(availabilityStatus)) return "Bảo trì";
+        return "Lối đi / Trống";
     }
 
     public String getStatusBadgeClass() {
