@@ -98,11 +98,11 @@
                                 <span>Tra cứu suất chiếu đang mở bán trong ngày, chọn ghế ngồi trực tiếp theo sơ đồ rạp cho khách hàng.</span>
                             </a>
 
-                            <div class="cf-dashboard-link" style="opacity: 0.95;">
+                            <a class="cf-dashboard-link" href="${pageContext.request.contextPath}/staff/fnb-sale" title="Mở giao diện bán bắp nước lẻ">
                                 <span class="cf-feature-tag tag-amber">F&B Concessions</span>
-                                <strong style="color: #fbbf24; font-size: 15px;">🍿 Đặt Bắp nước & Combo F&B</strong>
-                                <span>Danh mục combo bắp rang bơ (Caramel, Phô mai), nước giải khát và snack ưu đãi kèm vé xem phim.</span>
-                            </div>
+                                <strong style="color: #fbbf24; font-size: 15px;">🍿 Bán bắp nước lẻ (F&B Sales)</strong>
+                                <span>Bán combo bắp rang bơ, nước giải khát và snack cho khách tại quầy, thu tiền mặt hoặc VNPay và in hóa đơn.</span>
+                            </a>
 
                             <div class="cf-dashboard-link" style="opacity: 0.95;">
                                 <span class="cf-feature-tag tag-emerald">Thu ngân</span>

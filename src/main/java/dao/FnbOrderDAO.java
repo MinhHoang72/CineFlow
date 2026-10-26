@@ -2,6 +2,7 @@ package dao;
 
 import model.dto.booking.FnbLineDTO;
 import model.dto.booking.FnbMenuItemDTO;
+import model.dto.booking.FnbSaleDTO;
 import utils.DBContext;
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -17,10 +18,13 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Bap nuoc kem don dat ve (FnbOrders / FnbOrderItems gan BookingID).
+ * Bap nuoc kem don dat ve (FnbOrders / FnbOrderItems gan BookingID) va ban bap nuoc le tai quay (BookingID = NULL).
  * Gio hang luu o FnbOrders PENDING; thanh toan xong -> PREPARING va tru ton kho; huy don -> CANCELLED.
  */
 public class FnbOrderDAO {
+
+    /** Don bap nuoc le chua thanh toan qua so phut nay thi tu huy (khach bo di, VNPay khong hoan tat). */
+    public static final int STANDALONE_PENDING_MINUTES = 15;
 
     /** Mon le dang ban tai rap: ACTIVE, con hang trong kho cua rap. */
     private static final String MENU_ITEMS =
@@ -108,18 +112,7 @@ public class FnbOrderDAO {
             try {
                 Map<String, FnbMenuItemDTO> menu = new HashMap<>();
                 for (FnbMenuItemDTO m : getMenu(conn, centreId)) menu.put(m.getKey(), m);
-
-                Map<String, Integer> lines = new LinkedHashMap<>();
-                for (Map.Entry<String, Integer> e : cart.entrySet()) {
-                    int qty = e.getValue();
-                    if (qty == 0) continue;
-                    FnbMenuItemDTO item = menu.get(e.getKey());
-                    if (item == null) throw new IllegalArgumentException("Có món vừa hết hàng hoặc ngừng bán, vui lòng chọn lại.");
-                    if (qty < 0 || qty > FnbMenuItemDTO.MAX_PER_LINE) {
-                        throw new IllegalArgumentException("Số lượng mỗi món từ 0 đến " + FnbMenuItemDTO.MAX_PER_LINE + ".");
-                    }
-                    lines.put(e.getKey(), qty);
-                }
+                Map<String, Integer> lines = validLines(cart, menu);
                 checkStock(conn, centreId, lines, menu);
 
                 deletePendingOrder(conn, bookingId);
@@ -132,6 +125,139 @@ public class FnbOrderDAO {
                 throw e;
             }
         }
+    }
+
+    /**
+     * Ban bap nuoc le tai quay: tao don COUNTER khong kem ve (BookingID = NULL), khach vang lai (UserID = NULL).
+     * @return FnbOrderID
+     * @throws IllegalArgumentException chua chon mon / mon khong con ban / vuot ton kho
+     */
+    public int createStandaloneOrder(int centreId, Map<String, Integer> cart) throws SQLException {
+        try (Connection conn = DBContext.getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                expireStandalonePending(conn);
+                Map<String, FnbMenuItemDTO> menu = new HashMap<>();
+                for (FnbMenuItemDTO m : getMenu(conn, centreId)) menu.put(m.getKey(), m);
+                Map<String, Integer> lines = validLines(cart, menu);
+                if (lines.isEmpty()) throw new IllegalArgumentException("Bạn chưa chọn món nào.");
+                checkStock(conn, centreId, lines, menu);
+                int orderId = insertOrder(conn, null, centreId, null, "COUNTER", lines, menu);
+                conn.commit();
+                return orderId;
+            } catch (SQLException | RuntimeException e) {
+                conn.rollback();
+                throw e;
+            }
+        }
+    }
+
+    /** Don bap nuoc le (khong kem ve) kem cac dong mon, null neu khong co. Huy truoc cac don cho qua han. */
+    public FnbSaleDTO getStandaloneOrder(int orderId) throws SQLException {
+        try (Connection conn = DBContext.getConnection()) {
+            expireStandalonePending(conn);
+            FnbSaleDTO sale;
+            try (PreparedStatement ps = conn.prepareStatement(
+                    "SELECT o.FnbOrderID, o.OrderCode, o.CentreID, c.CentreName, o.OrderStatus, o.TotalAmount, o.CreatedAt, "
+                  + "  DATEDIFF(SECOND, SYSDATETIME(), DATEADD(MINUTE, ?, o.CreatedAt)) AS SecondsLeft "
+                  + "FROM FnbOrders o JOIN Centres c ON c.CentreID = o.CentreID "
+                  + "WHERE o.FnbOrderID = ? AND o.BookingID IS NULL")) {
+                ps.setInt(1, STANDALONE_PENDING_MINUTES);
+                ps.setInt(2, orderId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (!rs.next()) return null;
+                    sale = new FnbSaleDTO(rs.getInt("FnbOrderID"), rs.getString("OrderCode"), rs.getInt("CentreID"),
+                            rs.getString("CentreName"), rs.getString("OrderStatus"), rs.getBigDecimal("TotalAmount"),
+                            rs.getTimestamp("CreatedAt"), Math.max(0, rs.getLong("SecondsLeft")));
+                }
+            }
+            sale.setLines(getOrderLines(conn, orderId));
+            return sale;
+        }
+    }
+
+    /** Huy don bap nuoc le chua thanh toan. @return false neu don khong con o trang thai cho thanh toan */
+    public boolean cancelStandaloneOrder(int orderId) throws SQLException {
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(
+                     "UPDATE FnbOrders SET OrderStatus = 'CANCELLED', UpdatedAt = SYSDATETIME() "
+                   + "WHERE FnbOrderID = ? AND BookingID IS NULL AND OrderStatus = 'PENDING'")) {
+            ps.setInt(1, orderId);
+            boolean cancelled = ps.executeUpdate() > 0;
+            if (cancelled) {
+                try (PreparedStatement pay = conn.prepareStatement(
+                        "UPDATE Payments SET PaymentStatus = 'CANCELLED' WHERE FnbOrderID = ? AND PaymentStatus = 'PENDING'")) {
+                    pay.setInt(1, orderId);
+                    pay.executeUpdate();
+                }
+            }
+            return cancelled;
+        }
+    }
+
+    /**
+     * Don bap nuoc le da thanh toan -> PREPARING va tru ton kho.
+     * Gom ca don CANCELLED: khach tra VNPay muon sau khi don het han cho thanh toan.
+     * @return false neu don da duoc xac nhan truoc do
+     */
+    static boolean confirmStandalone(Connection conn, int orderId) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "UPDATE FnbOrders SET OrderStatus = 'PREPARING', UpdatedAt = SYSDATETIME() "
+              + "WHERE FnbOrderID = ? AND BookingID IS NULL AND OrderStatus IN ('PENDING', 'CANCELLED')")) {
+            ps.setInt(1, orderId);
+            if (ps.executeUpdate() == 0) return false;
+        }
+        deductStock(conn, "o.FnbOrderID = ?", orderId);
+        return true;
+    }
+
+    /** Huy cac don bap nuoc le cho thanh toan qua STANDALONE_PENDING_MINUTES, giao dich dang cho -> TIMEOUT. */
+    static void expireStandalonePending(Connection conn) throws SQLException {
+        String stale = "SELECT FnbOrderID FROM FnbOrders WHERE BookingID IS NULL AND OrderStatus = 'PENDING' "
+                     + "AND CreatedAt <= DATEADD(MINUTE, -" + STANDALONE_PENDING_MINUTES + ", SYSDATETIME())";
+        try (Statement st = conn.createStatement()) {
+            st.executeUpdate("UPDATE Payments SET PaymentStatus = 'TIMEOUT' "
+                    + "WHERE PaymentStatus = 'PENDING' AND FnbOrderID IN (" + stale + ")");
+            st.executeUpdate("UPDATE FnbOrders SET OrderStatus = 'CANCELLED', UpdatedAt = SYSDATETIME() "
+                    + "WHERE FnbOrderID IN (" + stale + ")");
+        }
+    }
+
+    /** Cac dong mon cua mot don bap nuoc. */
+    private static List<FnbLineDTO> getOrderLines(Connection conn, int orderId) throws SQLException {
+        String sql = "SELECT oi.FnbItemID, oi.ComboID, COALESCE(i.ItemName, c.ComboName) AS Name, oi.Quantity, oi.UnitPrice "
+                   + "FROM FnbOrderItems oi "
+                   + "LEFT JOIN FnbItems i ON i.FnbItemID = oi.FnbItemID LEFT JOIN FnbCombos c ON c.ComboID = oi.ComboID "
+                   + "WHERE oi.FnbOrderID = ? "
+                   + "ORDER BY CASE WHEN oi.ComboID IS NULL THEN 1 ELSE 0 END, Name";
+        List<FnbLineDTO> lines = new ArrayList<>();
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, orderId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    int comboId = rs.getInt("ComboID");
+                    String key = rs.wasNull() ? "I" + rs.getInt("FnbItemID") : "C" + comboId;
+                    lines.add(new FnbLineDTO(key, rs.getString("Name"), rs.getInt("Quantity"), rs.getBigDecimal("UnitPrice")));
+                }
+            }
+        }
+        return lines;
+    }
+
+    /** Gio hang hop le: bo mon so luong 0; mon phai con trong menu, so luong 1..MAX_PER_LINE. */
+    private static Map<String, Integer> validLines(Map<String, Integer> cart, Map<String, FnbMenuItemDTO> menu) {
+        Map<String, Integer> lines = new LinkedHashMap<>();
+        for (Map.Entry<String, Integer> e : cart.entrySet()) {
+            int qty = e.getValue();
+            if (qty == 0) continue;
+            FnbMenuItemDTO item = menu.get(e.getKey());
+            if (item == null) throw new IllegalArgumentException("Có món vừa hết hàng hoặc ngừng bán, vui lòng chọn lại.");
+            if (qty < 0 || qty > FnbMenuItemDTO.MAX_PER_LINE) {
+                throw new IllegalArgumentException("Số lượng mỗi món từ 0 đến " + FnbMenuItemDTO.MAX_PER_LINE + ".");
+            }
+            lines.put(e.getKey(), qty);
+        }
+        return lines;
     }
 
     /** Tong nhu cau theo mon (mon le + thanh phan combo) phai khong vuot ton kho cua rap. */
@@ -181,7 +307,8 @@ public class FnbOrderDAO {
         }
     }
 
-    private static void insertOrder(Connection conn, int bookingId, int centreId, Integer userId, String orderType,
+    /** @param bookingId null = don bap nuoc le khong kem ve. @return FnbOrderID */
+    private static int insertOrder(Connection conn, Integer bookingId, int centreId, Integer userId, String orderType,
             Map<String, Integer> lines, Map<String, FnbMenuItemDTO> menu) throws SQLException {
         BigDecimal total = BigDecimal.ZERO;
         for (Map.Entry<String, Integer> e : lines.entrySet()) {
@@ -191,7 +318,8 @@ public class FnbOrderDAO {
         try (PreparedStatement ps = conn.prepareStatement(
                 "INSERT INTO FnbOrders (BookingID, CentreID, UserID, OrderCode, OrderType, OrderStatus, TotalAmount) "
               + "VALUES (?, ?, ?, ?, ?, 'PENDING', ?)", Statement.RETURN_GENERATED_KEYS)) {
-            ps.setInt(1, bookingId);
+            if (bookingId == null) ps.setNull(1, Types.INTEGER);
+            else ps.setInt(1, bookingId);
             ps.setInt(2, centreId);
             if (userId == null) ps.setNull(3, Types.INTEGER);
             else ps.setInt(3, userId);
@@ -222,6 +350,7 @@ public class FnbOrderDAO {
             }
             ps.executeBatch();
         }
+        return orderId;
     }
 
     /**
@@ -238,19 +367,24 @@ public class FnbOrderDAO {
             moved = ps.executeUpdate();
         }
         if (moved == 0) return;
+        deductStock(conn, "o.BookingID = ?", bookingId);
+    }
+
+    /** Tru ton kho theo cac don PREPARING thoa dieu kien (mon le + thanh phan combo), khong xuong duoi 0. */
+    private static void deductStock(Connection conn, String orderFilter, int id) throws SQLException {
         String demand = "SELECT o.CentreID, x.FnbItemID, SUM(x.Qty) AS Qty FROM FnbOrders o JOIN ("
                       + "  SELECT FnbOrderID, FnbItemID, Quantity AS Qty FROM FnbOrderItems WHERE FnbItemID IS NOT NULL "
                       + "  UNION ALL "
                       + "  SELECT oi.FnbOrderID, ci.FnbItemID, oi.Quantity * ci.Quantity FROM FnbOrderItems oi "
                       + "  JOIN ComboItems ci ON ci.ComboID = oi.ComboID"
-                      + ") x ON x.FnbOrderID = o.FnbOrderID WHERE o.BookingID = ? AND o.OrderStatus = 'PREPARING' "
+                      + ") x ON x.FnbOrderID = o.FnbOrderID WHERE " + orderFilter + " AND o.OrderStatus = 'PREPARING' "
                       + "GROUP BY o.CentreID, x.FnbItemID";
         try (PreparedStatement ps = conn.prepareStatement(
                 "UPDATE inv SET StockQuantity = CASE WHEN inv.StockQuantity - d.Qty <= 0 THEN 0 ELSE inv.StockQuantity - d.Qty END, "
               + "  IsAvailable = CASE WHEN inv.StockQuantity - d.Qty <= 0 THEN 0 ELSE inv.IsAvailable END, "
               + "  UpdatedAt = SYSDATETIME() "
               + "FROM CentreFnbInventory inv JOIN (" + demand + ") d ON d.CentreID = inv.CentreID AND d.FnbItemID = inv.FnbItemID")) {
-            ps.setInt(1, bookingId);
+            ps.setInt(1, id);
             ps.executeUpdate();
         }
     }

@@ -338,8 +338,8 @@ public class CounterShowtimeServlet extends HttpServlet {
         return booking;
     }
 
-    /** Chỉ nhân viên bán vé (TICKET_SALES_STAFF) đã được gán chi nhánh mới bán vé tại quầy. */
-    private static User requireCounterStaff(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+    /** Chỉ nhân viên bán vé (TICKET_SALES_STAFF) đã được gán chi nhánh mới bán vé tại quầy (dùng chung với bán bắp nước lẻ). */
+    static User requireCounterStaff(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         User user = WebUtil.requireUser(req, resp);
         if (user == null) return null;
         if (!WebUtil.isSalesStaff(user) || user.getCentreId() == null) {
@@ -350,7 +350,7 @@ public class CounterShowtimeServlet extends HttpServlet {
     }
 
     /** "200.000", "200,000 đ", "200000" -> 200000; null nếu không hợp lệ. */
-    private static BigDecimal parseMoney(String value) {
+    static BigDecimal parseMoney(String value) {
         if (value == null) return null;
         String digits = value.replaceAll("[^0-9]", "");
         if (digits.isEmpty() || digits.length() > 12) return null;

@@ -58,13 +58,19 @@
 
     <% if ("MANAGER".equalsIgnoreCase(cfRole) || "TICKET_SALES_STAFF".equalsIgnoreCase(cfRole) || "STAFF".equalsIgnoreCase(cfRole)) { %>
     <div class="cf-sidebar-section">BÁN VÉ</div>
+    <%-- URL that truoc khi servlet forward sang JSP (getRequestURI tra ve duong dan file JSP) --%>
+    <% Object cfFwd = request.getAttribute("jakarta.servlet.forward.request_uri");
+       String cfSalesUrl = cfFwd != null ? cfFwd.toString() : cfUri; %>
     <nav class="cf-sidebar-nav">
         <% if (!"MANAGER".equalsIgnoreCase(cfRole)) { %>
-        <a class="<%= cfUri.contains("/staff/counter") ? "active" : "" %>" href="<%= cfPath %>/staff/counter">
+        <a class="<%= cfSalesUrl.contains("/staff/counter") ? "active" : "" %>" href="<%= cfPath %>/staff/counter">
             <span class="icon">🎟</span>Bán vé tại quầy
         </a>
+        <a class="<%= cfSalesUrl.contains("/staff/fnb-sale") ? "active" : "" %>" href="<%= cfPath %>/staff/fnb-sale">
+            <span class="icon">🍿</span>Bán bắp nước lẻ
+        </a>
         <% } %>
-        <a class="<%= cfUri.contains("/staff/payments") ? "active" : "" %>" href="<%= cfPath %>/staff/payments">
+        <a class="<%= cfSalesUrl.contains("/staff/payments") ? "active" : "" %>" href="<%= cfPath %>/staff/payments">
             <span class="icon">₫</span>Theo dõi giao dịch
         </a>
     </nav>

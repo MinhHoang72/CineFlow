@@ -89,12 +89,21 @@ public class PaymentDAO {
 
     /** Tat ca giao dich cua don, cu nhat truoc. */
     public List<PaymentTransaction> getTransactions(int bookingId) throws SQLException {
+        return transactions("BookingID", bookingId);
+    }
+
+    /** Tat ca giao dich cua don bap nuoc le, cu nhat truoc. */
+    public List<PaymentTransaction> getFnbTransactions(int orderId) throws SQLException {
+        return transactions("FnbOrderID", orderId);
+    }
+
+    private List<PaymentTransaction> transactions(String column, int id) throws SQLException {
         String sql = "SELECT PaymentID, TransactionCode, PaymentMethod, Amount, PaymentStatus, CreatedAt, PaidAt, CashReceived "
-                   + "FROM Payments WHERE BookingID = ? ORDER BY PaymentID";
+                   + "FROM Payments WHERE " + column + " = ? ORDER BY PaymentID";
         List<PaymentTransaction> list = new ArrayList<>();
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, bookingId);
+            ps.setInt(1, id);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     list.add(new PaymentTransaction(rs.getInt("PaymentID"), rs.getString("TransactionCode"),
@@ -214,16 +223,20 @@ public class PaymentDAO {
      */
     public List<Payment> getTransactionsForTracking(Integer centreId, String status, String method, int days)
             throws SQLException {
+        // Gom ca giao dich ban bap nuoc le (FnbOrderID, khong co BookingID): BookingType = 'FNB'
         String sql = "SELECT TOP 300 p.PaymentID, p.TransactionCode, p.PaymentMethod, p.Amount, p.PaymentStatus, "
-                   + "  p.CreatedAt, p.PaidAt, b.BookingID, b.BookingCode, b.BookingType, b.BookingStatus, "
-                   + "  u.FullName, u.Phone, br.CentreName, m.Title "
+                   + "  p.CreatedAt, p.PaidAt, COALESCE(b.BookingID, fo.FnbOrderID) AS BookingID, "
+                   + "  COALESCE(b.BookingCode, fo.OrderCode) AS BookingCode, COALESCE(b.BookingType, 'FNB') AS BookingType, "
+                   + "  COALESCE(b.BookingStatus, fo.OrderStatus) AS BookingStatus, "
+                   + "  u.FullName, u.Phone, br.CentreName, COALESCE(m.Title, N'Bán bắp nước lẻ') AS Title "
                    + "FROM Payments p "
-                   + "JOIN Bookings b ON b.BookingID = p.BookingID "
+                   + "LEFT JOIN Bookings b ON b.BookingID = p.BookingID "
+                   + "LEFT JOIN FnbOrders fo ON fo.FnbOrderID = p.FnbOrderID "
                    + "LEFT JOIN Users u ON u.UserID = b.UserID "
-                   + "JOIN Showtimes s ON s.ShowtimeID = b.ShowtimeID "
-                   + "JOIN Movies m ON m.MovieID = s.MovieID "
-                   + "JOIN Halls h ON h.HallID = s.HallID "
-                   + "JOIN Centres br ON br.CentreID = h.CentreID "
+                   + "LEFT JOIN Showtimes s ON s.ShowtimeID = b.ShowtimeID "
+                   + "LEFT JOIN Movies m ON m.MovieID = s.MovieID "
+                   + "LEFT JOIN Halls h ON h.HallID = s.HallID "
+                   + "JOIN Centres br ON br.CentreID = COALESCE(h.CentreID, fo.CentreID) "
                    + "WHERE p.CreatedAt > DATEADD(DAY, ?, SYSDATETIME()) "
                    + "  AND (? IS NULL OR br.CentreID = ?) "
                    + "  AND (? IS NULL OR p.PaymentStatus = ?) "
@@ -232,6 +245,7 @@ public class PaymentDAO {
         List<Payment> list = new ArrayList<>();
         try (Connection conn = DBContext.getConnection()) {
             BookingDAO.releaseExpiredHolds(conn);
+            FnbOrderDAO.expireStandalonePending(conn);
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setInt(1, -days);
                 setNullableInt(ps, 2, centreId);
@@ -297,6 +311,118 @@ public class PaymentDAO {
             }
         }
         return list;
+    }
+
+    // ---------------------------------------------------------------- ban bap nuoc le tai quay
+
+    /** Giao dich VNPay cua don bap nuoc le (FnbOrderID co gia tri, BookingID = NULL). */
+    public record FnbVnpayRef(int paymentId, int orderId, BigDecimal amount, String status) {}
+
+    /** Giao dich tien mat cho don bap nuoc le. @return PaymentID */
+    public int createFnbCashPayment(int orderId, String orderCode, BigDecimal amount, BigDecimal cashReceived)
+            throws SQLException {
+        try (Connection conn = DBContext.getConnection()) {
+            return insertFnbPending(conn, orderId, orderCode + "-CASH-" + System.currentTimeMillis(), "CASH",
+                    amount, cashReceived);
+        }
+    }
+
+    /** Giao dich VNPay moi cho don bap nuoc le, huy giao dich VNPay dang cho truoc do. @return vnp_TxnRef */
+    public String createFnbVnpayPayment(int orderId, String orderCode, BigDecimal amount) throws SQLException {
+        String txnRef = orderCode + System.currentTimeMillis();
+        try (Connection conn = DBContext.getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                update(conn, "UPDATE Payments SET PaymentStatus = 'CANCELLED' "
+                           + "WHERE FnbOrderID = ? AND PaymentMethod = 'QR' AND PaymentStatus = 'PENDING'", orderId);
+                insertFnbPending(conn, orderId, txnRef, "QR", amount, null);
+                conn.commit();
+                return txnRef;
+            } catch (SQLException | RuntimeException e) {
+                conn.rollback();
+                throw e;
+            }
+        }
+    }
+
+    /** Giao dich VNPay cua don bap nuoc le theo vnp_TxnRef, null neu khong phai. */
+    public FnbVnpayRef findFnbVnpay(String txnRef) throws SQLException {
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(
+                     "SELECT PaymentID, FnbOrderID, Amount, PaymentStatus FROM Payments "
+                   + "WHERE TransactionCode = ? AND PaymentMethod = 'QR' AND FnbOrderID IS NOT NULL")) {
+            ps.setString(1, txnRef);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? new FnbVnpayRef(rs.getInt("PaymentID"), rs.getInt("FnbOrderID"),
+                        rs.getBigDecimal("Amount"), rs.getString("PaymentStatus")) : null;
+            }
+        }
+    }
+
+    /**
+     * Ghi nhan da thu tien don bap nuoc le (tien mat, hoac VNPay bao thanh cong): giao dich PAID,
+     * don -> PREPARING va tru ton kho. Goi lap lai van an toan.
+     * @param centreId rap cua nhan vien; null = moi rap (VNPay)
+     * @return SUCCESS, ALREADY_PAID hoac NOT_FOUND
+     */
+    public Status confirmFnbPaid(int paymentId, Integer centreId) throws SQLException {
+        try (Connection conn = DBContext.getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                int orderId;
+                try (PreparedStatement ps = conn.prepareStatement(
+                        "SELECT p.FnbOrderID, p.PaymentStatus FROM Payments p WITH (UPDLOCK, ROWLOCK) "
+                      + "JOIN FnbOrders o ON o.FnbOrderID = p.FnbOrderID "
+                      + "WHERE p.PaymentID = ? AND o.BookingID IS NULL AND (? IS NULL OR o.CentreID = ?)")) {
+                    ps.setInt(1, paymentId);
+                    setNullableInt(ps, 2, centreId);
+                    setNullableInt(ps, 3, centreId);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (!rs.next()) {
+                            conn.rollback();
+                            return Status.NOT_FOUND;
+                        }
+                        if ("PAID".equals(rs.getString("PaymentStatus"))) {
+                            conn.rollback();
+                            return Status.ALREADY_PAID;
+                        }
+                        orderId = rs.getInt("FnbOrderID");
+                    }
+                }
+                update(conn, "UPDATE Payments SET PaymentStatus = 'PAID', PaidAt = SYSDATETIME() WHERE PaymentID = ?", paymentId);
+                FnbOrderDAO.confirmStandalone(conn, orderId);
+                try (PreparedStatement ps = conn.prepareStatement(
+                        "UPDATE Payments SET PaymentStatus = 'CANCELLED' "
+                      + "WHERE FnbOrderID = ? AND PaymentID <> ? AND PaymentStatus IN ('PENDING', 'TIMEOUT')")) {
+                    ps.setInt(1, orderId);
+                    ps.setInt(2, paymentId);
+                    ps.executeUpdate();
+                }
+                conn.commit();
+                return Status.SUCCESS;
+            } catch (SQLException | RuntimeException e) {
+                conn.rollback();
+                throw e;
+            }
+        }
+    }
+
+    private static int insertFnbPending(Connection conn, int orderId, String transactionCode, String method,
+            BigDecimal amount, BigDecimal cashReceived) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "INSERT INTO Payments (FnbOrderID, TransactionCode, PaymentMethod, Amount, PaymentStatus, CashReceived) "
+              + "VALUES (?, ?, ?, ?, 'PENDING', ?)", Statement.RETURN_GENERATED_KEYS)) {
+            ps.setInt(1, orderId);
+            ps.setString(2, transactionCode);
+            ps.setString(3, method);
+            ps.setBigDecimal(4, amount);
+            ps.setBigDecimal(5, cashReceived);
+            ps.executeUpdate();
+            try (ResultSet keys = ps.getGeneratedKeys()) {
+                keys.next();
+                return keys.getInt(1);
+            }
+        }
     }
 
     private static void setNullableInt(PreparedStatement ps, int index, Integer value) throws SQLException {

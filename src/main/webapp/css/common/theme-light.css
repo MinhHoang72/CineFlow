@@ -8360,6 +8360,22 @@ html[data-theme="light"] .ck-result.bad {
     color: #991b1b;
 }
 
+/* ---- <style> trong WEB-INF/views/staff/counter/fnbSale.jsp ---- */
+html[data-theme="light"] .fnb-item {
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
+html[data-theme="light"] .fnb-item:last-child {
+    border-bottom: 0;
+}
+
+/* ---- <style> trong WEB-INF/views/staff/counter/fnbSaleReceipt.jsp ---- */
+html[data-theme="light"] .eticket {
+    border: 2px dashed #333;
+    border-radius: 10px;
+    background: #fff;
+}
+
 /* ---- mau inline trong JSP ---- */
 html[data-theme="light"] [style*="color: #F8FAFC"] { color: #0f172a !important; }
 html[data-theme="light"] [style*="background: rgba(255, 255, 255, 0.04)"] { background: rgba(15, 23, 42, 0.044) !important; }
