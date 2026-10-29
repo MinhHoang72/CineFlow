@@ -302,7 +302,9 @@ function inlineRules() {
             for (const part of m[1].split(';')) {
                 const k = part.indexOf(':');
                 if (k < 0) continue;
-                const prop = part.slice(0, k).trim(), value = part.slice(k + 1).trim();
+                const prop = part.slice(0, k).trim();
+                // Output adds !important once; strip the inline priority from the value first.
+                const value = part.slice(k + 1).trim().replace(/\s*!important\s*$/i, '').trim();
                 if (!prop || /<%|\$\{/.test(value)) continue;
                 const role = roleOf(prop);
                 if (!role || role === 'auto') continue;
