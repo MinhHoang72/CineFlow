@@ -8334,7 +8334,7 @@ html[data-theme="light"] [style*="border: 1px solid #334155"] { border: 1px soli
 html[data-theme="light"] [style*="background: #1e293b"] { background: #f1f5f9 !important; }
 html[data-theme="light"] [style*="color: #f8fafc"] { color: #0f172a !important; }
 html[data-theme="light"] [style*="color: #fff"] { color: #0f172a !important; }
-html[data-theme="light"] [style*="color: #f59e0b !important"] { color: #334155 !important !important; }
+html[data-theme="light"] [style*="color: #f59e0b !important"] { color: #334155 !important; }
 html[data-theme="light"] [style*="color: #f59e0b"] { color: #334155 !important; }
 html[data-theme="light"] [style*="color: #e2e8f0"] { color: #0f172a !important; }
 html[data-theme="light"] [style*="color: #cbd5e1"] { color: #1e293b !important; }
