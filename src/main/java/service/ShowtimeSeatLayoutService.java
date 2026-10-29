@@ -49,4 +49,14 @@ public class ShowtimeSeatLayoutService {
         }
         return result;
     }
+    public void attachPrices(Map<String,List<ShowtimeSeatMatrixDTO>> rows,
+            Map<Integer,ShowtimeSeatMatrixDTO> prices) {
+        for (List<ShowtimeSeatMatrixDTO> row : rows.values()) for (ShowtimeSeatMatrixDTO seat : row) {
+            ShowtimeSeatMatrixDTO price=prices.get(seat.getSeatId());
+            if (price==null) continue;
+            seat.setBasePrice(price.getBasePrice()); seat.setTimeSurcharge(price.getTimeSurcharge());
+            seat.setHallSurcharge(price.getHallSurcharge()); seat.setSeatSurcharge(price.getSeatSurcharge());
+            seat.setPrice(price.getPrice()); seat.setStoredPrice(price.getStoredPrice());
+        }
+    }
 }

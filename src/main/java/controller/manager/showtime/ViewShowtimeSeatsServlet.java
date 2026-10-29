@@ -41,8 +41,11 @@ public class ViewShowtimeSeatsServlet
             if (showtime != null) {
                 List<SeatAvailability> seats = seatDAO.getSeatAvailability(showtimeId);
                 request.setAttribute("seats", seats);
-                request.setAttribute("seatRows", new ShowtimeSeatLayoutService().buildRows(
-                        seatDAO.getSeatConfigsByHall(showtime.getHallId()), seats));
+                ShowtimeSeatLayoutService layoutService = new ShowtimeSeatLayoutService();
+                java.util.Map<String,List<model.dto.showtime.ShowtimeSeatMatrixDTO>> rows = layoutService.buildRows(
+                        seatDAO.getSeatConfigsByHall(showtime.getHallId()), seats);
+                layoutService.attachPrices(rows,seatDAO.getShowtimeSeatPrices(showtimeId));
+                request.setAttribute("seatRows", rows);
             }
 
             request.getRequestDispatcher(

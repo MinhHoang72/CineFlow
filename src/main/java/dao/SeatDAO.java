@@ -79,6 +79,45 @@ public class SeatDAO {
         return base.add(surcharges.getOrDefault(seatType, BigDecimal.ZERO));
     }
 
+    /** Read-only breakdown using the same period boundaries and surcharge sums as booking. */
+    public Map<Integer, model.dto.showtime.ShowtimeSeatMatrixDTO> getShowtimeSeatPrices(int showtimeId) throws SQLException {
+        String sql = "SELECT se.SeatID, bp.BasePrice, ISNULL(tp.Surcharge,0) TimeAmount, "
+                + "ISNULL(hp.Amount,0) HallAmount, ISNULL(sp.Amount,0) SeatAmount, saved.Price SavedPrice "
+                + "FROM Showtimes sh JOIN Halls h ON h.HallID=sh.HallID JOIN Seats se ON se.HallID=h.HallID "
+                + "OUTER APPLY (SELECT TOP 1 BasePrice FROM CentrePricing p WHERE p.CentreID=h.CentreID "
+                + "AND p.EffectiveFrom<=sh.StartTime AND (p.EffectiveTo IS NULL OR p.EffectiveTo>sh.StartTime) ORDER BY p.EffectiveFrom DESC) bp "
+                + "OUTER APPLY (SELECT TOP 1 Surcharge FROM TimeSlotPricing p WHERE p.CentreID=h.CentreID "
+                + "AND CAST(sh.StartTime AS TIME) BETWEEN p.StartTime AND p.EndTime "
+                + "AND p.EffectiveFrom<=sh.StartTime AND (p.EffectiveTo IS NULL OR p.EffectiveTo>sh.StartTime) ORDER BY p.StartTime DESC) tp "
+                + "OUTER APPLY (SELECT SUM(Amount) Amount FROM Surcharges p WHERE p.SurchargeType='HALL' AND p.TargetValue=h.HallType "
+                + "AND p.EffectiveFrom<=sh.StartTime AND (p.EffectiveTo IS NULL OR p.EffectiveTo>sh.StartTime)) hp "
+                + "OUTER APPLY (SELECT SUM(Amount) Amount FROM Surcharges p WHERE p.SurchargeType='SEAT' AND p.TargetValue=se.SeatType "
+                + "AND p.EffectiveFrom<=sh.StartTime AND (p.EffectiveTo IS NULL OR p.EffectiveTo>sh.StartTime)) sp "
+                + "OUTER APPLY (SELECT TOP 1 bs.Price FROM BookingSeats bs JOIN Bookings b ON b.BookingID=bs.BookingID "
+                + "WHERE b.ShowtimeID=sh.ShowtimeID AND bs.SeatID=se.SeatID AND "
+                + "((bs.SeatStatus='CONFIRMED' AND b.BookingStatus IN ('CONFIRMED','COMPLETED')) "
+                + "OR (bs.SeatStatus='HELD' AND b.BookingStatus='PENDING' AND bs.HoldUntil>SYSDATETIME())) "
+                + "ORDER BY CASE WHEN bs.SeatStatus='CONFIRMED' THEN 0 ELSE 1 END, bs.BookingSeatID DESC) saved "
+                + "WHERE sh.ShowtimeID=?";
+        Map<Integer, model.dto.showtime.ShowtimeSeatMatrixDTO> prices = new HashMap<>();
+        try (Connection c = DBContext.getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setInt(1,showtimeId);
+            try (ResultSet rs=ps.executeQuery()) {
+                while (rs.next()) {
+                    model.dto.showtime.ShowtimeSeatMatrixDTO price = new model.dto.showtime.ShowtimeSeatMatrixDTO();
+                    price.setBasePrice(rs.getBigDecimal("BasePrice"));
+                    price.setTimeSurcharge(rs.getBigDecimal("TimeAmount"));
+                    price.setHallSurcharge(rs.getBigDecimal("HallAmount"));
+                    price.setSeatSurcharge(rs.getBigDecimal("SeatAmount"));
+                    price.setStoredPrice(rs.getBigDecimal("SavedPrice"));
+                    if (price.getBasePrice()!=null) price.setPrice(price.getBasePrice().add(price.getTimeSurcharge()).add(price.getHallSurcharge()).add(price.getSeatSurcharge()));
+                    prices.put(rs.getInt("SeatID"),price);
+                }
+            }
+        }
+        return prices;
+    }
+
     // =========================================================================
     // CÁC PHƯƠNG THỨC MỚI PHỤC VỤ UC-FE-03.3 (SEAT CONFIGURATION & MAINTENANCE)
     // =========================================================================
@@ -562,10 +601,10 @@ public class SeatDAO {
                 + "WHERE b.ShowtimeID = ? "
 
                 + "AND b.BookingStatus "
-                + "IN ('PENDING','CONFIRMED') "
+                + "IN ('PENDING','CONFIRMED','COMPLETED') "
 
-                + "AND bs2.SeatStatus "
-                + "IN ('HELD','CONFIRMED') "
+                + "AND (bs2.SeatStatus = 'CONFIRMED' "
+                + "OR (bs2.SeatStatus = 'HELD' AND bs2.HoldUntil > SYSDATETIME())) "
 
                 + ") bs "
 

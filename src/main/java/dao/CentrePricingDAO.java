@@ -23,7 +23,8 @@ public class CentrePricingDAO extends DBContext {
             "SELECT TOP 1 * "
             + "FROM CentrePricing "
             + "WHERE CentreID = ? "
-            + "AND EffectiveTo IS NULL "
+            + "AND EffectiveFrom <= SYSDATETIME() "
+            + "AND (EffectiveTo IS NULL OR EffectiveTo > SYSDATETIME()) "
             + "ORDER BY EffectiveFrom DESC";
 
         try (PreparedStatement ps =
@@ -172,78 +173,64 @@ public class CentrePricingDAO extends DBContext {
 
         return list;
     }
-            public boolean updateBasePrice(
-            int centreId,
-            double newPrice,
-            int managerId) {
+    public boolean updateBasePrice(int centreId, double newPrice, int managerId) {
+        return updateBasePrice(centreId, newPrice, managerId, null);
+    }
 
-        String closeOldPrice =
-            "UPDATE CentrePricing "
-            + "SET EffectiveTo = GETDATE() "
-            + "WHERE CentreID = ? "
-            + "AND EffectiveTo IS NULL";
-
-        String insertNewPrice =
-            "INSERT INTO CentrePricing "
-            + "(CentreID, BasePrice, "
-            + "EffectiveFrom, EffectiveTo, "
-            + "UpdatedBy) "
-            + "VALUES (?, ?, GETDATE(), NULL, ?)";
-
-        try {
-
-            connection.setAutoCommit(false);
-
-            try (
-                PreparedStatement psClose =
-                    connection.prepareStatement(
-                        closeOldPrice
-                    );
-
-                PreparedStatement psInsert =
-                    connection.prepareStatement(
-                        insertNewPrice
-                    )
-            ) {
-
-                // Close old price
-                psClose.setInt(1, centreId);
-                psClose.executeUpdate();
-
-                // Insert new price
-                psInsert.setInt(1, centreId);
-                psInsert.setDouble(2, newPrice);
-                psInsert.setInt(3, managerId);
-
-                int affected =
-                        psInsert.executeUpdate();
-
-                connection.commit();
-
-                return affected > 0;
+    public boolean updateBasePrice(int centreId, double newPrice, int managerId,
+            java.time.LocalDateTime effectiveFrom) {
+        try (Connection c = DBContext.getConnection()) {
+            c.setAutoCommit(false);
+            try {
+                scheduleBasePrice(c, centreId, newPrice, managerId, effectiveFrom);
+                c.commit();
+                return true;
+            } catch (SQLException | IllegalArgumentException e) {
+                c.rollback();
+                throw e;
             }
-
         } catch (SQLException e) {
+            throw new IllegalStateException("Không thể lưu giá cơ bản.", e);
+        }
+    }
 
-            try {
-                connection.rollback();
-            } catch (SQLException ex) {
-                ex.printStackTrace();
-            }
-
-            e.printStackTrace();
-
-        } finally {
-
-            try {
-                connection.setAutoCommit(true);
-            } catch (SQLException e) {
-                e.printStackTrace();
+    /** Caller owns transaction. Lock the centre even when no pricing rows exist yet. */
+    public void scheduleBasePrice(Connection c, int centreId, double price, int managerId,
+            java.time.LocalDateTime requestedStart) throws SQLException {
+        if (!Double.isFinite(price) || price < 0 || price > 9999999999d)
+            throw new IllegalArgumentException("Giá vé không hợp lệ.");
+        if (c.getAutoCommit()) throw new SQLException("Pricing changes require a transaction");
+        try (PreparedStatement ps = c.prepareStatement("SELECT CentreID FROM Centres WITH (UPDLOCK,HOLDLOCK) WHERE CentreID=?")) {
+            ps.setInt(1, centreId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) throw new IllegalArgumentException("Cụm rạp không tồn tại.");
             }
         }
-
-        return false;
+        Timestamp now;
+        try (Statement ps = c.createStatement(); ResultSet rs = ps.executeQuery("SELECT SYSDATETIME()")) {
+            rs.next(); now = rs.getTimestamp(1);
+        }
+        Timestamp start = requestedStart == null ? now : Timestamp.valueOf(requestedStart);
+        if (requestedStart != null && !start.after(now))
+            throw new IllegalArgumentException("Thời gian áp dụng phải nằm trong tương lai.");
+        Timestamp next = null;
+        try (PreparedStatement ps = c.prepareStatement("SELECT TOP 1 EffectiveFrom FROM CentrePricing WITH (UPDLOCK,HOLDLOCK) WHERE CentreID=? AND EffectiveFrom>=? ORDER BY EffectiveFrom")) {
+            ps.setInt(1, centreId); ps.setTimestamp(2, start);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) next = rs.getTimestamp(1);
+            }
+        }
+        if (start.equals(next)) throw new IllegalArgumentException("Đã có mức giá bắt đầu tại thời điểm này.");
+        try (PreparedStatement ps = c.prepareStatement("UPDATE CentrePricing SET EffectiveTo=? WHERE CentreID=? AND EffectiveFrom<? AND (EffectiveTo IS NULL OR EffectiveTo>?)")) {
+            ps.setTimestamp(1, start); ps.setInt(2, centreId); ps.setTimestamp(3, start); ps.setTimestamp(4, start);
+            ps.executeUpdate();
+        }
+        try (PreparedStatement ps = c.prepareStatement("INSERT INTO CentrePricing (CentreID,BasePrice,EffectiveFrom,EffectiveTo,UpdatedBy) VALUES (?,?,?,?,?)")) {
+            ps.setInt(1, centreId); ps.setDouble(2, price); ps.setTimestamp(3, start);
+            ps.setTimestamp(4, next); ps.setInt(5, managerId); ps.executeUpdate();
+        }
     }
+
             public double getBasePriceAt(
         int centreId,
         Timestamp showtime) {

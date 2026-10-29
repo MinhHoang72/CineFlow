@@ -112,7 +112,7 @@ html[data-theme="light"].cf-css-account-account .unverified-badge {
     border-radius: 20px;
     background: rgba(245, 158, 11, 0.12);
     border: 1px solid rgba(245, 158, 11, 0.35);
-    color: #F59E0B;
+    color: #334155;
 }
 
 html[data-theme="light"].cf-css-account-account .overview-details {
@@ -248,7 +248,7 @@ html[data-theme="light"].cf-css-account-account .status-pill.verified {
 html[data-theme="light"].cf-css-account-account .status-pill.unverified {
     background: rgba(245, 158, 11, 0.12);
     border: 1px solid rgba(245, 158, 11, 0.35);
-    color: #F59E0B;
+    color: #334155;
 }
 
 html[data-theme="light"].cf-css-account-account .verify-action-link {
@@ -364,7 +364,7 @@ html[data-theme="light"].cf-css-account-account .booking-status-tag {
 html[data-theme="light"].cf-css-account-account .booking-status-tag.is-pending {
     background: rgba(251, 191, 36, 0.12);
     border-color: rgba(251, 191, 36, 0.35);
-    color: #FBBF24;
+    color: #334155;
 }
 
 html[data-theme="light"].cf-css-account-account .booking-status-tag.is-muted {
@@ -807,7 +807,7 @@ html[data-theme="light"].cf-css-admin-admin-style .cf-badge-info {
 
 html[data-theme="light"].cf-css-admin-admin-style .cf-badge-warning {
     background: rgba(245, 158, 11, 0.15);
-    color: #fbbf24;
+    color: #334155;
     border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
@@ -852,7 +852,7 @@ html[data-theme="light"].cf-css-admin-admin-style .age-T13 {
 
 html[data-theme="light"].cf-css-admin-admin-style .age-T16 {
     background: rgba(249, 115, 22, 0.2);
-    color: #fb923c;
+    color: #334155;
     border: 1px solid rgba(249, 115, 22, 0.4);
 }
 
@@ -1023,7 +1023,7 @@ html[data-theme="light"].cf-css-admin-centres .cf-stat-icon.success {
 
 html[data-theme="light"].cf-css-admin-centres .cf-stat-icon.warning {
     background: rgba(245, 158, 11, 0.15);
-    color: #FBBF24;
+    color: #334155;
     border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
@@ -2009,7 +2009,7 @@ html[data-theme="light"].cf-css-admin-distribution .cf-badge-active {
 
 html[data-theme="light"].cf-css-admin-distribution .cf-badge-maintenance {
     background: rgba(245, 158, 11, 0.15);
-    color: #fbbf24;
+    color: #334155;
     border: 1px solid rgba(245, 158, 11, 0.3);
     border-radius: 999px;
 }
@@ -2484,7 +2484,7 @@ html[data-theme="light"].cf-css-admin-movies .cf-badge-age-k {
 
 html[data-theme="light"].cf-css-admin-movies .cf-badge-age-t13 {
     background: rgba(234, 179, 8, 0.15) !important;
-    color: #eab308 !important;
+    color: #334155 !important;
     border: 1px solid rgba(234, 179, 8, 0.35) !important;
 }
 
@@ -4638,7 +4638,7 @@ html[data-theme="light"] .cf-badge-role.admin:hover {
 
 html[data-theme="light"] .cf-badge-role.manager {
     background: rgba(245, 158, 11, 0.15);
-    color: #FCD34D;
+    color: #334155;
     border: 1px solid rgba(245, 158, 11, 0.32);
 }
 
@@ -4769,7 +4769,7 @@ html[data-theme="light"] .cf-theme-toggle {
     border-radius: 50%;
     border: 1px solid rgba(15, 23, 42, 0.16);
     background: #ffffff;
-    color: #FBBF24;
+    color: #334155;
 }
 
 html[data-theme="light"] .cf-theme-toggle:hover {
@@ -5308,7 +5308,7 @@ html[data-theme="light"].cf-css-manager-halls .cf-stat-icon.success {
 
 html[data-theme="light"].cf-css-manager-halls .cf-stat-icon.warning {
     background: rgba(245, 158, 11, 0.15);
-    color: #FBBF24;
+    color: #334155;
     border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
@@ -5733,7 +5733,7 @@ html[data-theme="light"].cf-css-manager-seat-config .cf-stat-pill.standard {
 
 html[data-theme="light"].cf-css-manager-seat-config .cf-stat-pill.vip {
     background: rgba(245, 158, 11, 0.15);
-    color: #FBBF24;
+    color: #334155;
     border: 1px solid rgba(245, 158, 11, 0.35);
 }
 
@@ -5805,7 +5805,7 @@ html[data-theme="light"].cf-css-manager-seat-config .cf-seat-box.STANDARD:hover 
 
 html[data-theme="light"].cf-css-manager-seat-config .cf-seat-box.VIP {
     background: rgba(245, 158, 11, 0.22);
-    color: #FDE68A;
+    color: #334155;
     border: 1px solid #F59E0B;
 }
 
@@ -6250,7 +6250,7 @@ html[data-theme="light"].cf-css-manager-staff .cf-status-select.val-active {
 
 html[data-theme="light"].cf-css-manager-staff .cf-status-select.val-inactive {
     border-color: rgba(245, 158, 11, 0.4);
-    color: #fbbf24;
+    color: #334155;
 }
 
 html[data-theme="light"].cf-css-manager-staff .cf-status-select.val-locked {
@@ -6526,7 +6526,7 @@ html[data-theme="light"].cf-css-movie-details .rating-number-score span {
 }
 
 html[data-theme="light"].cf-css-movie-details .rating-stars-visual {
-    color: var(--star-gold);
+    color: #334155;
 }
 
 html[data-theme="light"].cf-css-movie-details .rating-count-label {
@@ -6546,7 +6546,7 @@ html[data-theme="light"].cf-css-movie-details .star-btn {
 html[data-theme="light"].cf-css-movie-details .star-btn:hover,
 html[data-theme="light"].cf-css-movie-details .star-btn.hovered,
 html[data-theme="light"].cf-css-movie-details .star-btn.selected {
-    color: var(--star-gold);
+    color: #334155;
 }
 
 html[data-theme="light"].cf-css-movie-details .rating-chosen-label {
@@ -6609,126 +6609,6 @@ html[data-theme="light"].cf-css-movie-details .quick-rail a:hover {
     background: var(--red);
     color: #0f172a;
     border-color: var(--red);
-}
-
-/* ---- showtime-pricing/seat-matrix.css ---- */
-html[data-theme="light"].cf-css-showtime-pricing-seat-matrix .st-seat-view {
-    --seat-standard-bg: #f1f5f9;
-    --seat-standard-ink: #f1f5f9;
-    --seat-standard-border: #e2e8f0;
-    --seat-vip-bg: #fde9b8;
-    --seat-vip-ink: #2d3748;
-    --seat-vip-border: #c0780c;
-    --seat-sweet-bg: #fbcfe8;
-    --seat-sweet-ink: #701a49;
-    --seat-sweet-border: #be3c85;
-    --seat-booked-bg: #e2e8f0;
-    --seat-booked-ink: #fff;
-    --seat-held-bg: #fed7aa;
-    --seat-held-ink: #7c2d12;
-    --seat-maintenance-bg: #9a4438;
-}
-
-html[data-theme="light"].cf-css-showtime-pricing-seat-matrix .st-seat-view .cf-seat-box:hover {
-    filter: none;
-    box-shadow: none;
-}
-
-html[data-theme="light"].cf-css-showtime-pricing-seat-matrix .st-seat-view .st-type-standard {
-    background: var(--seat-standard-bg);
-    color: var(--seat-standard-ink);
-    border: 1px solid var(--seat-standard-border);
-}
-
-html[data-theme="light"].cf-css-showtime-pricing-seat-matrix .st-seat-view .st-type-vip {
-    background: var(--seat-vip-bg);
-    color: var(--seat-vip-ink);
-    border: 1px solid var(--seat-vip-border);
-}
-
-html[data-theme="light"].cf-css-showtime-pricing-seat-matrix .st-seat-view .st-type-sweetbox {
-    background: var(--seat-sweet-bg);
-    color: var(--seat-sweet-ink);
-    border: 1px solid var(--seat-sweet-border);
-}
-
-html[data-theme="light"].cf-css-showtime-pricing-seat-matrix .st-seat-view .cf-seat-box.BOOKED,
-html[data-theme="light"].cf-css-showtime-pricing-seat-matrix .st-seat-view .st-state-booked,
-html[data-theme="light"].cf-css-showtime-pricing-seat-matrix .st-seat-view .cf-stat-pill.st-pill-booked {
-    background: var(--seat-booked-bg) !important;
-    color: var(--seat-booked-ink) !important;
-    border: 1px solid #e2e8f0 !important;
-    box-shadow: none;
-}
-
-html[data-theme="light"].cf-css-showtime-pricing-seat-matrix .st-seat-view .cf-seat-box.HELD,
-html[data-theme="light"].cf-css-showtime-pricing-seat-matrix .st-seat-view .st-state-held,
-html[data-theme="light"].cf-css-showtime-pricing-seat-matrix .st-seat-view .cf-stat-pill.st-pill-held {
-    background: var(--seat-held-bg) !important;
-    color: var(--seat-held-ink) !important;
-    border: 1px solid #c2681b !important;
-    box-shadow: none;
-}
-
-html[data-theme="light"].cf-css-showtime-pricing-seat-matrix .st-seat-view .st-state-maintenance,
-html[data-theme="light"].cf-css-showtime-pricing-seat-matrix .st-seat-view .cf-stat-pill.st-pill-maintenance {
-    background: var(--seat-maintenance-bg) !important;
-    color: #0f172a !important;
-    border: 1px solid #b86b59 !important;
-    box-shadow: none;
-}
-
-html[data-theme="light"].cf-css-showtime-pricing-seat-matrix .st-seat-view .st-seat-marker {
-    border-radius: 50%;
-    background: #7c2d12;
-    color: #fff;
-    box-shadow: 0 0 0 2px var(--seat-standard-bg);
-}
-
-html[data-theme="light"].cf-css-showtime-pricing-seat-matrix .st-seat-view .BOOKED .st-seat-marker {
-    border-radius: 0;
-    background: transparent;
-    color: #0f172a;
-    box-shadow: none;
-}
-
-html[data-theme="light"].cf-css-showtime-pricing-seat-matrix .st-seat-view .st-pill-available {
-    background: #d1fae5;
-    border: 1px solid #23785b;
-    color: #065f46;
-}
-
-html[data-theme="light"].cf-css-showtime-pricing-seat-matrix .st-seat-view .st-readonly-label,
-html[data-theme="light"].cf-css-showtime-pricing-seat-matrix .st-seat-view .st-seat-note {
-    color: var(--cf-muted,#64748b);
-}
-
-html[data-theme="light"].cf-css-showtime-pricing-seat-matrix .st-seat-view .st-legend-group {
-    border: 1px solid var(--seat-standard-border);
-    border-radius: 10px;
-}
-
-html[data-theme="light"].cf-css-showtime-pricing-seat-matrix .st-seat-view .st-legend-group h3 {
-    color: var(--seat-standard-ink);
-}
-
-html[data-theme="light"].cf-css-showtime-pricing-seat-matrix .st-seat-view .st-legend-items {
-    color: var(--seat-standard-ink);
-}
-
-html[data-theme="light"].cf-css-showtime-pricing-seat-matrix .st-seat-view .st-legend-swatch {
-    border-radius: 4px;
-}
-
-html[data-theme="light"].cf-css-showtime-pricing-seat-matrix .st-seat-view .st-type-aisle {
-    background: transparent;
-    border: 1px dashed var(--seat-standard-border);
-    color: var(--seat-standard-ink);
-}
-
-html[data-theme="light"].cf-css-showtime-pricing-seat-matrix .st-seat-view .cf-seat-canvas-wrapper:focus-visible {
-    outline: 2px solid #60a5fa;
-    outline-offset: 3px;
 }
 
 /* ---- showtime-pricing/showtime-pricing.css ---- */
@@ -6922,7 +6802,7 @@ html[data-theme="light"].cf-css-showtime-pricing-showtimes .st-form-footer p {
 }
 
 html[data-theme="light"].cf-css-showtime-pricing-showtimes .st-prerequisite {
-    color: #f5c16c;
+    color: #334155;
 }
 
 html[data-theme="light"].cf-css-showtime-pricing-showtimes .st-table {
@@ -6987,7 +6867,7 @@ html[data-theme="light"].cf-css-showtime-pricing-showtimes .st-status-SCHEDULED 
 
 html[data-theme="light"].cf-css-showtime-pricing-showtimes .st-status-ONGOING {
     background: #f1f5f9;
-    color: #f7c76b;
+    color: #334155;
 }
 
 html[data-theme="light"].cf-css-showtime-pricing-showtimes .st-status-COMPLETED {
@@ -7078,7 +6958,7 @@ html[data-theme="light"].cf-css-showtime-pricing-showtimes .st-price-card p {
 }
 
 html[data-theme="light"].cf-css-showtime-pricing-showtimes .st-money {
-    color: #efdeae !important;
+    color: #334155 !important;
 }
 
 html[data-theme="light"].cf-css-showtime-pricing-showtimes .st-field input[readonly] {
@@ -7107,7 +6987,7 @@ html[data-theme="light"].cf-css-showtime-pricing-showtimes .st-seat-AVAILABLE {
 html[data-theme="light"].cf-css-showtime-pricing-showtimes .st-seat-HELD {
     background: #f1f5f9;
     border-color: #756035;
-    color: #f5d084;
+    color: #334155;
 }
 
 html[data-theme="light"].cf-css-showtime-pricing-showtimes .st-seat-BOOKED {
@@ -7203,7 +7083,7 @@ html[data-theme="light"].cf-css-showtime-pricing-showtimes .st-schedule .st-tabl
 
 html[data-theme="light"].cf-css-showtime-pricing-showtimes .st-schedule .st-status-SCHEDULED {
     background: #f1f5f9;
-    color: #f7c76b;
+    color: #334155;
 }
 
 html[data-theme="light"].cf-css-showtime-pricing-showtimes .st-schedule .st-status-ONGOING {
@@ -7269,7 +7149,7 @@ html[data-theme="light"].cf-css-showtime-pricing-showtimes .st-time-block {
     border: 1px solid #6b5933;
     border-radius: 5px;
     background: #f1f5f9;
-    color: #f6d795;
+    color: #334155;
 }
 
 html[data-theme="light"].cf-css-showtime-pricing-showtimes .st-time-ONGOING {
@@ -7355,7 +7235,7 @@ html[data-theme="light"].cf-css-showtime-pricing-showtimes .st-showtimes-page #s
     color: var(--st-muted);
 }
 
-html[data-theme="light"].cf-css-showtime-pricing-showtimes .st-showtimes-page .st-row-actions .st-icon-action {
+html[data-theme="light"].cf-css-showtime-pricing-showtimes .st-row-actions .st-icon-action {
     border: 1px solid var(--st-border);
     border-radius: 8px;
     background: transparent;
@@ -7367,25 +7247,81 @@ html[data-theme="light"].cf-css-showtime-pricing-showtimes .st-icon-action svg {
     stroke: currentColor;
 }
 
-html[data-theme="light"].cf-css-showtime-pricing-showtimes .st-showtimes-page .st-row-actions .st-icon-action:hover {
+html[data-theme="light"].cf-css-showtime-pricing-showtimes .st-row-actions .st-icon-action:hover {
     background: #f1f5f9;
     color: #0f172a;
     border-color: #e2e8f0;
 }
 
-html[data-theme="light"].cf-css-showtime-pricing-showtimes .st-showtimes-page .st-row-actions .st-icon-action:focus-visible {
+html[data-theme="light"].cf-css-showtime-pricing-showtimes .st-row-actions .st-icon-action:focus-visible {
     outline: 2px solid #f4729e;
     outline-offset: 2px;
 }
 
-html[data-theme="light"].cf-css-showtime-pricing-showtimes .st-showtimes-page .st-row-actions .st-icon-action.st-link-danger {
+html[data-theme="light"].cf-css-showtime-pricing-showtimes .st-row-actions .st-icon-action.st-link-danger {
     color: #e74d72;
 }
 
-html[data-theme="light"].cf-css-showtime-pricing-showtimes .st-showtimes-page .st-row-actions .st-icon-action.st-link-danger:hover {
+html[data-theme="light"].cf-css-showtime-pricing-showtimes .st-row-actions .st-icon-action.st-link-danger:hover {
     background: #fff0f2;
     border-color: #e74d72;
     color: #be123c;
+}
+
+html[data-theme="light"].cf-css-showtime-pricing-showtimes .pr-page .st-field small,
+html[data-theme="light"].cf-css-showtime-pricing-showtimes .pr-help {
+    color: var(--st-muted);
+}
+
+html[data-theme="light"].cf-css-showtime-pricing-showtimes .pr-money-input > span {
+    color: var(--st-muted);
+}
+
+html[data-theme="light"].cf-css-showtime-pricing-showtimes .pr-effective {
+    border: 1px solid var(--st-border);
+    border-radius: 10px;
+}
+
+html[data-theme="light"].cf-css-showtime-pricing-showtimes .pr-effective legend {
+    color: var(--st-text, #1e293b);
+}
+
+html[data-theme="light"].cf-css-showtime-pricing-showtimes .pr-effective-options label {
+    color: var(--st-text, #1e293b);
+}
+
+html[data-theme="light"].cf-css-showtime-pricing-showtimes .pr-date-note {
+    color: var(--st-muted);
+}
+
+html[data-theme="light"].cf-css-showtime-pricing-showtimes .pr-dialog {
+    border: 1px solid var(--st-border, #e2e8f0);
+    border-radius: 16px;
+    background: #ffffff;
+    color: #0f172a;
+    box-shadow: 0 24px 80px rgba(15, 23, 42, 0.122);
+}
+
+html[data-theme="light"].cf-css-showtime-pricing-showtimes .pr-dialog::backdrop {
+    background: rgba(3,9,20,.65);
+}
+
+html[data-theme="light"].cf-css-showtime-pricing-showtimes .pr-dialog-close {
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    background: transparent;
+    color: inherit;
+}
+
+html[data-theme="light"].cf-css-showtime-pricing-showtimes .pr-dialog-close:focus-visible {
+    outline: 2px solid #f4729e;
+    outline-offset: 3px;
+}
+
+html[data-theme="light"].cf-css-showtime-pricing-showtimes .pr-dialog .st-field input:focus-visible,
+html[data-theme="light"].cf-css-showtime-pricing-showtimes .pr-dialog .st-field select:focus-visible {
+    outline: 2px solid #db3465;
+    outline-offset: 2px;
 }
 
 /* ---- staff/dashboard.css ---- */
@@ -7439,7 +7375,7 @@ html[data-theme="light"].cf-css-staff-dashboard .tag-purple {
 
 html[data-theme="light"].cf-css-staff-dashboard .tag-amber {
     background: rgba(245, 158, 11, 0.2);
-    color: #fbbf24;
+    color: #334155;
 }
 
 html[data-theme="light"].cf-css-staff-dashboard .tag-emerald {
@@ -7634,7 +7570,7 @@ html[data-theme="light"].cf-css-staff-directory .cf-table .cf-badge-success {
 
 html[data-theme="light"].cf-css-staff-directory .cf-table .cf-badge-warning {
     background: rgba(251, 191, 36, .13);
-    color: #fcd675;
+    color: #334155;
 }
 
 html[data-theme="light"].cf-css-staff-directory .cf-table .cf-badge-danger {
@@ -8385,6 +8321,7 @@ html[data-theme="light"] [style*="color: #F8FAFC"] { color: #0f172a !important; 
 html[data-theme="light"] [style*="background: rgba(255, 255, 255, 0.04)"] { background: rgba(15, 23, 42, 0.044) !important; }
 html[data-theme="light"] [style*="color: #94a3b8"] { color: #64748b !important; }
 html[data-theme="light"] [style*="color: #94A3B8"] { color: #64748b !important; }
+html[data-theme="light"] [style*="color: #FBBF24"] { color: #334155 !important; }
 html[data-theme="light"] [style*="background: #1E293B"] { background: #f1f5f9 !important; }
 html[data-theme="light"] [style*="border: 1px solid rgba(255, 255, 255, 0.14)"] { border: 1px solid rgba(15, 23, 42, 0.14) !important; }
 html[data-theme="light"] [style*="border: 1px dashed rgba(255, 255, 255, 0.2)"] { border: 1px dashed rgba(15, 23, 42, 0.16) !important; }
@@ -8395,17 +8332,23 @@ html[data-theme="light"] [style*="border: 1px solid rgba(255, 255, 255, 0.16)"] 
 html[data-theme="light"] [style*="color: #ffffff"] { color: #0f172a !important; }
 html[data-theme="light"] [style*="color: var(--cf-muted, #94a3b8)"] { color: var(--cf-muted, #64748b) !important; }
 html[data-theme="light"] [style*="background:#000"] { background: #eef2f7 !important; }
+html[data-theme="light"] [style*="color: #d97706"] { color: #334155 !important; }
 html[data-theme="light"] [style*="color: #edf2f9"] { color: #0f172a !important; }
 html[data-theme="light"] [style*="border: 1px solid #334155"] { border: 1px solid #e2e8f0 !important; }
 html[data-theme="light"] [style*="background: #1e293b"] { background: #f1f5f9 !important; }
 html[data-theme="light"] [style*="color: #f8fafc"] { color: #0f172a !important; }
 html[data-theme="light"] [style*="color: #fff"] { color: #0f172a !important; }
+html[data-theme="light"] [style*="color: #f59e0b !important"] { color: #334155 !important; }
+html[data-theme="light"] [style*="color: #f59e0b"] { color: #334155 !important; }
 html[data-theme="light"] [style*="color: #e2e8f0"] { color: #0f172a !important; }
 html[data-theme="light"] [style*="color: #cbd5e1"] { color: #1e293b !important; }
+html[data-theme="light"] [style*="color: #F59E0B"] { color: #334155 !important; }
 html[data-theme="light"] [style*="background: #0B0F17"] { background: #ffffff !important; }
 html[data-theme="light"] [style*="color: #d1d5db"] { color: #1e293b !important; }
+html[data-theme="light"] [style*="color:#fbbf24"] { color: #334155 !important; }
 html[data-theme="light"] [style*="color:#94a3b8"] { color: #64748b !important; }
 html[data-theme="light"] [style*="color:#cbd5e1"] { color: #1e293b !important; }
 html[data-theme="light"] [style*="color:#f8fafc"] { color: #0f172a !important; }
 html[data-theme="light"] [style*="border:1px solid #303b4b"] { border: 1px solid #e2e8f0 !important; }
 html[data-theme="light"] [style*="background:#10151d"] { background: #ffffff !important; }
+html[data-theme="light"] [style*="color: #fbbf24"] { color: #334155 !important; }

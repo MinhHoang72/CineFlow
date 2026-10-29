@@ -8,6 +8,21 @@ import model.entity.Surcharge;
 
 public class SurchargeDAO extends DBContext {
 
+    /** Surcharges are shared globally, so list types configured across all halls/seats. */
+    public List<String> getConfiguredTargets(String type) throws SQLException {
+        String sql;
+        if ("SEAT".equals(type))
+            sql = "SELECT DISTINCT SeatType AS TargetValue FROM Seats WHERE SeatType <> 'STANDARD' ORDER BY SeatType";
+        else if ("HALL".equals(type))
+            sql = "SELECT DISTINCT HallType AS TargetValue FROM Halls ORDER BY HallType";
+        else throw new IllegalArgumentException("Loại phụ thu không hợp lệ.");
+        List<String> targets = new ArrayList<>();
+        try (Connection c = DBContext.getConnection(); PreparedStatement ps = c.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) targets.add(rs.getString("TargetValue"));
+        }
+        return targets;
+    }
+
     private Surcharge map(ResultSet rs)
             throws SQLException {
 
@@ -64,6 +79,7 @@ public class SurchargeDAO extends DBContext {
             );
         }
 
+        s.setUpdatedByName(rs.getString("UpdatedByName"));
         return s;
     }
 
@@ -73,8 +89,8 @@ public class SurchargeDAO extends DBContext {
                 new ArrayList<>();
 
         String sql =
-                "SELECT * "
-                + "FROM Surcharges "
+                "SELECT p.*, u.FullName AS UpdatedByName "
+                + "FROM Surcharges p LEFT JOIN Users u ON u.UserID = p.UpdatedBy "
                 + "WHERE EffectiveTo IS NULL "
                 + "ORDER BY SurchargeType, TargetValue";
 
@@ -101,8 +117,8 @@ public class SurchargeDAO extends DBContext {
                 new ArrayList<>();
 
         String sql =
-                "SELECT * "
-                + "FROM Surcharges "
+                "SELECT p.*, u.FullName AS UpdatedByName "
+                + "FROM Surcharges p LEFT JOIN Users u ON u.UserID = p.UpdatedBy "
                 + "ORDER BY EffectiveFrom DESC";
 
         try (PreparedStatement ps =
@@ -125,8 +141,8 @@ public class SurchargeDAO extends DBContext {
     public Surcharge getById(int id) {
 
         String sql =
-                "SELECT * "
-                + "FROM Surcharges "
+                "SELECT p.*, u.FullName AS UpdatedByName "
+                + "FROM Surcharges p LEFT JOIN Users u ON u.UserID = p.UpdatedBy "
                 + "WHERE SurchargeID = ?";
 
         try (PreparedStatement ps =
@@ -146,6 +162,35 @@ public class SurchargeDAO extends DBContext {
         }
 
         return null;
+    }
+
+    /** Prevent duplicate active rules even when two forms are submitted concurrently. */
+    public boolean createSurcharge(Surcharge rule) {
+        try (Connection c = DBContext.getConnection()) {
+            c.setAutoCommit(false);
+            try {
+                boolean inserted = createSurcharge(c, rule);
+                c.commit();
+                return inserted;
+            } catch (SQLException | RuntimeException e) {
+                c.rollback(); throw e;
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Không thể thêm phụ thu.", e);
+        }
+    }
+
+    public boolean createSurcharge(Connection c, Surcharge rule) throws SQLException {
+        if (c.getAutoCommit()) throw new SQLException("Surcharge changes require a transaction");
+        try (PreparedStatement ps = c.prepareStatement("SELECT SurchargeID FROM Surcharges WITH (UPDLOCK,HOLDLOCK) WHERE SurchargeType=? AND TargetValue=? AND (EffectiveTo IS NULL OR EffectiveTo>SYSDATETIME())")) {
+            ps.setString(1, rule.getSurchargeType()); ps.setString(2, rule.getTargetValue());
+            try (ResultSet rs = ps.executeQuery()) { if (rs.next()) return false; }
+        }
+        try (PreparedStatement ps = c.prepareStatement("INSERT INTO Surcharges (SurchargeName,SurchargeType,TargetValue,Amount,EffectiveFrom,UpdatedBy) VALUES (?,?,?,?,SYSDATETIME(),?)")) {
+            ps.setString(1, rule.getSurchargeName()); ps.setString(2, rule.getSurchargeType());
+            ps.setString(3, rule.getTargetValue()); ps.setDouble(4, rule.getAmount());
+            ps.setInt(5, rule.getUpdatedBy()); return ps.executeUpdate() == 1;
+        }
     }
 
     public boolean updateSurcharge(

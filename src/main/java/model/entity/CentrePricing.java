@@ -137,7 +137,15 @@ public String getBasePriceFormatted() {
     NumberFormat formatter =
             NumberFormat.getNumberInstance(new Locale("vi", "VN"));
 
-    return formatter.format(basePrice) + " vnd";
+    return formatter.format(basePrice) + " đ";
 }
 
+    public boolean isScheduled() {
+        return effectiveFrom != null && effectiveFrom.isAfter(LocalDateTime.now());
+    }
+    public boolean isCurrent() {
+        LocalDateTime now = LocalDateTime.now();
+        return effectiveFrom != null && !effectiveFrom.isAfter(now)
+                && (effectiveTo == null || effectiveTo.isAfter(now));
+    }
 }

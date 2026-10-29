@@ -58,8 +58,13 @@ const fmt = (c) => c.a >= 1 ? '#' + [c.r, c.g, c.b].map(v => Math.round(v).toStr
                              : `rgba(${Math.round(c.r)}, ${Math.round(c.g)}, ${Math.round(c.b)}, ${+c.a.toFixed(3)})`;
 const SLATE_900 = { r: 15, g: 23, b: 42 };
 
+// Pale gold / amber text is unreadable on white; backgrounds and borders keep their meaning.
+const isLightGold = c => c.r >= 170 && c.g >= c.r * 0.5 && c.g <= c.r * 1.06
+    && c.b < c.g * 0.9 && lum(c) > 0.48;
+
 /** role: 'bg' | 'text' | 'border' | 'shadow'. Tra ve chuoi mau moi hoac null neu giu nguyen. */
 function mapColor(c, role) {
+    if (role === 'text' && isLightGold(c)) return '#334155';
     if (!isNeutral(c)) return null;                       // mau nhan: giu
     const L = lum(c);
     if (c.a < 1) {
@@ -106,7 +111,11 @@ const COLOR_RE = /#[0-9a-fA-F]{3,8}\b|rgba?\([^)]*\)|\bwhite\b|\bblack\b/g;
 /** Thay tung mau trong gia tri; tra ve null neu khong doi gi. */
 function mapValue(value, role) {
     let changed = false;
-    const out = value.replace(COLOR_RE, (tok) => {
+    // Map semantic yellow text without changing the shared accent variable used by backgrounds.
+    const textValue = role === 'text' ? value.replace(/var\(--(?:cf-)?(?:gold(?:-dark|-light)?|warning|yellow|star-gold|shell-warning)(?:\s*,[^)]*)?\)/gi, () => {
+        changed = true; return '#334155';
+    }) : value;
+    const out = textValue.replace(COLOR_RE, (tok) => {
         const c = parseColor(tok);
         if (!c) return tok;
         const n = mapColor(c, role);
@@ -246,6 +255,10 @@ function convertRule(rule) {
         if (role === 'auto') {
             const first = (d.value.match(COLOR_RE) || []).map(parseColor).find(Boolean);
             if (!first) continue;
+            if (isLightGold(first)) { // Generic accent variables also color backgrounds: preserve them.
+                out.push(`    ${d.prop}: ${d.value}${imp};`);
+                continue;
+            }
             // mau trong suot = lop phu nen; mau dac sang = chu, toi = nen
             role = first.a < 1 ? 'bg' : (lum(first) > 0.5 ? 'text' : 'bg');
         }
@@ -289,7 +302,9 @@ function inlineRules() {
             for (const part of m[1].split(';')) {
                 const k = part.indexOf(':');
                 if (k < 0) continue;
-                const prop = part.slice(0, k).trim(), value = part.slice(k + 1).trim();
+                const prop = part.slice(0, k).trim();
+                // Output adds !important once; strip the inline priority from the value first.
+                const value = part.slice(k + 1).trim().replace(/\s*!important\s*$/i, '').trim();
                 if (!prop || /<%|\$\{/.test(value)) continue;
                 const role = roleOf(prop);
                 if (!role || role === 'auto') continue;
@@ -307,6 +322,8 @@ function inlineRules() {
 const files = walk(CSS_DIR, ['.css']).filter(f => path.resolve(f) !== path.resolve(OUT)).sort();
 const parts = [];
 for (const f of files) {
+    // Seat matrix already defines a light/dark palette; recoloring its variables hides labels.
+    if (path.relative(CSS_DIR, f).replace(/\\/g, '/') === 'showtime-pricing/seat-matrix.css') continue;
     currentFile = path.relative(CSS_DIR, f).replace(/\\/g, '/');
     scope = currentFile.startsWith('common/') ? SCOPE : `${SCOPE}.${cssClass(currentFile)}`;
     const rules = convertItems(parseBlocks(stripComments(fs.readFileSync(f, 'utf8'))));

@@ -83,3 +83,31 @@ html[data-theme] .st-seat-view .cf-seat-box.MAINTENANCE,
     .st-seat-view .cf-hall-meta p { line-height: 1.8; }
     .st-seat-view .st-seat-legends { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* Seat inspection is read-only. Keep selection distinct from reservation state. */
+.st-seat-view .st-seat-workspace { display: grid; grid-template-columns: minmax(0,1fr) 320px; gap: 20px; align-items: start; }
+.st-seat-view .cf-seat-canvas-wrapper { min-width: 0; }
+.st-seat-view button.cf-seat-box { cursor: pointer; font-family: inherit; padding: 0; }
+.st-seat-view button.cf-seat-box:focus-visible,
+.st-seat-view button.cf-seat-box[aria-pressed="true"] { outline: 3px solid #2563eb; outline-offset: 3px; z-index: 2; }
+.st-seat-view .st-seat-price-panel { position: sticky; top: 90px; padding: 22px; background: #131b27; color: #e2e8f0; border: 1px solid #475569; border-radius: 14px; }
+.st-seat-price-panel h2 { margin: 0 0 12px; font-size: 18px; }
+.st-seat-price-panel h3 { margin: 20px 0 6px; font-size: 13px; }
+.st-seat-price-panel p { font-size: 13px; line-height: 1.7; }
+.st-seat-price-panel .st-inspected-seat { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+.st-price-breakdown { margin: 16px 0; font-size: 13px; }
+.st-price-breakdown > div { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; }
+.st-price-breakdown dd { margin: 0; font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.st-price-breakdown .st-price-total { border-top: 1px solid #64748b; margin-top: 6px; padding-top: 16px; font-weight: 700; }
+.st-saved-price { padding: 14px; border-radius: 10px; background: #263449; }
+.st-saved-price strong { display: block; font-size: 22px; margin-top: 8px; }
+.st-saved-price p, .st-seat-price-panel .st-price-context, .st-price-readonly { color: #cbd5e1; font-size: 12px; }
+.st-price-readonly { border-top: 1px solid #64748b; padding-top: 14px; margin-bottom: 0; }
+.st-seat-view [hidden] { display: none !important; }
+.st-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+html[data-theme="light"] .st-seat-view .st-seat-price-panel { background: #fff; color: #1e293b; border-color: #cbd5e1; }
+html[data-theme="light"] .st-seat-view .st-saved-price { background: #f1f5f9; }
+html[data-theme="light"] .st-seat-view .st-saved-price p,
+html[data-theme="light"] .st-seat-view .st-price-context,
+html[data-theme="light"] .st-seat-view .st-price-readonly { color: #475569; }
+@media(max-width:900px) { .st-seat-view .st-seat-workspace { grid-template-columns: minmax(0,1fr); } .st-seat-view .st-seat-price-panel { position: static; } }

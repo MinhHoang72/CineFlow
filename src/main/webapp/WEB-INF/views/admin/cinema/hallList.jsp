@@ -313,7 +313,7 @@
                         </tbody>
                     </table>
 
-                    <% if (totalFilteredHalls != null && totalFilteredHalls > 0) { 
+                    <% if (totalFilteredHalls > 0) {
                         int startItem = (currentPage - 1) * pageSize + 1;
                         int endItem = Math.min(currentPage * pageSize, totalFilteredHalls);
 
