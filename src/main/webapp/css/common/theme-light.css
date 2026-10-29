@@ -1,4 +1,4 @@
-/* =========================================================================
+﻿/* =========================================================================
    GIAO DIEN SANG (tu sinh) - KHONG SUA TAY.
    Sinh bang: node tools/theme/generate-light-theme.js
    Chi co hieu luc khi <html data-theme="light"> (js/theme.js dat theo lua chon nguoi dung).
@@ -6173,6 +6173,10 @@ html[data-theme="light"].cf-css-manager-shell .cf-topbar-role.cf-badge-info {
 
 html[data-theme="light"].cf-css-manager-shell .cf-page-header h1 {
     color: #0f172a;
+}
+
+html[data-theme="light"].cf-css-manager-shell .cf-page-header p {
+    color: #64748b;
 }
 
 html[data-theme="light"].cf-css-manager-shell .cf-card {

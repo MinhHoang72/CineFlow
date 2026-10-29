@@ -29,7 +29,6 @@
 
 <div class="cf-card">
     <form class="vc-form" method="post" action="${baseUrl}/save">
-        <input type="hidden" name="_csrf" value="${csrf}">
         <input type="hidden" name="id" value="${voucher.voucherId == 0 ? '' : voucher.voucherId}">
 
         <div class="cf-form-group">

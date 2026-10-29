@@ -1,4 +1,4 @@
-<%@ page pageEncoding="UTF-8" %>
+﻿<%@ page pageEncoding="UTF-8" %>
 <%@ page import="model.entity.User" %>
 <%!
     static String esc(Object value) {
@@ -29,7 +29,7 @@
         html.append(page < totalPages ? "<a href=\"" + prefix + (page + 1) + "\">&rsaquo;</a>" : "<span class=\"disabled\">&rsaquo;</span>");
         return html.append("</nav>").toString();
     }
-
+// code lấy 15000 thành 15.000
     static String money(java.math.BigDecimal value) {
         if (value == null) {
             return "";
@@ -94,6 +94,8 @@
         .vc-scope-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 12px; }
         .vc-scope-global { background: rgba(99,102,241,.18); color: #a5b4fc; }
         .vc-scope-centre { background: rgba(16,185,129,.18); color: #6ee7b7; }
+        .cf-page-header p { margin: 4px 0 0 0; font-size: 14px; color: #64748b; }
+        html[data-theme="dark"] .cf-page-header p { color: #94a3b8; }
     </style>
 </head>
 <body>
