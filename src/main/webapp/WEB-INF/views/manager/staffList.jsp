@@ -190,7 +190,7 @@
             <% } %>
 
             <!-- KPI METRICS: TỔNG SỐ, ĐANG HOẠT ĐỘNG, TẠM NGƯNG, VỊ TRÍ -->
-            <div class="cf-kpi-grid">
+            <div class="cf-kpi-grid staff-kpi-grid">
                 <div class="cf-kpi-card">
                     <span class="cf-kpi-label">Tổng số nhân viên</span>
                     <div class="cf-kpi-value"><%= totalStaff %></div>
@@ -235,28 +235,6 @@
                     </div>
 
                     <div class="staff-toolbar">
-                        <form class="staff-search-form" method="get"
-                              action="${pageContext.request.contextPath}/staffList">
-                            <% if (cFilterVal != null) { %>
-                                <input type="hidden" name="centreId" value="<%= cFilterVal %>">
-                            <% } %>
-
-                            <div class="staff-search-box">
-                                <span class="staff-search-icon" aria-hidden="true">⌕</span>
-                                <input type="search" name="search" id="staffFilterInput"
-                                       value="<%= searchParam != null ? searchParam : "" %>"
-                                       placeholder="Tìm mã, họ tên, tài khoản..."
-                                       aria-label="Tìm nhân viên">
-                            </div>
-
-                            <button type="submit" class="staff-control-btn">Tìm</button>
-
-                            <% if (searchParam != null && !searchParam.trim().isEmpty()) { %>
-                                <a href="${pageContext.request.contextPath}/staffList<%= cFilterVal != null ? "?centreId=" + cFilterVal : "" %>"
-                                   class="staff-control-btn">Xóa lọc</a>
-                            <% } %>
-                        </form>
-
                         <div class="staff-select-wrap">
                             <select id="staffRoleFilter" aria-label="Lọc theo vị trí công việc">
                                 <option value="">Tất cả vị trí</option>
@@ -274,11 +252,27 @@
                             </select>
                         </div>
 
-                        <button type="button"
-                                class="staff-control-btn staff-control-btn-primary"
-                                onclick="openCreateStaffModal()">
-                            <span aria-hidden="true" style="font-weight: 700; font-size: 15px; margin-right: 2px;">+</span> Thêm nhân viên
-                        </button>
+                        <form class="staff-search-form" id="staffSearchForm" method="get"
+                              action="${pageContext.request.contextPath}/staffList">
+                            <% if (cFilterVal != null) { %>
+                                <input type="hidden" name="centreId" value="<%= cFilterVal %>">
+                            <% } %>
+
+                            <div class="staff-search-box">
+                                <span class="staff-search-icon" aria-hidden="true">⌕</span>
+                                <input type="search" name="search" id="staffFilterInput"
+                                       value="<%= searchParam != null ? searchParam : "" %>"
+                                       placeholder="Tìm mã, họ tên, tài khoản..."
+                                       aria-label="Tìm nhân viên">
+                            </div>
+
+                            <% if (searchParam != null && !searchParam.trim().isEmpty()) { %>
+                                <a href="${pageContext.request.contextPath}/staffList<%= cFilterVal != null ? "?centreId=" + cFilterVal : "" %>"
+                                   class="staff-control-btn">Xóa lọc</a>
+                            <% } %>
+                        </form>
+
+                        <button type="submit" form="staffSearchForm" class="staff-control-btn">Tìm</button>
                     </div>
                 </div>
 
@@ -375,9 +369,6 @@
                                                     <option value="INACTIVE" <%= "INACTIVE".equalsIgnoreCase(st) ? "selected" : "" %>>Tạm ngưng</option>
                                                     <option value="LOCKED" <%= "LOCKED".equalsIgnoreCase(st) ? "selected" : "" %>>Khóa</option>
                                                 </select>
-                                                <span class="status-indicator"
-                                                      id="status-ind-<%= item.getUserId() %>"
-                                                      style="display:none;">✓</span>
                                             </div>
                                         </div>
                                     </td>
@@ -623,7 +614,6 @@
         var staffName = selectEl.getAttribute('data-name') || 'nhân viên';
         var newStatus = selectEl.value;
         var previousStatus = selectEl.getAttribute('data-previous-status') || '';
-        var ind = document.getElementById('status-ind-' + userId);
         var badge = document.getElementById('badge-status-' + userId);
         var row = selectEl.closest('.staff-row');
 
@@ -633,12 +623,6 @@
         }
 
         selectEl.disabled = true;
-
-        if (ind) {
-            ind.textContent = '…';
-            ind.style.display = 'inline';
-            ind.style.color = '#94a3b8';
-        }
 
         var formData = new URLSearchParams();
         formData.append('action', 'status');
@@ -682,16 +666,6 @@
                 row.classList.add('st-' + newStatus.toLowerCase());
             }
 
-            if (ind) {
-                ind.textContent = '✓';
-                ind.style.color = '#6ee7b7';
-                ind.style.display = 'inline';
-
-                setTimeout(function() {
-                    ind.style.display = 'none';
-                }, 3000);
-            }
-
             var statusLabel = newStatus === 'ACTIVE' ? 'Hoạt động'
                 : (newStatus === 'INACTIVE' ? 'Tạm ngưng' : 'Đã khóa');
 
@@ -703,7 +677,6 @@
         })
         .finally(function() {
             selectEl.disabled = false;
-            if (ind && ind.textContent === '…') ind.style.display = 'none';
         });
     }
 

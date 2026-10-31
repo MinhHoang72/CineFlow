@@ -75,7 +75,7 @@
                 <div class="banner-content">
                     <div class="banner-badge">TRUNG TÂM ĐIỀU HÀNH CỤM RẠP</div>
                     <h1>Xin chào, <%= managerName %>!</h1>
-                    <p>Quản lý vận hành, lịch chiếu, giá vé và nhân sự tại <strong><%= centreName %></strong>.</p>
+                    <p>Quản lý lịch chiếu, phòng chiếu và nhân sự tại <strong><%= centreName %></strong>.</p>
                     <div class="banner-actions">
                         <a href="${pageContext.request.contextPath}/showtimes" class="cf-btn cf-btn-primary">Quản lý lịch chiếu</a>
                         <a href="${pageContext.request.contextPath}/report/operations" class="cf-btn cf-btn-ghost">Chỉ số vận hành</a>
@@ -141,14 +141,6 @@
                     <div class="quick-nav-meta">
                         <h3>Lịch chiếu phim</h3>
                         <p>Tạo và quản lý suất chiếu, phòng và ghế</p>
-                    </div>
-                </a>
-
-                <a href="${pageContext.request.contextPath}/pricing" class="quick-nav-card">
-                    <div class="quick-nav-icon" style="background:#FEF3C7;color:#B45309">₫</div>
-                    <div class="quick-nav-meta">
-                        <h3>Bảng giá vé &amp; phụ thu</h3>
-                        <p>Cấu hình giá cơ bản, khung giờ và ghế</p>
                     </div>
                 </a>
 
@@ -255,7 +247,7 @@
                                 <strong style="font-size: 13px; color: #F8FAFC;">Điều hành cụm rạp</strong>
                             </div>
                             <p style="margin: 0; font-size: 12px; color: #94a3b8; line-height: 1.5;">
-                                Hãy kiểm tra <a href="${pageContext.request.contextPath}/showtimes" style="color: var(--cf-primary); font-weight: 600;">Lịch chiếu phim</a> để đảm bảo các suất chiếu giờ vàng được cấu hình phòng và giá vé hợp lý.
+                                Hãy kiểm tra <a href="${pageContext.request.contextPath}/showtimes" style="color: var(--cf-primary); font-weight: 600;">Lịch chiếu phim</a> để đảm bảo phòng chiếu và các suất giờ vàng được bố trí hợp lý.
                             </p>
                         </div>
                     </div>

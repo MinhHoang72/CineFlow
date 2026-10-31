@@ -23,11 +23,11 @@
     
     String pageDescription = pageDescObj != null ? pageDescObj.toString() : "";
 
-    request.setAttribute("activeNav", "showtimes".equals(activeTab) ? "showtimes" : "pricing");
+    request.setAttribute("activeNav", isAdmin && !"showtimes".equals(activeTab) ? "pricing" : "showtimes");
     request.setAttribute("pageTitle", pageTitle);
     request.setAttribute("pageDescription", pageDescription);
     request.setAttribute("activeTab", activeTab);
-    request.setAttribute("pageBreadcrumb", "Suất chiếu & giá vé");
+    request.setAttribute("pageBreadcrumb", isAdmin ? "Suất chiếu & giá vé" : "Lịch chiếu phim");
 %>
 <!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title><c:out value="${pageTitle}" /> | CineFlow</title>

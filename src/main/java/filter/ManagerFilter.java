@@ -64,6 +64,19 @@ public class ManagerFilter implements Filter {
         return false;
     }
 
+    private boolean isAdmin(HttpSession session) {
+        if (session == null) {
+            return false;
+        }
+        Object roleObj = session.getAttribute("role");
+        if (roleObj instanceof String) {
+            return "ADMIN".equalsIgnoreCase((String) roleObj);
+        }
+        Object userObj = session.getAttribute("user");
+        return userObj instanceof User
+                && "ADMIN".equalsIgnoreCase(((User) userObj).getRole());
+    }
+
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
         // Khởi tạo tài nguyên cho Filter nếu cần thiết
@@ -107,6 +120,15 @@ public class ManagerFilter implements Filter {
         if (!isManagerOrAdmin(session)) {
             httpResponse.sendError(HttpServletResponse.SC_FORBIDDEN,
                     "Bạn không có quyền truy cập khu vực quản lý.");
+            return;
+        }
+
+        String servletPath = httpRequest.getServletPath();
+        boolean pricingRoute = "/pricing".equals(servletPath)
+                || (servletPath != null && servletPath.startsWith("/pricing/"));
+        if (pricingRoute && !isAdmin(session)) {
+            httpResponse.sendError(HttpServletResponse.SC_FORBIDDEN,
+                    "Chức năng quản lý giá vé và phụ thu chỉ dành cho quản trị viên.");
             return;
         }
 

@@ -48,8 +48,6 @@
             activeNav = "counter";
         } else if (fullReqPath.contains("/showtimes") || jspUri.contains("showtime")) {
             activeNav = "showtimes";
-        } else if (fullReqPath.contains("/pricing") || jspUri.contains("pricing")) {
-            activeNav = "pricing";
         } else if (fullReqPath.contains("/halls") || fullReqPath.contains("/seats") || jspUri.contains("hall") || jspUri.contains("seat")) {
             activeNav = "halls";
         } else if (fullReqPath.contains("/staff/fnb-sale")) {
@@ -137,11 +135,6 @@
                 <span class="icon">
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="17" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line><line x1="2" y1="7" x2="7" y2="7"></line><line x1="2" y1="17" x2="7" y2="17"></line><line x1="17" y1="17" x2="22" y2="17"></line><line x1="17" y1="7" x2="22" y2="7"></line></svg>
                 </span>Lịch chiếu phim
-            </a>
-            <a class="<%= "pricing".equals(activeNav) ? "active" : "" %>" href="<%= cfPath %>/pricing">
-                <span class="icon">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
-                </span>Bảng giá vé &amp; Phụ thu
             </a>
             <a class="<%= "halls".equals(activeNav) ? "active" : "" %>" href="<%= cfPath %>/manager/halls">
                 <span class="icon">
