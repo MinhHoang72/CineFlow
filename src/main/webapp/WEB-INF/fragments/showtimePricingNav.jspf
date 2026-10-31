@@ -3,12 +3,15 @@
 <c:set var="tab" value="${not empty activeTab ? activeTab : 'showtimes'}" />
 <c:set var="centresList" value="${not empty centres ? centres : cinemaCentres}" />
 <c:set var="currentCentreId" value="${not empty selectedCentreId ? selectedCentreId : (not empty centreId ? centreId : cinemaCentreId)}" />
+<c:set var="canManageCinemaPricing" value="${sessionScope.role eq 'ADMIN' or sessionScope.user.role eq 'ADMIN'}" />
 
-<nav class="st-tabs" aria-label="Suất chiếu và giá vé">
+<nav class="st-tabs" aria-label="${canManageCinemaPricing ? 'Điều hướng suất chiếu và giá vé' : 'Điều hướng lịch chiếu'}">
 <a class="${tab == 'showtimes' ? 'is-active' : ''}" href="${pageContext.request.contextPath}/showtimes" ${tab == 'showtimes' ? 'aria-current="page"' : ''}>Suất chiếu</a>
+<c:if test="${canManageCinemaPricing}">
 <a class="${tab == 'base' ? 'is-active' : ''}" href="${pageContext.request.contextPath}/pricing" ${tab == 'base' ? 'aria-current="page"' : ''}>Giá cơ bản</a>
 <a class="${tab == 'time' ? 'is-active' : ''}" href="${pageContext.request.contextPath}/pricing/time-slots" ${tab == 'time' ? 'aria-current="page"' : ''}>Phụ thu khung giờ</a>
 <a class="${tab == 'surcharge' ? 'is-active' : ''}" href="${pageContext.request.contextPath}/pricing/seat-surcharges" ${tab == 'surcharge' ? 'aria-current="page"' : ''}>Phụ thu ghế & phòng</a>
+</c:if>
 </nav>
 
 <%-- Chọn cụm rạp --%>

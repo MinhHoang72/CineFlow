@@ -11,19 +11,6 @@
     <c:set var="seatBackUrl" value="${ctx}/booking?centreId=${showtime.centreId}&movieId=${showtime.movieId}"/>
 </c:if>
 
-<style>
-    /* Mau ghe theo giao dien chung: css/booking/booking.css */
-    .seat-row { display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 6px; }
-    .row-label { width: 24px; font-weight: bold; text-align: center; }
-    .seat input { display: none; }
-    .seat span { display: inline-block; width: 40px; height: 34px; line-height: 34px; text-align: center;
-                 border-radius: 6px; font-size: 12px; cursor: pointer; border: 1px solid; }
-    .seat.SWEETBOX span { width: 56px; }
-    .seat input:disabled + span { cursor: not-allowed; }
-    .legend span { display: inline-block; width: 18px; height: 18px; border-radius: 4px; vertical-align: middle;
-                   margin-right: 4px; border: 1px solid; }
-</style>
-
 <div class="card mb-4">
     <div class="card-body">
         <h5 class="mb-1"><c:out value="${showtime.movieTitle}"/></h5>

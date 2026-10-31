@@ -117,6 +117,24 @@ public class VoucherDAO {
     // FIND
     // ─────────────────────────────────────────────────────────────────────────
 
+    public List<Voucher> findActiveForHome(int limit) {
+        List<Voucher> rows = new ArrayList<>();
+        String sql = "SELECT TOP (?) " + COLUMNS + FROM_JOIN
+                + " WHERE v.Status = 'ACTIVE' AND v.StartDate <= GETDATE() AND v.EndDate >= GETDATE()"
+                + " AND (v.UsageLimit IS NULL OR v.UsedCount < v.UsageLimit)"
+                + " ORDER BY v.VoucherID DESC";
+        try (Connection connection = DBContext.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, limit);
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) rows.add(read(rs));
+            }
+        } catch (SQLException exception) {
+            exception.printStackTrace();
+        }
+        return rows;
+    }
+
     public Voucher find(int id) {
         try (Connection connection = DBContext.getConnection();
              PreparedStatement statement = connection.prepareStatement(

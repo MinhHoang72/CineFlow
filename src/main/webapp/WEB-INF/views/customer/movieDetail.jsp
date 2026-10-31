@@ -416,7 +416,6 @@
             </div>
             <div>
                 <h4>CINEFLOW</h4>
-                <a href="${pageContext.request.contextPath}/home#promotions">Tin mới &amp; ưu đãi</a>
                 <a href="${pageContext.request.contextPath}/cinema">Trung tâm chiếu phim</a>
                 <a href="${pageContext.request.contextPath}/home#movies">Phim đang chiếu</a>
                 <a href="${pageContext.request.contextPath}/booking?view=schedule">Lịch chiếu</a>

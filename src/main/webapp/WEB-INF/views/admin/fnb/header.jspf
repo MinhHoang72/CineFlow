@@ -1,4 +1,4 @@
-﻿<%@ page pageEncoding="UTF-8" %>
+<%@ page pageEncoding="UTF-8" %>
 <%@ page import="model.entity.User" %>
 <%!
     static String esc(Object value) {
@@ -41,7 +41,16 @@
     String ctx = request.getContextPath();
     User currentUser = (User) session.getAttribute("user");
     boolean adminUser = currentUser != null && "ADMIN".equals(currentUser.getRole());
-    request.setAttribute("activeNav", "fnb");
+    String fnbFwdPath = (String) request.getAttribute("jakarta.servlet.forward.path_info");
+    if (fnbFwdPath == null) {
+        fnbFwdPath = request.getPathInfo();
+    }
+    String fnbUri = request.getRequestURI();
+    if ("/stock".equals(fnbFwdPath) || fnbUri.contains("Inventory") || fnbUri.contains("/fnb/stock")) {
+        request.setAttribute("activeNav", "fnb-stock");
+    } else {
+        request.setAttribute("activeNav", "fnb");
+    }
     String shellTitle = (String) request.getAttribute("pageTitle");
     String flashType = (String) request.getAttribute("flashType");
     String flashMessage = (String) request.getAttribute("flashMessage");

@@ -52,7 +52,7 @@ public class TicketCheckInServlet extends HttpServlet {
         if (user == null || !canEnter(request, user, response)) {
             return;
         }
-        if (!"TICKET_CHECKER_STAFF".equals(user.getRole())) {
+        if (!"TICKET_CHECKER_STAFF".equalsIgnoreCase(user.getRole()) && !"STAFF".equalsIgnoreCase(user.getRole())) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN, "Chỉ nhân viên soát vé của Centre mới được soát vé.");
             return;
         }
@@ -95,7 +95,7 @@ public class TicketCheckInServlet extends HttpServlet {
     }
 
     private boolean canEnter(HttpServletRequest request, User user, HttpServletResponse response) throws IOException {
-        boolean staff = "TICKET_CHECKER_STAFF".equalsIgnoreCase(user.getRole());
+        boolean staff = "TICKET_CHECKER_STAFF".equalsIgnoreCase(user.getRole()) || "STAFF".equalsIgnoreCase(user.getRole());
         boolean manager = "MANAGER".equalsIgnoreCase(user.getRole());
         if (!staff && !manager || user.getCentreId() == null) {
             response.sendRedirect(request.getContextPath() + WebUtil.getRoleDefaultPath(user));
@@ -115,10 +115,11 @@ public class TicketCheckInServlet extends HttpServlet {
         request.setAttribute("csrf", token);
         request.setAttribute("result", result);
         request.setAttribute("code", code);
-        request.setAttribute("canVerify", "TICKET_CHECKER_STAFF".equals(user.getRole()));
+        request.setAttribute("canVerify", "TICKET_CHECKER_STAFF".equalsIgnoreCase(user.getRole()) || "STAFF".equalsIgnoreCase(user.getRole()));
         request.setAttribute("logs", dao.recent(user.getCentreId(), HISTORY_SIZE));
         request.setAttribute("pageTitle", "Soát vé");
         request.setAttribute("pageBreadcrumb", crumb(user, "Vận hành"));
+        request.setAttribute("activeNav", "checkin");
         request.getRequestDispatcher("/WEB-INF/views/staff/checkin/ticketCheckIn.jsp").forward(request, response);
     }
 }

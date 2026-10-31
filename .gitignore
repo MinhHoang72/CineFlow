@@ -36,3 +36,8 @@ src/main/webapp/uploads/video_trailer/*.mp4
 
 # Demo / scratch assets
 /demo_assets/
+
+# Office documents
+*.pptx
+*.docx
+*.xlsx

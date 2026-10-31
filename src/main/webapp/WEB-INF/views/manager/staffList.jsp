@@ -13,7 +13,7 @@
     }
 
     if (request.getAttribute("staff") == null) {
-        response.sendRedirect(request.getContextPath() + "/staff");
+        response.sendRedirect(request.getContextPath() + "/staffList");
         return;
     }
 
@@ -31,6 +31,30 @@
     String errorParam = request.getParameter("error");
     String searchParam = request.getParameter("search");
     String cFilterVal = request.getParameter("centreId");
+
+    request.setAttribute("activeNav", "staff");
+    request.setAttribute("pageTitle", "Quản lý nhân sự");
+    request.setAttribute("pageBreadcrumb", "Nhân sự");
+
+    int totalStaff = staff != null ? staff.size() : 0;
+    int activeStaffCount = 0;
+    int inactiveStaffCount = 0;
+    int salesCount = 0;
+    int checkerCount = 0;
+    if (staff != null) {
+        for (User u : staff) {
+            if ("ACTIVE".equalsIgnoreCase(u.getStatus())) {
+                activeStaffCount++;
+            } else {
+                inactiveStaffCount++;
+            }
+            if (u.isTicketSalesStaff()) {
+                salesCount++;
+            } else if (u.isTicketCheckerStaff()) {
+                checkerCount++;
+            }
+        }
+    }
 %>
 
 <!DOCTYPE html>
@@ -47,10 +71,25 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/forms.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/tables.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/manager/shell.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin/dashboard.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/manager/staff.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin/dashboard.css">
 
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/staff/directory.css?v=<%= System.currentTimeMillis() %>">
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll(".cf-alert").forEach(function (alert) {
+            setTimeout(function () {
+                alert.style.transition = "opacity 0.4s ease";
+                alert.style.opacity = "0";
+
+                setTimeout(function () {
+                    alert.remove();
+                }, 400);
+            }, 3000);
+        });
+    });
+</script>
 </head>
 
 <body>
@@ -69,10 +108,15 @@
         <% } %>
 
         <main class="cf-content">
-            <div class="cf-page-header">
+            <div class="cf-page-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
                 <div>
                     <h1>Nhân sự <%= currentCentreName %></h1>
                 </div>
+                <% if (selectedCentreId != null || isAdminRole) { %>
+                <button type="button" class="cf-btn cf-btn-primary" onclick="openCreateStaffModal()">
+                    <span style="font-weight: 700; font-size: 15px; margin-right: 4px;">+</span> Thêm nhân viên mới
+                </button>
+                <% } %>
             </div>
 
             <% if ("created".equals(successParam)) { %>
@@ -145,6 +189,30 @@
                 </div>
             <% } %>
 
+            <!-- KPI METRICS: TỔNG SỐ, ĐANG HOẠT ĐỘNG, TẠM NGƯNG, VỊ TRÍ -->
+            <div class="cf-kpi-grid staff-kpi-grid">
+                <div class="cf-kpi-card">
+                    <span class="cf-kpi-label">Tổng số nhân viên</span>
+                    <div class="cf-kpi-value"><%= totalStaff %></div>
+                </div>
+                <div class="cf-kpi-card">
+                    <span class="cf-kpi-label">Đang hoạt động</span>
+                    <div class="cf-kpi-value" style="color: #10b981;"><%= activeStaffCount %></div>
+                </div>
+                <div class="cf-kpi-card">
+                    <span class="cf-kpi-label">Tạm ngưng / Đã khóa</span>
+                    <div class="cf-kpi-value" style="color: #ef4444;"><%= inactiveStaffCount %></div>
+                </div>
+                <div class="cf-kpi-card">
+                    <span class="cf-kpi-label">Nhân viên Bán vé</span>
+                    <div class="cf-kpi-value" style="color: #0284c7;"><%= salesCount %></div>
+                </div>
+                <div class="cf-kpi-card">
+                    <span class="cf-kpi-label">Nhân viên Soát vé</span>
+                    <div class="cf-kpi-value" style="color: #8b5cf6;"><%= checkerCount %></div>
+                </div>
+            </div>
+
             <% if (selectedCentreId == null && !isAdminRole) { %>
                 <section class="cf-card" style="padding:40px 24px;text-align:center;margin-top:20px;">
                     <div style="font-size:40px;margin-bottom:14px;">🏛</div>
@@ -167,28 +235,6 @@
                     </div>
 
                     <div class="staff-toolbar">
-                        <form class="staff-search-form" method="get"
-                              action="${pageContext.request.contextPath}/staff">
-                            <% if (cFilterVal != null) { %>
-                                <input type="hidden" name="centreId" value="<%= cFilterVal %>">
-                            <% } %>
-
-                            <div class="staff-search-box">
-                                <span class="staff-search-icon" aria-hidden="true">⌕</span>
-                                <input type="search" name="search" id="staffFilterInput"
-                                       value="<%= searchParam != null ? searchParam : "" %>"
-                                       placeholder="Tìm mã, họ tên, tài khoản..."
-                                       aria-label="Tìm nhân viên">
-                            </div>
-
-                            <button type="submit" class="staff-control-btn">Tìm</button>
-
-                            <% if (searchParam != null && !searchParam.trim().isEmpty()) { %>
-                                <a href="${pageContext.request.contextPath}/staff<%= cFilterVal != null ? "?centreId=" + cFilterVal : "" %>"
-                                   class="staff-control-btn">Xóa lọc</a>
-                            <% } %>
-                        </form>
-
                         <div class="staff-select-wrap">
                             <select id="staffRoleFilter" aria-label="Lọc theo vị trí công việc">
                                 <option value="">Tất cả vị trí</option>
@@ -206,11 +252,27 @@
                             </select>
                         </div>
 
-                        <button type="button"
-                                class="staff-control-btn staff-control-btn-primary"
-                                onclick="openCreateStaffModal()">
-                            <span aria-hidden="true" style="font-weight: 700; font-size: 15px; margin-right: 2px;">+</span> Thêm nhân viên
-                        </button>
+                        <form class="staff-search-form" id="staffSearchForm" method="get"
+                              action="${pageContext.request.contextPath}/staffList">
+                            <% if (cFilterVal != null) { %>
+                                <input type="hidden" name="centreId" value="<%= cFilterVal %>">
+                            <% } %>
+
+                            <div class="staff-search-box">
+                                <span class="staff-search-icon" aria-hidden="true">⌕</span>
+                                <input type="search" name="search" id="staffFilterInput"
+                                       value="<%= searchParam != null ? searchParam : "" %>"
+                                       placeholder="Tìm mã, họ tên, tài khoản..."
+                                       aria-label="Tìm nhân viên">
+                            </div>
+
+                            <% if (searchParam != null && !searchParam.trim().isEmpty()) { %>
+                                <a href="${pageContext.request.contextPath}/staffList<%= cFilterVal != null ? "?centreId=" + cFilterVal : "" %>"
+                                   class="staff-control-btn">Xóa lọc</a>
+                            <% } %>
+                        </form>
+
+                        <button type="submit" form="staffSearchForm" class="staff-control-btn">Tìm</button>
                     </div>
                 </div>
 
@@ -307,9 +369,6 @@
                                                     <option value="INACTIVE" <%= "INACTIVE".equalsIgnoreCase(st) ? "selected" : "" %>>Tạm ngưng</option>
                                                     <option value="LOCKED" <%= "LOCKED".equalsIgnoreCase(st) ? "selected" : "" %>>Khóa</option>
                                                 </select>
-                                                <span class="status-indicator"
-                                                      id="status-ind-<%= item.getUserId() %>"
-                                                      style="display:none;">✓</span>
                                             </div>
                                         </div>
                                     </td>
@@ -334,7 +393,7 @@
             <button type="button" class="cf-modal-close" onclick="closeCreateStaffModal()" aria-label="Đóng">&times;</button>
         </div>
 
-        <form method="post" action="${pageContext.request.contextPath}/staff">
+        <form method="post" action="${pageContext.request.contextPath}/staffList">
             <input type="hidden" name="action" value="create">
 
             <div class="cf-modal-body">
@@ -419,7 +478,7 @@
             <button type="button" class="cf-modal-close" onclick="closeEditStaffModal()" aria-label="Đóng">&times;</button>
         </div>
 
-        <form method="post" action="${pageContext.request.contextPath}/staff">
+        <form method="post" action="${pageContext.request.contextPath}/staffList">
             <input type="hidden" name="action" value="update">
             <input type="hidden" name="userId" id="editStaffUserId">
 
@@ -555,7 +614,6 @@
         var staffName = selectEl.getAttribute('data-name') || 'nhân viên';
         var newStatus = selectEl.value;
         var previousStatus = selectEl.getAttribute('data-previous-status') || '';
-        var ind = document.getElementById('status-ind-' + userId);
         var badge = document.getElementById('badge-status-' + userId);
         var row = selectEl.closest('.staff-row');
 
@@ -566,19 +624,13 @@
 
         selectEl.disabled = true;
 
-        if (ind) {
-            ind.textContent = '…';
-            ind.style.display = 'inline';
-            ind.style.color = '#94a3b8';
-        }
-
         var formData = new URLSearchParams();
         formData.append('action', 'status');
         formData.append('ajax', '1');
         formData.append('userId', userId);
         formData.append('status', newStatus);
 
-        fetch('${pageContext.request.contextPath}/staff', {
+        fetch('${pageContext.request.contextPath}/staffList', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
@@ -614,16 +666,6 @@
                 row.classList.add('st-' + newStatus.toLowerCase());
             }
 
-            if (ind) {
-                ind.textContent = '✓';
-                ind.style.color = '#6ee7b7';
-                ind.style.display = 'inline';
-
-                setTimeout(function() {
-                    ind.style.display = 'none';
-                }, 3000);
-            }
-
             var statusLabel = newStatus === 'ACTIVE' ? 'Hoạt động'
                 : (newStatus === 'INACTIVE' ? 'Tạm ngưng' : 'Đã khóa');
 
@@ -635,7 +677,6 @@
         })
         .finally(function() {
             selectEl.disabled = false;
-            if (ind && ind.textContent === '…') ind.style.display = 'none';
         });
     }
 

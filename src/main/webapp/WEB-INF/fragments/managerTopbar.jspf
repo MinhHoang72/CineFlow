@@ -1,2 +1,100 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<jsp:include page="/WEB-INF/fragments/adminTopbar.jspf" />
+<%@ page import="model.entity.User" %>
+<%
+    String tbTitle = (String) request.getAttribute("pageTitle");
+    if (tbTitle == null || tbTitle.isBlank()) {
+        tbTitle = "Tổng quan điều hành";
+    }
+
+    String tbCrumb = (String) request.getAttribute("pageBreadcrumb");
+
+    User tbUser = (User) session.getAttribute("user");
+
+    String tbRole = (String) session.getAttribute("role");
+    if (tbRole == null && tbUser != null) {
+        tbRole = tbUser.getRole();
+    }
+    if (tbRole == null || tbRole.isBlank()) {
+        tbRole = "MANAGER";
+    }
+
+    String defaultName = "MANAGER".equalsIgnoreCase(tbRole)
+            ? "Cinema Manager"
+            : ("ADMIN".equalsIgnoreCase(tbRole) ? "Administrator" : "Staff");
+
+    String tbName = defaultName;
+    if (tbUser != null
+            && tbUser.getFullName() != null
+            && !tbUser.getFullName().isBlank()) {
+        tbName = tbUser.getFullName().trim();
+    }
+
+    String tbInitial = tbName.substring(0, 1).toUpperCase();
+    String tbAvatar = tbUser != null ? tbUser.getAvatar() : null;
+    String tbCtx = request.getContextPath();
+    boolean isStaffUser = !"ADMIN".equalsIgnoreCase(tbRole) && !"MANAGER".equalsIgnoreCase(tbRole);
+    String tbHomeUrl = isStaffUser ? (tbCtx + "/dashboard") : (tbCtx + "/manager/dashboard");
+%>
+<%@ include file="/WEB-INF/fragments/theme.jspf" %>
+<style>
+    .cf-topbar-user > a {
+        gap: 11px;
+        padding: 6px 14px 6px 6px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 999px;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, .06);
+    }
+    .cf-topbar-user > a:hover {
+        background: #ffffff;
+        border-color: #cbd5e1;
+        box-shadow: 0 4px 12px rgba(15, 23, 42, .1);
+    }
+    .cf-topbar-user .avatar {
+        width: 34px;
+        height: 34px;
+        background: #fff1f2;
+        border: 2px solid #fda4af;
+        color: #e11d48;
+        font-size: 14px;
+    }
+    .cf-topbar-name {
+        max-width: 170px;
+        color: #172033;
+        font-size: 13px;
+        font-weight: 700;
+        padding-right: 4px;
+    }
+</style>
+<header class="cf-topbar">
+    <div class="cf-topbar-breadcrumb">
+        <div class="cf-topbar-title">
+            <a href="<%= tbHomeUrl %>">CineFlow</a>
+
+            <% if (tbCrumb != null && !tbCrumb.isBlank()) { %>
+                <span class="cf-breadcrumb-separator">/</span>
+                <span class="cf-breadcrumb-parent"><%= tbCrumb %></span>
+            <% } %>
+
+            <span class="cf-breadcrumb-separator">/</span>
+            <strong><%= tbTitle %></strong>
+        </div>
+    </div>
+
+    <div class="cf-topbar-user">
+        <a href="<%= tbCtx %>/account" title="Xem hồ sơ tài khoản">
+            <span class="avatar">
+                <% if (tbAvatar != null && !tbAvatar.isBlank()) { %>
+                    <img
+                        src="<%= tbAvatar %>"
+                        alt="Ảnh đại diện"
+                    >
+                <% } else { %>
+                    <%= tbInitial %>
+                <% } %>
+            </span>
+
+            <span class="cf-topbar-name"><%= tbName %></span>
+        </a>
+    </div>
+</header>

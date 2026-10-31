@@ -6285,10 +6285,6 @@ html[data-theme="light"].cf-css-manager-staff .cf-status-select.val-locked {
     color: #f87171;
 }
 
-html[data-theme="light"].cf-css-manager-staff .status-indicator {
-    color: #4ade80;
-}
-
 html[data-theme="light"].cf-css-manager-staff .cf-toast {
     background: #ffffff;
     border: 1px solid #e2e8f0;
@@ -7552,7 +7548,7 @@ html[data-theme="light"].cf-css-staff-directory .cf-table thead th {
 }
 
 html[data-theme="light"].cf-css-staff-directory .cf-table tbody td {
-    border-bottom: 1px solid rgba(42, 51, 65, .72);
+    border-bottom: 0;
     color: #0f172a;
 }
 
@@ -7632,10 +7628,6 @@ html[data-theme="light"].cf-css-staff-directory .status-select-wrap .cf-status-s
 html[data-theme="light"].cf-css-staff-directory .status-select-wrap .cf-status-select option {
     background: #ffffff;
     color: #0f172a;
-}
-
-html[data-theme="light"].cf-css-staff-directory .status-indicator {
-    color: #6ee7b7;
 }
 
 html[data-theme="light"].cf-css-staff-directory .cf-empty {

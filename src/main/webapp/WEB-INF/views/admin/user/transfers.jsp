@@ -1,5 +1,5 @@
-﻿<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ page import="model.entity.User,model.entity.Centre,model.entity.StaffTransfer,model.entity.ManagerAssignment,java.util.List,java.text.SimpleDateFormat" %>
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ page import="model.entity.User,model.entity.Centre,java.util.List,java.text.SimpleDateFormat" %>
 <%
     String authRole = (String) session.getAttribute("role");
     if (authRole == null && session.getAttribute("user") instanceof model.entity.User) {
@@ -13,10 +13,7 @@
     List<Centre> centresWithManager = (List<Centre>) request.getAttribute("centresWithManager");
     List<Centre> activeCentres = (List<Centre>) request.getAttribute("activeCentres");
     List<User> managers = (List<User>) request.getAttribute("managers");
-    List<ManagerAssignment> managerAssignments = (List<ManagerAssignment>) request.getAttribute("managerAssignments");
-
     List<User> staffList = (List<User>) request.getAttribute("staffList");
-    List<StaffTransfer> transferHistory = (List<StaffTransfer>) request.getAttribute("transferHistory");
     Integer selectedCentreId = (Integer) request.getAttribute("selectedCentreId");
 
     request.setAttribute("activeNav", "transfers");
@@ -27,9 +24,6 @@
     String activeTabParam = request.getParameter("tab");
     if (activeTabParam == null) activeTabParam = "manager";
 
-    SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm");
-    SimpleDateFormat sdfDate = new SimpleDateFormat("dd/MM/yyyy");
-    String todayStr = new SimpleDateFormat("yyyy-MM-dd").format(new java.util.Date());
     String roleFilter = (String) request.getAttribute("roleFilter");
 %>
 <!DOCTYPE html>
@@ -37,7 +31,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bổ nhiệm & Điều chuyển Nhân sự | CineFlow Admin</title>
+    <title>Bổ nhiệm &amp; Điều chuyển Nhân sự | CineFlow Admin</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/reset.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/variables.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/buttons.css">
@@ -56,12 +50,12 @@
         <jsp:include page="/WEB-INF/fragments/adminTopbar.jspf" />
 
         <main class="cf-content">
-            <div class="cf-page-header" style="margin-bottom: 24px;">
-                <div style="display: flex; align-items: center; gap: 14px;">
-                    <div style="width: 44px; height: 44px; background: rgba(255, 40, 85, 0.12); border: 1px solid rgba(255, 40, 85, 0.25); border-radius: 10px; display: grid; place-items: center; font-size: 22px;">👥</div>
+            <div class="cf-page-header cf-page-header-wrap">
+                <div class="cf-page-header-info">
+                    <div class="cf-page-icon icon-transfers">👥</div>
                     <div>
-                        <h1 style="margin: 0; font-size: 22px; font-weight: 700; color: #ffffff;">Bổ nhiệm & Điều chuyển nhân sự</h1>
-                        <p style="margin: 4px 0 0; color: var(--cf-muted, #94a3b8); font-size: 13px;">Quản lý bổ nhiệm Quản lý trung tâm, điều chuyển nhân sự cụm rạp và phê chuẩn thăng chức toàn hệ thống CineFlow.</p>
+                        <h1 class="cf-page-title">Bổ nhiệm &amp; Điều chuyển nhân sự</h1>
+                        <p class="cf-page-sub">Bổ nhiệm Quản lý và điều chuyển nhân sự giữa các chi nhánh.</p>
                     </div>
                 </div>
             </div>
@@ -74,18 +68,18 @@
                     <span class="cf-kpi-sub">Quy mô mạng lưới CineFlow</span>
                 </div>
                 <div class="cf-kpi-card">
-                    <span class="cf-kpi-label" style="color: #10b981;">Có Quản lý hoạt động</span>
-                    <div class="cf-kpi-value" style="color: #10b981;"><%= request.getAttribute("kpiAssignedCentres") != null ? request.getAttribute("kpiAssignedCentres") : 0 %></div>
+                    <span class="cf-kpi-label kpi-assigned">Có Quản lý hoạt động</span>
+                    <div class="cf-kpi-value kpi-assigned"><%= request.getAttribute("kpiAssignedCentres") != null ? request.getAttribute("kpiAssignedCentres") : 0 %></div>
                     <span class="cf-kpi-sub">Cụm rạp có Quản lý đương nhiệm (ACTIVE)</span>
                 </div>
-                <div class="cf-kpi-card" style="<%= (request.getAttribute("kpiUnassignedCentres") != null && (int)request.getAttribute("kpiUnassignedCentres") > 0) ? "border-color: rgba(245, 158, 11, 0.4); background: rgba(245, 158, 11, 0.06);" : "" %>">
-                    <span class="cf-kpi-label" style="color: #f59e0b;">Chưa có Quản lý</span>
-                    <div class="cf-kpi-value" style="color: #f59e0b;"><%= request.getAttribute("kpiUnassignedCentres") != null ? request.getAttribute("kpiUnassignedCentres") : 0 %></div>
+                <div class="cf-kpi-card <%= (request.getAttribute("kpiUnassignedCentres") != null && (int)request.getAttribute("kpiUnassignedCentres") > 0) ? "kpi-unassigned-card" : "" %>">
+                    <span class="cf-kpi-label kpi-unassigned">Chưa có Quản lý</span>
+                    <div class="cf-kpi-value kpi-unassigned"><%= request.getAttribute("kpiUnassignedCentres") != null ? request.getAttribute("kpiUnassignedCentres") : 0 %></div>
                     <span class="cf-kpi-sub">Rạp đang trống vị trí Quản lý</span>
                 </div>
                 <div class="cf-kpi-card">
-                    <span class="cf-kpi-label" style="color: #38bdf8;">Quản lý sẵn sàng</span>
-                    <div class="cf-kpi-value" style="color: #38bdf8;"><%= request.getAttribute("kpiUnassignedManagers") != null ? request.getAttribute("kpiUnassignedManagers") : 0 %></div>
+                    <span class="cf-kpi-label kpi-available">Quản lý sẵn sàng</span>
+                    <div class="cf-kpi-value kpi-available"><%= request.getAttribute("kpiUnassignedManagers") != null ? request.getAttribute("kpiUnassignedManagers") : 0 %></div>
                     <span class="cf-kpi-sub">Quản lý tự do sẵn sàng bổ nhiệm</span>
                 </div>
             </div>
@@ -94,7 +88,11 @@
                 <div class="cf-alert cf-alert-success">
                     <span>✓</span> <strong>Thành công!</strong> Đã bổ nhiệm Quản lý phụ trách trung tâm và ghi nhận vào lịch sử phân công.
                 </div>
-            <% } else if ("transferred".equals(successParam)) { %>
+            <% } else if ("manager_unassigned".equals(successParam)) { %>
+                <div class="cf-alert cf-alert-success">
+                    <span>✓</span> <strong>Thành công!</strong> Đã miễn nhiệm Quản lý khỏi trung tâm. Rạp hiện đã trống và Quản lý sẵn sàng để bổ nhiệm sang cơ sở khác.
+                </div>
+                <% } else if ("transferred".equals(successParam)) { %>
                 <div class="cf-alert cf-alert-success">
                     <span>✓</span> <strong>Thành công!</strong> Đã điều chuyển nhân sự sang trung tâm mới và lưu vết lịch sử kiểm toán.
                 </div>
@@ -108,7 +106,7 @@
                 </div>
             <% } else if ("dest_centre_has_manager".equals(errorParam)) { %>
                 <div class="cf-alert cf-alert-danger">
-                    <span>⚠</span> <strong>Từ chối điều chuyển:</strong> Trung tâm đích đã có Quản lý phụ trách. Hệ thống không cho phép ghi đè phân công của Quản lý tại trung tâm đích.
+                    <span>⚠</span> <strong>Từ chối điều chuyển Quản lý:</strong> Trung tâm đích đã có Quản lý phụ trách. Hệ thống chỉ cho phép điều chuyển Quản lý tới các trung tâm đang trống vị trí Quản lý.
                 </div>
             <% } else if ("manager_not_assigned".equals(errorParam)) { %>
                 <div class="cf-alert cf-alert-danger">
@@ -118,9 +116,17 @@
                 <div class="cf-alert cf-alert-danger">
                     <span>⚠</span> <strong>Xung đột đồng thời:</strong> Trung tâm hoặc Quản lý đã được phân công bởi một giao dịch khác vừa diễn ra. Vui lòng tải lại trang.
                 </div>
-            <% } else if ("unassign_not_supported".equals(errorParam)) { %>
+            <% } else if ("missing_unassign_reason".equals(errorParam)) { %>
                 <div class="cf-alert cf-alert-danger">
-                    <span>⚠</span> Nghiệp vụ miễn nhiệm Quản lý không thuộc phạm vi xử lý của đợt này.
+                    <span>⚠</span> Vui lòng nhập lý do miễn nhiệm Quản lý để phục vụ kiểm toán và lưu vết nhiệm kỳ.
+                </div>
+            <% } else if ("unassign_failed".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger">
+                    <span>⚠</span> <strong>Lỗi:</strong> Thao tác miễn nhiệm Quản lý không thành công. Vui lòng thử lại.
+                </div>
+            <% } else if ("manager_transfer_not_allowed".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger">
+                    <span>⚠</span> <strong>Lưu ý:</strong> Vị trí Quản lý trung tâm chỉ được thao tác qua <strong>Bổ nhiệm</strong> &amp; <strong>Miễn nhiệm</strong> tại Tab 1. Không áp dụng điều chuyển trực tiếp cho Quản lý.
                 </div>
             <% } else if ("centre_inactive".equals(errorParam)) { %>
                 <div class="cf-alert cf-alert-danger">
@@ -155,32 +161,33 @@
             <!-- THANH ĐIỀU HƯỚNG TAB CHÍNH -->
             <div class="tab-nav">
                 <button type="button" class="tab-btn <%= "manager".equals(activeTabParam) ? "active" : "" %>" onclick="switchMainTab('tab-manager-assignment')">
-                    🏛 Bổ nhiệm Quản lý Trung tâm
+                    🏛 Bổ nhiệm &amp; Miễn nhiệm Quản lý Trung tâm
                 </button>
                 <button type="button" class="tab-btn <%= "staff".equals(activeTabParam) ? "active" : "" %>" onclick="switchMainTab('tab-staff-transfer')">
-                    👥 Điều chuyển nhân viên
+                    👥 Điều chuyển nhân sự
                 </button>
             </div>
 
             <!-- ==================================================================== -->
-            <!-- TAB 1: BỔ NHIỆM MANAGER TRUNG TÂM -->
+            <!-- TAB 1: BỔ NHIỆM & BÃI NHIỆM QUẢN LÝ THEO TRUNG TÂM -->
             <!-- ==================================================================== -->
             <div class="tab-pane <%= "manager".equals(activeTabParam) ? "active" : "" %>" id="tab-manager-assignment">
                 <section class="cf-card">
-                    <div class="cf-card-header">
+                    <div class="cf-card-header cf-card-header-flex">
                         <div>
-                            <h2>Phân công Quản lý theo Trung tâm</h2>
-                            <p style="margin: 4px 0 0; color: #94a3b8; font-size: 12.5px;">Quản lý phân công duy nhất 1 Quản lý/trung tâm. Nhận diện độc lập giữa Đang hoạt động, Đang bị khóa và Chưa có Quản lý.</p>
+                            <h2>Bổ nhiệm &amp; Miễn nhiệm Quản lý theo Trung tâm</h2>
                         </div>
                     </div>
                     <div class="cf-card-body">
                         <div class="cf-table-wrap">
-                            <table class="cf-table">
+                            <table class="cf-table" id="table-centre-assignment">
                                 <thead>
                                     <tr>
                                         <th>Trung tâm chiếu phim</th>
                                         <th>Khu vực</th>
-                                        <th>Mã nhân sự</th>
+                                        <th class="sortable-th" onclick="sortCentreByCol(2)" title="Sắp xếp theo Mã Quản lý (QLxxxxx)">
+                                            Mã nhân sự <span class="sort-arrow" id="arrow-centre-2">↕</span>
+                                        </th>
                                         <th>Quản lý đương nhiệm</th>
                                         <th>Trạng thái phân công</th>
                                         <th>Trạng thái rạp</th>
@@ -194,32 +201,32 @@
                                         boolean isActiveManager = b.hasActiveManager();
                                         boolean isCentreActive = "ACTIVE".equalsIgnoreCase(b.getStatus());
                                     %>
-                                        <tr>
+                                        <tr class="centre-row" data-mgr-id="<%= isActiveManager ? b.getManagerId() : 999999 %>">
                                             <td>
-                                                <strong style="color: #fff; font-size: 14px;"><%= b.getCentreName() %></strong>
-                                                <small style="display: block; color: #94a3b8;"><%= b.getAddress() %></small>
+                                                <strong class="centre-name"><%= b.getCentreName() %></strong>
+                                                <small class="centre-address"><%= b.getAddress() %></small>
                                             </td>
                                             <td><span class="cf-badge cf-badge-info"><%= b.getCity() %></span></td>
                                             <td>
                                                 <% if (isActiveManager) { %>
-                                                    <code class="cf-badge cf-badge-primary" style="font-size: 12px; font-weight: 700; letter-spacing: 0.5px;"><%= String.format("QL%05d", b.getManagerId()) %></code>
+                                                    <code class="cf-badge cf-badge-primary cf-badge-mgr-code"><%= String.format("QL%05d", b.getManagerId()) %></code>
                                                 <% } else { %>
-                                                    <span style="color: #64748b;">—</span>
+                                                    <span class="text-muted-dash">—</span>
                                                 <% } %>
                                             </td>
                                             <td>
                                                 <% if (isActiveManager) { %>
-                                                    <strong style="color: #818cf8; font-size: 14px;"><%= b.getManagerName() %></strong>
-                                                    <small style="display: block; color: #94a3b8;"><%= b.getManagerEmail() %></small>
+                                                    <strong class="manager-name-text"><%= b.getManagerName() %></strong>
+                                                    <small class="manager-email-text"><%= b.getManagerEmail() %></small>
                                                 <% } else { %>
-                                                    <span style="color: #94a3b8;">—</span>
+                                                    <span class="text-muted-dash">—</span>
                                                 <% } %>
                                             </td>
                                             <td>
                                                 <% if (isActiveManager) { %>
-                                                    <span class="cf-badge cf-badge-success" style="font-size: 11px;">Có Manager đang hoạt động</span>
+                                                    <span class="cf-badge cf-badge-success cf-badge-sm">Có Manager đang hoạt động</span>
                                                 <% } else { %>
-                                                    <span class="cf-badge cf-badge-warning" style="font-size: 11px;">Chưa có Manager</span>
+                                                    <span class="cf-badge cf-badge-warning cf-badge-sm">Chưa có Manager</span>
                                                 <% } %>
                                             </td>
                                             <td>
@@ -228,14 +235,16 @@
                                                 </span>
                                             </td>
                                             <td>
-                                                <div style="display: flex; gap: 8px;">
+                                                <div class="assignment-actions">
                                                     <% if (isActiveManager) { %>
-                                                        <span class="cf-badge cf-badge-info" style="padding: 6px 12px; font-size: 12px;" title="Trung tâm đã có Quản lý phụ trách.">
-                                                            Đang đương nhiệm
-                                                        </span>
+                                                        <button type="button" class="cf-btn cf-btn-sm assignment-action-btn unassign-btn"
+                                                                title="Miễn nhiệm Quản lý khỏi trung tâm này"
+                                                                onclick="openUnassignManagerModal(<%= b.getCentreId() %>, '<%= b.getCentreName().replace("'", "\\'") %>', <%= b.getManagerId() %>, '<%= String.format("QL%05d", b.getManagerId()) %>', '<%= b.getManagerName().replace("'", "\\'") %>')">
+                                                            Miễn nhiệm
+                                                        </button>
                                                     <% } else { %>
-                                                        <button type="button" class="cf-btn cf-btn-primary cf-btn-sm" 
-                                                                <%= !isCentreActive ? "disabled style='opacity: 0.45; cursor: not-allowed;'" : "" %>
+                                                        <button type="button" class="cf-btn cf-btn-sm assignment-action-btn assign-btn"
+                                                                <%= !isCentreActive ? "disabled class=\"btn-disabled-action\"" : "" %>
                                                                 title="<%= !isCentreActive ? "Trung tâm đang ngừng hoạt động/bảo trì, không thể bổ nhiệm" : "Bổ nhiệm Quản lý mới cho trung tâm" %>"
                                                                 onclick="<%= isCentreActive ? "openAssignManagerModal(" + b.getCentreId() + ", '" + b.getCentreName().replace("'", "\\'") + "')" : "" %>">
                                                             Bổ nhiệm
@@ -250,94 +259,49 @@
                         </div>
                     </div>
                 </section>
-
-                <!-- LỊCH SỬ BỔ NHIỆM MANAGER (CENTRE MANAGER ASSIGNMENTS) -->
-                <section class="cf-card" style="margin-top: 24px;">
-                    <div class="cf-card-header">
-                        <div>
-                            <h2>Lịch sử Bổ nhiệm Quản lý Trung tâm</h2>
-                        </div>
-                    </div>
-                    <div class="cf-card-body">
-                        <div class="cf-table-wrap">
-                            <table class="cf-table">
-                                <thead>
-                                    <tr>
-                                        <th>Mã</th>
-                                        <th>Trung tâm</th>
-                                        <th>Mã nhân sự</th>
-                                        <th>Từ ngày</th>
-                                        <th>Đến ngày</th>
-                                        <th>Trạng thái</th>
-                                        <th>Người bổ nhiệm (Admin)</th>
-                                        <th>Ghi chú</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <% if (managerAssignments == null || managerAssignments.isEmpty()) { %>
-                                        <tr><td colspan="9" class="cf-empty">Chưa có lịch sử bổ nhiệm nào được ghi nhận.</td></tr>
-                                    <% } else for (ManagerAssignment ma : managerAssignments) { %>
-                                        <tr>
-                                            <td><strong><%= ma.getAssignmentId() %></strong></td>
-                                            <td><strong><%= ma.getCentreName() %></strong> <small style="color: #94a3b8;">(<%= ma.getCentreCity() %>)</small></td>
-                                            <td><code class="cf-badge cf-badge-primary" style="font-size: 11px; font-weight: 700;"><%= ma.getManagerCode() %></code></td>
-                                          
-                                            <td><%= ma.getStartDate() != null ? sdfDate.format(ma.getStartDate()) : "—" %></td>
-                                            <td>
-                                                <% if (ma.getEndDate() == null) { %>
-                                                    <span class="cf-badge cf-badge-success">Đang đương nhiệm</span>
-                                                <% } else { %>
-                                                    <span style="color: #94a3b8;"><%= sdfDate.format(ma.getEndDate()) %></span>
-                                                <% } %>
-                                            </td>
-                                            <td>
-                                                <span class="cf-badge <%= "ACTIVE".equalsIgnoreCase(ma.getStatus()) ? "cf-badge-success" : "REPLACED".equalsIgnoreCase(ma.getStatus()) ? "cf-badge-warning" : "cf-badge-danger" %>">
-                                                    <%= "ACTIVE".equalsIgnoreCase(ma.getStatus()) ? "Đang hiệu lực" : "REPLACED".equalsIgnoreCase(ma.getStatus()) ? "Đã thay thế" : "Đã kết thúc" %>
-                                                </span>
-                                            </td>
-                                            <td><span class="cf-badge cf-badge-info"><%= ma.getAssignedByName() %></span></td>
-                                            <td style="color: #94a3b8;"><%= ma.getNotes() != null ? ma.getNotes() : "—" %></td>
-                                        </tr>
-                                    <% } %>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </section>
             </div>
 
             <!-- ==================================================================== -->
-            <!-- TAB 2: ĐIỀU CHUYỂN NHÂN VIÊN (STAFF TRANSFER) -->
+            <!-- TAB 2: ĐIỀU CHUYỂN NHÂN SỰ TOÀN HỆ THỐNG (STAFF & MANAGER) -->
             <!-- ==================================================================== -->
             <div class="tab-pane <%= "staff".equals(activeTabParam) ? "active" : "" %>" id="tab-staff-transfer">
                 <section class="cf-card">
-                    <div class="cf-card-header" style="display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
+                    <div class="cf-card-header cf-card-header-flex">
                         <div>
-                            <h2>Danh sách Nhân viên rạp (Staff Directory)</h2>
-                            <p style="margin: 3px 0 0; color: #94a3b8; font-size: 12px;">Bao gồm Nhân viên bán vé và Nhân viên soát vé tại tất cả cụm rạp.</p>
+                            <h2>Danh sách nhân sự</h2>
+                            <p class="card-subtitle-sm">Quản lý và nhân viên trong toàn hệ thống.</p>
                         </div>
-                        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                            <form method="get" action="${pageContext.request.contextPath}/admin/transfers" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                        <div class="staff-filter-toolbar">
+                            <form method="get" action="${pageContext.request.contextPath}/admin/transfers" class="staff-filter-form">
                                 <input type="hidden" name="tab" value="staff">
-                                <select name="role" style="padding: 8px 12px; border: 1px solid #334155; border-radius: 6px; font-size: 13px; background: #1e293b; color: #f8fafc;" onchange="this.form.submit()">
-                                    <option value="ALL" <%= (roleFilter == null || "ALL".equalsIgnoreCase(roleFilter)) ? "selected" : "" %>>Tất cả vai trò nhân viên</option>
-                                    <option value="TICKET_SALES_STAFF" <%= "TICKET_SALES_STAFF".equalsIgnoreCase(roleFilter) ? "selected" : "" %>>Nhân viên bán vé (Ticket Sales)</option>
-                                    <option value="TICKET_CHECKER_STAFF" <%= "TICKET_CHECKER_STAFF".equalsIgnoreCase(roleFilter) ? "selected" : "" %>>Nhân viên soát vé (Ticket Checker)</option>
+                                <select name="role" class="select-dark" onchange="this.form.submit()">
+                                    <option value="ALL" <%= (roleFilter == null || "ALL".equalsIgnoreCase(roleFilter)) ? "selected" : "" %>>Tất cả vai trò</option>
+                                    <option value="TICKET_SALES_STAFF" <%= "TICKET_SALES_STAFF".equalsIgnoreCase(roleFilter) ? "selected" : "" %>>Bán vé</option>
+                                    <option value="TICKET_CHECKER_STAFF" <%= "TICKET_CHECKER_STAFF".equalsIgnoreCase(roleFilter) ? "selected" : "" %>>Soát vé</option>
                                 </select>
+
+                                <!-- BỘ LỌC SẮP XẾP MÃ NHÂN SỰ -->
+                                <select id="staffSortDropdown" onchange="applyStaffSort(this.value)" class="select-dark">
+                                    <option value="code_asc">Mã nhân sự tăng dần</option>
+                                    <option value="code_desc">Mã nhân sự giảm dần</option>
+                                    <option value="name_asc">Tên A → Z</option>
+                                    <option value="name_desc">Tên Z → A</option>
+                                </select>
+
                                 <input type="text" name="search" id="staffFilterInput" 
                                        value="<%= request.getAttribute("searchParam") != null ? request.getAttribute("searchParam") : "" %>"
-                                       placeholder="🔍 Tìm theo Mã nhân viên (VD: NV00012), tài khoản, họ tên..." 
-                                       style="padding: 8px 14px; border: 1px solid #334155; border-radius: 6px; font-size: 13px; min-width: 300px; background: #1e293b; color: #f8fafc;">
+                                       placeholder="Tìm theo mã, tài khoản hoặc họ tên..." 
+                                       class="input-dark staff-search-input">
                                 <button type="submit" class="cf-btn cf-btn-secondary cf-btn-sm">Tìm kiếm</button>
                                 <% if ((request.getAttribute("searchParam") != null && !((String)request.getAttribute("searchParam")).trim().isEmpty()) || (roleFilter != null && !"ALL".equalsIgnoreCase(roleFilter))) { %>
-                                    <a href="${pageContext.request.contextPath}/admin/transfers?tab=staff" class="cf-btn cf-btn-secondary cf-btn-sm" style="color: #94a3b8;">Xóa lọc</a>
+                                    <a href="${pageContext.request.contextPath}/admin/transfers?tab=staff" class="cf-btn cf-btn-secondary cf-btn-sm btn-clear-filter">Xóa lọc</a>
                                 <% } %>
                             </form>
                         </div>
                     </div>
                     <div class="cf-card-body">
                         <div class="cf-table-wrap">
-                            <table class="cf-table">
+                            <table class="cf-table" id="table-staff-list">
                                 <thead>
                                     <tr>
                                         <th>Mã nhân sự</th>
@@ -356,22 +320,26 @@
                                         String st = item.getStatus();
                                         boolean isUserActive = "ACTIVE".equalsIgnoreCase(st);
                                         String centreDisplay = item.getCentreName() != null ? item.getCentreName() : "Chưa phân trung tâm";
-                                        String searchData = (item.getEmployeeCode() + " " + item.getUserId() + " nv" + item.getUserId() + " " + item.getFullName() + " " + item.getEmail() + " " + item.getAccount() + " " + centreDisplay).toLowerCase();
+                                        String searchData = (item.getEmployeeCode() + " " + item.getUserId() + " nv" + item.getUserId() + " ql" + item.getUserId() + " " + item.getFullName() + " " + item.getEmail() + " " + item.getAccount() + " " + centreDisplay).toLowerCase();
                                     %>
-                                        <tr class="staff-row" data-search="<%= searchData %>">
-                                            <td><code class="cf-badge cf-badge-info" style="font-size: 12px; font-weight: 700; letter-spacing: 0.5px;"><%= item.getEmployeeCode() %></code></td>
+                                        <tr class="staff-row" data-search="<%= searchData %>" data-emp-id="<%= item.getUserId() %>" data-emp-code="<%= item.getEmployeeCode() %>" data-emp-name="<%= item.getFullName() %>">
+                                            <td><code class="cf-badge <%= "MANAGER".equalsIgnoreCase(item.getRole()) ? "cf-badge-primary" : "cf-badge-info" %> cf-badge-emp-code"><%= item.getEmployeeCode() %></code></td>
                                             <td>
-                                                <strong style="color: #fff;"><%= item.getFullName() %></strong>
-                                                <small style="display: block; color: #94a3b8;"><%= item.getEmail() %></small>
+                                                <strong class="staff-name"><%= item.getFullName() %></strong>
+                                                <small class="staff-email"><%= item.getEmail() %></small>
                                             </td>
                                             <td><code><%= item.getAccount() %></code></td>
                                             <td>
-                                                <% if (item.isTicketSalesStaff()) { %>
-                                                    <span class="cf-badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35);">
+                                                <% if ("MANAGER".equalsIgnoreCase(item.getRole()) || item.isManager()) { %>
+                                                    <span class="cf-badge cf-badge-primary cf-badge-role-manager">
+                                                        Quản lý
+                                                    </span>
+                                                <% } else if (item.isTicketSalesStaff()) { %>
+                                                    <span class="cf-badge cf-badge-role-sales">
                                                         🎫 Bán vé (Ticket Sales)
                                                     </span>
                                                 <% } else if (item.isTicketCheckerStaff()) { %>
-                                                    <span class="cf-badge" style="background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.35);">
+                                                    <span class="cf-badge cf-badge-role-checker">
                                                         🔍 Soát vé (Ticket Checker)
                                                     </span>
                                                 <% } else { %>
@@ -380,7 +348,7 @@
                                             </td>
                                             <td>
                                                 <% if (item.getCentreId() != null && item.getCentreId() > 0) { %>
-                                                    <span style="font-weight: 500; color: #e2e8f0;">🏛 <%= item.getCentreName() %></span>
+                                                    <span class="staff-centre-assigned">🏛 <%= item.getCentreName() %></span>
                                                 <% } else { %>
                                                     <span class="cf-badge cf-badge-warning">Chưa phân trung tâm</span>
                                                 <% } %>
@@ -392,85 +360,12 @@
                                             </td>
                                             <td>
                                                 <button type="button" class="cf-btn cf-btn-primary cf-btn-sm" 
-                                                        <%= !isUserActive ? "disabled style='opacity: 0.45; cursor: not-allowed;'" : "" %>
+                                                        <%= !isUserActive ? "disabled class=\"btn-disabled-action\"" : "" %>
                                                         title="<%= !isUserActive ? "Tài khoản đang bị khóa/tạm ngưng, không thể điều chuyển" : "Điều chuyển nhân sự" %>"
                                                         onclick="<%= isUserActive ? "openStaffTransferModal(" + item.getUserId() + ", '" + item.getEmployeeCode() + "', '" + item.getFullName().replace("'", "\\'") + "', '" + item.getAccount() + "', '" + item.getRole() + "', " + (item.getCentreId() != null ? item.getCentreId() : "null") + ", '" + (item.getCentreName() != null ? item.getCentreName() : "Chưa phân trung tâm").replace("'", "\\'") + "')" : "" %>">
                                                     Điều chuyển
                                                 </button>
                                             </td>
-                                        </tr>
-                                    <% } %>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- LỊCH SỬ ĐIỀU CHUYỂN & THĂNG CHỨC -->
-                <section class="cf-card" style="margin-top: 24px;">
-                    <div class="cf-card-header">
-                        <div>
-                            <h2>Lịch sử điều chuyển nhân sự & phê chuẩn thăng chức</h2>
-                            <p style="margin: 3px 0 0; color: #94a3b8; font-size: 12px;">Lưu vết kiểm toán toàn diện tất cả các đợt luân chuyển cụm rạp và bổ nhiệm nhân sự trong hệ thống.</p>
-                        </div>
-                    </div>
-                    <div class="cf-card-body">
-                        <div class="cf-table-wrap">
-                            <table class="cf-table">
-                                <thead>
-                                    <tr>
-                                        <th>Mã</th>
-                                        <th>Thời gian ra quyết định</th>
-                                        <th>Ngày hiệu lực</th>
-                                        <th>Mã nhân sự</th>
-                                        <th>Nhân sự</th>
-                                        <th>Chức vụ (Trước ➔ Sau)</th>
-                                        <th>Từ trung tâm</th>
-                                        <th>Đến trung tâm</th>
-                                        <th>Người thực hiện (Admin)</th>
-                                        <th>Lý do & Quyết định</th>
-                                        <th>Ghi chú</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <% if (transferHistory == null || transferHistory.isEmpty()) { %>
-                                        <tr><td colspan="11" class="cf-empty">Chưa có lịch sử điều chuyển nào được ghi nhận.</td></tr>
-                                    <% } else for (StaffTransfer t : transferHistory) { 
-                                        String oldR = t.getOldRoleDisplayName();
-                                        String newR = t.getNewRoleDisplayName();
-                                        boolean roleChanged = (t.getOldRole() != null && t.getNewRole() != null && !t.getOldRole().equalsIgnoreCase(t.getNewRole()));
-                                    %>
-                                        <tr>
-                                            <td><strong>#<%= t.getTransferId() %></strong></td>
-                                            <td><%= t.getTransferDate() != null ? sdf.format(t.getTransferDate()) : "—" %></td>
-                                            <td>
-                                                <% if (t.getEffectiveDate() != null) { %>
-                                                    <strong style="color: #38bdf8;"><%= sdfDate.format(t.getEffectiveDate()) %></strong>
-                                                <% } else { %>
-                                                    <span style="color: #94a3b8;"><%= t.getTransferDate() != null ? sdfDate.format(t.getTransferDate()) : "—" %></span>
-                                                <% } %>
-                                            </td>
-                                            <td><code class="cf-badge <%= "MANAGER".equalsIgnoreCase(t.getUserRole()) ? "cf-badge-primary" : "cf-badge-info" %>" style="font-size: 11px; font-weight: 700;"><%= t.getEmployeeCode() %></code></td>
-                                            <td>
-                                                <strong style="color: #fff;"><%= t.getUserName() %></strong>
-                                                <small style="display: block; color: #94a3b8;">@<%= t.getUserAccount() %></small>
-                                            </td>
-                                            <td>
-                                                <% if (roleChanged) { %>
-                                                    <div style="font-size: 12px; display: flex; align-items: center; gap: 4px;">
-                                                        <span style="color: #94a3b8;"><%= oldR %></span>
-                                                        <span style="color: #ff2855;">➔</span>
-                                                        <strong style="color: #4ade80;"><%= newR %></strong>
-                                                    </div>
-                                                <% } else { %>
-                                                    <span style="color: #cbd5e1; font-size: 12.5px;"><%= newR %></span>
-                                                <% } %>
-                                            </td>
-                                            <td><%= t.getFromCentreName() != null ? t.getFromCentreName() : "Chưa phân trung tâm" %></td>
-                                            <td><strong style="color: #4ade80;"><%= t.getToCentreName() %></strong></td>
-                                            <td><span class="cf-badge cf-badge-info"><%= t.getTransferredByName() %></span></td>
-                                            <td><%= t.getReason() != null ? t.getReason() : "—" %></td>
-                                            <td style="color: #94a3b8;"><%= t.getNotes() != null && !t.getNotes().isEmpty() ? t.getNotes() : "—" %></td>
                                         </tr>
                                     <% } %>
                                 </tbody>
@@ -501,7 +396,7 @@
                     </div>
                     <div>
                         <span>Tình trạng hiện tại:</span>
-                        <span class="cf-badge cf-badge-warning" style="font-size: 11px;">Chưa có Quản lý</span>
+                        <span class="cf-badge cf-badge-warning cf-badge-sm">Chưa có Quản lý</span>
                     </div>
                 </div>
 
@@ -525,7 +420,7 @@
                             <option value="" disabled>-- Hiện không có Quản lý nào đang trống rạp --</option>
                         <% } %>
                     </select>
-                    <small style="color: #64748B; font-size: 12px;">Chỉ hiển thị các Quản lý đang hoạt động (ACTIVE) và chưa được phân công tại bất kỳ rạp nào.</small>
+                    <small class="form-helper-text">Chỉ hiển thị các Quản lý đang hoạt động (ACTIVE) và chưa được phân công tại bất kỳ rạp nào.</small>
                 </div>
 
                 <div class="cf-form-group">
@@ -541,11 +436,63 @@
     </div>
 </div>
 
-<!-- ==================== MODAL ĐIỀU CHUYỂN STAFF ==================== -->
+<!-- ==================== MODAL BÃI NHIỆM MANAGER ==================== -->
+<div class="cf-modal-backdrop" id="unassignManagerModal">
+    <div class="cf-modal">
+        <div class="cf-modal-header cf-modal-header-danger">
+            <h3 class="cf-modal-title-danger">✕ Miễn nhiệm Quản lý Trung tâm</h3>
+            <button type="button" class="cf-modal-close" onclick="closeUnassignManagerModal()">&times;</button>
+        </div>
+        <form method="post" action="${pageContext.request.contextPath}/admin/transfers">
+            <input type="hidden" name="action" value="unassign_manager">
+            <input type="hidden" name="centreId" id="unassignCentreId">
+            <input type="hidden" name="managerId" id="unassignManagerId">
+            <div class="cf-modal-body">
+                <div class="info-strip info-strip-danger">
+                    <div>
+                        <span>Trung tâm:</span>
+                        <strong id="unassignCentreName" class="info-strip-centre">—</strong>
+                    </div>
+                    <div>
+                        <span>Mã Quản lý:</span>
+                        <code class="cf-badge cf-badge-primary cf-badge-mgr-code" id="unassignManagerCode">QL00000</code>
+                    </div>
+                    <div>
+                        <span>Quản lý đương nhiệm:</span>
+                        <strong id="unassignManagerName" class="unassign-manager-target">—</strong>
+                    </div>
+                </div>
+
+                <div class="cf-alert cf-alert-warning cf-alert-unassign-warning">
+                    <span>⚠️</span>
+                    <div>
+                        Sau khi miễn nhiệm:
+                        <ul class="alert-list-styled">
+                            <li>Trung tâm này sẽ chuyển về trạng thái <strong>Chưa có Quản lý</strong> (sẵn sàng bổ nhiệm mới).</li>
+                            <li>Quản lý sẽ về trạng thái tự do (chưa phân công), có thể bổ nhiệm phụ trách trung tâm khác.</li>
+                            <li>Lịch sử nhiệm kỳ sẽ được kết thúc và lưu vết kiểm toán.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="cf-form-group cf-form-group-mt">
+                    <label>Lý do miễn nhiệm (Bắt buộc) *</label>
+                    <textarea name="reason" rows="3" required placeholder="Ví dụ: Quyết định miễn nhiệm số 18/QĐ-BGD ngày 26/10/2026; Miễn nhiệm để bổ nhiệm sang trung tâm mới..."></textarea>
+                </div>
+            </div>
+            <div class="cf-modal-footer">
+                <button type="button" class="cf-btn cf-btn-secondary" onclick="closeUnassignManagerModal()">Hủy</button>
+            <button type="submit" class="cf-btn cf-btn-danger unassign-confirm-btn">Xác nhận miễn nhiệm</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ==================== MODAL ĐIỀU CHUYỂN NHÂN SỰ ==================== -->
 <div class="cf-modal-backdrop" id="staffTransferModal">
     <div class="cf-modal">
         <div class="cf-modal-header">
-            <h3>Điều chuyển nhân sự giữa các trung tâm</h3>
+            <h3 id="modalTransferTitle">Điều chuyển nhân sự giữa các trung tâm</h3>
             <button type="button" class="cf-modal-close" onclick="closeStaffTransferModal()">&times;</button>
         </div>
         <form method="post" action="${pageContext.request.contextPath}/admin/transfers">
@@ -555,7 +502,7 @@
                 <div class="info-strip">
                     <div>
                         <span>Mã nhân viên (Employee ID):</span>
-                        <code class="cf-badge cf-badge-info" style="font-size: 13px; font-weight: 700;" id="transferStaffEmployeeCode">NV00000</code>
+                        <code class="cf-badge cf-badge-info cf-badge-emp-id" id="transferStaffEmployeeCode">NV00000</code>
                     </div>
                     <div>
                         <span>Nhân sự:</span>
@@ -563,15 +510,15 @@
                     </div>
                     <div>
                         <span>Vị trí công việc:</span>
-                        <strong id="transferStaffRoleDisplay" style="color: #0284c7;">—</strong>
+                        <strong id="transferStaffRoleDisplay" class="staff-role-preview">—</strong>
                     </div>
                     <div>
                         <span>Tài khoản:</span>
-                        <strong id="transferStaffAccount" style="color: #64748B;">—</strong>
+                        <strong id="transferStaffAccount" class="staff-account-preview">—</strong>
                     </div>
                     <div>
                         <span>Trung tâm hiện tại:</span>
-                        <strong id="transferStaffCurrentCentre" style="color: #d97706;">—</strong>
+                        <strong id="transferStaffCurrentCentre" class="staff-current-centre-preview">—</strong>
                     </div>
                 </div>
 
@@ -579,8 +526,8 @@
                     <label>Trung tâm chuyển đến *</label>
                     <select name="toCentreId" id="toCentreSelect" required>
                         <option value="">-- Chọn trung tâm đích --</option>
-                        <% if (activeCentres != null) for (Centre b : activeCentres) { %>
-                            <option value="<%= b.getCentreId() %>">
+                        <% if (centresWithManager != null) for (Centre b : centresWithManager) { %>
+                            <option value="<%= b.getCentreId() %>" data-base-name="<%= b.getCentreName() %> (<%= b.getCity() %>)">
                                 <%= b.getCentreName() %> (<%= b.getCity() %>)
                             </option>
                         <% } %>
@@ -589,7 +536,7 @@
 
                 <div class="cf-form-group" id="transferStaffRoleGroup">
                     <label>Chức vụ tại trung tâm mới</label>
-                    <select name="newRole" id="transferStaffNewRole">
+                    <select name="newRole" id="transferStaffNewRole" onchange="handleNewRoleChange()">
                         <option value="KEEP">-- Giữ nguyên chức vụ hiện tại --</option>
                         <option value="TICKET_SALES_STAFF">🎫 Nhân viên Bán vé (Ticket Sales)</option>
                         <option value="TICKET_CHECKER_STAFF">🔍 Nhân viên Soát vé (Ticket Checker)</option>
@@ -603,7 +550,7 @@
 
                 <div class="cf-form-group">
                     <label>Lý do điều chuyển (Bắt buộc) *</label>
-                    <input type="text" name="reason" placeholder="Ví dụ: Tăng cường nhân sự mở trung tâm mới / Luân chuyển định kỳ" required>
+                    <input type="text" name="reason" placeholder="Ví dụ: Điều động luân chuyển công tác Hà Nội ➔ TP.HCM / Khai trương chi nhánh mới">
                 </div>
 
                 <div class="cf-form-group">
@@ -627,6 +574,19 @@
         document.getElementById(tabId).classList.add('active');
     }
 
+        // Modal Miễn nhiệm Manager
+    function openUnassignManagerModal(centreId, centreName, managerId, managerCode, managerName) {
+        document.getElementById('unassignCentreId').value = centreId;
+        document.getElementById('unassignCentreName').textContent = centreName;
+        document.getElementById('unassignManagerId').value = managerId;
+        document.getElementById('unassignManagerCode').textContent = managerCode;
+        document.getElementById('unassignManagerName').textContent = managerName;
+        document.getElementById('unassignManagerModal').classList.add('active');
+    }
+    function closeUnassignManagerModal() {
+        document.getElementById('unassignManagerModal').classList.remove('active');
+    }
+
     // Modal Bổ nhiệm Manager
     function openAssignManagerModal(centreId, centreName) {
         document.getElementById('assignCentreId').value = centreId;
@@ -639,15 +599,55 @@
         document.getElementById('assignManagerModal').classList.remove('active');
     }
 
-    // Modal điều chuyển nhân viên
+    var currentTransferUserRole = '';
+    var currentTransferUserCentreId = null;
+
+    function handleNewRoleChange() {
+        updateToCentreOptions();
+    }
+
+    function updateToCentreOptions() {
+        var select = document.getElementById('toCentreSelect');
+        if (!select) return;
+        var selectedVal = select.value;
+        var hasValidSelected = false;
+
+        for (var i = 0; i < select.options.length; i++) {
+            var opt = select.options[i];
+            if (!opt.value) continue;
+            var optCentreId = parseInt(opt.value);
+            var baseName = opt.getAttribute('data-base-name') || opt.textContent.replace(/•.*$/, '').trim();
+
+            if (currentTransferUserCentreId !== null && optCentreId === currentTransferUserCentreId) {
+                opt.disabled = true;
+                opt.textContent = baseName + ' • Trung tâm hiện tại (Không thể chọn)';
+            } else {
+                opt.disabled = false;
+                opt.textContent = baseName;
+            }
+
+            if (opt.value === selectedVal && !opt.disabled) {
+                hasValidSelected = true;
+            }
+        }
+
+        if (!hasValidSelected) {
+            select.value = '';
+        }
+    }
+
+    // Modal điều chuyển nhân viên & Quản lý
     function openStaffTransferModal(userId, empCode, name, account, role, currentCentreId, currentCentreName) {
+        currentTransferUserRole = role;
+        currentTransferUserCentreId = currentCentreId;
+
         document.getElementById('transferStaffUserId').value = userId;
         document.getElementById('transferStaffEmployeeCode').textContent = empCode;
         document.getElementById('transferStaffUserName').textContent = name;
         document.getElementById('transferStaffAccount').textContent = '@' + account;
         document.getElementById('transferStaffCurrentCentre').textContent = currentCentreName;
 
-        var roleText = role || '';
+        var roleText = 'Nhân viên';
         if (role === 'TICKET_SALES_STAFF' || role === 'TICKET_SALES') {
             roleText = '🎫 Bán vé (Ticket Sales)';
         } else if (role === 'TICKET_CHECKER_STAFF' || role === 'TICKET_CHECKER') {
@@ -656,9 +656,12 @@
         var roleEl = document.getElementById('transferStaffRoleDisplay');
         if (roleEl) roleEl.textContent = roleText;
 
-        var roleGroup = document.getElementById('transferStaffRoleGroup');
+        var titleEl = document.getElementById('modalTransferTitle');
+        if (titleEl) {
+            titleEl.textContent = 'Điều chuyển nhân sự giữa các trung tâm';
+        }
+
         var newRoleSelect = document.getElementById('transferStaffNewRole');
-        if (roleGroup) roleGroup.style.display = 'block';
         if (newRoleSelect) newRoleSelect.value = 'KEEP';
 
         var effectiveDateInput = document.getElementById('transferEffectiveDate');
@@ -667,16 +670,7 @@
             effectiveDateInput.value = today;
         }
 
-        var select = document.getElementById('toCentreSelect');
-        select.value = "";
-        for (var i = 0; i < select.options.length; i++) {
-            var opt = select.options[i];
-            if (opt.value && currentCentreId !== null && parseInt(opt.value) === currentCentreId) {
-                opt.disabled = true;
-            } else {
-                opt.disabled = false;
-            }
-        }
+        updateToCentreOptions();
         document.getElementById('staffTransferModal').classList.add('active');
     }
     function closeStaffTransferModal() {
@@ -689,6 +683,77 @@
             if (e.target === this) this.classList.remove('active');
         });
     });
+
+    // Quản lý sắp xếp bảng nhân viên
+    var staffSortOrder = { col: 0, order: 'asc' };
+    function sortStaffByCol(colIndex, dataType) {
+        var table = document.getElementById('table-staff-list');
+        if (!table) return;
+        var tbody = table.querySelector('tbody');
+        var rows = Array.from(tbody.querySelectorAll('tr.staff-row'));
+        if (rows.length === 0) return;
+
+        var nextOrder = (staffSortOrder.col === colIndex && staffSortOrder.order === 'asc') ? 'desc' : 'asc';
+        staffSortOrder = { col: colIndex, order: nextOrder };
+
+        rows.sort(function(a, b) {
+            var cellA = a.children[colIndex] ? a.children[colIndex].innerText.trim() : '';
+            var cellB = b.children[colIndex] ? b.children[colIndex].innerText.trim() : '';
+            return nextOrder === 'asc' ? cellA.localeCompare(cellB, 'vi', { numeric: true }) : cellB.localeCompare(cellA, 'vi', { numeric: true });
+        });
+
+        rows.forEach(function(r) { tbody.appendChild(r); });
+
+        table.querySelectorAll('.sort-arrow').forEach(function(ar) {
+            ar.textContent = '↕';
+            ar.classList.remove('active');
+        });
+        var targetArrow = document.getElementById('arrow-staff-' + colIndex);
+        if (targetArrow) {
+            targetArrow.textContent = nextOrder === 'asc' ? '▲ (Thấp ➔ Cao)' : '▼ (Cao ➔ Thấp)';
+            targetArrow.classList.add('active');
+        }
+    }
+
+    function applyStaffSort(sortVal) {
+        if (sortVal === 'code_asc') {
+            staffSortOrder = { col: 0, order: 'desc' };
+            sortStaffByCol(0, 'str');
+        } else if (sortVal === 'code_desc') {
+            staffSortOrder = { col: 0, order: 'asc' };
+            sortStaffByCol(0, 'str');
+        } else if (sortVal === 'name_asc') {
+            staffSortOrder = { col: 1, order: 'desc' };
+            sortStaffByCol(1, 'str');
+        } else if (sortVal === 'name_desc') {
+            staffSortOrder = { col: 1, order: 'asc' };
+            sortStaffByCol(1, 'str');
+        }
+    }
+
+    // Sắp xếp mã Quản lý ở Tab cụm rạp
+    var centreSortOrder = 'asc';
+    function sortCentreByCol(colIndex) {
+        var table = document.getElementById('table-centre-assignment');
+        if (!table) return;
+        var tbody = table.querySelector('tbody');
+        var rows = Array.from(tbody.querySelectorAll('tr.centre-row'));
+        if (rows.length === 0) return;
+
+        centreSortOrder = centreSortOrder === 'asc' ? 'desc' : 'asc';
+        rows.sort(function(a, b) {
+            var cellA = a.children[colIndex] ? a.children[colIndex].innerText.trim() : '';
+            var cellB = b.children[colIndex] ? b.children[colIndex].innerText.trim() : '';
+            return centreSortOrder === 'asc' ? cellA.localeCompare(cellB, 'vi', { numeric: true }) : cellB.localeCompare(cellA, 'vi', { numeric: true });
+        });
+        rows.forEach(function(r) { tbody.appendChild(r); });
+
+        var arrow = document.getElementById('arrow-centre-2');
+        if (arrow) {
+            arrow.textContent = centreSortOrder === 'asc' ? '▲ (Thấp ➔ Cao)' : '▼ (Cao ➔ Thấp)';
+            arrow.classList.add('active');
+        }
+    }
 
     // Xử lý thông báo và bộ lọc nhân viên client-side
     document.addEventListener('DOMContentLoaded', function () {

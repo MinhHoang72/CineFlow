@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import model.entity.User;
+import dao.VoucherDAO;
 import utils.WebUtil;
 import java.io.IOException;
 
@@ -19,6 +20,8 @@ import java.io.IOException;
  */
 @WebServlet(name = "HomeServlet", urlPatterns = {"/home", "/home/index.jsp", "/index.jsp"})
 public class HomeServlet extends HttpServlet {
+
+    private final VoucherDAO voucherDAO = new VoucherDAO();
 
     /**
      * Kiểm tra phiên hiện tại có thuộc về tài khoản nội bộ (Admin, Manager, Staff) hay không.
@@ -66,6 +69,7 @@ public class HomeServlet extends HttpServlet {
             return;
         }
 
+        request.setAttribute("homeVouchers", voucherDAO.findActiveForHome(6));
         request.getRequestDispatcher("/WEB-INF/views/customer/homeIndex.jsp").forward(request, response);
     }
 }

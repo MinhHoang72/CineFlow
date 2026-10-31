@@ -264,7 +264,7 @@
 
         .cf-table tbody td {
             padding: 8px 10px;
-            border-bottom: 1px solid rgba(42, 51, 65, .72);
+            border-bottom: 0;
             color: #e2e8f0;
             font-size: 12px;
             vertical-align: middle;
@@ -463,12 +463,6 @@
             background: #151b25;
             color: #f1f5f9;
             padding: 4px 8px;
-        }
-
-        .status-indicator {
-            color: #6ee7b7;
-            font-size: 14px;
-            font-weight: 800;
         }
 
         .cf-empty {
@@ -760,4 +754,40 @@
             .cf-modal,
             .cf-toast { animation: none; }
             * { scroll-behavior: auto !important; }
+        }
+
+        .staff-kpi-grid {
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .staff-kpi-grid .cf-kpi-card {
+            min-width: 0;
+            min-height: 88px;
+            padding: 15px 16px;
+            gap: 5px;
+        }
+
+        .staff-kpi-grid .cf-kpi-label {
+            font-size: 10.5px;
+            line-height: 1.3;
+            letter-spacing: .045em;
+        }
+
+        .staff-kpi-grid .cf-kpi-value {
+            font-size: 22px;
+            line-height: 1;
+        }
+
+        @media (max-width: 1200px) {
+            .staff-kpi-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        }
+
+        @media (max-width: 700px) {
+            .staff-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+        }
+
+        @media (max-width: 420px) {
+            .staff-kpi-grid { grid-template-columns: 1fr; }
         }
