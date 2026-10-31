@@ -267,7 +267,7 @@ public class CinemaDAO {
      */
     public List<Centre> getDistributionCentres(int movieId) {
         String sql = "SELECT b.CentreID, b.CentreName, b.Address, b.City, b.Phone, b.Status, "
-                + "CAST(CASE WHEN UPPER(b.Status) = 'ACTIVE' AND bm.IsActive = 1 THEN 1 ELSE 0 END AS bit) AS [Distributed], "
+                + "CAST(CASE WHEN bm.IsActive = 1 THEN 1 ELSE 0 END AS bit) AS [Distributed], "
                 + "COALESCE((SELECT COUNT(*) FROM Showtimes s JOIN Halls h ON s.HallID = h.HallID "
                 + "          WHERE s.MovieID = ? AND h.CentreID = b.CentreID AND s.StartTime > GETDATE() "
                 + "          AND UPPER(s.Status) = 'SCHEDULED'), 0) AS [FutureShowtimeCount] "
@@ -330,7 +330,7 @@ public class CinemaDAO {
     public List<Centre> getDistributionCentres(int movieId, int centreId) {
         List<Centre> centres = new ArrayList<>();
         String sql = "SELECT b.CentreID, b.CentreName, b.Address, b.City, b.Phone, b.Status, "
-                + "CAST(CASE WHEN UPPER(b.Status) = 'ACTIVE' AND bm.IsActive = 1 THEN 1 ELSE 0 END AS bit) AS [Distributed] "
+                + "CAST(CASE WHEN bm.IsActive = 1 THEN 1 ELSE 0 END AS bit) AS [Distributed] "
                 + "FROM Centres b LEFT JOIN CentreMovies bm ON bm.CentreID = b.CentreID AND bm.MovieID = ? "
                 + "WHERE b.CentreID = ?";
         try (Connection connection = DBContext.getConnection();
@@ -413,13 +413,13 @@ public class CinemaDAO {
      * @return true nếu lưu thành công, ngược lại false
      */
     public boolean saveMovieDistribution(int movieId, Set<Integer> selectedCentreIDs) {
-        String disableInactiveSql = "UPDATE bm SET bm.IsActive = 0, bm.UpdatedAt = GETDATE() "
-                + "FROM CentreMovies bm JOIN Centres b ON b.CentreID = bm.CentreID "
-                + "WHERE bm.MovieID = ? AND (b.Status IS NULL OR UPPER(b.Status) <> 'ACTIVE')";
+
+
+
         String disableAllSql = "UPDATE CentreMovies SET IsActive = 0, UpdatedAt = GETDATE() WHERE MovieID = ?";
         String mergeSql = "MERGE CentreMovies AS target "
                 + "USING (SELECT ? AS CentreID, ? AS MovieID WHERE EXISTS ("
-                + "SELECT 1 FROM Centres b WHERE b.CentreID = ? AND UPPER(b.Status) = 'ACTIVE')) AS source "
+                + "SELECT 1 FROM Centres b WHERE b.CentreID = ?)) AS source "
                 + "ON target.CentreID = source.CentreID AND target.MovieID = source.MovieID "
                 + "WHEN MATCHED THEN UPDATE SET IsActive = 1, UpdatedAt = GETDATE() "
                 + "WHEN NOT MATCHED THEN INSERT (CentreID, MovieID, IsActive) VALUES (source.CentreID, source.MovieID, 1);";
@@ -428,19 +428,13 @@ public class CinemaDAO {
         try (Connection connection = DBContext.getConnection()) {
             connection.setAutoCommit(false);
             try {
-                // 2. Vô hiệu hóa phân phối đối với các trung tâm không còn ở trạng thái ACTIVE
-                try (PreparedStatement inactive = connection.prepareStatement(disableInactiveSql)) {
-                    inactive.setInt(1, movieId);
-                    inactive.executeUpdate();
-                }
-
-                // 3. Tạm thời vô hiệu hóa tất cả phân phối cũ của bộ phim này
+                // 2. Tạm thời vô hiệu hóa tất cả phân phối cũ của bộ phim này
                 try (PreparedStatement disable = connection.prepareStatement(disableAllSql)) {
                     disable.setInt(1, movieId);
                     disable.executeUpdate();
                 }
 
-                // 4. Thực thi câu lệnh MERGE theo Batch để cập nhật/thêm mới các rạp được chọn
+                // 3. Thực thi câu lệnh MERGE theo Batch để cập nhật/thêm mới các rạp được chọn (kể cả rạp đang bảo trì/tạm hoãn)
                 if (selectedCentreIDs != null && !selectedCentreIDs.isEmpty()) {
                     try (PreparedStatement merge = connection.prepareStatement(mergeSql)) {
                         for (Integer centreId : selectedCentreIDs) {
@@ -634,10 +628,10 @@ public class CinemaDAO {
     public List<Movie> getAllMovies() {
         String sql = "SELECT m.MovieID, m.Title, m.Description, m.Duration, m.Genre, m.Director, m.Cast, m.Language, "
                 + "m.ReleaseDate, m.EndDate, m.PosterURL, m.TrailerURL, m.AgeRating, m.Status, "
-                + "(SELECT COUNT(*) FROM Centres WHERE UPPER(Status) = 'ACTIVE') AS TotalCentres, "
+                + "(SELECT COUNT(*) FROM Centres) AS TotalCentres, "
                 + "COALESCE((SELECT COUNT(DISTINCT cm.CentreID) FROM CentreMovies cm "
                 + "          JOIN Centres c ON c.CentreID = cm.CentreID "
-                + "          WHERE cm.MovieID = m.MovieID AND cm.IsActive = 1 AND UPPER(c.Status) = 'ACTIVE'), 0) AS DistributedCentres "
+                + "          WHERE cm.MovieID = m.MovieID AND cm.IsActive = 1), 0) AS DistributedCentres "
                 + "FROM Movies m ORDER BY m.MovieID DESC";
         List<Movie> movies = new ArrayList<>();
         try (Connection connection = DBContext.getConnection();

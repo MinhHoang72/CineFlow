@@ -3,6 +3,7 @@
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <c:set var="pageTitle" value="Theo dõi giao dịch thanh toán" scope="request"/>
 <c:set var="pageStep" value="₫" scope="request"/>
+<c:set var="activeNav" value="payments" scope="request"/>
 <%@ include file="/WEB-INF/fragments/header.jspf" %>
 <c:set var="ctx" value="${pageContext.request.contextPath}"/>
 

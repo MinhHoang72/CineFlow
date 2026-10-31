@@ -725,7 +725,7 @@ public class FnbManagementServlet extends HttpServlet {
     private void showStock(HttpServletRequest request, HttpServletResponse response, User user)
             throws ServletException, IOException {
         boolean manager = "MANAGER".equals(user.getRole());
-        boolean staff = "TICKET_SALES_STAFF".equals(user.getRole());
+        boolean staff = "TICKET_SALES_STAFF".equalsIgnoreCase(user.getRole()) || "STAFF".equalsIgnoreCase(user.getRole());
         if (!manager && !staff) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN,
                     "Trang kho chỉ dành cho Manager và nhân viên bán vé của chi nhánh.");
@@ -737,6 +737,7 @@ public class FnbManagementServlet extends HttpServlet {
         request.setAttribute("pageTitle", "Kho theo Centre");
         request.setAttribute("pageBreadcrumb", crumb(user, "Bắp nước"));
         showFlash(request);
+        request.setAttribute("activeNav", "fnb-stock");
         request.getRequestDispatcher("/WEB-INF/views/admin/fnb/fnbInventory.jsp").forward(request, response);
     }
 

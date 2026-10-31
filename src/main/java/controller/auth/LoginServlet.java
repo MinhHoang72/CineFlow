@@ -110,6 +110,17 @@ public class LoginServlet extends HttpServlet {
             return;
         }
 
+        // Manager chỉ được đăng nhập khu vực vận hành khi còn được phân công
+        // một chi nhánh đang hoạt động. Miễn nhiệm sẽ chặn ngay từ bước login.
+        if ("MANAGER".equalsIgnoreCase(user.getRole())) {
+            Integer managerCentreId = user.getCentreId();
+            if (managerCentreId == null || managerCentreId <= 0
+                    || !userDAO.hasActiveManagerAssignment(user.getUserId(), managerCentreId)) {
+                response.sendRedirect(request.getContextPath() + "/login?error=manager_unassigned");
+                return;
+            }
+        }
+
         // 6.3. Khách hàng chưa xác thực email (dù status có thể là ACTIVE)
         if (isCustomer && !user.isEmailVerified()) {
             String encodedEmail = URLEncoder.encode(user.getEmail(), StandardCharsets.UTF_8);

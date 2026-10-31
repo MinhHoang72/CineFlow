@@ -16,9 +16,9 @@
         <div>
             <h4>CINEFLOW</h4>
             <a href="<%= fCtx %>/home#movies">Phim đang chiếu</a>
+            <a href="<%= fCtx %>/home#promotions">Tin mới &amp; ưu đãi</a>
             <a href="<%= fCtx %>/booking?view=schedule">Lịch chiếu</a>
             <a href="<%= fCtx %>/cinema">Rạp chiếu phim</a>
-            <a href="<%= fCtx %>/home#promotions">Tin mới &amp; ưu đãi</a>
         </div>
         <div id="support">
             <h4>HỖ TRỢ</h4>

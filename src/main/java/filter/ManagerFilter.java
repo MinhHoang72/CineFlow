@@ -2,6 +2,7 @@ package filter;
 
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
+import jakarta.servlet.FilterConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
@@ -9,41 +10,35 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import model.entity.User;
-import utils.WebUtil;
+import dao.UserDAO;
 
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
 /**
- * Filter: Bảo vệ khu vực Quản lý (Manager): /manager/*, /manager, /staff, /reports.
+ * Filter: Bảo vệ khu vực Quản lý (Manager): /manager/*, /manager, /reports.
  * Quy tắc:
  * - Chưa đăng nhập: chuyển hướng về /login kèm URL redirect.
- * - Đã đăng nhập nhưng không có vai trò MANAGER hoặc ADMIN: tự động chuyển hướng ngay lập tức (Silent Redirect)
- *   về trang của vai trò hiện tại, không hiển thị trang lỗi.
- * - Có vai trò MANAGER hoặc ADMIN: cho phép tiếp tục.
+ * - Cho phép tài khoản MANAGER và ADMIN truy cập.
+ * - Tài khoản khác bị từ chối 403.
  */
 public class ManagerFilter implements Filter {
+
+    private final UserDAO userDAO = new UserDAO();
 
     /**
      * Kiểm tra phiên hiện tại đã đăng nhập tài khoản hay chưa.
      *
      * @param session phiên làm việc HttpSession
-     * @return true nếu đã đăng nhập, ngược lại false
+     * @return true nếu đã đăng nhập (tồn tại userId), ngược lại false
      */
     private boolean isLoggedIn(HttpSession session) {
-        if (session == null) {
-            return false;
-        }
-        if (session.getAttribute("userId") != null) {
-            return true;
-        }
-        Object userObj = session.getAttribute("user");
-        return userObj instanceof User && ((User) userObj).getUserId() > 0;
+        return session != null && session.getAttribute("userId") != null;
     }
 
     /**
-     * Kiểm tra người dùng đăng nhập có vai trò Quản lý (MANAGER) hoặc Quản trị viên (ADMIN) hay không.
+     * Kiểm tra người dùng có vai trò MANAGER hoặc ADMIN hay không.
      *
      * @param session phiên làm việc HttpSession
      * @return true nếu có quyền, ngược lại false
@@ -67,6 +62,11 @@ public class ManagerFilter implements Filter {
             }
         }
         return false;
+    }
+
+    @Override
+    public void init(FilterConfig filterConfig) throws ServletException {
+        // Khởi tạo tài nguyên cho Filter nếu cần thiết
     }
 
     /**
@@ -103,15 +103,44 @@ public class ManagerFilter implements Filter {
             return;
         }
 
-        // 2. Kiểm tra quyền hạn vai trò MANAGER hoặc ADMIN
-        // Nếu không có quyền, tự động chuyển hướng ngay lập tức (Silent Redirect) về trang đúng vai trò, không hiện lỗi
+        // 2. Khu vực quản lý chỉ dành cho MANAGER và ADMIN
         if (!isManagerOrAdmin(session)) {
-            String targetPath = WebUtil.getRoleDefaultPath(session);
-            httpResponse.sendRedirect(httpResponse.encodeRedirectURL(httpRequest.getContextPath() + targetPath));
+            httpResponse.sendError(HttpServletResponse.SC_FORBIDDEN,
+                    "Bạn không có quyền truy cập khu vực quản lý.");
             return;
         }
 
-        // 3. Đã xác thực quyền hạn hợp lệ -> Cho phép tiếp tục tới Controller
+        // Admin không bị giới hạn bởi chi nhánh. Manager phải được xác thực lại
+        // từ database để session cũ không giữ quyền sau khi bị miễn nhiệm.
+        Object roleObj = session.getAttribute("role");
+        if (roleObj instanceof String && "MANAGER".equalsIgnoreCase((String) roleObj)) {
+            Object idObj = session.getAttribute("userId");
+            int userId = idObj instanceof Number ? ((Number) idObj).intValue() : -1;
+            User freshUser = userId > 0 ? userDAO.getUserById(userId) : null;
+            boolean active = freshUser != null && "ACTIVE".equalsIgnoreCase(freshUser.getStatus());
+            boolean assigned = freshUser != null && freshUser.getCentreId() != null
+                    && freshUser.getCentreId() > 0
+                    && userDAO.hasActiveManagerAssignment(freshUser.getUserId(), freshUser.getCentreId());
+
+            if (!active || !assigned) {
+                session.invalidate();
+                httpResponse.sendRedirect(httpResponse.encodeRedirectURL(
+                        httpRequest.getContextPath() + "/login?error=manager_unassigned"));
+                return;
+            }
+
+            session.setAttribute("user", freshUser);
+            session.setAttribute("userId", freshUser.getUserId());
+            session.setAttribute("role", freshUser.getRole());
+            session.setAttribute("centreId", freshUser.getCentreId());
+        }
+
+        // 3. Đã xác thực hợp lệ -> Cho phép tiếp tục đi vào controller
         chain.doFilter(request, response);
+    }
+
+    @Override
+    public void destroy() {
+        // Hủy bỏ tài nguyên khi dừng ứng dụng nếu cần thiết
     }
 }

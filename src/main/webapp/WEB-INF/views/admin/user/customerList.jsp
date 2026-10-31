@@ -1,6 +1,6 @@
 
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ page import="model.entity.User,model.dto.booking.BookingHistoryDTO,java.util.List,java.math.BigDecimal,java.text.SimpleDateFormat" %>
+<%@ page import="model.entity.User,java.util.List,java.math.BigDecimal" %>
 <%
     String authRole = (String) session.getAttribute("role");
 
@@ -19,34 +19,21 @@
     request.setAttribute("activeNav", "customers");
     request.setAttribute("pageTitle", "Tài khoản Khách hàng");
 
-    List<User> customers =
-        (List<User>) request.getAttribute("customers");
+    List<User> customers =(List<User>) request.getAttribute("customers");
 
-    Integer totalCustomers =
-        (Integer) request.getAttribute("totalCustomers");
+    Integer totalCustomers =(Integer) request.getAttribute("totalCustomers");
 
-    Integer activeCustomers =
-        (Integer) request.getAttribute("activeCustomers");
+    Integer activeCustomers =(Integer) request.getAttribute("activeCustomers");
 
-    Integer suspendedCustomers =
-        (Integer) request.getAttribute("suspendedCustomers");
+    Integer lockedCustomers =(Integer) request.getAttribute("lockedCustomers");
 
-    String currentSearch =
-        (String) request.getAttribute("currentSearch");
+    String currentSearch =(String) request.getAttribute("currentSearch");
 
-    String currentStatus =
-        (String) request.getAttribute("currentStatus");
-
-    User customerDetail =
-        (User) request.getAttribute("customerDetail");
-
-    List<BookingHistoryDTO> bookingHistory =
-        (List<BookingHistoryDTO>) request.getAttribute("bookingHistory");
-
+    String currentStatus =(String) request.getAttribute("currentStatus");
+    
     String successParam = request.getParameter("success");
     String errorParam = request.getParameter("error");
 
-    SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm");
 %>
 
 <%!
@@ -130,6 +117,8 @@
                     <div class="cf-alert cf-alert-success">
                         Cập nhật trạng thái tài khoản khách hàng thành công.
                     </div>
+                    <% } else if ("invalidStatus".equals(errorParam)) { %>
+                    <div class="cf-alert cf-alert-danger">Trạng thái tài khoản không hợp lệ.</div>
                     <% } else if ("statusFailed".equals(errorParam)) { %>
                     <div class="cf-alert cf-alert-danger">
                         Cập nhật trạng thái thất bại. Vui lòng thử lại.
@@ -148,8 +137,7 @@
                                 </div>
                             </div>
 
-                            <div class="cf-stat-icon"
-                                 style="background: rgba(255, 40, 85, .12); color: #FF2855;">
+                            <div class="cf-stat-icon icon-total">
                                 👥
                             </div>
                         </div>
@@ -157,15 +145,14 @@
                         <div class="cf-stat-card">
                             <div>
                                 <div class="cf-stat-label">Đang hoạt động</div>
-                                <div class="cf-stat-val" style="color: #10B981;">
+                                <div class="cf-stat-val stat-active">
                                     <%= activeCustomers != null
                                         ? String.format("%,d", activeCustomers)
                                         : "0" %>
                                 </div>
                             </div>
 
-                            <div class="cf-stat-icon"
-                                 style="background: rgba(16, 185, 129, .12); color: #10B981;">
+                            <div class="cf-stat-icon icon-active">
                                 ✓
                             </div>
                         </div>
@@ -173,15 +160,14 @@
                         <div class="cf-stat-card">
                             <div>
                                 <div class="cf-stat-label">Bị tạm khóa</div>
-                                <div class="cf-stat-val" style="color: #EF4444;">
-                                    <%= suspendedCustomers != null
-                                        ? String.format("%,d", suspendedCustomers)
+                                <div class="cf-stat-val stat-locked">
+                                    <%= lockedCustomers != null
+                                        ? String.format("%,d", lockedCustomers)
                                         : "0" %>
                                 </div>
                             </div>
 
-                            <div class="cf-stat-icon"
-                                 style="background: rgba(239, 68, 68, .12); color: #EF4444;">
+                            <div class="cf-stat-icon icon-locked">
                                 🔒
                             </div>
                         </div>
@@ -201,8 +187,8 @@
                             </a>
 
                             <a href="${pageContext.request.contextPath}/admin/customers?status=LOCKED<%= currentSearch != null && !currentSearch.isBlank() ? "&search=" + esc(currentSearch) : "" %>"
-                               class="filter-tab <%= "LOCKED".equalsIgnoreCase(currentStatus) || "SUSPENDED".equalsIgnoreCase(currentStatus) ? "active" : "" %>">
-                                Bị tạm khóa (<%= suspendedCustomers != null ? suspendedCustomers : 0 %>)
+                               class="filter-tab <%= "LOCKED".equalsIgnoreCase(currentStatus) ? "active" : "" %>">
+                                Bị tạm khóa (<%= lockedCustomers != null ? lockedCustomers : 0 %>)
                             </a>
                         </div>
 
@@ -220,17 +206,12 @@
                                    placeholder="🔍 Tìm tên, username, email, SĐT..."
                                    value="<%= esc(currentSearch) %>">
 
-                            <button type="submit"
-                                    class="cf-btn cf-btn-secondary"
-                                    style="padding: 7px 14px;">
+                            <button type="submit" class="cf-btn cf-btn-secondary btn-filter-search">
                                 Tìm kiếm
                             </button>
 
                             <% if (currentSearch != null && !currentSearch.isBlank()) { %>
-                            <a href="${pageContext.request.contextPath}/admin/customers?status=<%= esc(currentStatus) %>"
-                               class="cf-btn cf-btn-secondary"
-                               style="padding: 7px 10px;"
-                               title="Xóa tìm kiếm">
+                            <a href="${pageContext.request.contextPath}/admin/customers?status=<%= esc(currentStatus) %>" class="cf-btn cf-btn-secondary btn-filter-clear" title="Xóa tìm kiếm">
                                 ✕
                             </a>
                             <% } %>
@@ -239,8 +220,7 @@
 
                     <!-- BẢNG KHÁCH HÀNG -->
                     <div class="cf-card">
-                        <div class="cf-table-wrap"
-                             style="margin: 0; border: none;">
+                        <div class="cf-table-wrap search-form-clean">
 
                             <!-- Đã thêm customer-table để CSS cột được áp dụng -->
                             <table class="cf-table customer-table">
@@ -251,7 +231,6 @@
                                         <th>Số điện thoại</th>
                                         <th>Đơn đặt vé</th>
                                         <th>Tổng chi tiêu</th>
-                                        <th>Lịch sử đặt vé</th>
                                         <th>Trạng thái</th>
                                         <th>Thao tác</th>
                                     </tr>
@@ -260,10 +239,8 @@
                                 <tbody>
                                     <% if (customers == null || customers.isEmpty()) { %>
                                     <tr>
-                                        <td colspan="8"
-                                            class="cf-empty-state"
-                                            style="padding: 48px; text-align: center; color: var(--cf-muted);">
-                                            <div style="font-size: 32px; margin-bottom: 8px;">
+                                        <td colspan="7" class="cf-empty-state customer-empty-cell">
+                                            <div class="customer-empty-icon">
                                                 🔍
                                             </div>
 
@@ -271,7 +248,7 @@
                                                 Không tìm thấy khách hàng nào phù hợp
                                             </strong>
 
-                                            <p style="margin: 4px 0 0; font-size: 13px;">
+                                            <p class="customer-empty-sub">
                                                 Hãy thử tìm kiếm với từ khóa khác hoặc bấm chọn "Tất cả".
                                             </p>
                                         </td>
@@ -317,19 +294,17 @@
 
                                         <!-- EMAIL VÀ XÁC MINH -->
                                         <td>
-                                            <div style="font-weight: 500; overflow-wrap: anywhere;">
+                                            <div class="customer-email-cell">
                                                 <%= esc(c.getEmail()) %>
                                             </div>
 
-                                            <div style="margin-top: 3px;">
+                                            <div class="customer-badge-row">
                                                 <% if (c.isEmailVerified()) { %>
-                                                <span class="cf-badge cf-badge-success"
-                                                      style="font-size: 10px; padding: 1px 6px;">
+                                                <span class="cf-badge cf-badge-success cf-badge-xs">
                                                     Đã xác minh
                                                 </span>
                                                 <% } else { %>
-                                                <span class="cf-badge cf-badge-muted"
-                                                      style="font-size: 10px; padding: 1px 6px;">
+                                                <span class="cf-badge cf-badge-muted cf-badge-xs">
                                                     Chưa xác minh
                                                 </span>
                                                 <% } %>
@@ -351,18 +326,9 @@
 
                                         <!-- TỔNG CHI TIÊU -->
                                         <td>
-                                            <strong style="color: #F8FAFC;">
+                                            <strong class="customer-total-spent">
                                                 <%= money(c.getTotalSpent()) %>
                                             </strong>
-                                        </td>
-
-                                        <!-- LỊCH SỬ ĐẶT VÉ -->
-                                        <td>
-                                            <a href="${pageContext.request.contextPath}/admin/customers?status=<%= esc(currentStatus) %><%= currentSearch != null && !currentSearch.isBlank() ? "&search=" + esc(currentSearch) : "" %>&viewUserId=<%= c.getUserId() %>"
-                                               class="cf-btn cf-btn-secondary cf-btn-sm"
-                                               title="Xem lịch sử đặt vé">
-                                                🎟️ Lịch sử vé
-                                            </a>
                                         </td>
 
                                         <!-- TRẠNG THÁI -->
@@ -373,7 +339,6 @@
                                             </span>
                                             <% } else if (
                                                 "LOCKED".equalsIgnoreCase(c.getStatus())
-                                                || "SUSPENDED".equalsIgnoreCase(c.getStatus())
                                             ) { %>
                                             <span class="cf-badge cf-badge-danger">
                                                 Bị tạm khóa
@@ -388,24 +353,21 @@
                                         <!-- THAO TÁC -->
                                         <td>
                                             <div>
-                                                <form method="post"
-                                                      action="${pageContext.request.contextPath}/admin/customers"
-                                                      onsubmit="return confirm('<%= isActive
-                                                          ? "Bạn có chắc chắn muốn TẠM KHÓA tài khoản khách hàng này?"
-                                                          : "Bạn có chắc chắn muốn MỞ KHÓA tài khoản khách hàng này?" %>');">
-
+                                                <form method="post" action="${pageContext.request.contextPath}/admin/customers">
+                                                    <%--Gửi hành động toggleStatus để backend biết yêu cầu là thay đổi trạng thái tài khoản.--%>
                                                     <input type="hidden"
                                                            name="action"
                                                            value="toggleStatus">
+                                                    <%--Gửi ID của khách hàng cần thay đổi trạng thái.--%>
 
                                                     <input type="hidden"
                                                            name="userId"
                                                            value="<%= c.getUserId() %>">
-
+                                                    <%--Xác định trạng thái mới--%>
                                                     <input type="hidden"
                                                            name="newStatus"
                                                            value="<%= isActive ? "LOCKED" : "ACTIVE" %>">
-
+                                                    <%--Giúp backend biết trạng thái lọc và từ khóa tìm kiếm hiện tại khi xử lý yêu cầu.--%>
                                                     <input type="hidden"
                                                            name="status"
                                                            value="<%= esc(currentStatus) %>">
@@ -415,17 +377,11 @@
                                                            value="<%= esc(currentSearch) %>">
 
                                                     <% if (isActive) { %>
-                                                    <button type="submit"
-                                                            class="cf-btn cf-btn-sm"
-                                                            style="background: rgba(239, 68, 68, .15); color: #EF4444; border: 1px solid rgba(239, 68, 68, .4);"
-                                                            title="Khóa tài khoản này">
+                                                    <button type="submit" class="cf-btn cf-btn-sm btn-modal-lock-confirm" title="Khóa tài khoản này">
                                                         🔒 Khóa
                                                     </button>
                                                     <% } else { %>
-                                                    <button type="submit"
-                                                            class="cf-btn cf-btn-sm"
-                                                            style="background: rgba(16, 185, 129, .15); color: #10B981; border: 1px solid rgba(16, 185, 129, .4);"
-                                                            title="Mở khóa tài khoản này">
+                                                    <button type="submit" class="cf-btn cf-btn-sm btn-modal-unlock-confirm" title="Mở khóa tài khoản này">
                                                         🔓 Mở khóa
                                                     </button>
                                                     <% } %>
@@ -445,121 +401,6 @@
             </div>
         </div>
 
-        <!-- MODAL LỊCH SỬ ĐẶT VÉ -->
-        <% if (customerDetail != null) { %>
-        <div class="cf-modal-backdrop active" id="historyModal">
-            <div class="cf-modal">
-
-                <div class="cf-modal-header">
-                    <div>
-                        <h3>
-                            Lịch sử đặt vé:
-                            <%= esc(customerDetail.getFullName()) %>
-                        </h3>
-
-                        <div style="font-size: 12px; color: var(--cf-muted); margin-top: 3px;">
-                            <%= esc(customerDetail.getCustomerCode()) %>
-                            · Email: <%= esc(customerDetail.getEmail()) %>
-                            · SĐT:
-                            <%= customerDetail.getPhone() != null
-                                ? esc(customerDetail.getPhone())
-                                : "—" %>
-                        </div>
-                    </div>
-
-                    <a href="${pageContext.request.contextPath}/admin/customers?status=<%= esc(currentStatus) %><%= currentSearch != null && !currentSearch.isBlank() ? "&search=" + esc(currentSearch) : "" %>"
-                       class="cf-modal-close"
-                       aria-label="Đóng">
-                        &times;
-                    </a>
-                </div>
-
-                <div class="cf-modal-body">
-                    <% if (bookingHistory == null || bookingHistory.isEmpty()) { %>
-                    <div style="text-align: center; padding: 40px 20px; color: var(--cf-muted);">
-                        <div style="font-size: 32px; margin-bottom: 8px;">
-                            🎫
-                        </div>
-
-                        <strong>
-                            Khách hàng này chưa có giao dịch đặt vé nào
-                        </strong>
-                    </div>
-                    <% } else { %>
-
-                    <table class="cf-table">
-                        <thead>
-                            <tr>
-                                <th>Mã đơn</th>
-                                <th>Phim</th>
-                                <th>Cụm rạp</th>
-                                <th>Suất chiếu</th>
-                                <th>Tổng tiền</th>
-                                <th>Trạng thái</th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            <% for (BookingHistoryDTO h : bookingHistory) {
-                                String bStatus = h.getBookingStatus();
-
-                                String bBadge =
-                                    "CONFIRMED".equalsIgnoreCase(bStatus)
-                                    || "PAID".equalsIgnoreCase(bStatus)
-                                    ? "cf-badge-success"
-                                    : "CANCELLED".equalsIgnoreCase(bStatus)
-                                    ? "cf-badge-danger"
-                                    : "cf-badge-info";
-                            %>
-
-                            <tr>
-                                <td>
-                                    <strong style="color: #FF2855;">
-                                        <%= esc(h.getBookingCode()) %>
-                                    </strong>
-                                </td>
-
-                                <td><%= esc(h.getMovieTitle()) %></td>
-
-                                <td><%= esc(h.getCentreName()) %></td>
-
-                                <td>
-                                    <%= h.getStartTime() != null
-                                        ? sdf.format(h.getStartTime())
-                                        : "—" %>
-                                </td>
-
-                                <td>
-                                    <strong>
-                                        <%= money(h.getTotalAmount()) %>
-                                    </strong>
-                                </td>
-
-                                <td>
-                                    <span class="cf-badge <%= bBadge %>">
-                                        <%= esc(bStatus) %>
-                                    </span>
-                                </td>
-                            </tr>
-
-                            <% } %>
-                        </tbody>
-                    </table>
-
-                    <% } %>
-                </div>
-
-                <div class="cf-modal-footer">
-                    <a href="${pageContext.request.contextPath}/admin/customers?status=<%= esc(currentStatus) %><%= currentSearch != null && !currentSearch.isBlank() ? "&search=" + esc(currentSearch) : "" %>"
-                       class="cf-btn cf-btn-secondary">
-                        Đóng
-                    </a>
-                </div>
-
-            </div>
-        </div>
-        <% } %>
-
         <script>
             document.addEventListener('DOMContentLoaded', function () {
                 document.querySelectorAll(
@@ -577,7 +418,7 @@
                                 alert.parentNode.removeChild(alert);
                             }
                         }, 400);
-                    }, 3000);
+                    }, 1000);
                 });
             });
         </script>

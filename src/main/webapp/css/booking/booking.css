@@ -173,6 +173,24 @@ body.cf-booking {
 .cf-booking .list-group-item.active { box-shadow: inset 3px 0 0 #FF2855; }
 
 /* ---------- so do ghe ---------- */
+.cf-booking .seat-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+
+.cf-booking .row-label {
+    width: 24px;
+    font-weight: bold;
+    text-align: center;
+}
+
+.cf-booking .seat input {
+    display: none;
+}
+
 .cf-booking .screen {
     margin: 0 auto 26px;
     width: 80%;
@@ -188,6 +206,15 @@ body.cf-booking {
 }
 
 .cf-booking .seat span {
+    display: inline-block;
+    width: 40px;
+    height: 34px;
+    line-height: 34px;
+    text-align: center;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    border: 1px solid;
     background: #1E2433;
     border-color: rgba(255, 255, 255, 0.18);
     color: #E2E8F0;
@@ -235,3 +262,16 @@ html[data-theme="light"] body.cf-booking .legend .seat-taken { background: #94A3
     .cf-main-header, .footer, .cf-sidebar, .cf-topbar, .cf-booking-heading, .no-print, .alert { display: none !important; }
     .cf-manager-main { margin-left: 0 !important; background: #fff !important; }
 }
+
+.cf-booking .seat.SWEETBOX span { width: 56px; }
+.cf-booking .legend span {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    vertical-align: middle;
+    margin-right: 4px;
+    border: 1px solid;
+}
+.cf-booking .qr-box { max-width: 200px; margin: 0 auto; }
+.cf-booking .ticket-stub { border-left: 2px dashed #CBD5E1; }

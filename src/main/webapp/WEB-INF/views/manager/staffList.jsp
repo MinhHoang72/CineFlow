@@ -13,7 +13,7 @@
     }
 
     if (request.getAttribute("staff") == null) {
-        response.sendRedirect(request.getContextPath() + "/staff");
+        response.sendRedirect(request.getContextPath() + "/staffList");
         return;
     }
 
@@ -31,6 +31,30 @@
     String errorParam = request.getParameter("error");
     String searchParam = request.getParameter("search");
     String cFilterVal = request.getParameter("centreId");
+
+    request.setAttribute("activeNav", "staff");
+    request.setAttribute("pageTitle", "Quản lý nhân sự");
+    request.setAttribute("pageBreadcrumb", "Nhân sự");
+
+    int totalStaff = staff != null ? staff.size() : 0;
+    int activeStaffCount = 0;
+    int inactiveStaffCount = 0;
+    int salesCount = 0;
+    int checkerCount = 0;
+    if (staff != null) {
+        for (User u : staff) {
+            if ("ACTIVE".equalsIgnoreCase(u.getStatus())) {
+                activeStaffCount++;
+            } else {
+                inactiveStaffCount++;
+            }
+            if (u.isTicketSalesStaff()) {
+                salesCount++;
+            } else if (u.isTicketCheckerStaff()) {
+                checkerCount++;
+            }
+        }
+    }
 %>
 
 <!DOCTYPE html>
@@ -47,9 +71,24 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/forms.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/tables.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/manager/shell.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin/dashboard.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/manager/staff.css">
 
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/staff/directory.css?v=<%= System.currentTimeMillis() %>">
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll(".cf-alert").forEach(function (alert) {
+            setTimeout(function () {
+                alert.style.transition = "opacity 0.4s ease";
+                alert.style.opacity = "0";
+
+                setTimeout(function () {
+                    alert.remove();
+                }, 400);
+            }, 3000);
+        });
+    });
+</script>
 </head>
 
 <body>
@@ -68,10 +107,15 @@
         <% } %>
 
         <main class="cf-content">
-            <div class="cf-page-header">
+            <div class="cf-page-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
                 <div>
                     <h1>Nhân sự <%= currentCentreName %></h1>
                 </div>
+                <% if (selectedCentreId != null || isAdminRole) { %>
+                <button type="button" class="cf-btn cf-btn-primary" onclick="openCreateStaffModal()">
+                    <span style="font-weight: 700; font-size: 15px; margin-right: 4px;">+</span> Thêm nhân viên mới
+                </button>
+                <% } %>
             </div>
 
             <% if ("created".equals(successParam)) { %>
@@ -144,6 +188,30 @@
                 </div>
             <% } %>
 
+            <!-- KPI METRICS: TỔNG SỐ, ĐANG HOẠT ĐỘNG, TẠM NGƯNG, VỊ TRÍ -->
+            <div class="cf-kpi-grid">
+                <div class="cf-kpi-card">
+                    <span class="cf-kpi-label">Tổng số nhân viên</span>
+                    <div class="cf-kpi-value"><%= totalStaff %></div>
+                </div>
+                <div class="cf-kpi-card">
+                    <span class="cf-kpi-label">Đang hoạt động</span>
+                    <div class="cf-kpi-value" style="color: #10b981;"><%= activeStaffCount %></div>
+                </div>
+                <div class="cf-kpi-card">
+                    <span class="cf-kpi-label">Tạm ngưng / Đã khóa</span>
+                    <div class="cf-kpi-value" style="color: #ef4444;"><%= inactiveStaffCount %></div>
+                </div>
+                <div class="cf-kpi-card">
+                    <span class="cf-kpi-label">Nhân viên Bán vé</span>
+                    <div class="cf-kpi-value" style="color: #0284c7;"><%= salesCount %></div>
+                </div>
+                <div class="cf-kpi-card">
+                    <span class="cf-kpi-label">Nhân viên Soát vé</span>
+                    <div class="cf-kpi-value" style="color: #8b5cf6;"><%= checkerCount %></div>
+                </div>
+            </div>
+
             <% if (selectedCentreId == null && !isAdminRole) { %>
                 <section class="cf-card" style="padding:40px 24px;text-align:center;margin-top:20px;">
                     <div style="font-size:40px;margin-bottom:14px;">🏛</div>
@@ -167,7 +235,7 @@
 
                     <div class="staff-toolbar">
                         <form class="staff-search-form" method="get"
-                              action="${pageContext.request.contextPath}/staff">
+                              action="${pageContext.request.contextPath}/staffList">
                             <% if (cFilterVal != null) { %>
                                 <input type="hidden" name="centreId" value="<%= cFilterVal %>">
                             <% } %>
@@ -183,7 +251,7 @@
                             <button type="submit" class="staff-control-btn">Tìm</button>
 
                             <% if (searchParam != null && !searchParam.trim().isEmpty()) { %>
-                                <a href="${pageContext.request.contextPath}/staff<%= cFilterVal != null ? "?centreId=" + cFilterVal : "" %>"
+                                <a href="${pageContext.request.contextPath}/staffList<%= cFilterVal != null ? "?centreId=" + cFilterVal : "" %>"
                                    class="staff-control-btn">Xóa lọc</a>
                             <% } %>
                         </form>
@@ -333,7 +401,7 @@
             <button type="button" class="cf-modal-close" onclick="closeCreateStaffModal()" aria-label="Đóng">&times;</button>
         </div>
 
-        <form method="post" action="${pageContext.request.contextPath}/staff">
+        <form method="post" action="${pageContext.request.contextPath}/staffList">
             <input type="hidden" name="action" value="create">
 
             <div class="cf-modal-body">
@@ -418,7 +486,7 @@
             <button type="button" class="cf-modal-close" onclick="closeEditStaffModal()" aria-label="Đóng">&times;</button>
         </div>
 
-        <form method="post" action="${pageContext.request.contextPath}/staff">
+        <form method="post" action="${pageContext.request.contextPath}/staffList">
             <input type="hidden" name="action" value="update">
             <input type="hidden" name="userId" id="editStaffUserId">
 
@@ -577,7 +645,7 @@
         formData.append('userId', userId);
         formData.append('status', newStatus);
 
-        fetch('${pageContext.request.contextPath}/staff', {
+        fetch('${pageContext.request.contextPath}/staffList', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',

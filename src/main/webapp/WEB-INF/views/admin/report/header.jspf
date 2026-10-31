@@ -1,4 +1,4 @@
-﻿<%@ page pageEncoding="UTF-8" %>
+<%@ page pageEncoding="UTF-8" %>
 <%@ page import="model.entity.User" %>
 <%!
     static String esc(Object value) {
@@ -48,7 +48,16 @@
     String ctx = request.getContextPath();
     User currentUser = (User) session.getAttribute("user");
     boolean adminUser = currentUser != null && "ADMIN".equals(currentUser.getRole());
-    request.setAttribute("activeNav", "report-hub");
+    String reportFwdPath = (String) request.getAttribute("jakarta.servlet.forward.path_info");
+    if (reportFwdPath == null) {
+        reportFwdPath = request.getPathInfo();
+    }
+    String reportUri = request.getRequestURI();
+    if ("/operations".equals(reportFwdPath) || reportUri.contains("Operations")) {
+        request.setAttribute("activeNav", "report-operations");
+    } else {
+        request.setAttribute("activeNav", "report-sales");
+    }
     String shellTitle = (String) request.getAttribute("pageTitle");
     String flashType = (String) request.getAttribute("flashType");
     String flashMessage = (String) request.getAttribute("flashMessage");

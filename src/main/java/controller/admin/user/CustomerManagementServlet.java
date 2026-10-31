@@ -7,7 +7,6 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import model.dto.booking.BookingHistoryDTO;
 import model.entity.User;
 
 import java.io.IOException;
@@ -20,9 +19,8 @@ import java.util.List;
  * Nghiệp vụ:
  * - Tra cứu danh sách thành viên toàn hệ thống
  * - Tìm kiếm theo tên, username, email, số điện thoại
- * - Lọc theo trạng thái tài khoản (ACTIVE, LOCKED / SUSPENDED...)
+ * - Lọc theo trạng thái tài khoản (ACTIVE, LOCKED)
  * - Khóa hoặc mở khóa tài khoản khách hàng
- * - Tra cứu chi tiết lịch sử đặt vé của khách hàng
  */
 @WebServlet(name = "CustomerManagementServlet", urlPatterns = {"/admin/customers"})
 public class CustomerManagementServlet extends HttpServlet {
@@ -47,7 +45,7 @@ public class CustomerManagementServlet extends HttpServlet {
     }
 
     /**
-     * Xử lý yêu cầu HTTP GET: Lấy danh sách khách hàng, thống kê số lượng và xem lịch sử đặt vé nếu có.
+     * Xử lý yêu cầu HTTP GET: Lấy danh sách khách hàng và thống kê số lượng.
      *
      * @param request  yêu cầu HTTP từ client
      * @param response phản hồi HTTP gửi về client
@@ -79,38 +77,21 @@ public class CustomerManagementServlet extends HttpServlet {
             status = "ALL";
         }
 
-        // 4. Kiểm tra xem có yêu cầu xem chi tiết khách hàng và lịch sử đặt vé hay không (viewUserId)
-        String viewIdParam = request.getParameter("viewUserId");
-        if (viewIdParam != null && !viewIdParam.isBlank()) {
-            try {
-                int viewUserId = Integer.parseInt(viewIdParam.trim());
-                User customerDetail = userDAO.getUserById(viewUserId);
-                // Đảm bảo chỉ xem chi tiết nếu tài khoản đó đúng là vai trò CUSTOMER
-                if (customerDetail != null && "CUSTOMER".equalsIgnoreCase(customerDetail.getRole())) {
-                    List<BookingHistoryDTO> history = userDAO.getBookingHistory(viewUserId);
-                    request.setAttribute("customerDetail", customerDetail);
-                    request.setAttribute("bookingHistory", history);
-                }
-            } catch (NumberFormatException ignored) {
-            }
-        }
-
-        // 5. Truy vấn danh sách khách hàng và thống kê số lượng theo trạng thái
+        // 4. Truy vấn danh sách khách hàng và thống kê số lượng theo trạng thái
         List<User> customers = userDAO.getCustomers(search, status);
         int totalCustomers = userDAO.countCustomersByStatus("ALL");
         int activeCustomers = userDAO.countCustomersByStatus("ACTIVE");
-        int suspendedCustomers = userDAO.countCustomersByStatus("LOCKED");
+        int lockedCustomers = userDAO.countCustomersByStatus("LOCKED");
 
-        // 6. Gán các thuộc tính vào request scope để JSP render giao diện
+        // 5. Gán các thuộc tính vào request scope để JSP render giao diện
         request.setAttribute("customers", customers);
         request.setAttribute("totalCustomers", totalCustomers);
         request.setAttribute("activeCustomers", activeCustomers);
-        request.setAttribute("suspendedCustomers", suspendedCustomers);
-        request.setAttribute("lockedCustomers", suspendedCustomers);
+        request.setAttribute("lockedCustomers", lockedCustomers);
         request.setAttribute("currentSearch", search != null ? search.trim() : "");
         request.setAttribute("currentStatus", status);
 
-        // 7. Chuyển tiếp tới giao diện quản lý khách hàng
+        // 6. Chuyển tiếp tới giao diện quản lý khách hàng
         request.getRequestDispatcher("/WEB-INF/views/admin/user/customerList.jsp").forward(request, response);
     }
 
@@ -125,7 +106,7 @@ public class CustomerManagementServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        // 1. Thiết lập mã hóa tiếng Việt UTF-8 và kiểm tra quyền Admin
+        // 1. Thiết lập mã hóa và kiểm tra quyền Admin
         request.setCharacterEncoding("UTF-8");
         HttpSession session = request.getSession(false);
         if (!isAdmin(session)) {
@@ -133,49 +114,71 @@ public class CustomerManagementServlet extends HttpServlet {
             return;
         }
 
-        // 2. Đọc các tham số hành động, từ khóa tìm kiếm và bộ lọc hiện tại
+        // 2. Đọc hành động cần thực hiện
         String action = request.getParameter("action");
+        if (!"toggleStatus".equalsIgnoreCase(action)) {
+            response.sendRedirect(request.getContextPath() + "/admin/customers");
+            return;
+        }
+
+        // 3. Đọc mã khách hàng và trạng thái mới
+        String userIdParam = request.getParameter("userId");
+        String newStatus = request.getParameter("newStatus");
         String search = request.getParameter("search");
-        String status = request.getParameter("status");
+        String currentStatus = request.getParameter("status");
 
-        // Xây dựng URL chuyển hướng giữ nguyên từ khóa tìm kiếm và bộ lọc trạng thái
-        StringBuilder redirectUrl = new StringBuilder(request.getContextPath() + "/admin/customers?");
+        String baseUrl = request.getContextPath() + "/admin/customers";
+
+        if (userIdParam == null || newStatus == null) {
+            response.sendRedirect(baseUrl + "?error=missing_data");
+            return;
+        }
+
+        // 4. Chuyển mã khách hàng từ chuỗi sang số
+        int userId;
+        try {
+            userId = Integer.parseInt(userIdParam.trim());
+        } catch (NumberFormatException e) {
+            response.sendRedirect(baseUrl + "?error=invalidId");
+            return;
+        }
+
+        // 5. Kiểm tra tài khoản mục tiêu phải tồn tại và đúng vai trò CUSTOMER
+        User targetCustomer = userDAO.getUserById(userId);
+        if (targetCustomer == null
+                || !"CUSTOMER".equalsIgnoreCase(targetCustomer.getRole())) {
+            response.sendRedirect(baseUrl + "?error=invalidUser");
+            return;
+        }
+
+        // 6. Chỉ chấp nhận hai trạng thái của tài khoản khách hàng
+        String normalizedStatus = newStatus.trim().toUpperCase();
+        if (!"ACTIVE".equals(normalizedStatus)
+                && !"LOCKED".equals(normalizedStatus)) {
+            response.sendRedirect(baseUrl + "?error=invalidStatus");
+            return;
+        }
+
+        // 7. Cập nhật trạng thái trong database
+        boolean updated = userDAO.updateUserStatus(userId, normalizedStatus);
+
+        // 8. Giữ lại bộ lọc hiện tại khi quay về danh sách
+        StringBuilder redirectUrl = new StringBuilder(baseUrl).append("?");
         if (search != null && !search.isBlank()) {
-            redirectUrl.append("search=").append(URLEncoder.encode(search.trim(), StandardCharsets.UTF_8)).append("&");
+            redirectUrl.append("search=")
+                    .append(URLEncoder.encode(search.trim(), StandardCharsets.UTF_8))
+                    .append("&");
         }
-        if (status != null && !status.isBlank()) {
-            redirectUrl.append("status=").append(URLEncoder.encode(status.trim(), StandardCharsets.UTF_8)).append("&");
-        }
-
-        // 3. Xử lý hành động KHÓA hoặc MỞ KHÓA tài khoản khách hàng (toggleStatus)
-        if ("toggleStatus".equalsIgnoreCase(action)) {
-            String userIdParam = request.getParameter("userId");
-            String newStatus = request.getParameter("newStatus");
-
-            if (userIdParam != null && newStatus != null) {
-                try {
-                    int userId = Integer.parseInt(userIdParam.trim());
-                    User targetUser = userDAO.getUserById(userId);
-
-                    // 4. Kiểm tra an toàn: Chỉ cho phép thao tác trên tài khoản khách hàng (CUSTOMER)
-                    if (targetUser != null && "CUSTOMER".equalsIgnoreCase(targetUser.getRole())) {
-                        String normalizedStatus = newStatus.trim().toUpperCase();
-                        if ("SUSPENDED".equals(normalizedStatus)) {
-                            normalizedStatus = "LOCKED";
-                        }
-                        // 5. Cập nhật trạng thái người dùng trong DB
-                        boolean ok = userDAO.updateUserStatus(userId, normalizedStatus);
-                        redirectUrl.append(ok ? "success=statusUpdated" : "error=statusFailed");
-                    } else {
-                        redirectUrl.append("error=invalidUser");
-                    }
-                } catch (NumberFormatException e) {
-                    redirectUrl.append("error=invalidId");
-                }
-            }
+        if (currentStatus != null && !currentStatus.isBlank()) {
+            redirectUrl.append("status=")
+                    .append(URLEncoder.encode(currentStatus.trim(), StandardCharsets.UTF_8))
+                    .append("&");
         }
 
-        // 6. Chuyển hướng người dùng về lại trang danh sách khách hàng
+        redirectUrl.append(updated
+                ? "success=statusUpdated"
+                : "error=statusFailed");
+
         response.sendRedirect(redirectUrl.toString());
     }
 }

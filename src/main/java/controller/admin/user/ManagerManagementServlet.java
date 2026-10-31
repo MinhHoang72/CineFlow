@@ -21,7 +21,7 @@ import java.util.List;
 /**
  * Controller điều khiển phân hệ Quản lý Tài khoản Quản lý (Manager).
  * Trách nhiệm: Quản lý thông tin tài khoản Manager (tạo mới, cập nhật thông tin cá nhân, kích hoạt hoặc tạm ngưng tài khoản).
- * Nghiệp vụ Bổ nhiệm vào rạp và Điều chuyển nhân sự được quản lý riêng biệt tại StaffTransferServlet (/admin/transfers).
+ * Nghiệp vụ Bổ nhiệm vào rạp và Điều chuyển nhân sự được quản lý riêng biệt tại TransferServlet (/admin/transfers).
  */
 @WebServlet(name = "ManagerManagementServlet", urlPatterns = {"/admin/managers"})
 public class ManagerManagementServlet extends HttpServlet {

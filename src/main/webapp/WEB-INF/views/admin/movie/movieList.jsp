@@ -284,7 +284,7 @@
                                                 <%= m.getTitle() %>
                                             </a>
                                             <div style="font-size: 12px; color: var(--cf-muted); margin-top: 3px; line-height: 1.3;">
-                                                Mã phim: <strong><%= mCode %></strong> (<%= m.getMovieId() %>)<% if (!director.isBlank()) { %> · Đạo diễn: <%= director %><% } %>
+                                                Mã phim: <strong><%= mCode %></strong><% if (!director.isBlank()) { %> · Đạo diễn: <%= director %><% } %>
                                             </div>
                                         </div>
                                     </div>

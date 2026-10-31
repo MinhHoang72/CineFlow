@@ -2,6 +2,7 @@
 <%@ page import="model.entity.User" %>
 <%@ page import="model.entity.Movie" %>
 <%@ page import="model.entity.Centre" %>
+<%@ page import="model.entity.Voucher" %>
 <%@ page import="dao.CinemaDAO" %>
 <%@ page import="java.text.SimpleDateFormat" %>
 <%@ page import="java.util.List" %>
@@ -102,7 +103,7 @@
             <article class="hero-slide active">
                 <div class="hero-fallback">CF</div>
                 <div class="hero-overlay"></div>
-                <div class="hero-content"><p class="hero-label">CINEFLOW FEATURE</p><h1>TRẢI NGHIỆM<br>ĐIỆN ẢNH ĐỈNH CAO</h1><p>Khám phá những bộ phim nổi bật đang được trình chiếu tại CineFlow.</p><div class="hero-buttons"><a href="#movies">Xem phim</a><a class="outline" href="#promotions">Tin mới &amp; ưu đãi</a></div></div>
+                <div class="hero-content"><p class="hero-label">CINEFLOW FEATURE</p><h1>TRẢI NGHIỆM<br>ĐIỆN ẢNH ĐỈNH CAO</h1><p>Khám phá những bộ phim nổi bật đang được trình chiếu tại CineFlow.</p><div class="hero-buttons"><a href="#movies">Xem phim</a><a class="outline" href="#promotions">Xem ưu đãi</a></div></div>
             </article>
         <% } else { %>
             <% String[] heroImages = {"https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=1800&q=85", "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&w=1800&q=85", "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=1800&q=85"}; %>
@@ -203,9 +204,21 @@
         <section class="promotion-section" id="promotions" aria-labelledby="promotions-title">
             <div class="section-title"><span></span><h2 id="promotions-title">TIN MỚI &amp; ƯU ĐÃI</h2><span></span></div>
             <div class="promotion-grid">
-                <article class="promotion-card"><img src="https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&amp;fit=crop&amp;w=900&amp;q=85" alt="Không gian phòng chiếu CineFlow"><div class="promotion-content"><span class="promotion-tag">ƯU ĐÃI ĐẶC BIỆT</span><h3>Thứ Ba thành viên</h3><p>Giảm đến 30% giá vé cho thành viên CineFlow mỗi thứ Ba.</p><a href="<%= contextPath %>/booking">Đặt vé ngay</a></div></article>
-                <article class="promotion-card"><img src="https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&amp;fit=crop&amp;w=900&amp;q=85" alt="Trải nghiệm điện ảnh CineFlow"><div class="promotion-content"><span class="promotion-tag">TIN MỚI</span><h3>Đêm phim cuối tuần</h3><p>Cùng bạn bè tận hưởng những suất chiếu đặc biệt cuối tuần.</p><a href="<%= contextPath %>/booking">Xem lịch chiếu</a></div></article>
-                <article class="promotion-card"><img src="https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&amp;fit=crop&amp;w=900&amp;q=85" alt="Bắp nước tại CineFlow"><div class="promotion-content"><span class="promotion-tag">COMBO MỚI</span><h3>Combo đi cùng bạn</h3><p>Thưởng thức phim trọn vẹn với combo bắp nước dành cho hai người.</p><a href="<%= contextPath %>/booking">Khám phá ngay</a></div></article>
+                <% List<Voucher> homeVouchers = (List<Voucher>) request.getAttribute("homeVouchers"); %>
+                <% if (homeVouchers == null || homeVouchers.isEmpty()) { %>
+                    <p class="empty-state">Hiện chưa có voucher ưu đãi.</p>
+                <% } else { for (Voucher voucher : homeVouchers) { %>
+                    <article class="promotion-card">
+                        <div class="promotion-content">
+                            <span class="promotion-tag">VOUCHER ƯU ĐÃI</span>
+                            <h3><%= escapeHtml(voucher.getVoucherName()) %></h3>
+                            <p><%= escapeHtml(voucher.getDescription()) %></p>
+                            <p><strong>Mã: <%= escapeHtml(voucher.getVoucherCode()) %></strong><br>
+                                Giảm <%= voucher.getDiscountValue().stripTrailingZeros().toPlainString() %><%= "PERCENT".equalsIgnoreCase(voucher.getDiscountType()) ? "%" : " đ" %></p>
+                            <a href="<%= contextPath %>/booking">Đặt vé ngay</a>
+                        </div>
+                    </article>
+                <% } } %>
             </div>
         </section>
 

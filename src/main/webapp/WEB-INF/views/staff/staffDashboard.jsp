@@ -23,6 +23,8 @@
     String fullName = currentUser != null && currentUser.getFullName() != null ? currentUser.getFullName() : "Nhân viên";
     String employeeCode = currentUser != null ? currentUser.getEmployeeCode() : "NV00000";
     String centreName = currentUser != null && currentUser.getCentreName() != null ? currentUser.getCentreName() : "Toàn hệ thống CineFlow";
+    request.setAttribute("pageTitle", "Không gian nhân viên");
+    request.setAttribute("activeNav", "dashboard");
 %>
 <!DOCTYPE html>
 <html lang="vi">
@@ -60,7 +62,7 @@
                     <div>
                         <% if (isSales) { %>
                             <span class="staff-role-badge-sales">
-                                🎫 Nhân viên Bán vé & F&B (Ticket Sales Staff)
+                                🎫 Nhân viên Bán vé &amp; F&amp;B (Ticket Sales Staff)
                             </span>
                         <% } else if (isChecker) { %>
                             <span class="staff-role-badge-checker">
@@ -82,7 +84,7 @@
                     <div class="cf-card-header">
                         <div>
                             <div class="staff-section-title">
-                                <span>🎫</span> Quầy vé & F&B (Ticket Sales Staff)
+                                <span>🎫</span> Quầy vé &amp; F&amp;B (Ticket Sales Staff)
                             </div>
                             <p>Quy trình phục vụ bán vé trực tiếp, chọn ghế sơ đồ rạp, đặt combo bắp nước và in hóa đơn tại quầy.</p>
                         </div>
@@ -98,25 +100,25 @@
                                 <span>Tra cứu suất chiếu đang mở bán trong ngày, chọn ghế ngồi trực tiếp theo sơ đồ rạp cho khách hàng.</span>
                             </a>
 
-                            <div class="cf-dashboard-link" style="opacity: 0.95;">
-                                <span class="cf-feature-tag tag-amber">F&B Concessions</span>
-                                <strong style="color: #fbbf24; font-size: 15px;">🍿 Đặt Bắp nước & Combo F&B</strong>
-                                <span>Danh mục combo bắp rang bơ (Caramel, Phô mai), nước giải khát và snack ưu đãi kèm vé xem phim.</span>
-                            </div>
+                            <a class="cf-dashboard-link" href="${pageContext.request.contextPath}/fnb/stock">
+                                <span class="cf-feature-tag tag-amber">F&amp;B Concessions</span>
+                                <strong style="color: #fbbf24; font-size: 15px;">🍿 Đặt Bắp nước &amp; Combo F&amp;B</strong>
+                                <span>Danh mục combo bắp rang bơ, nước giải khát và kiểm tra tồn kho tại chi nhánh.</span>
+                            </a>
 
-                            <div class="cf-dashboard-link" style="opacity: 0.95;">
+                            <a class="cf-dashboard-link" href="${pageContext.request.contextPath}/staff/payments">
                                 <span class="cf-feature-tag tag-emerald">Thu ngân</span>
-                                <strong style="color: #34d399; font-size: 15px;">💳 Thanh toán & Xuất hóa đơn</strong>
-                                <span>Tiếp nhận thanh toán tiền mặt, thẻ POS hoặc quét QR chuyển khoản. In vé xem phim và hóa đơn cho khách.</span>
-                            </div>
+                                <strong style="color: #34d399; font-size: 15px;">💳 Thanh toán &amp; Xuất hóa đơn</strong>
+                                <span>Tiếp nhận thanh toán tiền mặt, thẻ POS hoặc quét QR chuyển khoản. Xem lịch sử giao dịch ca bán.</span>
+                            </a>
 
                             <a class="cf-dashboard-link" href="${pageContext.request.contextPath}/staff/counter">
                                 <span class="cf-feature-tag tag-blue">Tra cứu</span>
-                                <strong>🕒 Lịch chiếu & Ghế trống</strong>
+                                <strong>🕒 Lịch chiếu &amp; Ghế trống</strong>
                                 <span>Kiểm tra danh sách suất chiếu còn vé, số lượng ghế trống theo từng phòng chiếu tại <%= centreName %>.</span>
                             </a>
 
-                            <a class="cf-dashboard-link" href="${pageContext.request.contextPath}/account">
+                            <a class="cf-dashboard-link" href="${pageContext.request.contextPath}/staff/payments">
                                 <span class="cf-feature-tag tag-emerald">Lịch sử</span>
                                 <strong>📋 Lịch sử ca bán vé</strong>
                                 <span>Xem các đơn hàng và vé đã xuất trong ca làm việc để thực hiện đối soát cuối ngày.</span>
@@ -140,7 +142,7 @@
                     <div class="cf-card-header">
                         <div>
                             <div class="staff-section-title">
-                                <span>🔍</span> Cửa phòng chiếu & Soát vé (Ticket Checker Staff)
+                                <span>🔍</span> Cửa phòng chiếu &amp; Soát vé (Ticket Checker Staff)
                             </div>
                             <p>Quy trình kiểm tra mã vé QR/Code, chọn suất chiếu đón khách và quản lý danh sách khán giả đã check-in.</p>
                         </div>
@@ -150,29 +152,29 @@
                     </div>
                     <div class="cf-card-body">
                         <div class="cf-dashboard-links">
-                            <div class="cf-dashboard-link cf-dashboard-link-purple">
+                            <a class="cf-dashboard-link cf-dashboard-link-purple" href="${pageContext.request.contextPath}/checkin">
                                 <span class="cf-feature-tag tag-purple">Cửa kiểm soát</span>
-                                <strong style="color: #c084fc; font-size: 15px;">📱 Quét mã QR & Soát vé</strong>
+                                <strong style="color: #c084fc; font-size: 15px;">📱 Quét mã QR &amp; Soát vé</strong>
                                 <span>Quét mã QR từ điện thoại của khán giả hoặc nhập mã vé để xác thực tính hợp lệ vào phòng chiếu.</span>
-                            </div>
+                            </a>
 
-                            <div class="cf-dashboard-link" style="opacity: 0.95;">
+                            <a class="cf-dashboard-link" href="${pageContext.request.contextPath}/checkin">
                                 <span class="cf-feature-tag tag-blue">Suất chiếu</span>
                                 <strong style="color: #38bdf8; font-size: 15px;">🎬 Chọn suất chiếu đón khách</strong>
                                 <span>Kích hoạt cổng soát vé cho suất chiếu chuẩn bị bắt đầu (mở đón khách 15-30 phút trước giờ chiếu).</span>
-                            </div>
+                            </a>
 
-                            <div class="cf-dashboard-link" style="opacity: 0.95;">
+                            <a class="cf-dashboard-link" href="${pageContext.request.contextPath}/checkin">
                                 <span class="cf-feature-tag tag-emerald">Thời gian thực</span>
                                 <strong style="color: #34d399; font-size: 15px;">📋 Danh sách đã Check-in</strong>
                                 <span>Theo dõi số lượng khách đã qua cửa soát vé, số vé chưa check-in và sơ đồ ghế khán giả trong phòng.</span>
-                            </div>
+                            </a>
 
-                            <div class="cf-dashboard-link" style="opacity: 0.95;">
+                            <a class="cf-dashboard-link" href="${pageContext.request.contextPath}/checkin">
                                 <span class="cf-feature-tag tag-amber">Giám sát</span>
                                 <strong style="color: #fbbf24; font-size: 15px;">🏛 Trạng thái phòng chiếu</strong>
                                 <span>Kiểm tra trạng thái phòng chiếu tại <%= centreName %> (Đón khách, Đang chiếu, Kết thúc, Dọn vệ sinh).</span>
-                            </div>
+                            </a>
 
                             <a class="cf-dashboard-link" href="${pageContext.request.contextPath}/checkin">
                                 <span class="cf-feature-tag tag-blue">Lịch trình</span>

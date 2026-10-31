@@ -1,161 +1,605 @@
-        .cf-kpi-grid-4 {
-            display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-        @media (max-width: 1024px) {
-            .cf-kpi-grid-4 {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-        @media (max-width: 540px) {
-            .cf-kpi-grid-4 {
-                grid-template-columns: 1fr;
-            }
-        }
-        .cf-alert {
-            padding: 12px 18px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 14px;
-        }
-        .cf-alert-success {
-            background: rgba(34, 197, 94, 0.15);
-            border: 1px solid rgba(34, 197, 94, 0.4);
-            color: #4ade80;
-        }
-        .cf-alert-danger {
-            background: rgba(239, 68, 68, 0.15);
-            border: 1px solid rgba(239, 68, 68, 0.4);
-            color: #f87171;
-        }
-        .tab-nav {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 22px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            padding-bottom: 10px;
-        }
-        .tab-btn {
-            background: none;
-            border: none;
-            color: #94a3b8;
-            font-size: 15px;
-            font-weight: 600;
-            padding: 9px 18px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .tab-btn:hover { color: #fff; background: rgba(255,255,255,0.05); }
-        .tab-btn.active {
-            color: #fff;
-            background: #FF2855;
-            border: 1px solid #FF2855;
-        }
-        .tab-pane { display: none; }
-        .tab-pane.active { display: block; }
-        .cf-modal-backdrop {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.75);
-            backdrop-filter: blur(5px);
-            z-index: 9999;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        .cf-modal-backdrop.active { display: flex; }
-        .cf-modal {
-            background: #ffffff;
-            border: 1px solid #E2E8F0;
-            border-radius: 14px;
-            width: 100%;
-            max-width: 560px;
-            box-shadow: 0 24px 50px rgba(0, 0, 0, 0.35);
-            overflow: hidden;
-            animation: modalFadeIn 0.2s ease-out;
-        }
-        @keyframes modalFadeIn {
-            from { opacity: 0; transform: translateY(-16px) scale(0.98); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-        .cf-modal-header {
-            padding: 20px 24px;
-            border-bottom: 1px solid #E2E8F0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #ffffff;
-        }
-        .cf-modal-header h3 { margin: 0; font-size: 18px; color: #111827; font-weight: 700; }
-        .cf-modal-close {
-            background: none; border: none; color: #64748B; font-size: 24px; cursor: pointer; line-height: 1;
-        }
-        .cf-modal-close:hover { color: #111827; }
-        .cf-modal-body {
-            padding: 24px;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            background: #ffffff;
-            color: #1E293B;
-        }
-        .cf-modal-footer {
-            padding: 16px 24px;
-            border-top: 1px solid #E2E8F0;
-            display: flex;
-            justify-content: flex-end;
-            gap: 12px;
-            background: #F8FAFC;
-        }
-        .cf-form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-        .cf-form-group label {
-            font-size: 13px;
-            font-weight: 600;
-            color: #111827;
-        }
-        .cf-form-group input, .cf-form-group select, .cf-form-group textarea {
-            background: #F1F5F9;
-            border: 1px solid #CBD5E1;
-            border-radius: 8px;
-            padding: 9px 14px;
-            color: #1E293B;
-            font-size: 14px;
-            outline: none;
-            transition: all 0.2s;
-        }
-        .cf-form-group input::placeholder, .cf-form-group textarea::placeholder {
-            color: #64748B;
-            opacity: 1;
-        }
-        .cf-form-group select option {
-            background: #ffffff;
-            color: #1E293B;
-        }
-        .cf-form-group input:focus, .cf-form-group select:focus, .cf-form-group textarea:focus {
-            border-color: #FF2855;
-            background: #ffffff;
-            box-shadow: 0 0 0 3px rgba(255, 40, 85, 0.2);
-        }
-        .info-strip {
-            background: #F8FAFC;
-            border: 1px solid #E2E8F0;
-            border-radius: 8px;
-            padding: 12px 16px;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            font-size: 13px;
-        }
-        .info-strip div span { color: #64748B; display: block; font-size: 11px; margin-bottom: 2px; }
-        .info-strip div strong { color: #111827; }
+/* ==========================================================================
+   CineFlow Admin - Bổ nhiệm & Điều chuyển nhân sự (transfers.css)
+   Theo chuẩn kiến trúc CineFlow CSS (CINEFLOW_ARCHITECTURE_STANDARD.md)
+   ========================================================================== */
+
+/* ---------- Tiêu đề trang & Icon ---------- */
+.cf-page-header-wrap {
+    margin-bottom: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.cf-page-header-info {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.cf-page-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    font-size: 22px;
+}
+
+.cf-page-icon.icon-transfers {
+    background: rgba(255, 40, 85, 0.12);
+    border: 1px solid rgba(255, 40, 85, 0.25);
+}
+
+.cf-page-title {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+/* Không dùng các vạch trang trí quanh tiêu đề trong giao diện sáng. */
+html[data-theme="light"] .cf-page-title {
+    border: 0 !important;
+    padding: 0 !important;
+}
+
+html[data-theme="light"] .cf-manager-main .cf-page-title {
+    border-left: 0 !important;
+    border-top: 0 !important;
+    border-right: 0 !important;
+    border-bottom: 0 !important;
+    padding-left: 0 !important;
+}
+
+.cf-page-sub {
+    margin: 4px 0 0;
+    color: var(--cf-muted, #94a3b8);
+    font-size: 13px;
+}
+
+/* ---------- KPI Grid 4 cột ---------- */
+.cf-kpi-grid-4 {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+@media (max-width: 1024px) {
+    .cf-kpi-grid-4 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 540px) {
+    .cf-kpi-grid-4 {
+        grid-template-columns: 1fr;
+    }
+}
+
+.kpi-assigned {
+    color: #10b981 !important;
+}
+
+.kpi-unassigned {
+    color: #f59e0b !important;
+}
+
+.kpi-unassigned-card {
+    border-color: rgba(245, 158, 11, 0.4) !important;
+    background: rgba(245, 158, 11, 0.06) !important;
+}
+
+.kpi-available {
+    color: #38bdf8 !important;
+}
+
+/* ---------- Thông báo (Alerts) ---------- */
+.cf-alert {
+    padding: 12px 18px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+}
+
+.cf-alert-success {
+    background: rgba(34, 197, 94, 0.15);
+    border: 1px solid rgba(34, 197, 94, 0.4);
+    color: #4ade80;
+}
+
+.cf-alert-danger {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    color: #f87171;
+}
+
+.cf-alert-warning {
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    color: #fbbf24;
+}
+
+.cf-alert-unassign-warning {
+    margin-top: 14px;
+    font-size: 12.5px;
+}
+
+.alert-list-styled {
+    margin: 4px 0 0;
+    padding-left: 18px;
+}
+
+/* ---------- Điều hướng Tabs ---------- */
+.tab-nav {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 22px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding-bottom: 10px;
+}
+
+.tab-btn {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    font-size: 15px;
+    font-weight: 600;
+    padding: 9px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tab-btn:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.tab-btn.active {
+    color: #fff;
+    background: #FF2855;
+    border: 1px solid #FF2855;
+}
+
+.tab-pane {
+    display: none;
+}
+
+.tab-pane.active {
+    display: block;
+}
+
+/* ---------- Sắp xếp cột bảng ---------- */
+.sortable-th {
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s ease;
+}
+
+.sortable-th:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #38bdf8;
+}
+
+.sort-arrow {
+    display: inline-block;
+    margin-left: 4px;
+    font-size: 11px;
+    opacity: 0.4;
+    transition: all 0.15s ease;
+}
+
+.sort-arrow.active {
+    opacity: 1;
+    color: #38bdf8;
+    font-weight: bold;
+}
+
+/* ---------- Card Header & Toolbar ---------- */
+.cf-card-header-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 14px;
+}
+
+.card-subtitle-sm {
+    margin: 3px 0 0;
+    color: #94a3b8;
+    font-size: 12px;
+}
+
+.staff-filter-toolbar {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.staff-filter-form {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.select-dark {
+    padding: 8px 12px;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    font-size: 13px;
+    background: #1e293b;
+    color: #f8fafc;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.select-dark:focus {
+    border-color: #38bdf8;
+}
+
+.input-dark {
+    padding: 8px 14px;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    font-size: 13px;
+    background: #1e293b;
+    color: #f8fafc;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.input-dark:focus {
+    border-color: #38bdf8;
+}
+
+.input-dark::placeholder {
+    color: #64748b;
+}
+
+.staff-search-input {
+    min-width: 260px;
+}
+
+.btn-clear-filter {
+    color: #94a3b8 !important;
+}
+
+/* ---------- Chi tiết ô dữ liệu bảng phân công & điều chuyển ---------- */
+.centre-name {
+    color: #ffffff;
+    font-size: 14px;
+    display: block;
+}
+
+.centre-address {
+    display: block;
+    color: #94a3b8;
+    font-size: 12px;
+    margin-top: 2px;
+}
+
+.cf-badge-mgr-code {
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.5px;
+}
+
+.cf-badge-emp-code {
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.5px;
+}
+
+.cf-badge-emp-id {
+    font-size: 13px !important;
+    font-weight: 700 !important;
+}
+
+.text-muted-dash {
+    color: #64748b;
+}
+
+.manager-name-text {
+    color: #818cf8;
+    font-size: 14px;
+    display: block;
+}
+
+.manager-email-text {
+    display: block;
+    color: #94a3b8;
+    font-size: 12px;
+    margin-top: 2px;
+}
+
+.staff-name {
+    color: #ffffff;
+    display: block;
+}
+
+.staff-email {
+    display: block;
+    color: #94a3b8;
+    font-size: 12px;
+    margin-top: 2px;
+}
+
+.cf-badge-sm {
+    font-size: 11px !important;
+}
+
+.cf-badge-role-manager {
+    background: rgba(99, 102, 241, 0.15) !important;
+    color: #818cf8 !important;
+    border: 1px solid rgba(99, 102, 241, 0.35) !important;
+    font-weight: 600 !important;
+}
+
+.cf-badge-role-sales {
+    background: rgba(56, 189, 248, 0.15) !important;
+    color: #38bdf8 !important;
+    border: 1px solid rgba(56, 189, 248, 0.35) !important;
+}
+
+.cf-badge-role-checker {
+    background: rgba(168, 85, 247, 0.15) !important;
+    color: #c084fc !important;
+    border: 1px solid rgba(168, 85, 247, 0.35) !important;
+}
+
+.staff-centre-assigned {
+    font-weight: 500;
+    color: #e2e8f0;
+}
+
+.btn-disabled-action {
+    opacity: 0.45 !important;
+    cursor: not-allowed !important;
+}
+
+/* ---------- Thao tác bổ nhiệm / miễn nhiệm ---------- */
+.assignment-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    min-width: 112px;
+}
+
+.assignment-action-btn {
+    min-width: 104px;
+    justify-content: center;
+    font-weight: 700;
+    letter-spacing: .01em;
+}
+
+.assignment-action-btn.assign-btn,
+.assignment-action-btn.assign-btn:visited {
+    background: #dc2626 !important;
+    border-color: #b91c1c !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 6px rgba(220, 38, 38, 0.28) !important;
+}
+
+.assignment-action-btn.assign-btn:hover {
+    background: #b91c1c !important;
+    border-color: #991b1b !important;
+}
+
+.assignment-action-btn.unassign-btn,
+.assignment-action-btn.unassign-btn:visited {
+    background: #0891b2 !important;
+    border-color: #0e7490 !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 6px rgba(8, 145, 178, 0.3) !important;
+}
+
+.assignment-action-btn.unassign-btn:hover {
+    background: #0e7490 !important;
+    border-color: #155e75 !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 10px rgba(14, 116, 144, 0.38) !important;
+}
+
+.unassign-confirm-btn,
+.unassign-confirm-btn:hover {
+    background: #0891b2 !important;
+    border-color: #0e7490 !important;
+    color: #ffffff !important;
+}
+
+/* ---------- Modals ---------- */
+.cf-modal-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(5px);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.cf-modal-backdrop.active {
+    display: flex;
+}
+
+.cf-modal {
+    background: #ffffff;
+    border: 1px solid #E2E8F0;
+    border-radius: 14px;
+    width: 100%;
+    max-width: 560px;
+    box-shadow: 0 24px 50px rgba(0, 0, 0, 0.35);
+    overflow: hidden;
+    animation: modalFadeIn 0.2s ease-out;
+}
+
+@keyframes modalFadeIn {
+    from { opacity: 0; transform: translateY(-16px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.cf-modal-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid #E2E8F0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #ffffff;
+}
+
+.cf-modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    color: #111827;
+    font-weight: 700;
+}
+
+.cf-modal-header-danger {
+    border-bottom: 1px solid rgba(239, 68, 68, 0.3) !important;
+}
+
+.cf-modal-title-danger {
+    color: #f87171 !important;
+}
+
+.cf-modal-close {
+    background: none;
+    border: none;
+    color: #64748B;
+    font-size: 24px;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.cf-modal-close:hover {
+    color: #111827;
+}
+
+.cf-modal-body {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    background: #ffffff;
+    color: #1E293B;
+}
+
+.cf-modal-footer {
+    padding: 16px 24px;
+    border-top: 1px solid #E2E8F0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    background: #F8FAFC;
+}
+
+.cf-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.cf-form-group-mt {
+    margin-top: 14px;
+}
+
+.cf-form-group label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #111827;
+}
+
+.cf-form-group input,
+.cf-form-group select,
+.cf-form-group textarea {
+    background: #F1F5F9;
+    border: 1px solid #CBD5E1;
+    border-radius: 8px;
+    padding: 9px 14px;
+    color: #1E293B;
+    font-size: 14px;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.cf-form-group input::placeholder,
+.cf-form-group textarea::placeholder {
+    color: #64748B;
+    opacity: 1;
+}
+
+.cf-form-group select option {
+    background: #ffffff;
+    color: #1E293B;
+}
+
+.cf-form-group input:focus,
+.cf-form-group select:focus,
+.cf-form-group textarea:focus {
+    border-color: #FF2855;
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(255, 40, 85, 0.2);
+}
+
+.form-helper-text {
+    color: #64748B;
+    font-size: 12px;
+}
+
+.info-strip {
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    padding: 12px 16px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    font-size: 13px;
+}
+
+.info-strip div span {
+    color: #64748B;
+    display: block;
+    font-size: 11px;
+    margin-bottom: 2px;
+}
+
+.info-strip div strong {
+    color: #111827;
+}
+
+.info-strip-danger {
+    background: rgba(239, 68, 68, 0.08) !important;
+    border-color: rgba(239, 68, 68, 0.2) !important;
+}
+
+.info-strip-centre {
+    color: #fff !important;
+}
+
+.unassign-manager-target {
+    color: #f87171 !important;
+}
+
+.staff-role-preview {
+    color: #0284c7;
+}
+
+.staff-account-preview {
+    color: #64748B;
+}
+
+.staff-current-centre-preview {
+    color: #d97706;
+}

@@ -32,6 +32,8 @@
     int activeCentresCount = s != null ? s.getActiveCentres() : (centres != null ? centres.size() : 0);
     int activeUsersCount = s != null ? s.getActiveUsers() : 0;
     double occupancyRate = s != null ? s.getOccupancy() : 0.0;
+    int totalCentresCount = centres != null ? centres.size() : activeCentresCount;
+    double centreReadyRate = totalCentresCount > 0 ? (activeCentresCount * 100.0 / totalCentresCount) : 0.0;
 %>
 <%!
     private String formatMoney(BigDecimal n) {
@@ -54,7 +56,7 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/alerts.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/manager/shell.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin/dashboard.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin/admin-style.css?v=<%= System.currentTimeMillis() %>">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin/admin-style.css?v=1">
 </head>
 <body>
 <div class="admin-layout">
@@ -69,12 +71,10 @@
                 <div class="banner-content">
                     <div class="banner-badge">TRUNG TÂM ĐIỀU HÀNH TOÀN CHUỖI</div>
                     <h1>Xin chào, <%= adminName %>!</h1>
-                    <p>Hệ thống đang hoạt động tối ưu. Toàn bộ thông tin suất chiếu, doanh thu các cụm rạp và nhân sự được đồng bộ tự động theo thời gian thực.</p>
+                    <p>Tổng quan vận hành CineFlow và các chỉ số quan trọng trong ngày.</p>
                     <div class="banner-actions">
                         <a href="${pageContext.request.contextPath}/admin/movies" class="cf-btn cf-btn-primary">Quản lý phim</a>
-                        <a href="${pageContext.request.contextPath}/admin/customers" class="cf-btn cf-btn-ghost">Khách hàng</a>
                         <a href="${pageContext.request.contextPath}/reports" class="cf-btn cf-btn-ghost">Báo cáo doanh thu</a>
-                        <a href="${pageContext.request.contextPath}/admin/managers" class="cf-btn cf-btn-ghost">Quản lý nhân sự</a>
                     </div>
                 </div>
                 <div class="banner-stat-bubble">
@@ -148,7 +148,7 @@
                     </div>
                 </a>
 
-                <a href="${pageContext.request.contextPath}/staff" class="quick-nav-card">
+                <a href="${pageContext.request.contextPath}/staffList" class="quick-nav-card">
                     <div class="quick-nav-icon" style="background: #E0F2FE; color: #0284c7;">♙</div>
                     <div class="quick-nav-meta">
                         <h3>Nhân sự & Cụm rạp</h3>
@@ -248,10 +248,10 @@
                         <div class="metric-progress-item">
                             <div class="metric-progress-header">
                                 <span>Trung tâm sẵn sàng phục vụ</span>
-                                <strong><%= activeCentresCount %> trung tâm (100%)</strong>
+                                <strong><%= activeCentresCount %>/<%= totalCentresCount %> trung tâm (<%= String.format("%.0f", centreReadyRate) %>%)</strong>
                             </div>
                             <div class="progress-bar-bg">
-                                <div class="progress-bar-fill" style="width: 100%; background: #10b981;"></div>
+                                <div class="progress-bar-fill" style="width: <%= Math.min(100.0, centreReadyRate) %>%; background: #10b981;"></div>
                             </div>
                         </div>
 

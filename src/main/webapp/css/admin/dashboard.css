@@ -388,9 +388,9 @@
    BANNER CHÀO MỪNG & ĐIỀU HƯỚNG NHANH DASHBOARD
    ========================================================================== */
         .dashboard-welcome-banner {
-            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 60%, #31102f 100%);
+            background: linear-gradient(135deg, #172554 0%, #1e3a8a 62%, #0f766e 100%);
             border-radius: var(--cf-radius-lg);
-            padding: 32px 36px;
+            padding: 26px 30px;
             color: #ffffff;
             margin-bottom: 28px;
             display: flex;
@@ -399,7 +399,7 @@
             position: relative;
             overflow: hidden;
             box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.3);
-            border: 1px solid #334155;
+            border: 1px solid rgba(147, 197, 253, .35);
         }
         .dashboard-welcome-banner::after {
             content: '';

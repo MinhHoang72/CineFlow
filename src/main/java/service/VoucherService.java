@@ -10,7 +10,7 @@ import java.sql.SQLException;
 import java.time.LocalDateTime;
 
 /**
- * Service: Xử lý logic nghiệp vụ Mã giảm giá & Khuyến mãi (Voucher & Promotions).
+ * Service: Xử lý logic nghiệp vụ mã giảm giá (Voucher).
  * Nhiệm vụ:
  * - Kiểm tra điều kiện hiệu lực của voucher (ngày áp dụng, số lượt dùng tối đa, trạng thái).
  * - Kiểm tra giá trị đơn hàng tối thiểu (Minimum Order Value).

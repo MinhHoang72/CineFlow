@@ -756,7 +756,7 @@
 @media (max-width: 1050px) {
     .movie-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 0 20px; }
     .quick-rail { display: none; }
-    .promotion-grid, .centre-grid { grid-template-columns: 1fr; }
+    .centre-grid { grid-template-columns: 1fr; }
     .search-section { align-items: stretch; flex-direction: column; gap: 20px; }
     .search-box { flex-wrap: wrap; }
 }

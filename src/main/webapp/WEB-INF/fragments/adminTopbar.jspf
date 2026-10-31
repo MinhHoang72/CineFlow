@@ -32,19 +32,38 @@
     String tbInitial = tbName.substring(0, 1).toUpperCase();
     String tbAvatar = tbUser != null ? tbUser.getAvatar() : null;
     String tbCtx = request.getContextPath();
-
-    String badgeClass = "ADMIN".equalsIgnoreCase(tbRole)
-            ? "cf-badge-danger"
-            : ("MANAGER".equalsIgnoreCase(tbRole) ? "cf-badge-primary" : "cf-badge-info");
-
-    String roleLabel = tbRole;
-    if ("TICKET_SALES_STAFF".equalsIgnoreCase(tbRole) || "TICKET_SALES".equalsIgnoreCase(tbRole)) {
-        roleLabel = "Bán vé";
-    } else if ("TICKET_CHECKER_STAFF".equalsIgnoreCase(tbRole) || "TICKET_CHECKER".equalsIgnoreCase(tbRole)) {
-        roleLabel = "Soát vé";
-    }
 %>
 <%@ include file="/WEB-INF/fragments/theme.jspf" %>
+<style>
+    .cf-topbar-user > a {
+        gap: 11px;
+        padding: 6px 14px 6px 6px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 999px;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, .06);
+    }
+    .cf-topbar-user > a:hover {
+        background: #ffffff;
+        border-color: #cbd5e1;
+        box-shadow: 0 4px 12px rgba(15, 23, 42, .1);
+    }
+    .cf-topbar-user .avatar {
+        width: 34px;
+        height: 34px;
+        background: #fff1f2;
+        border: 2px solid #fda4af;
+        color: #e11d48;
+        font-size: 14px;
+    }
+    .cf-topbar-name {
+        max-width: 170px;
+        color: #172033;
+        font-size: 13px;
+        font-weight: 700;
+        padding-right: 4px;
+    }
+</style>
 <header class="cf-topbar">
     <div class="cf-topbar-breadcrumb">
         <div class="cf-topbar-title">
@@ -74,10 +93,6 @@
             </span>
 
             <span class="cf-topbar-name"><%= tbName %></span>
-
-            <span class="cf-topbar-role <%= badgeClass %>">
-                <%= roleLabel.toUpperCase() %>
-            </span>
         </a>
     </div>
 </header>
