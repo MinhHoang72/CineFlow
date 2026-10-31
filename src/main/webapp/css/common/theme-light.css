@@ -1714,6 +1714,33 @@ html[data-theme="light"].cf-css-admin-dashboard .progress-bar-fill {
     border-radius: 4px;
 }
 
+html[data-theme="light"].cf-css-admin-dashboard .manager-dashboard .banner-stat-bubble p {
+    color: #cbd5e1;
+}
+
+html[data-theme="light"].cf-css-admin-dashboard .manager-dashboard .cf-dashboard-link {
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background: #ffffff;
+}
+
+html[data-theme="light"].cf-css-admin-dashboard .manager-dashboard .cf-dashboard-link strong {
+    color: #0f172a;
+}
+
+html[data-theme="light"].cf-css-admin-dashboard .manager-dashboard .cf-dashboard-link > span {
+    color: #1e293b;
+}
+
+html[data-theme="light"].cf-css-admin-dashboard .manager-dashboard .cf-dashboard-link:hover {
+    border-color: #ff2855;
+}
+
+html[data-theme="light"].cf-css-admin-dashboard .manager-dashboard .cf-dashboard-link:focus-visible {
+    outline: 2px solid #ff2855;
+    outline-offset: 3px;
+}
+
 /* ---- admin/distribution.css ---- */
 html[data-theme="light"].cf-css-admin-distribution .cf-dist-icon-box {
     background: rgba(255, 40, 85, 0.12);

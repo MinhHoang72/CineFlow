@@ -39,6 +39,25 @@ public class ManagerDashboardServlet extends HttpServlet {
             return;
         }
 
+        request.setAttribute("activeNav", "dashboard");
+        request.setAttribute("pageTitle", "Tổng quan cụm rạp");
+        request.setAttribute("pageBreadcrumb", "Dashboard");
+        try {
+            int centreId = service.ShowtimeService.requireCentreId(request);
+            model.entity.Centre centre = new dao.CentreDAO().getCentreById(centreId);
+            dao.HallDAO hallDAO = new dao.HallDAO();
+            request.setAttribute("managedCentre", centre);
+            request.setAttribute("totalHalls", hallDAO.countHallsByStatus(centreId, "ALL"));
+            request.setAttribute("availableHalls", hallDAO.countHallsByStatus(centreId, "ACTIVE"));
+            request.setAttribute("totalCapacity", hallDAO.sumCapacityByCentre(centreId));
+            java.time.LocalDate today = java.time.LocalDate.now();
+            java.util.List<model.entity.Showtime> shows = new dao.ShowtimeDAO().getByCentre(centreId);
+            request.setAttribute("todayShowtimes", shows.stream().filter(s -> s.getStartTime() != null
+                    && s.getStartTime().toLocalDateTime().toLocalDate().equals(today)
+                    && !"CANCELLED".equals(s.getStatus())).count());
+        } catch (IllegalStateException e) {
+            request.setAttribute("dashboardError", "Chưa xác định được cụm rạp đang quản lý. Vui lòng kiểm tra phân công.");
+        }
         request.getRequestDispatcher("/WEB-INF/views/manager/managerDashboard.jsp").forward(request, response);
     }
 }

@@ -48,6 +48,7 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/tables.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/manager/shell.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/manager/staff.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin/dashboard.css">
 
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/staff/directory.css?v=<%= System.currentTimeMillis() %>">
 </head>
