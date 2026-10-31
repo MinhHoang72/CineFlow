@@ -16,7 +16,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.UUID;
 import model.dto.common.PageDTO;
 import model.entity.User;
 import model.entity.Voucher;
@@ -69,12 +68,6 @@ public class VoucherManagementServlet extends HttpServlet {
         request.setCharacterEncoding("UTF-8");
         User user = authorizedUser(request, response);
         if (user == null) {
-            return;
-        }
-        HttpSession session = request.getSession(false);
-        String expected = session == null ? null : (String) session.getAttribute("voucherCsrf");
-        if (expected == null || !expected.equals(request.getParameter("_csrf"))) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Phiên làm việc không hợp lệ, hãy tải lại trang.");
             return;
         }
         String path = request.getPathInfo() == null ? "/" : request.getPathInfo();
@@ -137,6 +130,7 @@ public class VoucherManagementServlet extends HttpServlet {
      * Admin → /admin/vouchers  |  Manager → /manager/vouchers
      */
     private String baseUrl(HttpServletRequest request, User user) {
+        //tên ứng dụng wweb:/Cine_Flow
         return request.getContextPath()
                 + (user.isAdmin() && request.getRequestURI().contains("/admin/") 
                    ? "/admin/vouchers" : "/manager/vouchers");
@@ -153,21 +147,6 @@ public class VoucherManagementServlet extends HttpServlet {
         }
         return user.getCentreId(); // Manager chỉ xem của chi nhánh mình
     }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // CSRF
-    // ─────────────────────────────────────────────────────────────────────────
-
-    private String csrfToken(HttpServletRequest request) {
-        HttpSession session = request.getSession();
-        String token = (String) session.getAttribute("voucherCsrf");
-        if (token == null) {
-            token = UUID.randomUUID().toString();
-            session.setAttribute("voucherCsrf", token);
-        }
-        return token;
-    }
-
     // ─────────────────────────────────────────────────────────────────────────
     // FLASH
     // ─────────────────────────────────────────────────────────────────────────
@@ -211,8 +190,10 @@ public class VoucherManagementServlet extends HttpServlet {
         } catch (NumberFormatException ignored) {
         }
 
-        String base = baseUrl(request, user);
-        Integer scope = scopeCentreId(request, user);
+        
+        
+        String base = baseUrl(request, user);//tạo đường dẫn admin hoặc manager
+        Integer scope = scopeCentreId(request, user);//scope=null
         PageDTO<Voucher> result = dao.search(q, status, type, scope, page, PAGE_SIZE);
 
         String filters = "q=" + URLEncoder.encode(q, StandardCharsets.UTF_8)
@@ -224,7 +205,6 @@ public class VoucherManagementServlet extends HttpServlet {
         request.setAttribute("type", type);
         request.setAttribute("pagerBase", base + "?" + filters + "&page=");
         request.setAttribute("backQuery", filters + "&page=" + result.getPage());
-        request.setAttribute("csrf", csrfToken(request));
         request.setAttribute("pageTitle", "Voucher");
         request.setAttribute("pageBreadcrumb", "Khuyến mãi");
         request.setAttribute("baseUrl", base);
@@ -254,6 +234,7 @@ public class VoucherManagementServlet extends HttpServlet {
 
         String idText = request.getParameter("id");
         if (idText != null && idText.matches("[0-9]+") && idText.length() < 10) {
+            //gán voucher mới 
             voucher = dao.find(Integer.parseInt(idText));
             if (voucher == null) {
                 flash(request, "error", "Không tìm thấy voucher.");
@@ -276,7 +257,6 @@ public class VoucherManagementServlet extends HttpServlet {
         request.setAttribute("voucher", voucher);
         request.setAttribute("errors", errors);
         request.setAttribute("raw", raw);
-        request.setAttribute("csrf", csrfToken(request));
         request.setAttribute("pageTitle", voucher.getVoucherId() == 0 ? "Thêm voucher" : "Sửa voucher");
         request.setAttribute("pageBreadcrumb", "Khuyến mãi");
 request.setAttribute("baseUrl", base);
@@ -324,10 +304,12 @@ request.setAttribute("baseUrl", base);
 
         Map<String, String> errors = new LinkedHashMap<>();
         Map<String, String> raw = new LinkedHashMap<>();
-        for (String name : new String[]{"discountValue", "minimumOrderValue", "maximumDiscount",
-                "startDate", "endDate", "usageLimit"}) {
-            raw.put(name, param(request, name));
-        }
+        raw.put("discountValue", param(request, "discountValue"));
+        raw.put("minimumOrderValue", param(request, "minimumOrderValue"));
+        raw.put("maximumDiscount", param(request, "maximumDiscount"));
+        raw.put("startDate", param(request, "startDate"));
+        raw.put("endDate", param(request, "endDate"));
+        raw.put("usageLimit", param(request, "usageLimit"));
 
         String code = param(request, "code").toUpperCase();
         String name = param(request, "name");
@@ -337,6 +319,7 @@ request.setAttribute("baseUrl", base);
 
         boolean locked = voucher.getVoucherId() > 0 && voucher.getUsedCount() > 0;
         if (locked) {
+            //vứt bỏ mã người dùng gửi lên bắt buộc phải dùng mã gốc
             code = voucher.getVoucherCode();
         }
         voucher.setVoucherCode(code);
@@ -435,7 +418,7 @@ request.setAttribute("baseUrl", base);
                 }
             }
         }
-
+//nếu có lỗi 
         if (!errors.isEmpty()) {
             forwardForm(request, response, voucher, errors, raw, base, user);
             return;
@@ -463,8 +446,10 @@ request.setAttribute("baseUrl", base);
     private void changeStatus(HttpServletRequest request, HttpServletResponse response, User user)
             throws IOException {
         String base = baseUrl(request, user);
+        // giúp người dùng quay về đúng trang  q và page
         String back = request.getParameter("back") == null ? ""
                 : request.getParameter("back").replaceAll("[^A-Za-z0-9%&=._~+-]", "");
+        // cho nó quay về đúng chỗ 
         String target = base + (back.isEmpty() ? "" : "?" + back);
 
         String idText = request.getParameter("id");
@@ -499,9 +484,7 @@ request.setAttribute("baseUrl", base);
         response.sendRedirect(target);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // UTILS
-    // ─────────────────────────────────────────────────────────────────────────
+    
 
     private String param(HttpServletRequest request, String name) {
         String value = request.getParameter(name);

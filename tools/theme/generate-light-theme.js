@@ -10,6 +10,9 @@
  *    duoi html[data-theme="light"], nen chi co hieu luc khi bat giao dien sang (js/theme.js).
  *  - Mau nhan (do, tim, xanh, vang...) giu nguyen; chu trang tren nen mau nhan giu nguyen.
  *  - Mau inline trong JSP (style="color:#f8fafc") duoc ghi de bang [style*=...] !important.
+ *  - Quy tac cua file CSS rieng tung trang (moi thu muc tru common/) chi ap tren trang co nap file do:
+ *    js/theme.js gan class cf-css-<duong-dan> (vd cf-css-auth-base) len <html> cho moi file CSS trang dang nap,
+ *    ke ca file @import. Khong co buoc nay, ".card button" cua trang dang nhap se ap len moi trang khac.
  */
 'use strict';
 const fs = require('fs');
@@ -20,6 +23,12 @@ const WEBAPP = path.join(ROOT, 'src', 'main', 'webapp');
 const CSS_DIR = path.join(WEBAPP, 'css');
 const OUT = path.join(CSS_DIR, 'common', 'theme-light.css');
 const SCOPE = 'html[data-theme="light"]';
+let scope = SCOPE;   // tien to cua file dang xu ly (them class cf-css-... voi file rieng tung trang)
+
+/** Class danh dau file CSS dang nap, phai khop voi cssClass() trong js/theme.js. */
+function cssClass(relPath) {
+    return 'cf-css-' + relPath.replace(/\.css$/i, '').replace(/[^a-z0-9]+/gi, '-').toLowerCase();
+}
 
 // ---------------------------------------------------------------- mau
 function parseColor(str) {
@@ -49,8 +58,13 @@ const fmt = (c) => c.a >= 1 ? '#' + [c.r, c.g, c.b].map(v => Math.round(v).toStr
                              : `rgba(${Math.round(c.r)}, ${Math.round(c.g)}, ${Math.round(c.b)}, ${+c.a.toFixed(3)})`;
 const SLATE_900 = { r: 15, g: 23, b: 42 };
 
+// Pale gold / amber text is unreadable on white; backgrounds and borders keep their meaning.
+const isLightGold = c => c.r >= 170 && c.g >= c.r * 0.5 && c.g <= c.r * 1.06
+    && c.b < c.g * 0.9 && lum(c) > 0.48;
+
 /** role: 'bg' | 'text' | 'border' | 'shadow'. Tra ve chuoi mau moi hoac null neu giu nguyen. */
 function mapColor(c, role) {
+    if (role === 'text' && isLightGold(c)) return '#334155';
     if (!isNeutral(c)) return null;                       // mau nhan: giu
     const L = lum(c);
     if (c.a < 1) {
@@ -97,7 +111,11 @@ const COLOR_RE = /#[0-9a-fA-F]{3,8}\b|rgba?\([^)]*\)|\bwhite\b|\bblack\b/g;
 /** Thay tung mau trong gia tri; tra ve null neu khong doi gi. */
 function mapValue(value, role) {
     let changed = false;
-    const out = value.replace(COLOR_RE, (tok) => {
+    // Map semantic yellow text without changing the shared accent variable used by backgrounds.
+    const textValue = role === 'text' ? value.replace(/var\(--(?:cf-)?(?:gold(?:-dark|-light)?|warning|yellow|star-gold|shell-warning)(?:\s*,[^)]*)?\)/gi, () => {
+        changed = true; return '#334155';
+    }) : value;
+    const out = textValue.replace(COLOR_RE, (tok) => {
         const c = parseColor(tok);
         if (!c) return tok;
         const n = mapColor(c, role);
@@ -186,11 +204,11 @@ function parseDecls(body) {
 function scopeSelector(sel) {
     return splitTop(sel, ',').map(s => s.trim()).filter(Boolean).map(s => {
         if (s.includes('[data-theme')) return null;               // da viet tay cho tung giao dien: giu nguyen
-        if (s === ':root' || s === 'html') return SCOPE;
-        if (s.startsWith(':root')) return SCOPE + s.slice(5);
-        if (s.startsWith('html')) return SCOPE + s.slice(4);
+        if (s === ':root' || s === 'html') return scope;
+        if (s.startsWith(':root')) return scope + s.slice(5);
+        if (s.startsWith('html')) return scope + s.slice(4);
         if (s.startsWith('[data-bs-theme')) return null;          // khoi toi rieng cua Bootstrap (booking.css)
-        return SCOPE + ' ' + s;
+        return scope + ' ' + s;
     }).filter(Boolean).join(',\n');
 }
 
@@ -211,18 +229,7 @@ function keepOriginal(rule, decls) {
 let currentFile = '';
 const KEEP_ORIGINAL = s => /\b(eticket)\b/.test(s) || (OVER_IMAGE.test(s) && !currentFile.startsWith('auth/'));
 
-/** Quy tac viet tay bo sung cho nhung cho tu sinh khong xu ly duoc. */
-const EXTRA = `/* ---- bo sung viet tay ---- */
-/* .hero cua trang chu (home/index.css, nen den cho banner) trung ten voi cot chu o trang dang nhap */
-${SCOPE} .hero:not(#hero) {
-    background: transparent;
-}`;
-
 function convertRule(rule) {
-    // .hero cua trang auth: khong de anh huong banner trang chu (div#hero)
-    if (currentFile.startsWith('auth/') && /\.hero\b(?!-)/.test(rule.selector)) {
-        rule = { ...rule, selector: rule.selector.replace(/\.hero\b(?!-)/g, '.hero:not(#hero)') };
-    }
     // Tach selector gop: ve / hoa don (von nen trang) va khoi tren anh giu nguyen mau, phan con lai doi sang
     const sels = splitTop(rule.selector, ',').map(s => s.trim()).filter(Boolean);
     const keep = sels.filter(KEEP_ORIGINAL), conv = sels.filter(s => !KEEP_ORIGINAL(s));
@@ -248,6 +255,10 @@ function convertRule(rule) {
         if (role === 'auto') {
             const first = (d.value.match(COLOR_RE) || []).map(parseColor).find(Boolean);
             if (!first) continue;
+            if (isLightGold(first)) { // Generic accent variables also color backgrounds: preserve them.
+                out.push(`    ${d.prop}: ${d.value}${imp};`);
+                continue;
+            }
             // mau trong suot = lop phu nen; mau dac sang = chu, toi = nen
             role = first.a < 1 ? 'bg' : (lum(first) > 0.5 ? 'text' : 'bg');
         }
@@ -291,7 +302,9 @@ function inlineRules() {
             for (const part of m[1].split(';')) {
                 const k = part.indexOf(':');
                 if (k < 0) continue;
-                const prop = part.slice(0, k).trim(), value = part.slice(k + 1).trim();
+                const prop = part.slice(0, k).trim();
+                // Output adds !important once; strip the inline priority from the value first.
+                const value = part.slice(k + 1).trim().replace(/\s*!important\s*$/i, '').trim();
                 if (!prop || /<%|\$\{/.test(value)) continue;
                 const role = roleOf(prop);
                 if (!role || role === 'auto') continue;
@@ -309,13 +322,17 @@ function inlineRules() {
 const files = walk(CSS_DIR, ['.css']).filter(f => path.resolve(f) !== path.resolve(OUT)).sort();
 const parts = [];
 for (const f of files) {
+    // Seat matrix already defines a light/dark palette; recoloring its variables hides labels.
+    if (path.relative(CSS_DIR, f).replace(/\\/g, '/') === 'showtime-pricing/seat-matrix.css') continue;
     currentFile = path.relative(CSS_DIR, f).replace(/\\/g, '/');
+    scope = currentFile.startsWith('common/') ? SCOPE : `${SCOPE}.${cssClass(currentFile)}`;
     const rules = convertItems(parseBlocks(stripComments(fs.readFileSync(f, 'utf8'))));
     if (rules.length) parts.push(`/* ---- ${path.relative(CSS_DIR, f).replace(/\\/g, '/')} ---- */\n${rules.join('\n\n')}`);
 }
 // Khoi <style> viet thang trong JSP (vd views/report/header.jspf)
 for (const f of walk(WEBAPP, ['.jsp', '.jspf']).sort()) {
     currentFile = '';
+    scope = SCOPE;
     const src = fs.readFileSync(f, 'utf8');
     const css = [...src.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/gi)].map(m => m[1]).join('\n');
     if (!css.trim() || /<%|\$\{/.test(css)) continue;
@@ -331,5 +348,5 @@ const header = `/* =============================================================
    ========================================================================= */
 ${SCOPE} { color-scheme: light; }
 `;
-fs.writeFileSync(OUT, header + '\n' + parts.join('\n\n') + '\n\n/* ---- mau inline trong JSP ---- */\n' + inline.join('\n') + '\n\n' + EXTRA + '\n');
+fs.writeFileSync(OUT, header + '\n' + parts.join('\n\n') + '\n\n/* ---- mau inline trong JSP ---- */\n' + inline.join('\n') + '\n');
 console.log(`theme-light.css: ${files.length} file CSS, ${parts.reduce((n, p) => n + (p.match(/\{/g) || []).length, 0)} quy tac, ${inline.length} mau inline`);

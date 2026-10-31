@@ -9,6 +9,7 @@ import dao.PaymentDAO.Outcome;
 import dao.SeatDAO;
 import dao.ShowtimeDAO;
 import model.entity.Booking;
+import model.dto.booking.FnbMenuItemDTO;
 import model.dto.booking.PaymentTransaction;
 import model.entity.Seat;
 import model.entity.Showtime;
@@ -40,7 +41,9 @@ import java.util.TreeMap;
  *   GET  /staff/counter                       chọn ngày + suất chiếu của chi nhánh
  *   GET  /staff/counter?action=seats          sơ đồ ghế
  *   POST /staff/counter?action=hold           giữ ghế 5 phút
- *   GET  /staff/counter?action=checkout       tóm tắt đơn + chọn cách thu tiền
+ *   GET  /staff/counter?action=fnb            chọn bắp nước (bỏ qua nếu rạp chưa bán món nào)
+ *   POST /staff/counter?action=save-fnb       lưu bắp nước rồi sang trang thu tiền
+ *   GET  /staff/counter?action=checkout       tóm tắt đơn + voucher + chọn cách thu tiền
  *   POST /staff/counter?action=vnpay          chuyển sang VNPay để khách quét QR / thẻ
  *   POST /staff/counter?action=cash           thu tiền mặt -> xuất vé
  *   POST /staff/counter?action=cancel         huỷ đơn
@@ -68,6 +71,8 @@ public class CounterShowtimeServlet extends HttpServlet {
                 showtimes(req, resp, staff);
             } else if ("seats".equals(action)) {
                 seats(req, resp, staff);
+            } else if ("fnb".equals(action)) {
+                selectFnb(req, resp, staff);
             } else if ("checkout".equals(action)) {
                 checkout(req, resp, staff);
             } else if ("ticket".equals(action)) {
@@ -163,7 +168,7 @@ public class CounterShowtimeServlet extends HttpServlet {
         String ctx = req.getContextPath();
         try {
             int bookingId = bookingDAO.holdCounterSeats(showtimeId, seatIds);
-            resp.sendRedirect(ctx + "/staff/counter?action=checkout&bookingId=" + bookingId);
+            resp.sendRedirect(ctx + "/staff/counter?action=fnb&bookingId=" + bookingId);
         } catch (SeatUnavailableException e) {
             WebUtil.flash(req, "warning", e.getMessage());
             resp.sendRedirect(ctx + "/staff/counter?action=seats&showtimeId=" + showtimeId);
@@ -184,10 +189,37 @@ public class CounterShowtimeServlet extends HttpServlet {
         }
         req.setAttribute("booking", booking);
         if (booking.isHoldActive()) {
-            req.setAttribute("fnbMenu", extrasService.getMenu(booking));
-            req.setAttribute("extrasAction", req.getContextPath() + "/staff/counter");
+            req.setAttribute("extrasAction", ctx + "/staff/counter");
+            req.setAttribute("fnbUrl", ctx + "/staff/counter?action=fnb&bookingId=" + booking.getId());
+            req.setAttribute("voucherOptions", extrasService.getVoucherOptions(booking));
         }
         req.getRequestDispatcher(VIEW_BASE + "counterCheckout.jsp").forward(req, resp);
+    }
+
+    /** Chọn bắp nước cho đơn tại quầy; dùng chung trang với đặt vé online. */
+    private void selectFnb(HttpServletRequest req, HttpServletResponse resp, User staff)
+            throws SQLException, ServletException, IOException {
+        Booking booking = loadCounterBooking(req, staff);
+        if (booking == null) {
+            resp.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+        String ctx = req.getContextPath();
+        String checkoutUrl = ctx + "/staff/counter?action=checkout&bookingId=" + booking.getId();
+        if (!booking.isHoldActive()) {
+            resp.sendRedirect(checkoutUrl);
+            return;
+        }
+        List<FnbMenuItemDTO> menu = extrasService.getMenu(booking);
+        if (menu.isEmpty()) {
+            resp.sendRedirect(checkoutUrl);
+            return;
+        }
+        req.setAttribute("booking", booking);
+        req.setAttribute("fnbMenu", menu);
+        req.setAttribute("extrasAction", ctx + "/staff/counter");
+        req.setAttribute("pageTitle", "Bán vé tại quầy - Bắp nước");
+        req.getRequestDispatcher("/WEB-INF/views/customer/booking/selectFnb.jsp").forward(req, resp);
     }
 
     private void payCash(HttpServletRequest req, HttpServletResponse resp, User staff) throws SQLException, IOException {
@@ -254,12 +286,14 @@ public class CounterShowtimeServlet extends HttpServlet {
             resp.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;
         }
+        boolean ok = false;
         if (booking.isHoldActive()) {
-            BookingServlet.applyExtras(req, booking, action, extrasService);
+            ok = BookingServlet.applyExtras(req, booking, action, extrasService);
         } else {
             WebUtil.flash(req, "warning", "Đơn đã hết thời gian giữ ghế, vui lòng chọn ghế lại.");
         }
-        resp.sendRedirect(req.getContextPath() + "/staff/counter?action=checkout&bookingId=" + booking.getId());
+        String next = "save-fnb".equals(action) && !ok ? "fnb" : "checkout";
+        resp.sendRedirect(req.getContextPath() + "/staff/counter?action=" + next + "&bookingId=" + booking.getId());
     }
 
     private void cancel(HttpServletRequest req, HttpServletResponse resp, User staff) throws SQLException, IOException {
@@ -304,8 +338,8 @@ public class CounterShowtimeServlet extends HttpServlet {
         return booking;
     }
 
-    /** Chỉ nhân viên bán vé (TICKET_SALES_STAFF) đã được gán chi nhánh mới bán vé tại quầy. */
-    private static User requireCounterStaff(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+    /** Chỉ nhân viên bán vé (TICKET_SALES_STAFF) đã được gán chi nhánh mới bán vé tại quầy (dùng chung với bán bắp nước lẻ). */
+    static User requireCounterStaff(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         User user = WebUtil.requireUser(req, resp);
         if (user == null) return null;
         if (!WebUtil.isSalesStaff(user) || user.getCentreId() == null) {
@@ -316,7 +350,7 @@ public class CounterShowtimeServlet extends HttpServlet {
     }
 
     /** "200.000", "200,000 đ", "200000" -> 200000; null nếu không hợp lệ. */
-    private static BigDecimal parseMoney(String value) {
+    static BigDecimal parseMoney(String value) {
         if (value == null) return null;
         String digits = value.replaceAll("[^0-9]", "");
         if (digits.isEmpty() || digits.length() > 12) return null;

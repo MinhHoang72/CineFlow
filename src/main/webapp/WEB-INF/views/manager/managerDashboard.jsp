@@ -21,8 +21,11 @@
 
     String managerName = manager != null && manager.getFullName() != null && !manager.getFullName().isBlank()
             ? manager.getFullName().trim() : "Quản lý";
-    String centreName = manager != null && manager.getCentreName() != null && !manager.getCentreName().isBlank()
-            ? manager.getCentreName().trim() : ("ADMIN".equalsIgnoreCase(authRole) ? "Toàn hệ thống" : "Cụm rạp của bạn");
+    String centreName = (String) request.getAttribute("managerCentreName");
+    if (centreName == null || centreName.isBlank()) {
+        centreName = manager != null && manager.getCentreName() != null && !manager.getCentreName().isBlank()
+                ? manager.getCentreName().trim() : ("ADMIN".equalsIgnoreCase(authRole) ? "Toàn hệ thống" : "Cụm rạp của bạn");
+    }
 
     OperationsSummaryDTO summary = (OperationsSummaryDTO) request.getAttribute("operationsSummary");
     int showtimes = summary == null ? 0 : summary.getShowtimes();
@@ -30,6 +33,14 @@
     double occupancy = summary == null ? 0 : summary.getOccupancy();
     int stockAlerts = summary == null ? 0 : summary.getOutOfStockItems();
     double checkInRate = summary == null ? 0 : summary.getCheckInRate();
+    int totalHalls = request.getAttribute("totalHalls") instanceof Number
+            ? ((Number) request.getAttribute("totalHalls")).intValue() : 0;
+    int availableHalls = request.getAttribute("availableHalls") instanceof Number
+            ? ((Number) request.getAttribute("availableHalls")).intValue() : 0;
+    int totalCapacity = request.getAttribute("totalCapacity") instanceof Number
+            ? ((Number) request.getAttribute("totalCapacity")).intValue() : 0;
+    long todayShowtimeCount = request.getAttribute("todayShowtimes") instanceof Number
+            ? ((Number) request.getAttribute("todayShowtimes")).longValue() : 0L;
 %>
 <!DOCTYPE html>
 <html lang="vi">
@@ -49,13 +60,16 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin/admin-style.css?v=1">
 </head>
 <body>
-<div class="admin-layout">
+<div class="admin-layout cf-manager-shell">
     <jsp:include page="/WEB-INF/fragments/managerSidebar.jspf"/>
 
-    <div class="admin-main">
+    <div class="admin-main cf-manager-main">
         <jsp:include page="/WEB-INF/fragments/managerTopbar.jspf"/>
 
-        <main class="admin-content">
+        <main class="admin-content cf-content manager-dashboard">
+            <c:if test="${not empty dashboardError}">
+                <div class="cf-alert cf-alert-warning" role="alert"><c:out value="${dashboardError}" /></div>
+            </c:if>
             <!-- BANNER CHÀO MỪNG QUẢN LÝ -->
             <div class="dashboard-welcome-banner">
                 <div class="banner-content">
@@ -211,6 +225,28 @@
                             <div class="progress-bar-bg">
                                 <div class="progress-bar-fill" style="width:<%= stockAlerts > 0 ? 100 : 0 %>%;background:#f59e0b"></div>
                             </div>
+                        </div>
+
+                        <div class="metric-progress-item" style="margin-top: 20px;">
+                            <div class="metric-progress-header">
+                                <span>Phòng chiếu khả dụng</span>
+                                <strong><%= String.format("%,d / %,d", availableHalls, totalHalls) %></strong>
+                            </div>
+                            <div class="progress-bar-bg">
+                                <div class="progress-bar-fill" style="width:<%= totalHalls > 0 ? Math.min(100.0, availableHalls * 100.0 / totalHalls) : 0 %>%;background:#10b981"></div>
+                            </div>
+                            <p style="margin: 6px 0 0; font-size: 12px; color: #94a3b8;">
+                                Tổng sức chứa <%= String.format("%,d", totalCapacity) %> ghế
+                            </p>
+                        </div>
+                        <div class="metric-progress-item" style="margin-top: 18px; margin-bottom: 18px;">
+                            <div class="metric-progress-header">
+                                <span>Suất chiếu hôm nay</span>
+                                <strong><%= String.format("%,d", todayShowtimeCount) %></strong>
+                            </div>
+                            <p style="margin: 6px 0 0; font-size: 12px; color: #94a3b8;">
+                                Đã loại trừ các suất chiếu bị hủy
+                            </p>
                         </div>
 
                         <div style="margin-top: 24px; padding: 14px; background: rgba(255, 255, 255, 0.04); border: 1px solid var(--cf-border); border-radius: 8px;">

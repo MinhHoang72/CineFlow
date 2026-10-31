@@ -584,3 +584,27 @@
                 grid-template-columns: 1fr;
             }
         }
+
+/* Shared Manager navigation follows the Admin sidebar typography and spacing. */
+.cf-manager-sidebar .icon { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 18px; }
+.cf-manager-sidebar .icon svg { width: 16px; height: 16px; }
+.cf-manager-sidebar { scrollbar-width: thin; scrollbar-color: transparent transparent; }
+.cf-manager-sidebar:hover, .cf-manager-sidebar:focus-within { scrollbar-color: #64748b transparent; }
+.manager-dashboard .banner-stat-bubble { max-width: 310px; flex-shrink: 0; margin-left: 24px; }
+.manager-dashboard .banner-stat-bubble strong { font-size: 23px; }
+.manager-dashboard .banner-stat-bubble p { color: #cbd5e1; font-size: 12px; margin: 8px 0 0; }
+.manager-dashboard .cf-dashboard-links { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 16px; }
+.manager-dashboard .cf-dashboard-link { min-width: 0; padding: 20px; border: 1px solid #334155; border-radius: 12px; background: #151b26; text-decoration: none; transition: border-color .15s, transform .15s; }
+.manager-dashboard .cf-dashboard-link strong { display: flex; justify-content: space-between; gap: 12px; color: #f1f5f9; font-size: 15px; }
+.manager-dashboard .cf-dashboard-link > span { display: block; color: #b8c5d8; margin-top: 10px; font-size: 13px; line-height: 1.7; }
+.manager-dashboard .cf-dashboard-link:hover { transform: translateY(-2px); border-color: #ff2855; }
+.manager-dashboard .cf-dashboard-link:focus-visible { outline: 2px solid #ff2855; outline-offset: 3px; }
+html[data-theme="light"] .manager-dashboard .cf-dashboard-link { background: #fff; border-color: #e2e8f0; }
+html[data-theme="light"] .manager-dashboard .cf-dashboard-link strong { color: #1e293b; }
+html[data-theme="light"] .manager-dashboard .cf-dashboard-link > span { color: #475569; }
+html[data-theme="light"] .manager-dashboard .cf-dashboard-link:hover { border-color: #db3465; }
+@media(max-width:1100px) { .manager-dashboard .cf-dashboard-links { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media(max-width:768px) {
+    .manager-dashboard .banner-stat-bubble { margin-left: 0; max-width: none; }
+    .manager-dashboard .cf-dashboard-links { grid-template-columns: minmax(0,1fr); }
+}

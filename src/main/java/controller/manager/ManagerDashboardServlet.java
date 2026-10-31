@@ -51,36 +51,55 @@ public class ManagerDashboardServlet extends HttpServlet {
         }
 
         User manager = (User) session.getAttribute("user");
-        Integer centreId = manager == null ? null : manager.getCentreId();
-
-        // Tự động nạp tên cụm rạp nếu chưa có sẵn trong đối tượng User
-        if (manager != null && centreId != null && (manager.getCentreName() == null || manager.getCentreName().isBlank())) {
-            try {
-                Centre centre = cinemaDAO.getCentreById(centreId);
-                if (centre != null) {
-                    manager.setCentreName(centre.getCentreName());
-                    session.setAttribute("user", manager);
-                }
-            } catch (Exception ignored) {
-            }
-        }
-
         LocalDate today = LocalDate.now();
         OperationsSummaryDTO summary = null;
-        try {
-            summary = operationsReportDAO.summary(today, today.plusDays(7), centreId);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
 
         request.setAttribute("activeNav", "dashboard");
         request.setAttribute("pageTitle", "Tổng quan điều hành cụm rạp");
         request.setAttribute("pageBreadcrumb", "Dashboard");
         request.setAttribute("managerUser", manager);
-        request.setAttribute("operationsSummary", summary);
         request.setAttribute("dashboardFrom", today);
         request.setAttribute("dashboardTo", today.plusDays(7));
+        request.setAttribute("totalHalls", 0);
+        request.setAttribute("availableHalls", 0);
+        request.setAttribute("totalCapacity", 0);
+        request.setAttribute("todayShowtimes", 0L);
 
+        try {
+            int centreId = service.ShowtimeService.requireCentreId(request);
+            Centre centre = cinemaDAO.getCentreById(centreId);
+            request.setAttribute("managedCentre", centre);
+            request.setAttribute("managerCentreName", centre == null ? null : centre.getCentreName());
+
+            if (manager != null && centre != null
+                    && (manager.getCentreName() == null || manager.getCentreName().isBlank())) {
+                manager.setCentreName(centre.getCentreName());
+                session.setAttribute("user", manager);
+            }
+
+            dao.HallDAO hallDAO = new dao.HallDAO();
+            request.setAttribute("totalHalls", hallDAO.countHallsByStatus(centreId, "ALL"));
+            request.setAttribute("availableHalls", hallDAO.countHallsByStatus(centreId, "ACTIVE"));
+            request.setAttribute("totalCapacity", hallDAO.sumCapacityByCentre(centreId));
+
+            long todayShowtimes = new dao.ShowtimeDAO().getByCentre(centreId).stream()
+                    .filter(showtime -> showtime.getStartTime() != null
+                            && showtime.getStartTime().toLocalDateTime().toLocalDate().equals(today)
+                            && !"CANCELLED".equalsIgnoreCase(showtime.getStatus()))
+                    .count();
+            request.setAttribute("todayShowtimes", todayShowtimes);
+
+            try {
+                summary = operationsReportDAO.summary(today, today.plusDays(7), centreId);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } catch (IllegalStateException e) {
+            request.setAttribute("dashboardError",
+                    "Chưa xác định được cụm rạp đang quản lý. Vui lòng kiểm tra phân công.");
+        }
+
+        request.setAttribute("operationsSummary", summary);
         request.getRequestDispatcher("/WEB-INF/views/manager/managerDashboard.jsp").forward(request, response);
     }
 }

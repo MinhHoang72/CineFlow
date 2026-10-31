@@ -1,5 +1,6 @@
 package dao;
 
+import model.dto.common.PageDTO;
 import model.entity.Centre;
 import model.entity.Hall;
 import utils.DBContext;
@@ -17,6 +18,85 @@ import java.util.List;
  */
 public class CentreDAO {
 
+    
+
+    /**
+     * Tìm kiếm danh sách Centre theo từ khóa và trạng thái, trả về PageDTO.
+     * Thay thế countCentres() + getCentresPaged() bằng một lời gọi duy nhất.
+     *
+     * @param search từ khóa tìm kiếm (tên rạp, địa chỉ, hotline, thành phố)
+     * @param status bộ lọc trạng thái ('ALL', 'ACTIVE', 'INACTIVE')
+     * @param page   số trang hiện tại (bắt đầu từ 1)
+     * @param size   số bản ghi mỗi trang
+     * @return PageDTO<Centre> chứa items, page, size, total
+     */
+    public PageDTO<Centre> search(String search, String status, int page, int size) {
+        if (page < 1) page = 1;
+        if (size < 1) size = 6;
+
+        StringBuilder where = new StringBuilder("WHERE 1=1 ");
+        List<Object> params = new ArrayList<>();
+
+        if (search != null && !search.trim().isEmpty()) {
+            where.append("AND (LOWER(c.CentreName) LIKE ? OR LOWER(c.Address) LIKE ? OR c.Phone LIKE ? OR LOWER(c.City) LIKE ?) ");
+            String kw = "%" + search.trim().toLowerCase() + "%";
+            params.add(kw); params.add(kw); params.add(kw); params.add(kw);
+        }
+        if (status != null && !status.trim().isEmpty() && !"ALL".equalsIgnoreCase(status)) {
+            where.append("AND UPPER(c.Status) = ? ");
+            params.add(status.trim().toUpperCase());
+        }
+
+        // Đếm tổng số bản ghi
+        int total = 0;
+        String countSql = "SELECT COUNT(*) FROM Centres c " + where;
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(countSql)) {
+            for (int i = 0; i < params.size(); i++) ps.setObject(i + 1, params.get(i));
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) total = rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return new PageDTO<>(new ArrayList<>(), page, size, 0);
+        }
+
+        // Lấy danh sách trang hiện tại
+        List<Centre> items = new ArrayList<>();
+        String dataSql = "SELECT c.CentreID, c.CentreName, c.Address, c.City, c.Phone, c.Status, "
+                + "COUNT(DISTINCT h.HallID) AS HallCount, "
+                + "COALESCE(SUM(h.Capacity), 0) AS SeatCount "
+                + "FROM Centres c LEFT JOIN Halls h ON h.CentreID = c.CentreID "
+                + where
+                + "GROUP BY c.CentreID, c.CentreName, c.Address, c.City, c.Phone, c.Status "
+                + "ORDER BY c.CentreID ASC "
+                + "OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
+        List<Object> dataParams = new ArrayList<>(params);
+        dataParams.add((page - 1) * size);
+        dataParams.add(size);
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(dataSql)) {
+            for (int i = 0; i < dataParams.size(); i++) ps.setObject(i + 1, dataParams.get(i));
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Centre c = new Centre();
+                    c.setCentreId(rs.getInt("CentreID"));
+                    c.setCentreName(rs.getString("CentreName"));
+                    c.setAddress(rs.getString("Address"));
+                    c.setCity(rs.getString("City"));
+                    c.setPhone(rs.getString("Phone"));
+                    c.setStatus(rs.getString("Status"));
+                    c.setHallCount(rs.getInt("HallCount"));
+                    c.setSeatCount(rs.getInt("SeatCount"));
+                    items.add(c);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return new PageDTO<>(items, page, size, total);
+    }
     /**
      * Danh sách rạp đang hoạt động cho bước chọn rạp khi đặt vé (giữ nguyên để tương thích).
      */

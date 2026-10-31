@@ -30,9 +30,9 @@ public class PageDTO<T> {
     public int getTotal() {
         return total;
     }
-
+//nếu lấy total/size => thiếu items 
     public int getTotalPages() {
-        return Math.max(1, (total + size - 1) / size);
+        return Math.max(1, (total + size - 1) / size); 
     }
 
     public int getFrom() {

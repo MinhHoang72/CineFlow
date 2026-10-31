@@ -2,6 +2,7 @@ package controller.customer;
 
 import dao.BookingDAO;
 import dao.PaymentDAO;
+import dao.PaymentDAO.FnbVnpayRef;
 import dao.PaymentDAO.Outcome;
 import dao.PaymentDAO.VnpayRef;
 import model.entity.Booking;
@@ -136,13 +137,50 @@ public class PaymentServlet extends HttpServlet {
         }, ref.bookingId());
     }
 
+    /** Ket qua VNPay cua don ban bap nuoc le tai quay (khong kem ve). */
+    private VnpayResult processFnbVnpay(Map<String, String> params, FnbVnpayRef ref) throws SQLException {
+        if (!VNPayUtil.verify(params)) return VnpayResult.INVALID_SIGNATURE;
+        if (!VNPayUtil.toVnpAmount(ref.amount()).equals(params.get("vnp_Amount"))) return VnpayResult.INVALID_AMOUNT;
+        if ("PAID".equals(ref.status())) return VnpayResult.ALREADY_PAID;
+        if (!VNPayUtil.isSuccess(params)) {
+            paymentDAO.markFailed(ref.paymentId());
+            return VnpayResult.FAILED;
+        }
+        return switch (paymentDAO.confirmFnbPaid(ref.paymentId(), null)) {
+            case SUCCESS -> VnpayResult.SUCCESS;
+            case ALREADY_PAID -> VnpayResult.ALREADY_PAID;
+            default -> VnpayResult.NOT_FOUND;
+        };
+    }
+
+    /** VNPay chuyen nhan vien ve sau khi khach tra tien don bap nuoc le: thanh cong -> hoa don, nguoc lai -> trang thu tien. */
+    private void fnbReturn(HttpServletRequest req, HttpServletResponse resp, Map<String, String> params, FnbVnpayRef ref)
+            throws SQLException, IOException {
+        String base = req.getContextPath() + "/staff/fnb-sale?orderId=" + ref.orderId() + "&action=";
+        switch (processFnbVnpay(params, ref)) {
+            case SUCCESS, ALREADY_PAID -> {
+                WebUtil.flash(req, "success", "VNPay đã xác nhận thanh toán. In hoá đơn cho khách.");
+                resp.sendRedirect(base + "receipt");
+            }
+            case INVALID_SIGNATURE, INVALID_AMOUNT -> {
+                WebUtil.flash(req, "danger", "Dữ liệu thanh toán từ VNPay không hợp lệ.");
+                resp.sendRedirect(base + "checkout");
+            }
+            default -> {
+                WebUtil.flash(req, "warning", "VNPay: " + VNPayUtil.failureMessage(params.get("vnp_ResponseCode")));
+                resp.sendRedirect(base + "checkout");
+            }
+        }
+    }
+
     /** IPN: VNPay goi den, tra JSON theo dac ta (RspCode/Message). */
     private void ipn(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String code;
         String message;
         try {
-            Processed p = processVnpay(VNPayUtil.vnpParams(req));
-            switch (p.result()) {
+            Map<String, String> params = VNPayUtil.vnpParams(req);
+            FnbVnpayRef fnb = paymentDAO.findFnbVnpay(params.get("vnp_TxnRef"));
+            switch (fnb != null ? processFnbVnpay(params, fnb) : processVnpay(params).result()) {
                 case SUCCESS, FAILED, SEATS_LOST, AMOUNT_CHANGED -> { code = "00"; message = "Confirm Success"; }
                 case ALREADY_PAID -> { code = "02"; message = "Order already confirmed"; }
                 case NOT_FOUND -> { code = "01"; message = "Order not Found"; }
@@ -161,8 +199,13 @@ public class PaymentServlet extends HttpServlet {
     /** Khach (hoac nhan vien quay) duoc VNPay chuyen ve. */
     private void vnpayReturn(HttpServletRequest req, HttpServletResponse resp) throws SQLException, IOException {
         Map<String, String> params = VNPayUtil.vnpParams(req);
-        Processed p = processVnpay(params);
         String ctx = req.getContextPath();
+        FnbVnpayRef fnb = paymentDAO.findFnbVnpay(params.get("vnp_TxnRef"));
+        if (fnb != null) {
+            fnbReturn(req, resp, params, fnb);
+            return;
+        }
+        Processed p = processVnpay(params);
         Booking booking = p.bookingId() == null ? null : bookingDAO.getBooking(p.bookingId());
         if (booking == null || p.result() == VnpayResult.INVALID_AMOUNT) {
             WebUtil.flash(req, "danger", "Dữ liệu thanh toán từ VNPay không hợp lệ.");

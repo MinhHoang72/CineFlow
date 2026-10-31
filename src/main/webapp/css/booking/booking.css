@@ -231,14 +231,21 @@ body.cf-booking {
 .cf-booking .legend .seat-picked { background: #FF2855; border-color: #FF2855; }
 .cf-booking .legend .seat-taken { background: #2A3142; border-color: #2A3142; }
 
-/* Giao dien sang: ghe thuong nen trang, ghe da dat xam dam de phan biet (viet tay, generator bo qua) */
-html[data-theme="light"] body.cf-booking .seat span,
-html[data-theme="light"] body.cf-booking .legend .seat-std { background: #FFFFFF; border-color: #CBD5E1; color: #0F172A; }
-html[data-theme="light"] body.cf-booking .seat.VIP span { background: #FEF3C7; border-color: #F59E0B; }
-html[data-theme="light"] body.cf-booking .seat.SWEETBOX span { background: #FCE7F3; border-color: #EC4899; }
-html[data-theme="light"] body.cf-booking .seat input:checked + span { background: #FF2855; border-color: #FF2855; color: #FFFFFF; }
-html[data-theme="light"] body.cf-booking .seat input:disabled + span,
-html[data-theme="light"] body.cf-booking .legend .seat-taken { background: #94A3B8; border-color: #94A3B8; color: #F1F5F9; }
+/* Voucher co san cho don (bookingVoucher.jspf) */
+.cf-booking .voucher-options { display: grid; gap: 8px; max-height: 300px; overflow-y: auto; }
+.cf-booking .voucher-option { padding: 10px 12px; border: 1px dashed rgba(255, 40, 85, 0.5); border-radius: 10px; background: rgba(255, 40, 85, 0.06); }
+.cf-booking .voucher-option.is-locked { border-color: rgba(255, 255, 255, 0.16); background: transparent; opacity: 0.7; }
+.cf-booking .voucher-option .min-w-0 { min-width: 0; }
+
+/* Giao dien sang: ghe thuong nen trang, ghe da dat xam dam de phan biet (viet tay, generator bo qua).
+   Co class cf-css-booking-booking (js/theme.js) de manh hon quy tac tu sinh trong theme-light.css. */
+html[data-theme="light"].cf-css-booking-booking body.cf-booking .seat span,
+html[data-theme="light"].cf-css-booking-booking body.cf-booking .legend .seat-std { background: #FFFFFF; border-color: #CBD5E1; color: #0F172A; }
+html[data-theme="light"].cf-css-booking-booking body.cf-booking .seat.VIP span { background: #FEF3C7; border-color: #F59E0B; }
+html[data-theme="light"].cf-css-booking-booking body.cf-booking .seat.SWEETBOX span { background: #FCE7F3; border-color: #EC4899; }
+html[data-theme="light"].cf-css-booking-booking body.cf-booking .seat input:checked + span { background: #FF2855; border-color: #FF2855; color: #FFFFFF; }
+html[data-theme="light"].cf-css-booking-booking body.cf-booking .seat input:disabled + span,
+html[data-theme="light"].cf-css-booking-booking body.cf-booking .legend .seat-taken { background: #94A3B8; border-color: #94A3B8; color: #F1F5F9; }
 
 /* ---------- ve dien tu / hoa don: giu nen trang nhu ve giay ---------- */
 .cf-booking .eticket {

@@ -18,6 +18,37 @@ import java.util.List;
 
 public class ShowtimeDAO {
 
+    /** Advisory conflict preview, using the same half-open intervals as the create operation. */
+    public List<Showtime> findScheduleConflicts(int centreId, int hallId,
+            LocalDateTime start, LocalDateTime end, int cleaningBuffer) throws SQLException {
+        try (Connection connection = DBContext.getConnection()) {
+            return findScheduleConflicts(connection, centreId, hallId, start, end, cleaningBuffer);
+        }
+    }
+
+    public List<Showtime> findScheduleConflicts(Connection connection, int centreId, int hallId,
+            LocalDateTime start, LocalDateTime end, int cleaningBuffer) throws SQLException {
+        String sql = "SELECT s.*, m.Title AS MovieTitle, h.HallName, h.HallType "
+                + "FROM Showtimes s JOIN Halls h ON h.HallID = s.HallID "
+                + "JOIN Movies m ON m.MovieID = s.MovieID "
+                + "WHERE h.CentreID = ? AND s.HallID = ? AND s.Status <> 'CANCELLED' "
+                + "AND s.StartTime < DATEADD(MINUTE, ?, ?) "
+                + "AND DATEADD(MINUTE, s.CleaningBufferMinutes, s.EndTime) > ? "
+                + "ORDER BY s.StartTime";
+        List<Showtime> conflicts = new ArrayList<>();
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setInt(1, centreId);
+            ps.setInt(2, hallId);
+            ps.setInt(3, cleaningBuffer);
+            ps.setTimestamp(4, Timestamp.valueOf(end));
+            ps.setTimestamp(5, Timestamp.valueOf(start));
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) conflicts.add(mapShowtime(rs));
+            }
+        }
+        return conflicts;
+    }
+
     /** Use the database clock so every application instance uses the same time. */
     public int synchronizeStatuses() throws SQLException {
         try (Connection connection = DBContext.getConnection()) {

@@ -8,6 +8,10 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 
 import java.io.IOException;
+import java.util.List;
+import model.entity.Showtime;
+import model.entity.SeatAvailability;
+import service.ShowtimeSeatLayoutService;
 
 @WebServlet("/showtimes/seats")
 public class ViewShowtimeSeatsServlet
@@ -32,19 +36,17 @@ public class ViewShowtimeSeatsServlet
             SeatDAO seatDAO =
                     new SeatDAO();
 
-            request.setAttribute(
-                    "showtime",
-                    showtimeDAO.getById(
-                            showtimeId
-                    )
-            );
-
-            request.setAttribute(
-                    "seats",
-                    seatDAO.getSeatAvailability(
-                            showtimeId
-                    )
-            );
+            Showtime showtime = showtimeDAO.getById(showtimeId);
+            request.setAttribute("showtime", showtime);
+            if (showtime != null) {
+                List<SeatAvailability> seats = seatDAO.getSeatAvailability(showtimeId);
+                request.setAttribute("seats", seats);
+                ShowtimeSeatLayoutService layoutService = new ShowtimeSeatLayoutService();
+                java.util.Map<String,List<model.dto.showtime.ShowtimeSeatMatrixDTO>> rows = layoutService.buildRows(
+                        seatDAO.getSeatConfigsByHall(showtime.getHallId()), seats);
+                layoutService.attachPrices(rows,seatDAO.getShowtimeSeatPrices(showtimeId));
+                request.setAttribute("seatRows", rows);
+            }
 
             request.getRequestDispatcher(
                     "/WEB-INF/views/manager/showtime/showtimeSeatMatrix.jsp"

@@ -9,6 +9,7 @@ import dao.MovieDAO;
 import dao.PaymentDAO;
 import dao.SeatDAO;
 import dao.ShowtimeDAO;
+import model.dto.booking.FnbMenuItemDTO;
 import model.entity.Booking;
 import model.entity.Centre;
 import model.entity.Seat;
@@ -39,8 +40,9 @@ import java.util.TreeMap;
  *   GET  /booking                          chon thanh pho -> rap -> phim -> ngay -> suat chieu
  *   GET  /booking?action=select-seats      chon ghe (can dang nhap)
  *   POST /booking?action=hold              giu ghe 5 phut, tao booking PENDING
- *   GET  /booking?action=checkout          xem lai don + chon bap nuoc / voucher + dem nguoc + nut thanh toan
- *   POST /booking?action=save-fnb          luu bap nuoc (qty_I{id}, qty_C{id})
+ *   GET  /booking?action=fnb               chon bap nuoc (bo qua neu rap chua ban mon nao)
+ *   POST /booking?action=save-fnb          luu bap nuoc (qty_I{id}, qty_C{id}) roi sang trang thanh toan
+ *   GET  /booking?action=checkout          xem lai don + voucher + dem nguoc + nut thanh toan
  *   POST /booking?action=apply-voucher     ap ma giam gia (chi giam tien ve)
  *   POST /booking?action=remove-voucher    bo ma giam gia
  *   POST /booking?action=cancel            huy booking dang cho thanh toan
@@ -81,6 +83,8 @@ public class BookingServlet extends HttpServlet {
                 selectShowtime(req, resp);
             } else if ("select-seats".equals(action)) {
                 selectSeats(req, resp);
+            } else if ("fnb".equals(action)) {
+                selectFnb(req, resp);
             } else if ("checkout".equals(action)) {
                 checkout(req, resp);
             } else if ("history".equals(action)) {
@@ -125,7 +129,10 @@ public class BookingServlet extends HttpServlet {
         }
     }
 
-    /** Buoc 3: chon bap nuoc / ap voucher cho don dang giu ghe, xong quay lai trang thanh toan. */
+    /**
+     * Buoc 3 (bap nuoc) va buoc 4 (voucher) cho don dang giu ghe.
+     * Luu bap nuoc thanh cong thi sang trang thanh toan, loi thi o lai trang bap nuoc.
+     */
     private void updateExtras(HttpServletRequest req, HttpServletResponse resp, String action)
             throws SQLException, IOException {
         User user = WebUtil.requireUser(req, resp);
@@ -135,23 +142,25 @@ public class BookingServlet extends HttpServlet {
             resp.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;
         }
+        boolean ok = false;
         if (booking.isHoldActive()) {
-            applyExtras(req, booking, action, extrasService);
+            ok = applyExtras(req, booking, action, extrasService);
         } else {
             WebUtil.flash(req, "warning", "Đơn đã hết thời gian giữ ghế.");
         }
-        resp.sendRedirect(req.getContextPath() + "/booking?action=checkout&bookingId=" + booking.getId());
+        String next = "save-fnb".equals(action) && !ok ? "fnb" : "checkout";
+        resp.sendRedirect(req.getContextPath() + "/booking?action=" + next + "&bookingId=" + booking.getId());
     }
 
-    /** Dung chung cho dat ve online va ban tai quay: thuc hien thao tac va dat thong bao. */
-    public static void applyExtras(HttpServletRequest req, Booking booking, String action, BookingExtrasService service)
+    /**
+     * Dung chung cho dat ve online va ban tai quay: thuc hien thao tac va dat thong bao.
+     * @return false neu du lieu khong hop le (da dat thong bao loi)
+     */
+    public static boolean applyExtras(HttpServletRequest req, Booking booking, String action, BookingExtrasService service)
             throws SQLException {
         try {
             switch (action) {
-                case "save-fnb" -> {
-                    service.saveFnb(booking, req.getParameterMap());
-                    WebUtil.flash(req, "success", "Đã cập nhật bắp nước.");
-                }
+                case "save-fnb" -> service.saveFnb(booking, req.getParameterMap());
                 case "apply-voucher" -> {
                     BigDecimal discount = service.applyVoucher(booking, req.getParameter("voucherCode"));
                     WebUtil.flash(req, "success", "Đã áp dụng mã giảm giá, giảm "
@@ -162,8 +171,10 @@ public class BookingServlet extends HttpServlet {
                     WebUtil.flash(req, "info", "Đã bỏ mã giảm giá.");
                 }
             }
+            return true;
         } catch (IllegalArgumentException e) {
             WebUtil.flash(req, "warning", e.getMessage());
+            return false;
         }
     }
 
@@ -268,7 +279,7 @@ public class BookingServlet extends HttpServlet {
 
         try {
             int bookingId = bookingService.holdSeatsForOnlineCustomer(user.getUserId(), showtimeId, seatIds);
-            resp.sendRedirect(req.getContextPath() + "/booking?action=checkout&bookingId=" + bookingId);
+            resp.sendRedirect(req.getContextPath() + "/booking?action=fnb&bookingId=" + bookingId);
         } catch (SeatUnavailableException e) {
             WebUtil.flash(req, "warning", e.getMessage());
             resp.sendRedirect(req.getContextPath() + "/booking?action=select-seats&showtimeId=" + showtimeId);
@@ -291,10 +302,38 @@ public class BookingServlet extends HttpServlet {
         }
         req.setAttribute("booking", booking);
         if (booking.isHoldActive()) {
-            req.setAttribute("fnbMenu", extrasService.getMenu(booking));
             req.setAttribute("extrasAction", req.getContextPath() + "/booking");
+            req.setAttribute("fnbUrl", req.getContextPath() + "/booking?action=fnb&bookingId=" + booking.getId());
+            req.setAttribute("voucherOptions", extrasService.getVoucherOptions(booking));
         }
         req.getRequestDispatcher(VIEW_DIR + "booking/bookingCheckout.jsp").forward(req, resp);
+    }
+
+    /** Buoc 3: chon bap nuoc. Rap chua ban mon nao thi bo qua, sang thang trang thanh toan. */
+    private void selectFnb(HttpServletRequest req, HttpServletResponse resp)
+            throws SQLException, ServletException, IOException {
+        User user = WebUtil.requireUser(req, resp);
+        if (user == null) return;
+
+        Booking booking = loadOwnBooking(req, user);
+        if (booking == null) {
+            resp.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+        String checkoutUrl = req.getContextPath() + "/booking?action=checkout&bookingId=" + booking.getId();
+        if (!booking.isHoldActive()) {
+            resp.sendRedirect(checkoutUrl);
+            return;
+        }
+        List<FnbMenuItemDTO> menu = extrasService.getMenu(booking);
+        if (menu.isEmpty()) {
+            resp.sendRedirect(checkoutUrl);
+            return;
+        }
+        req.setAttribute("booking", booking);
+        req.setAttribute("fnbMenu", menu);
+        req.setAttribute("extrasAction", req.getContextPath() + "/booking");
+        req.getRequestDispatcher(VIEW_DIR + "booking/selectFnb.jsp").forward(req, resp);
     }
 
     private void cancel(HttpServletRequest req, HttpServletResponse resp) throws SQLException, IOException {

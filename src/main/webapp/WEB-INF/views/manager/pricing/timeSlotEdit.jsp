@@ -1,10 +1,64 @@
 <%@ page pageEncoding="UTF-8" %>
-<% request.setAttribute("pageTitle", "Sửa phụ thu khung giờ"); request.setAttribute("pageDescription", "Điều chỉnh thời gian và mức phụ thu của khung giờ đã chọn."); request.setAttribute("activeTab", "time"); %>
+<%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
+<%
+    request.setAttribute("pageTitle", "Sửa phụ thu khung giờ");
+    request.setAttribute("pageDescription", "Điều chỉnh thời gian và mức phụ thu của khung giờ đã chọn.");
+    request.setAttribute("activeTab", "time");
+%>
 <%@ include file="/WEB-INF/fragments/cinemaBegin.jspf" %>
-<c:choose><c:when test="${not empty rule}"><section class="st-panel"><div class="st-panel-heading"><div><h2>Thông tin khung giờ</h2><p><c:out value="${rule.slotName}" /></p></div><a class="st-link" href="${pageContext.request.contextPath}/pricing/time-slots">← Danh sách khung giờ</a></div>
-<form class="st-create-form" action="${pageContext.request.contextPath}/pricing/time-slots/update" method="post"><input type="hidden" name="id" value="${rule.timeSlotPricingId}"><input type="hidden" name="centreId" value="${rule.centreId}"><div class="st-fields st-fields-four">
-<div class="st-field"><label for="edit-slot-name">Tên khung giờ <span>*</span></label><input id="edit-slot-name" name="slotName" value="<c:out value='${rule.slotName}' />" required></div>
-<div class="st-field"><label for="edit-slot-start">Bắt đầu <span>*</span></label><input id="edit-slot-start" type="time" name="startTime" value="${rule.startTimeFormatted}" required></div><div class="st-field"><label for="edit-slot-end">Kết thúc <span>*</span></label><input id="edit-slot-end" type="time" name="endTime" value="${rule.endTimeFormatted}" required></div>
-<div class="st-field"><label for="edit-slot-amount">Phụ thu (VNĐ) <span>*</span></label><input id="edit-slot-amount" type="number" name="surcharge" value="${rule.surcharge}" min="0" step="1000" required></div>
-</div><div class="st-form-footer"><p>Thay đổi được lưu lại trong lịch sử phụ thu.</p><div class="st-row-actions"><a class="st-button st-button-muted" href="${pageContext.request.contextPath}/pricing/time-slots">Quay lại</a><button class="st-button st-button-primary" type="submit">Lưu thay đổi</button></div></div></form></section></c:when><c:otherwise><div class="st-empty"><h2>Không tìm thấy khung giờ</h2><a class="st-link" href="${pageContext.request.contextPath}/pricing/time-slots">Quay lại danh sách</a></div></c:otherwise></c:choose>
+<c:choose>
+    <c:when test="${not empty rule}">
+        <section class="st-panel">
+            <div class="st-panel-heading">
+                <div>
+                    <h2>Thông tin khung giờ</h2>
+                    <p><c:out value="${rule.slotName}" /></p>
+                </div>
+                <a class="st-link" href="${pageContext.request.contextPath}/pricing/time-slots">← Danh sách khung giờ</a>
+            </div>
+            <form class="st-create-form" action="${pageContext.request.contextPath}/pricing/time-slots/update" method="post">
+                <input type="hidden" name="id" value="${rule.timeSlotPricingId}">
+                <input type="hidden" name="centreId" value="${rule.centreId}">
+                <div class="st-fields st-fields-four">
+                    <div class="st-field">
+                        <label for="edit-slot-name">Tên khung giờ <span>*</span></label>
+                        <input id="edit-slot-name" name="slotName" value="<c:out value='${rule.slotName}' />" required>
+                    </div>
+                    <div class="st-field">
+                        <label for="edit-slot-start">Bắt đầu <span>*</span></label>
+                        <input id="edit-slot-start" type="time" name="startTime" value="${rule.startTimeFormatted}" required>
+                    </div>
+                    <div class="st-field">
+                        <label for="edit-slot-end">Kết thúc <span>*</span></label>
+                        <input id="edit-slot-end" type="time" name="endTime" value="${rule.endTimeFormatted}" required>
+                    </div>
+                    <div class="st-field">
+                        <label for="edit-slot-amount">Phụ thu (VNĐ) <span>*</span></label>
+                        <input
+                            id="edit-slot-amount"
+                            type="text"
+                            inputmode="numeric"
+                            data-money
+                            name="surcharge"
+                            value="<fmt:formatNumber value='${rule.surcharge}' pattern='0' groupingUsed='false' />"
+                            required>
+                    </div>
+                </div>
+                <div class="st-form-footer">
+                    <p></p>
+                    <div class="st-row-actions">
+                        <a class="st-button st-button-muted" href="${pageContext.request.contextPath}/pricing/time-slots">Quay lại</a>
+                        <button class="st-button st-button-primary" type="submit">Lưu thay đổi</button>
+                    </div>
+                </div>
+            </form>
+        </section>
+    </c:when>
+    <c:otherwise>
+        <div class="st-empty">
+            <h2>Không tìm thấy khung giờ</h2>
+            <a class="st-link" href="${pageContext.request.contextPath}/pricing/time-slots">Quay lại danh sách</a>
+        </div>
+    </c:otherwise>
+</c:choose>
 <%@ include file="/WEB-INF/fragments/cinemaEnd.jspf" %>

@@ -59,9 +59,13 @@ public class Payment {
     }
     public Timestamp getCreatedAt() { return createdAt; }
     public Timestamp getPaidAt() { return paidAt; }
+    /** BookingID; voi giao dich ban bap nuoc le (isFnbSale) la FnbOrderID. */
     public int getBookingId() { return bookingId; }
+    /** Ma don ve; voi ban bap nuoc le la ma don bap nuoc (OrderCode). */
     public String getBookingCode() { return bookingCode; }
     public boolean isCounter() { return "COUNTER".equals(bookingType); }
+    /** Giao dich ban bap nuoc le tai quay (khong kem ve). */
+    public boolean isFnbSale() { return "FNB".equals(bookingType); }
     public String getBookingStatus() { return bookingStatus; }
     public String getCustomerName() { return customerName; }
     public String getCustomerPhone() { return customerPhone; }

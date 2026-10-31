@@ -52,6 +52,8 @@
             activeNav = "pricing";
         } else if (fullReqPath.contains("/halls") || fullReqPath.contains("/seats") || jspUri.contains("hall") || jspUri.contains("seat")) {
             activeNav = "halls";
+        } else if (fullReqPath.contains("/staff/fnb-sale")) {
+            activeNav = "fnb-sale";
         } else if (fullReqPath.contains("/fnb/stock") || (fullReqPath.contains("/fnb") && "/stock".equals(pathInfo)) || jspUri.contains("fnbInventory")) {
             activeNav = "fnb-stock";
         } else if (fullReqPath.contains("/fnb") || jspUri.contains("fnb")) {
@@ -77,7 +79,7 @@
         }
     }
 %>
-<aside class="cf-sidebar" id="managerSidebar">
+<aside class="cf-sidebar cf-manager-sidebar" id="managerSidebar">
     <a class="cf-sidebar-brand" href="<%= brandUrl %>">Cine<span>Flow</span></a>
 
     <div class="cf-sidebar-section">TỔNG QUAN</div>
@@ -98,6 +100,13 @@
                         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z"></path><line x1="13" y1="5" x2="13" y2="19" stroke-dasharray="2 2"></line></svg>
                     </span>Bán vé tại quầy
                 </a>
+                <% if (isSales) { %>
+                <a class="<%= "fnb-sale".equals(activeNav) ? "active" : "" %>" href="<%= cfPath %>/staff/fnb-sale">
+                    <span class="icon">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h16l-1 12H5L4 8Z"></path><path d="M8 8V5a4 4 0 0 1 8 0v3"></path><path d="M9 12h.01M15 12h.01"></path></svg>
+                    </span>Bán bắp nước lẻ
+                </a>
+                <% } %>
                 <a class="<%= "fnb-stock".equals(activeNav) ? "active" : "" %>" href="<%= cfPath %>/fnb/stock">
                     <span class="icon">
                         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"></line><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>

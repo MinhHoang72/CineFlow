@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import model.entity.Centre;
+import model.dto.common.PageDTO;
 import model.entity.Hall;
 import model.entity.User;
 
@@ -141,48 +142,29 @@ public class HallManagementServlet extends HttpServlet {
         }
 
         int page = 1;
-        int pageSize = 6; // Hiển thị 6 phòng chiếu / trang
         try {
             String pageParam = request.getParameter("page");
-            if (pageParam != null && !pageParam.trim().isEmpty()) {
+            if (pageParam != null && !pageParam.trim().isEmpty())
                 page = Integer.parseInt(pageParam.trim());
-            }
-        } catch (NumberFormatException e) {
-            page = 1;
-        }
-        if (page < 1) {
-            page = 1;
-        }
+        } catch (NumberFormatException ignored) { }
 
-        // 7. Tính toán tổng số phòng theo bộ lọc và số trang
-        int totalFilteredHalls = hallDAO.countHallsByCentre(targetCentreId, search, status);
-        int totalPages = (int) Math.ceil((double) totalFilteredHalls / pageSize);
-        if (totalPages < 1) {
-            totalPages = 1;
-        }
-        if (page > totalPages) {
-            page = totalPages;
-        }
+        // Dung PageDTO: lay du lieu + phan trang trong mot lan goi
+        PageDTO<Hall> pageResult = hallDAO.search(targetCentreId, search, status, page, 6);
+        List<Hall> halls = pageResult.getItems();
 
-        // 8. Lấy danh sách các phòng chiếu trang hiện tại
-        List<Hall> halls = hallDAO.getHallsByCentrePaged(targetCentreId, search, status, page, pageSize);
-
-        // 9. Thống kê số lượng phòng và sức chứa tổng thể (của cụm rạp)
-        int totalHalls = hallDAO.countHallsByStatus(targetCentreId, "ALL");
-        int activeHalls = hallDAO.countHallsByStatus(targetCentreId, "ACTIVE");
+        // Thong ke so luong phong va suc chua tong the (cua cum rap)
+        int totalHalls    = hallDAO.countHallsByStatus(targetCentreId, "ALL");
+        int activeHalls   = hallDAO.countHallsByStatus(targetCentreId, "ACTIVE");
         int inactiveHalls = hallDAO.countHallsByStatus(targetCentreId, "INACTIVE");
         int totalCapacity = hallDAO.sumCapacityByCentre(targetCentreId);
 
-        // 10. Đặt các thuộc tính vào request scope
+        // Dat cac thuoc tinh vao request scope
+        request.setAttribute("page", pageResult);
         request.setAttribute("currentCentre", currentCentre);
         request.setAttribute("targetCentreId", targetCentreId);
         request.setAttribute("allCentres", allCentres);
         request.setAttribute("isAdmin", isAdmin);
         request.setAttribute("halls", halls);
-        request.setAttribute("currentPage", page);
-        request.setAttribute("pageSize", pageSize);
-        request.setAttribute("totalPages", totalPages);
-        request.setAttribute("totalFilteredHalls", totalFilteredHalls);
         request.setAttribute("currentSearch", search != null ? search.trim() : "");
         request.setAttribute("currentStatus", status);
         request.setAttribute("totalHalls", totalHalls);
@@ -190,8 +172,7 @@ public class HallManagementServlet extends HttpServlet {
         request.setAttribute("inactiveHalls", inactiveHalls);
         request.setAttribute("totalCapacity", totalCapacity);
         request.setAttribute("activeNav", "halls");
-        request.setAttribute("pageTitle", "Quản lý Phòng chiếu");
-
+        request.setAttribute("pageTitle", "Quan ly Phong chieu");
         // 11. Chuyển tiếp tới giao diện JSP
         request.getRequestDispatcher("/WEB-INF/views/admin/cinema/hallList.jsp").forward(request, response);
     }

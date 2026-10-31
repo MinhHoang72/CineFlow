@@ -101,10 +101,18 @@
                             </a>
 
                             <a class="cf-dashboard-link" href="${pageContext.request.contextPath}/fnb/stock">
-                                <span class="cf-feature-tag tag-amber">F&amp;B Concessions</span>
-                                <strong style="color: #fbbf24; font-size: 15px;">🍿 Đặt Bắp nước &amp; Combo F&amp;B</strong>
-                                <span>Danh mục combo bắp rang bơ, nước giải khát và kiểm tra tồn kho tại chi nhánh.</span>
+                                <span class="cf-feature-tag tag-amber">Kho bắp nước</span>
+                                <strong style="color: #fbbf24; font-size: 15px;">📦 Kiểm tra tồn kho</strong>
+                                <span>Theo dõi số lượng mặt hàng và tình trạng hàng hóa tại chi nhánh.</span>
                             </a>
+
+                            <% if (isSales) { %>
+                            <a class="cf-dashboard-link" href="${pageContext.request.contextPath}/staff/fnb-sale" title="Mở giao diện bán bắp nước lẻ">
+                                <span class="cf-feature-tag tag-amber">Bán hàng tại quầy</span>
+                                <strong style="color: #fbbf24; font-size: 15px;">🍿 Bán bắp nước lẻ</strong>
+                                <span>Bán combo, đồ uống và snack; nhận thanh toán và in hóa đơn.</span>
+                            </a>
+                            <% } %>
 
                             <a class="cf-dashboard-link" href="${pageContext.request.contextPath}/staff/payments">
                                 <span class="cf-feature-tag tag-emerald">Thu ngân</span>

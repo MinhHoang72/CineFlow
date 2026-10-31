@@ -72,12 +72,18 @@
                             <td>
                                 <small class="text-muted"><c:out value="${p.transactionCode}"/></small><br>
                                 <c:choose>
+                                    <c:when test="${p.fnbSale}">
+                                        <a href="${ctx}/staff/fnb-sale?action=receipt&orderId=${p.bookingId}"><strong><c:out value="${p.bookingCode}"/></strong></a>
+                                        <span class="badge bg-warning text-dark">Bắp nước lẻ</span>
+                                    </c:when>
                                     <c:when test="${p.counter}"><strong><c:out value="${p.bookingCode}"/></strong></c:when>
                                     <c:otherwise>
                                         <a href="${ctx}/booking?action=detail&bookingId=${p.bookingId}"><strong><c:out value="${p.bookingCode}"/></strong></a>
                                     </c:otherwise>
                                 </c:choose>
-                                <span class="badge ${p.counter ? 'bg-info text-dark' : 'text-bg-secondary'}">${p.counter ? 'Tại quầy' : 'Online'}</span>
+                                <c:if test="${not p.fnbSale}">
+                                    <span class="badge ${p.counter ? 'bg-info text-dark' : 'text-bg-secondary'}">${p.counter ? 'Tại quầy' : 'Online'}</span>
+                                </c:if>
                             </td>
                             <td><c:out value="${p.customerName}" default="Khách tại quầy"/><br><small class="text-muted"><c:out value="${p.customerPhone}"/></small></td>
                             <td><c:out value="${p.movieTitle}"/><br><small class="text-muted"><c:out value="${p.centreName}"/></small></td>

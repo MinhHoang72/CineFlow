@@ -1,4 +1,4 @@
-<%@ page pageEncoding="UTF-8" %>
+﻿<%@ page pageEncoding="UTF-8" %>
 <%@ page import="model.entity.User" %>
 <%!
     static String esc(Object value) {
@@ -13,22 +13,23 @@
         if (totalPages <= 1) {
             return "";
         }
+        String prefix = (base != null && ctx != null && !ctx.isEmpty() && base.startsWith(ctx)) ? base : (ctx + base);
         StringBuilder html = new StringBuilder("<nav class=\"vc-pages\">");
-        html.append(page > 1 ? "<a href=\"" + ctx + base + (page - 1) + "\">&lsaquo;</a>" : "<span class=\"disabled\">&lsaquo;</span>");
+        html.append(page > 1 ? "<a href=\"" + prefix + (page - 1) + "\">&lsaquo;</a>" : "<span class=\"disabled\">&lsaquo;</span>");
         int last = 0;
         for (int i = 1; i <= totalPages; i++) {
             if (i == 1 || i == totalPages || Math.abs(i - page) <= 1) {
                 if (last != 0 && i - last > 1) {
                     html.append("<span class=\"gap\">&hellip;</span>");
                 }
-                html.append(i == page ? "<span class=\"active\">" + i + "</span>" : "<a href=\"" + ctx + base + i + "\">" + i + "</a>");
+                html.append(i == page ? "<span class=\"active\">" + i + "</span>" : "<a href=\"" + prefix + i + "\">" + i + "</a>");
                 last = i;
             }
         }
-        html.append(page < totalPages ? "<a href=\"" + ctx + base + (page + 1) + "\">&rsaquo;</a>" : "<span class=\"disabled\">&rsaquo;</span>");
+        html.append(page < totalPages ? "<a href=\"" + prefix + (page + 1) + "\">&rsaquo;</a>" : "<span class=\"disabled\">&rsaquo;</span>");
         return html.append("</nav>").toString();
     }
-
+// code lấy 15000 thành 15.000
     static String money(java.math.BigDecimal value) {
         if (value == null) {
             return "";
@@ -93,6 +94,8 @@
         .vc-scope-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 12px; }
         .vc-scope-global { background: rgba(99,102,241,.18); color: #a5b4fc; }
         .vc-scope-centre { background: rgba(16,185,129,.18); color: #6ee7b7; }
+        .cf-page-header p { margin: 4px 0 0 0; font-size: 14px; color: #64748b; }
+        html[data-theme="dark"] .cf-page-header p { color: #94a3b8; }
     </style>
 </head>
 <body>

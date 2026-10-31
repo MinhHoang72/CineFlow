@@ -24,11 +24,11 @@ public class FnbDAO {
             + "i.CategoryID AS CategoryID, i.Price AS Price, i.Status AS Status, i.ImageURL AS ImageURL, "
             + "i.Description AS Description, i.CreatedAt AS CreatedAt, i.CentreID AS CentreID, ct.CentreName AS CentreName "
             + "FROM FnbItems i JOIN FnbCategories c ON c.CategoryID = i.CategoryID "
-            + "JOIN Centres ct ON ct.CentreID = i.CentreID "
+            + "LEFT JOIN Centres ct ON ct.CentreID = i.CentreID "
             + "UNION ALL "
             + "SELECT 'COMBO', co.ComboID, co.ComboName, N'Combo', NULL, co.Price, co.Status, co.ImageURL, co.Description, "
             + "co.CreatedAt, co.CentreID, ct2.CentreName "
-            + "FROM FnbCombos co JOIN Centres ct2 ON ct2.CentreID = co.CentreID";
+            + "FROM FnbCombos co LEFT JOIN Centres ct2 ON ct2.CentreID = co.CentreID";
 
     public List<OptionDTO> categories() {
         return options("SELECT CategoryID, CategoryName FROM FnbCategories WHERE Status = 'ACTIVE' ORDER BY CategoryName");

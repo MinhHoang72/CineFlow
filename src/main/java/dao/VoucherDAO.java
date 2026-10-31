@@ -30,25 +30,11 @@ public class VoucherDAO {
     private static final String FROM_JOIN =
             " FROM Vouchers v LEFT JOIN Centres c ON v.CentreID = c.CentreID";
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // SEARCH
-    // ─────────────────────────────────────────────────────────────────────────
-
-    public PageDTO<Voucher> search(String key, String status, String type, int page, int size) {
-        return search(key, status, type, null, page, size);
-    }
-
-    /**
-     * Tìm kiếm voucher có phân trang.
-     *
-     * @param key       từ khóa tìm kiếm (mã hoặc tên)
-     * @param status    lọc trạng thái: ACTIVE, INACTIVE, EXPIRED, EXHAUSTED
-     * @param type      lọc loại: FIXED, PERCENT
-     * @param scopeCentreId NULL = Admin xem tất cả; có giá trị = Manager chỉ xem voucher của chi nhánh đó
-     */
+ // trả về 1 trang page dto nên nó phải có 3 4 yếu tố 
     public PageDTO<Voucher> search(String key, String status, String type,
                                    Integer scopeCentreId, int page, int size) {
         StringBuilder where = new StringBuilder(" WHERE 1=1");
+        //params lưu giá trị các dấu ? 
         List<Object> params = new ArrayList<>();
 
         // Phân quyền scope: Manager chỉ thấy voucher của chi nhánh mình
@@ -58,6 +44,8 @@ public class VoucherDAO {
         }
 
         if (key != null && !key.isEmpty()) {
+            
+            //CI không phân biệt hoa thường , AI k phân biệt dấu 
             where.append(" AND (v.VoucherCode COLLATE Latin1_General_100_CI_AI LIKE ?"
                     + " OR v.VoucherName COLLATE Latin1_General_100_CI_AI LIKE ?)");
             String like = "%" + key.replace("[", "[[]").replace("%", "[%]").replace("_", "[_]") + "%";
@@ -73,6 +61,7 @@ public class VoucherDAO {
         } else if ("INACTIVE".equals(status)) {
             where.append(" AND v.Status = 'INACTIVE'");
         }
+        
         if ("FIXED".equals(type) || "PERCENT".equals(type)) {
             where.append(" AND v.DiscountType = ?");
             params.add(type);
@@ -84,24 +73,32 @@ public class VoucherDAO {
             try (PreparedStatement statement = connection.prepareStatement(
                     "SELECT COUNT(*)" + FROM_JOIN + where)) {
                 for (int i = 0; i < params.size(); i++) {
+                    //đang thiếu dấu ? setobject vào cho ? 
                     statement.setObject(i + 1, params.get(i));
                 }
                 try (ResultSet rs = statement.executeQuery()) {
                     if (rs.next()) {
-                        total = rs.getInt(1);
+                        //lấy dòng đầu tiên 
+                        total = rs.getInt(1);//45 phần từ 
                     }
                 }
             }
-            int pages = Math.max(1, (total + size - 1) / size);
+            // pages là số trang tính đc
+            int pages = Math.max(1, (total + size - 1) / size); 
+            // page này do người dùng nhập 
+            //lọc người dùng nhập vào 
             int current = Math.min(Math.max(1, page), pages);
             String sql = "SELECT " + COLUMNS + FROM_JOIN + where
+                   
                     + " ORDER BY v.VoucherID DESC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
                 int index = 1;
                 for (Object param : params) {
                     statement.setObject(index++, param);
                 }
+                //tính 1 trang bao nhiêu dòng ,cút bn dòng 
                 statement.setInt(index++, (current - 1) * size);
+                //
                 statement.setInt(index, size);
                 try (ResultSet rs = statement.executeQuery()) {
                     while (rs.next()) {
@@ -161,6 +158,7 @@ public class VoucherDAO {
     public boolean codeExists(String code, int excludeId) {
         try (Connection connection = DBContext.getConnection();
              PreparedStatement statement = connection.prepareStatement(
+                     //bỏ qua <>mã hiện tại nếu đang sửa
                      "SELECT 1 FROM Vouchers WHERE VoucherCode = ? AND VoucherID <> ?")) {
             statement.setString(1, code);
             statement.setInt(2, excludeId);
@@ -234,6 +232,8 @@ public class VoucherDAO {
      * @param centreId   ID chi nhánh của manager đang đăng nhập
      * @return true nếu CentreID của voucher khớp với centreId truyền vào
      */
+    // đem voucher id 10 ra xem có cnetrer id đó k 
+    
     public boolean belongsToCentre(int voucherId, int centreId) {
         try (Connection connection = DBContext.getConnection();
              PreparedStatement statement = connection.prepareStatement(

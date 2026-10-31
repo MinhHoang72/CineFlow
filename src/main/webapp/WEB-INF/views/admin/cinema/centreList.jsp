@@ -20,14 +20,11 @@
     Integer inactiveCentres = (Integer) request.getAttribute("inactiveCentres");
     Integer totalHalls = (Integer) request.getAttribute("totalHalls");
 
-    Integer currentPage = (Integer) request.getAttribute("currentPage");
-    if (currentPage == null) currentPage = 1;
-    Integer pageSize = (Integer) request.getAttribute("pageSize");
-    if (pageSize == null) pageSize = 6;
-    Integer totalPages = (Integer) request.getAttribute("totalPages");
-    if (totalPages == null) totalPages = 1;
-    Integer totalFilteredCentres = (Integer) request.getAttribute("totalFilteredCentres");
-    if (totalFilteredCentres == null) totalFilteredCentres = 0;
+    model.dto.common.PageDTO<?> pg = (model.dto.common.PageDTO<?>) request.getAttribute("page");
+    int currentPage = (pg != null) ? pg.getPage() : 1;
+    int pageSize    = (pg != null) ? pg.getSize() : 6;
+    int totalPages  = (pg != null) ? pg.getTotalPages() : 1;
+    int totalFilteredCentres = (pg != null) ? pg.getTotal() : 0;
 
     String currentSearch = (String) request.getAttribute("currentSearch");
     String currentStatus = (String) request.getAttribute("currentStatus");
@@ -180,7 +177,7 @@
                     <tbody>
                         <%
                             if (centres != null && !centres.isEmpty()) {
-                                int centreIndex = (currentPage - 1) * pageSize;
+                                int centreIndex = (pg != null) ? pg.getFrom() - 1 : 0;
                                 for (Centre c : centres) {
                                     centreIndex++;
                                     boolean isActive = "ACTIVE".equalsIgnoreCase(c.getStatus());

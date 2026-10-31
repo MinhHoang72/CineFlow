@@ -15,6 +15,7 @@ public class ShowtimeSeatMatrixDTO {
     private String seatType;           // STANDARD, VIP, SWEETBOX
     private String availabilityStatus; // AVAILABLE, HELD, BOOKED, MAINTENANCE
     private BigDecimal price;
+    private String displayLabel;
 
     public ShowtimeSeatMatrixDTO() {
     }
@@ -32,6 +33,17 @@ public class ShowtimeSeatMatrixDTO {
 
     public String getLabel() {
         return (seatRow != null ? seatRow : "") + seatNumber;
+    }
+
+    public String getDisplayLabel() { return displayLabel != null ? displayLabel : getLabel(); }
+    public void setDisplayLabel(String displayLabel) { this.displayLabel = displayLabel; }
+
+    public String getAvailabilityLabel() {
+        if ("AVAILABLE".equals(availabilityStatus)) return "Trống";
+        if ("HELD".equals(availabilityStatus)) return "Đang giữ";
+        if ("BOOKED".equals(availabilityStatus)) return "Đã đặt";
+        if ("MAINTENANCE".equals(availabilityStatus)) return "Bảo trì";
+        return "Lối đi / Trống";
     }
 
     public String getStatusBadgeClass() {
@@ -61,4 +73,18 @@ public class ShowtimeSeatMatrixDTO {
 
     public BigDecimal getPrice() { return price; }
     public void setPrice(BigDecimal price) { this.price = price; }
+    private BigDecimal basePrice, timeSurcharge, hallSurcharge, seatSurcharge, storedPrice;
+    public BigDecimal getBasePrice() { return basePrice; }
+    public void setBasePrice(BigDecimal value) { basePrice=value; }
+    public BigDecimal getTimeSurcharge() { return timeSurcharge; }
+    public void setTimeSurcharge(BigDecimal value) { timeSurcharge=value; }
+    public BigDecimal getHallSurcharge() { return hallSurcharge; }
+    public void setHallSurcharge(BigDecimal value) { hallSurcharge=value; }
+    public BigDecimal getSeatSurcharge() { return seatSurcharge; }
+    public void setSeatSurcharge(BigDecimal value) { seatSurcharge=value; }
+    public BigDecimal getStoredPrice() { return storedPrice; }
+    public void setStoredPrice(BigDecimal value) { storedPrice=value; }
+    public String getPriceFormatted() {
+        return price == null ? "Chưa có giá cơ bản" : java.text.NumberFormat.getNumberInstance(new java.util.Locale("vi","VN")).format(price) + " đ";
+    }
 }

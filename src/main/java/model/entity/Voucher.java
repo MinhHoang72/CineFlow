@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 public class Voucher {
 
     private int voucherId;
-    private String voucherCode;
+    private String voucherCode;// unqiue
     private String voucherName;
     private String description;
     private String discountType;
@@ -20,24 +20,28 @@ public class Voucher {
     private String status;
 
     /**
-     * NULL = voucher toàn chuỗi do Admin tạo (áp dụng mọi chi nhánh).
-     * Có giá trị = voucher chi nhánh do Manager tạo (chỉ áp dụng tại chi nhánh đó).
+     * NULL = voucher toàn chuỗi do Admin tạo (áp dụng mọi chi nhánh). Có giá
+     * trị = voucher chi nhánh do Manager tạo (chỉ áp dụng tại chi nhánh đó).
      */
     private Integer centreId;
 
-    /** ID người tạo voucher (Admin hoặc Manager). */
+    /**
+     * ID người tạo voucher (Admin hoặc Manager).
+     */
     private Integer createdBy;
 
-    /** Tên chi nhánh, JOIN từ Centres – dùng cho hiển thị, không lưu DB. */
+    /**
+     * Tên chi nhánh, JOIN từ Centres – dùng cho hiển thị, không lưu DB.
+     */
     private String centreName;
 
     public Voucher() {
     }
 
     public Voucher(int voucherId, String voucherCode, String voucherName, String description,
-                   String discountType, BigDecimal discountValue, BigDecimal minimumOrderValue,
-                   BigDecimal maximumDiscount, LocalDateTime startDate, LocalDateTime endDate,
-                   Integer usageLimit, int usedCount, String status) {
+            String discountType, BigDecimal discountValue, BigDecimal minimumOrderValue,
+            BigDecimal maximumDiscount, LocalDateTime startDate, LocalDateTime endDate,
+            Integer usageLimit, int usedCount, String status) {
         this.voucherId = voucherId;
         this.voucherCode = voucherCode;
         this.voucherName = voucherName;
@@ -181,7 +185,9 @@ public class Voucher {
         this.centreName = centreName;
     }
 
-    /** Voucher áp dụng toàn chuỗi (do Admin tạo, CentreID = NULL). */
+    /**
+     * Voucher áp dụng toàn chuỗi (do Admin tạo, CentreID = NULL).
+     */
     public boolean isGlobal() {
         return centreId == null;
     }
