@@ -1,12 +1,9 @@
 package controller.staff;
 
-import dao.FnbOrderDAO;
-import dao.PaymentDAO;
-import dao.PaymentDAO.Status;
-import model.dto.booking.FnbMenuItemDTO;
 import model.dto.booking.FnbSaleDTO;
-import model.dto.booking.PaymentTransaction;
 import model.entity.User;
+import service.FnbSaleService;
+import service.PaymentService.Status;
 import utils.VNPayUtil;
 import utils.WebUtil;
 import jakarta.servlet.ServletException;
@@ -15,15 +12,11 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.sql.SQLException;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Bán bắp nước lẻ tại quầy, không kèm vé (dành cho TICKET_SALES_STAFF tại rạp của mình).
- * Đơn FnbOrders COUNTER, BookingID = NULL; chưa thanh toán sau 15 phút thì tự huỷ.
+ * Đơn FnbOrders COUNTER, BookingID = NULL; chưa thanh toán sau 15 phút thì tự huỷ. Nghiệp vụ nằm ở FnbSaleService.
  *   GET  /staff/fnb-sale                      menu bắp nước của rạp
  *   POST /staff/fnb-sale?action=create        tạo đơn chờ thanh toán (qty_I{id}, qty_C{id})
  *   GET  /staff/fnb-sale?action=checkout      tóm tắt đơn + chọn cách thu tiền
@@ -37,8 +30,7 @@ public class CounterFnbServlet extends HttpServlet {
 
     private static final String VIEW_BASE = "/WEB-INF/views/staff/counter/";
 
-    private final FnbOrderDAO fnbOrderDAO = new FnbOrderDAO();
-    private final PaymentDAO paymentDAO = new PaymentDAO();
+    private final FnbSaleService fnbSaleService = new FnbSaleService();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -80,15 +72,14 @@ public class CounterFnbServlet extends HttpServlet {
 
     private void menu(HttpServletRequest req, HttpServletResponse resp, User staff)
             throws SQLException, ServletException, IOException {
-        List<FnbMenuItemDTO> menu = fnbOrderDAO.getMenu(staff.getCentreId());
-        req.setAttribute("fnbMenu", menu);
+        req.setAttribute("fnbMenu", fnbSaleService.getMenu(staff.getCentreId()));
         req.getRequestDispatcher(VIEW_BASE + "fnbSale.jsp").forward(req, resp);
     }
 
     private void create(HttpServletRequest req, HttpServletResponse resp, User staff) throws SQLException, IOException {
         String ctx = req.getContextPath();
         try {
-            int orderId = fnbOrderDAO.createStandaloneOrder(staff.getCentreId(), readCart(req.getParameterMap()));
+            int orderId = fnbSaleService.createOrder(staff.getCentreId(), req.getParameterMap());
             resp.sendRedirect(ctx + "/staff/fnb-sale?action=checkout&orderId=" + orderId);
         } catch (IllegalArgumentException e) {
             WebUtil.flash(req, "warning", e.getMessage());
@@ -124,14 +115,15 @@ public class CounterFnbServlet extends HttpServlet {
             resp.sendRedirect(checkoutUrl);
             return;
         }
-        BigDecimal received = CounterShowtimeServlet.parseMoney(req.getParameter("cashReceived"));
-        if (received == null || received.compareTo(sale.getTotalAmount()) < 0) {
-            WebUtil.flash(req, "warning", "Tiền khách đưa phải lớn hơn hoặc bằng tổng tiền của đơn.");
+        Status status;
+        try {
+            status = fnbSaleService.payCash(sale, CounterShowtimeServlet.parseMoney(req.getParameter("cashReceived")),
+                    staff.getCentreId());
+        } catch (IllegalArgumentException e) {
+            WebUtil.flash(req, "warning", e.getMessage());
             resp.sendRedirect(checkoutUrl);
             return;
         }
-        int paymentId = paymentDAO.createFnbCashPayment(sale.getId(), sale.getCode(), sale.getTotalAmount(), received);
-        Status status = paymentDAO.confirmFnbPaid(paymentId, staff.getCentreId());
         if (status == Status.NOT_FOUND) {
             WebUtil.flash(req, "danger", "Không tìm thấy giao dịch.");
             resp.sendRedirect(checkoutUrl);
@@ -160,7 +152,7 @@ public class CounterFnbServlet extends HttpServlet {
             resp.sendRedirect(checkoutUrl);
             return;
         }
-        String txnRef = paymentDAO.createFnbVnpayPayment(sale.getId(), sale.getCode(), sale.getTotalAmount());
+        String txnRef = fnbSaleService.createVnpayPayment(sale);
         resp.sendRedirect(VNPayUtil.buildPayUrl(req, txnRef, sale.getTotalAmount(),
                 "Thanh toan bap nuoc don " + sale.getCode(), sale.getSecondsLeft()));
     }
@@ -171,7 +163,7 @@ public class CounterFnbServlet extends HttpServlet {
             resp.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;
         }
-        if (fnbOrderDAO.cancelStandaloneOrder(sale.getId())) {
+        if (fnbSaleService.cancel(sale.getId())) {
             WebUtil.flash(req, "info", "Đã huỷ đơn " + sale.getCode() + ".");
         }
         resp.sendRedirect(req.getContextPath() + "/staff/fnb-sale");
@@ -188,35 +180,14 @@ public class CounterFnbServlet extends HttpServlet {
             resp.sendRedirect(req.getContextPath() + "/staff/fnb-sale?action=checkout&orderId=" + sale.getId());
             return;
         }
-        PaymentTransaction paid = null;
-        for (PaymentTransaction p : paymentDAO.getFnbTransactions(sale.getId())) {
-            if ("PAID".equals(p.getStatus())) paid = p;
-        }
         req.setAttribute("sale", sale);
-        req.setAttribute("paidTransaction", paid);
+        req.setAttribute("paidTransaction", fnbSaleService.getPaidTransaction(sale.getId()));
         req.getRequestDispatcher(VIEW_BASE + "fnbSaleReceipt.jsp").forward(req, resp);
     }
 
     /** Đơn bắp nước lẻ thuộc rạp của nhân viên, null nếu không hợp lệ. */
     private FnbSaleDTO loadSale(HttpServletRequest req, User staff) throws SQLException {
         Integer orderId = WebUtil.parseInt(req.getParameter("orderId"));
-        if (orderId == null) return null;
-        FnbSaleDTO sale = fnbOrderDAO.getStandaloneOrder(orderId);
-        return sale == null || sale.getCentreId() != staff.getCentreId() ? null : sale;
-    }
-
-    /** Tham số qty_I12 / qty_C3 -> giỏ hàng; số lượng không hợp lệ thì báo lỗi. */
-    private static Map<String, Integer> readCart(Map<String, String[]> params) {
-        Map<String, Integer> cart = new LinkedHashMap<>();
-        for (Map.Entry<String, String[]> e : params.entrySet()) {
-            if (!e.getKey().matches("qty_[IC]\\d{1,9}")) continue;
-            String raw = e.getValue().length == 0 ? "" : e.getValue()[0].trim();
-            try {
-                cart.put(e.getKey().substring(4), raw.isEmpty() ? 0 : Integer.parseInt(raw));
-            } catch (NumberFormatException ex) {
-                throw new IllegalArgumentException("Số lượng bắp nước không hợp lệ.");
-            }
-        }
-        return cart;
+        return orderId == null ? null : fnbSaleService.getOrder(orderId, staff.getCentreId());
     }
 }
