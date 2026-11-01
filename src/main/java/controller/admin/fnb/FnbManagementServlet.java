@@ -204,7 +204,7 @@ public class FnbManagementServlet extends HttpServlet {
         String role = user.getRole();
         boolean admin = "ADMIN".equals(role);
         boolean manager = "MANAGER".equals(role);
-        boolean staff = "TICKET_SALES_STAFF".equals(role);
+        boolean staff = "TICKET_SALES_STAFF".equalsIgnoreCase(role) || "TICKET_SALES".equalsIgnoreCase(role) || "STAFF".equalsIgnoreCase(role);
         if (!admin && !manager && !staff) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN, "Bạn không có quyền xem thực đơn.");
             return false;

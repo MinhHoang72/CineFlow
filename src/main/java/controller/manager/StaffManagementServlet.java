@@ -106,6 +106,14 @@ public class StaffManagementServlet extends HttpServlet {
 
         // 2. Kiểm tra quyền hạn (chỉ Admin hoặc Manager mới được truy cập)
         if (!canManage(session)) {
+            String role = (String) session.getAttribute("role");
+            if (role == null && session.getAttribute("user") instanceof User) {
+                role = ((User) session.getAttribute("user")).getRole();
+            }
+            if (role != null && (role.toUpperCase().contains("STAFF") || role.toUpperCase().contains("TICKET"))) {
+                response.sendRedirect(request.getContextPath() + "/dashboard");
+                return;
+            }
             response.sendError(HttpServletResponse.SC_FORBIDDEN, "Bạn không có quyền truy cập quản lý nhân sự.");
             return;
         }

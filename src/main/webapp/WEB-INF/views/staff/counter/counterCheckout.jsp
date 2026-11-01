@@ -38,7 +38,7 @@
 
                 <c:choose>
                     <c:when test="${booking.holdActive}">
-                        <%@ include file="/WEB-INF/views/customer/booking/extras.jspf" %>
+                        <%@ include file="/WEB-INF/views/customer/booking/bookingVoucher.jspf" %>
                         <div class="border rounded p-3 mb-3">
                             <h6>💵 Thanh toán tiền mặt</h6>
                             <form method="post" action="${ctx}/staff/counter" id="cashForm">
