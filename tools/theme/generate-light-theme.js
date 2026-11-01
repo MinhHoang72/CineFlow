@@ -302,8 +302,9 @@ function inlineRules() {
             for (const part of m[1].split(';')) {
                 const k = part.indexOf(':');
                 if (k < 0) continue;
-                // Bo !important cua inline style: quy tac sinh ra luon co !important (tranh "!important !important")
-                const prop = part.slice(0, k).trim(), value = part.slice(k + 1).replace(/!important\s*$/i, '').trim();
+                const prop = part.slice(0, k).trim();
+                // Output adds !important once; strip the inline priority from the value first.
+                const value = part.slice(k + 1).trim().replace(/\s*!important\s*$/i, '').trim();
                 if (!prop || /<%|\$\{/.test(value)) continue;
                 const role = roleOf(prop);
                 if (!role || role === 'auto') continue;
@@ -333,12 +334,31 @@ for (const f of walk(WEBAPP, ['.jsp', '.jspf']).sort()) {
     currentFile = '';
     scope = SCOPE;
     const src = fs.readFileSync(f, 'utf8');
-    const css = [...src.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/gi)].map(m => m[1]).join('\n');
-    if (!css.trim() || /<%|\$\{/.test(css)) continue;
-    const rules = convertItems(parseBlocks(stripComments(css)));
-    if (rules.length) parts.push(`/* ---- <style> trong ${path.relative(WEBAPP, f).replace(/\\/g, '/')} ---- */\n${rules.join('\n\n')}`);
+    const styleBlocks = [...src.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/gi)].map(m => m[1]);
+    for (const css of styleBlocks) {
+        if (!css.trim() || /<%|\$\{/.test(css)) continue;
+        const rules = convertItems(parseBlocks(stripComments(css)));
+        if (rules.length) parts.push(`/* ---- <style> trong ${path.relative(WEBAPP, f).replace(/\\/g, '/')} ---- */\n${rules.join('\n\n')}`);
+    }
 }
 const inline = inlineRules();
+const lightContrastTokens = `${SCOPE} {
+    --cf-text-secondary: #475569;
+    --cf-text-sub: #475569;
+    --cf-muted: #475569;
+    --cf-text-muted: #475569;
+}
+${SCOPE} label,
+${SCOPE} .form-label,
+${SCOPE} .vc-filter label {
+    color: #334155 !important;
+}
+${SCOPE} input::placeholder,
+${SCOPE} textarea::placeholder,
+${SCOPE} .form-control::placeholder {
+    color: #64748b !important;
+    opacity: 1;
+}`;
 
 const header = `/* =========================================================================
    GIAO DIEN SANG (tu sinh) - KHONG SUA TAY.
@@ -347,5 +367,5 @@ const header = `/* =============================================================
    ========================================================================= */
 ${SCOPE} { color-scheme: light; }
 `;
-fs.writeFileSync(OUT, header + '\n' + parts.join('\n\n') + '\n\n/* ---- mau inline trong JSP ---- */\n' + inline.join('\n') + '\n');
+fs.writeFileSync(OUT, header + '\n' + parts.join('\n\n') + '\n\n/* ---- mau inline trong JSP ---- */\n' + inline.join('\n') + '\n\n/* ---- token tuong phan cho theme sang ---- */\n' + lightContrastTokens + '\n');
 console.log(`theme-light.css: ${files.length} file CSS, ${parts.reduce((n, p) => n + (p.match(/\{/g) || []).length, 0)} quy tac, ${inline.length} mau inline`);

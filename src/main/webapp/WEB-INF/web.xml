@@ -15,6 +15,7 @@
 
     <!-- Ghi chu: Toan bo cac Servlet da duoc chuyen sang annotation @WebServlet trong Java theo chuan Jakarta EE 10. -->
 
+
     <!-- ===================================================== -->
     <!-- 1. AUTHENTICATION FILTER -->
     <!-- ===================================================== -->
@@ -23,6 +24,7 @@
         <filter-name>AuthenticationFilter</filter-name>
         <filter-class>filter.AuthenticationFilter</filter-class>
     </filter>
+
 
     <filter-mapping>
         <filter-name>AuthenticationFilter</filter-name>
@@ -79,11 +81,6 @@
 
     <filter-mapping>
         <filter-name>ManagerFilter</filter-name>
-        <url-pattern>/staff</url-pattern>
-    </filter-mapping>
-
-    <filter-mapping>
-        <filter-name>ManagerFilter</filter-name>
         <url-pattern>/reports</url-pattern>
     </filter-mapping>
 
@@ -121,6 +118,16 @@
         <url-pattern>/staff/dashboard.jsp</url-pattern>
     </filter-mapping>
 
+    <filter-mapping>
+        <filter-name>StaffFilter</filter-name>
+        <url-pattern>/staff</url-pattern>
+    </filter-mapping>
+
+    <filter-mapping>
+        <filter-name>StaffFilter</filter-name>
+        <url-pattern>/staff/*</url-pattern>
+    </filter-mapping>
+
     <!-- ===================================================== -->
     <!-- 5. JSP SERVLET MAPPING FOR JSPF FRAGMENTS            -->
     <!-- ===================================================== -->
@@ -130,7 +137,35 @@
     </servlet-mapping>
 
     <!-- ===================================================== -->
-    <!-- 6. JSP CONFIGURATION (UTF-8 & SCRIPTLET COMPILATION) -->
+    <!-- 6. TRANG THÔNG BÁO LỖI CHUNG                         -->
+    <!-- ===================================================== -->
+    <error-page>
+        <error-code>400</error-code>
+        <location>/WEB-INF/views/error/error.jsp</location>
+    </error-page>
+    <error-page>
+        <error-code>401</error-code>
+        <location>/WEB-INF/views/error/error.jsp</location>
+    </error-page>
+    <error-page>
+        <error-code>402</error-code>
+        <location>/WEB-INF/views/error/error.jsp</location>
+    </error-page>
+    <error-page>
+        <error-code>403</error-code>
+        <location>/WEB-INF/views/error/error.jsp</location>
+    </error-page>
+    <error-page>
+        <error-code>404</error-code>
+        <location>/WEB-INF/views/error/error.jsp</location>
+    </error-page>
+    <error-page>
+        <error-code>500</error-code>
+        <location>/WEB-INF/views/error/error.jsp</location>
+    </error-page>
+
+    <!-- ===================================================== -->
+    <!-- 7. JSP CONFIGURATION (UTF-8 & SCRIPTLET COMPILATION) -->
     <!-- ===================================================== -->
     <jsp-config>
         <jsp-property-group>

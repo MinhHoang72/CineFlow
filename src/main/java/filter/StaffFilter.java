@@ -2,6 +2,7 @@ package filter;
 
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
+import jakarta.servlet.FilterConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
@@ -9,40 +10,32 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import model.entity.User;
-import utils.WebUtil;
+import dao.UserDAO;
 
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
 /**
- * Filter: Bảo vệ không gian nhân viên (/staff/dashboard.jsp).
- * Quy tắc:
- * - Chưa đăng nhập: chuyển hướng về trang đăng nhập kèm URL chuyển hướng ban đầu.
- * - Khách hàng (CUSTOMER): tự động chuyển hướng ngay lập tức (Silent Redirect) về trang chủ /home, không hiện lỗi.
- * - Nhân viên hoặc cấp trên (STAFF, MANAGER, ADMIN): cho phép truy cập.
+ * Filter: Bảo vệ khu vực Nhân viên (Staff): /staff/*, /staff/dashboard.jsp.
+ * Cho phép STAFF, MANAGER, ADMIN truy cập các tác vụ nhân sự/vận hành phù hợp.
  */
 public class StaffFilter implements Filter {
+
+    private final UserDAO userDAO = new UserDAO();
 
     /**
      * Kiểm tra phiên hiện tại đã đăng nhập tài khoản hay chưa.
      *
      * @param session phiên làm việc HttpSession
-     * @return true nếu đã đăng nhập, ngược lại false
+     * @return true nếu đã đăng nhập (tồn tại userId), ngược lại false
      */
     private boolean isLoggedIn(HttpSession session) {
-        if (session == null) {
-            return false;
-        }
-        if (session.getAttribute("userId") != null) {
-            return true;
-        }
-        Object userObj = session.getAttribute("user");
-        return userObj instanceof User && ((User) userObj).getUserId() > 0;
+        return session != null && session.getAttribute("userId") != null;
     }
 
     /**
-     * Kiểm tra người dùng đăng nhập có vai trò nhân viên cấp cơ sở hoặc quản lý trở lên hay không.
+     * Kiểm tra người dùng có quyền nhân sự hoặc quản lý trở lên.
      *
      * @param session phiên làm việc HttpSession
      * @return true nếu có quyền, ngược lại false
@@ -51,21 +44,29 @@ public class StaffFilter implements Filter {
         if (session == null) {
             return false;
         }
-        String role = (String) session.getAttribute("role");
+        Object roleObj = session.getAttribute("role");
+        String role = (roleObj instanceof String) ? (String) roleObj : null;
         if (role == null && session.getAttribute("user") instanceof User) {
             role = ((User) session.getAttribute("user")).getRole();
         }
-        return "STAFF".equalsIgnoreCase(role)
+        return role != null && (
+                "ADMIN".equalsIgnoreCase(role)
+                || "MANAGER".equalsIgnoreCase(role)
+                || "STAFF".equalsIgnoreCase(role)
                 || "TICKET_SALES_STAFF".equalsIgnoreCase(role)
                 || "TICKET_CHECKER_STAFF".equalsIgnoreCase(role)
                 || "TICKET_SALES".equalsIgnoreCase(role)
                 || "TICKET_CHECKER".equalsIgnoreCase(role)
-                || "MANAGER".equalsIgnoreCase(role)
-                || "ADMIN".equalsIgnoreCase(role);
+        );
+    }
+
+    @Override
+    public void init(FilterConfig filterConfig) throws ServletException {
+        // Khởi tạo tài nguyên cho Filter nếu cần thiết
     }
 
     /**
-     * Thực thi lọc request: Kiểm tra trạng thái đăng nhập và phân quyền truy cập cho nhân viên.
+     * Thực thi lọc request: Kiểm tra trạng thái đăng nhập và phân quyền truy cập vai trò nhân sự.
      *
      * @param request  yêu cầu servlet
      * @param response phản hồi servlet
@@ -84,7 +85,7 @@ public class StaffFilter implements Filter {
 
         HttpSession session = httpRequest.getSession(false);
 
-        // 1. Kiểm tra trạng thái đăng nhập (nếu chưa đăng nhập chuyển về trang login kèm redirect URL)
+        // 1. Kiểm tra trạng thái đăng nhập
         if (!isLoggedIn(session)) {
             String uri = httpRequest.getRequestURI();
             String qs = httpRequest.getQueryString();
@@ -98,15 +99,45 @@ public class StaffFilter implements Filter {
             return;
         }
 
-        // 2. Chặn các tài khoản khách hàng (CUSTOMER) truy cập vào khu vực nội bộ nhân viên
-        // Tự động chuyển hướng ngay lập tức (Silent Redirect) về trang chủ khách hàng, không hiện lỗi
+        // 2. Chặn các tài khoản không thuộc nhóm nhân sự truy cập
         if (!isStaffOrAbove(session)) {
-            String targetPath = WebUtil.getRoleDefaultPath(session);
-            httpResponse.sendRedirect(httpResponse.encodeRedirectURL(httpRequest.getContextPath() + targetPath));
+            httpResponse.sendError(HttpServletResponse.SC_FORBIDDEN,
+                    "Bạn không có quyền truy cập khu vực nhân viên.");
             return;
         }
 
-        // 3. Đã xác thực vai trò nhân sự hợp lệ -> Cho phép đi tiếp
+        // Đối với nhân viên tiền tuyến (front-line staff), đọc lại User để session nhận CentreID mới sau điều chuyển
+        String role = (String) session.getAttribute("role");
+        if (role == null && session.getAttribute("user") instanceof User) {
+            role = ((User) session.getAttribute("user")).getRole();
+        }
+        if (role != null && !"ADMIN".equalsIgnoreCase(role) && !"MANAGER".equalsIgnoreCase(role)) {
+            Object idObj = session.getAttribute("userId");
+            int userId = idObj instanceof Number ? ((Number) idObj).intValue() : -1;
+            User freshUser = userId > 0 ? userDAO.getUserById(userId) : null;
+            boolean active = freshUser != null && "ACTIVE".equalsIgnoreCase(freshUser.getStatus());
+            boolean assigned = freshUser != null && freshUser.getCentreId() != null
+                    && freshUser.getCentreId() > 0;
+
+            if (!active || !assigned) {
+                session.invalidate();
+                httpResponse.sendRedirect(httpResponse.encodeRedirectURL(
+                        httpRequest.getContextPath() + "/login?error=staff_unassigned"));
+                return;
+            }
+
+            session.setAttribute("user", freshUser);
+            session.setAttribute("userId", freshUser.getUserId());
+            session.setAttribute("role", freshUser.getRole());
+            session.setAttribute("centreId", freshUser.getCentreId());
+        }
+
+        // 3. Đã xác thực vai trò hợp lệ -> Cho phép đi tiếp
         chain.doFilter(request, response);
+    }
+
+    @Override
+    public void destroy() {
+        // Hủy bỏ tài nguyên khi dừng ứng dụng nếu cần thiết
     }
 }

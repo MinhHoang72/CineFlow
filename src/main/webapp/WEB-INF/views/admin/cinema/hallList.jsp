@@ -1,4 +1,4 @@
-﻿<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ page import="model.entity.Hall,model.entity.Centre,model.entity.User,java.util.List" %>
 <%
     // 1. Kiểm tra xác thực và quyền hạn (Primary Actor: Centre Manager hoặc Admin có toàn quyền)
@@ -273,13 +273,13 @@
 
                                         <!-- Nút Sửa -->
                                         <button type="button" class="cf-btn cf-btn-secondary cf-btn-sm"
-                                                onclick="openEditHallModal(<%= h.getHallId() %>, '<%= h.getHallName().replace("'", "\\'") %>', '<%= h.getHallType() %>', <%= h.getCapacity() %>, '<%= isActive ? "AVAILABLE" : "INACTIVE" %>')">
+                                                onclick="openEditHallModal(<%= h.getHallId() %>, '<%= h.getHallName() != null ? h.getHallName().replace("'", "\\'") : "" %>', '<%= h.getHallType() %>', <%= h.getCapacity() %>, '<%= isActive ? "AVAILABLE" : "INACTIVE" %>')">
                                             Sửa
                                         </button>
 
                                         <!-- Nút Toggle Status (Bật/Tắt Active <-> Inactive) -->
                                         <form method="POST" action="${pageContext.request.contextPath}/manager/halls" style="display: inline-block; margin: 0;"
-                                              onsubmit="return confirmToggleHall('<%= h.getHallName().replace("'", "\\'") %>', <%= isActive %>);">
+                                              onsubmit="return confirmToggleHall('<%= h.getHallName() != null ? h.getHallName().replace("'", "\\'") : "" %>', <%= isActive %>);">
                                             <input type="hidden" name="action" value="toggleStatus">
                                             <input type="hidden" name="hallId" value="<%= h.getHallId() %>">
                                             <input type="hidden" name="centreId" value="<%= targetCentreId %>">

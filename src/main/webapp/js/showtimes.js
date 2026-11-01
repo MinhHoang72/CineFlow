@@ -15,7 +15,7 @@
     const today = () => localDate(new Date());
     $('st-timeline-date').value = today();
     const hallNames = new Map();
-    Array.from($('hallId').options).filter(option => option.value).forEach(option => hallNames.set(option.value, option.textContent.trim()));
+    const hallSelect = $('hallId'); if (hallSelect && hallSelect.options) { Array.from(hallSelect.options).filter(option => option.value).forEach(option => hallNames.set(option.value, option.textContent.trim())); }
     rows.forEach(row => hallNames.set(row.dataset.hallId, row.dataset.hall));
     for (const [id, name] of [...hallNames].sort((a, b) => a[1].localeCompare(b[1], 'vi'))) {
         const option = document.createElement('option'); option.value = id; option.textContent = name; hall.append(option);
@@ -120,14 +120,17 @@
     $('st-prev-page').addEventListener('click', () => { page--; render(); }); $('st-next-page').addEventListener('click', () => { page++; render(); });
     document.addEventListener('submit', event => { if (event.target.matches('[data-cancel-showtime]') && !window.confirm('Bạn có chắc muốn hủy suất chiếu này?')) event.preventDefault(); });
 
-    const dialog = $('create-showtime'), form = $('st-create-form'), submit = $('st-create-submit'), feedback = $('st-availability');
+    const dialog = $('create-showtime'), form = $('st-create-form'), submit = $('st-create-submit'), feedback = $('st-availability'), openBtn = $('st-open-create');
     let checkController, checkVersion = 0, checkTimer;
     const formatInput = value => fullTime(parse(value));
-    function feedbackState(message, state) { feedback.textContent = message; feedback.className = `st-availability ${state || ''}`; }
+    function feedbackState(message, state) { if (feedback) { feedback.textContent = message; feedback.className = `st-availability ${state || ''}`; } }
     async function checkAvailability() {
+        if (!dialog || !form || !submit || !feedback) return false;
+        const movieEl = $('movieId'), roomEl = $('hallId'), startEl = $('startTime');
+        if (!movieEl || !roomEl || !startEl) return false;
         const version = ++checkVersion; if (checkController) checkController.abort();
-        const movie = $('movieId').value, room = $('hallId').value, start = $('startTime').value;
-        if (!movie || !room || !start) { submit.disabled = movieId.options.length <= 1 || hallId.options.length <= 1; feedbackState('Chọn phim, phòng và giờ bắt đầu để kiểm tra lịch trống.'); return false; }
+        const movie = movieEl.value, room = roomEl.value, start = startEl.value;
+        if (!movie || !room || !start) { submit.disabled = movieEl.options.length <= 1 || roomEl.options.length <= 1; feedbackState('Chọn phim, phòng và giờ bắt đầu để kiểm tra lịch trống.'); return false; }
         checkController = new AbortController(); submit.disabled = true; feedbackState('Đang kiểm tra lịch phòng…', 'is-pending');
         try {
             const url = new URL(window.location.href); url.searchParams.set('action', 'availability'); url.searchParams.set('movieId', movie); url.searchParams.set('hallId', room); url.searchParams.set('startTime', start);
@@ -139,11 +142,20 @@
             const first = result.conflicts[0]; feedbackState(`Trùng với “${first.title}” (${formatInput(first.start)} – ${formatInput(first.end)}), phòng bận đến ${formatInput(first.busyUntil)}. Vui lòng đổi phòng hoặc thời gian.`, 'is-error'); return false;
         } catch (error) { if (error.name !== 'AbortError' && version === checkVersion) feedbackState('Chưa kiểm tra được lịch phòng. Hãy thử lại hoặc đăng nhập lại.', 'is-error'); return false; }
     }
-    $('st-open-create').addEventListener('click', () => { dialog.showModal(); $('movieId').focus(); checkAvailability(); });
-    document.querySelectorAll('[data-close-create]').forEach(button => button.addEventListener('click', () => dialog.close()));
-    dialog.addEventListener('close', () => { ++checkVersion; if (checkController) checkController.abort(); clearTimeout(checkTimer); $('st-open-create').focus(); });
-    ['movieId', 'hallId', 'startTime'].forEach(id => $(id).addEventListener('input', () => { clearTimeout(checkTimer); ++checkVersion; if (checkController) checkController.abort(); submit.disabled = true; checkTimer = window.setTimeout(checkAvailability, 300); }));
-    form.addEventListener('submit', async event => { event.preventDefault(); clearTimeout(checkTimer); if (await checkAvailability()) { submit.disabled = true; HTMLFormElement.prototype.submit.call(form); } });
+    if (openBtn && dialog) {
+        openBtn.addEventListener('click', () => { dialog.showModal(); const m = $('movieId'); if (m) m.focus(); checkAvailability(); });
+        document.querySelectorAll('[data-close-create]').forEach(button => button.addEventListener('click', () => dialog.close()));
+        dialog.addEventListener('close', () => { ++checkVersion; if (checkController) checkController.abort(); clearTimeout(checkTimer); openBtn.focus(); });
+    }
+    ['movieId', 'hallId', 'startTime'].forEach(id => {
+        const el = $(id);
+        if (el) {
+            el.addEventListener('input', () => { clearTimeout(checkTimer); ++checkVersion; if (checkController) checkController.abort(); if (submit) submit.disabled = true; checkTimer = window.setTimeout(checkAvailability, 300); });
+        }
+    });
+    if (form) {
+        form.addEventListener('submit', async event => { event.preventDefault(); clearTimeout(checkTimer); if (await checkAvailability()) { if (submit) submit.disabled = true; HTMLFormElement.prototype.submit.call(form); } });
+    }
     render();
 
     async function refreshStatuses() {
@@ -159,7 +171,7 @@
                 if (updated.dataset.status !== row.dataset.status || updated.dataset.start !== row.dataset.start || updated.dataset.end !== row.dataset.end) row.replaceWith(updated);
             });
             rows = Array.from(document.querySelectorAll('[data-showtime]')); render();
-            if (dialog.open) checkAvailability();
+            if (dialog && dialog.open) checkAvailability();
         } catch (error) { console.warn('Không thể cập nhật lịch chiếu.', error); }
         finally { refreshing = false; }
     }

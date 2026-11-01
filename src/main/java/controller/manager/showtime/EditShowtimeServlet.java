@@ -1,114 +1,54 @@
 package controller.manager.showtime;
 
-import dao.HallDAO;
-import dao.MovieDAO;
-import dao.ShowtimeDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.*;
-import java.io.IOException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import model.entity.Showtime;
+import service.ShowtimeService;
+
+import java.io.IOException;
 
 @WebServlet("/showtimes/edit")
-public class EditShowtimeServlet
-        extends HttpServlet {
+public class EditShowtimeServlet extends HttpServlet {
+
+    private final ShowtimeService showtimeService = new ShowtimeService();
 
     @Override
-    protected void doGet(
-            HttpServletRequest request,
-            HttpServletResponse response)
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        System.out.println(
-                "===== EDIT SHOWTIME ====="
-        );
-
-        System.out.println(
-                "id param = "
-                + request.getParameter("id")
-        );
+        HttpSession session = request.getSession(false);
+        String role = session != null ? (String) session.getAttribute("role") : null;
+        if (!"MANAGER".equalsIgnoreCase(role)) {
+            request.getSession().setAttribute("error", "Chỉ Quản lý cụm rạp mới có quyền chỉnh sửa suất chiếu.");
+            response.sendRedirect(request.getContextPath() + "/showtimes");
+            return;
+        }
 
         try {
+            int id = Integer.parseInt(request.getParameter("id"));
+            Showtime showtime = showtimeService.getShowtimeById(id);
 
-            int id =
-                    Integer.parseInt(
-                            request.getParameter("id")
-                    );
-
-            ShowtimeDAO showtimeDAO =
-                    new ShowtimeDAO();
-
-            Showtime showtime =
-                    showtimeDAO.getById(id);
-
-            System.out.println(
-                    "Showtime = "
-                    + (showtime == null
-                    ? "NULL"
-                    : showtime.getShowtimeId())
-            );
-
-            if (showtime != null) {
-
-                System.out.println(
-                        "Status = "
-                        + showtime.getStatus()
-                );
-            }
-
-            if (showtime == null) {
-
-                response.getWriter().println(
-                        "Showtime not found"
-                );
-
+            if (showtime == null || !"SCHEDULED".equalsIgnoreCase(showtime.getStatus())) {
+                request.getSession().setAttribute("error", "Suất chiếu không tồn tại hoặc đã chiếu/đã hủy.");
+                response.sendRedirect(request.getContextPath() + "/showtimes");
                 return;
             }
 
-            int centreId = service.ShowtimeService.requireCentreId(request);
+            int centreId = ShowtimeService.requireCentreId(request);
 
-            MovieDAO movieDAO =
-                    new MovieDAO();
+            request.setAttribute("showtime", showtime);
+            request.setAttribute("movies", showtimeService.getAvailableMoviesByCentre(centreId));
+            request.setAttribute("halls", showtimeService.getAvailableHallsByCentre(centreId));
 
-            HallDAO hallDAO =
-                    new HallDAO();
-
-            request.setAttribute(
-                    "showtime",
-                    showtime
-            );
-
-            request.setAttribute(
-                    "movies",
-                    movieDAO
-                            .getAvailableMoviesByCentre(
-                                    centreId
-                            )
-            );
-
-            request.setAttribute(
-                    "halls",
-                    hallDAO
-                            .getAvailableHallsByCentre(
-                                    centreId
-                            )
-            );
-
-            request.getRequestDispatcher(
-                    "/WEB-INF/views/manager/showtime/showtimeEdit.jsp"
-            ).forward(
-                    request,
-                    response
-            );
-
+            request.getRequestDispatcher("/WEB-INF/views/manager/showtime/showtimeEdit.jsp")
+                    .forward(request, response);
         } catch (Exception e) {
-
-            e.printStackTrace();
-
-            response.getWriter().println(
-                    "ERROR: "
-                    + e.getMessage()
-            );
+            request.getSession().setAttribute("error", "Không tìm thấy thông tin suất chiếu.");
+            response.sendRedirect(request.getContextPath() + "/showtimes");
         }
     }
 }

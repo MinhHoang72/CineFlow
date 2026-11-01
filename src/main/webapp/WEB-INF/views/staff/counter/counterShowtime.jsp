@@ -3,6 +3,7 @@
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <c:set var="pageTitle" value="Bán vé tại quầy" scope="request"/>
 <c:set var="pageStep" value="1" scope="request"/>
+<c:set var="activeNav" value="counter" scope="request"/>
 <%@ include file="/WEB-INF/fragments/header.jspf" %>
 <c:set var="ctx" value="${pageContext.request.contextPath}"/>
 

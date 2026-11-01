@@ -21,15 +21,7 @@ import java.io.IOException;
 @WebServlet(name = "ChangePasswordServlet", urlPatterns = {"/change-password", "/auth/change-password", "/auth/change-password.jsp"})
 public class ChangePasswordServlet extends HttpServlet {
 
-    private UserDAO userDAO;
-
-    /**
-     * Khởi tạo Servlet và đối tượng DAO truy xuất cơ sở dữ liệu.
-     */
-    @Override
-    public void init() {
-        userDAO = new UserDAO();
-    }
+    private final service.UserService userService = new service.UserService();
 
     /**
      * Xử lý yêu cầu HTTP POST: Xác thực mật khẩu cũ, kiểm tra chuẩn mật khẩu mới và cập nhật vào DB.
@@ -85,37 +77,21 @@ public class ChangePasswordServlet extends HttpServlet {
             return;
         }
 
-        // 7. Truy vấn thông tin người dùng từ cơ sở dữ liệu
-        User user = userDAO.getUserById(userId);
-        if (user == null) {
+        // 7. Ủy quyền nghiệp vụ đổi mật khẩu cho UserService (3-layer architecture)
+        service.UserService.ChangePasswordResult result = userService.changePasswordWithValidation(userId, currentPassword, newPassword);
+        if (result == service.UserService.ChangePasswordResult.USER_NOT_FOUND) {
             response.sendError(HttpServletResponse.SC_NOT_FOUND, "User not found.");
             return;
         }
-
-        // 8. Xác thực mật khẩu hiện tại (khớp với mật khẩu đã băm trong DB)
-        String storedPassword = user.getPassword();
-        if (storedPassword == null || !storedPassword.startsWith("$2")) {
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Current password is not using BCrypt.");
-            return;
-        }
-
-        boolean currentPasswordCorrect = PasswordUtil.checkPassword(currentPassword, storedPassword);
-        if (!currentPasswordCorrect) {
+        if (result == service.UserService.ChangePasswordResult.WRONG_CURRENT_PASSWORD) {
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Current password is incorrect.");
             return;
         }
-
-        // 9. Kiểm tra tính hợp lệ: Mật khẩu mới không được trùng với mật khẩu hiện tại
-        if (PasswordUtil.checkPassword(newPassword, storedPassword)) {
+        if (result == service.UserService.ChangePasswordResult.SAME_AS_CURRENT) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "New password must be different from current password.");
             return;
         }
-
-        // 10. Băm mật khẩu mới bằng thuật toán BCrypt và lưu vào cơ sở dữ liệu
-        String hashedPassword = PasswordUtil.hashPassword(newPassword);
-        boolean success = userDAO.changePassword(userId, hashedPassword);
-
-        if (!success) {
+        if (result != service.UserService.ChangePasswordResult.SUCCESS) {
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to change password.");
             return;
         }

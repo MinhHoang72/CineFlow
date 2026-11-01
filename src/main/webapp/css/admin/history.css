@@ -1,0 +1,320 @@
+/* ==========================================================================
+   CineFlow Admin - Nhật ký Nhân sự & Kiểm toán (history.css)
+   Theo chuẩn kiến trúc CineFlow CSS (CINEFLOW_ARCHITECTURE_STANDARD.md)
+   ========================================================================== */
+
+/* ---------- Tiêu đề trang & Icon ---------- */
+.cf-page-header-wrap {
+    margin-bottom: 24px;
+}
+
+.cf-page-header-info {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.cf-page-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    font-size: 22px;
+}
+
+.cf-page-icon.icon-history {
+    background: rgba(56, 189, 248, 0.12);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+}
+
+.cf-page-title {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+/* Trang nhật ký không dùng vạch đỏ bên trái tiêu đề ở giao diện sáng. */
+html[data-theme="light"] .cf-page-title {
+    border: 0 !important;
+    padding-left: 0 !important;
+}
+
+html[data-theme="light"] .cf-manager-main .cf-page-title {
+    border-left: 0 !important;
+    border-top: 0 !important;
+    border-right: 0 !important;
+    border-bottom: 0 !important;
+    padding-left: 0 !important;
+}
+
+.cf-page-sub {
+    margin: 4px 0 0;
+    color: var(--cf-muted, #94a3b8);
+    font-size: 13px;
+}
+
+/* ---------- KPI Grid 3 cột ---------- */
+.cf-kpi-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+@media (max-width: 1024px) {
+    .cf-kpi-grid-3 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 540px) {
+    .cf-kpi-grid-3 {
+        grid-template-columns: 1fr;
+    }
+}
+
+.kpi-active {
+    color: #10b981 !important;
+}
+
+.kpi-transfer {
+    color: #38bdf8 !important;
+}
+
+/* ---------- Bộ lọc & Thanh công cụ ---------- */
+.history-filter-card {
+    margin-bottom: 22px;
+    padding: 16px 20px;
+}
+
+.history-filter-form {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: space-between;
+}
+
+.history-filter-group {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.history-filter-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #94a3b8;
+}
+
+.history-filter-label.sort-label {
+    margin-left: 8px;
+}
+
+.history-filter-select {
+    padding: 8px 14px;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    font-size: 13px;
+    background: #1e293b;
+    color: #f8fafc;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.history-filter-select:focus {
+    border-color: #38bdf8;
+}
+
+.history-filter-select.centre-select {
+    min-width: 200px;
+}
+
+.btn-clear-filter {
+    color: #94a3b8 !important;
+}
+
+.history-search-input {
+    padding: 8px 14px;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    font-size: 13px;
+    min-width: 280px;
+    background: #1e293b;
+    color: #f8fafc;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.history-search-input:focus {
+    border-color: #38bdf8;
+}
+
+.history-search-input::placeholder {
+    color: #64748b;
+}
+
+.history-role-select {
+    padding: 8px 14px;
+    border: 1px solid #CBD5E1;
+    border-radius: 6px;
+    font-size: 13px;
+    background: #F1F5F9;
+    color: #1E293B;
+    outline: none;
+}
+
+/* Giao diện sáng: các bộ lọc của nhật ký dùng nền trắng thống nhất. */
+html[data-theme="light"] .history-filter-select,
+html[data-theme="light"] .history-search-input,
+html[data-theme="light"] .history-role-select {
+    background: #ffffff !important;
+    color: #1e293b !important;
+    border-color: #cbd5e1 !important;
+}
+
+html[data-theme="light"] .history-filter-select option,
+html[data-theme="light"] .history-role-select option {
+    background: #ffffff !important;
+    color: #1e293b !important;
+}
+
+/* ---------- Điều hướng Tabs ---------- */
+.tab-nav {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 22px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding-bottom: 10px;
+}
+
+.tab-btn {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    font-size: 15px;
+    font-weight: 600;
+    padding: 9px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tab-btn:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.tab-btn.active {
+    color: #fff;
+    background: #FF2855;
+    border: 1px solid #FF2855;
+}
+
+.tab-pane {
+    display: none;
+}
+
+.tab-pane.active {
+    display: block;
+}
+
+/* ---------- Tiêu đề bảng có thể sắp xếp ---------- */
+.sortable-th {
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s ease;
+}
+
+.sortable-th:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #38bdf8;
+}
+
+.sort-arrow {
+    display: inline-block;
+    margin-left: 4px;
+    font-size: 11px;
+    opacity: 0.4;
+    transition: all 0.15s ease;
+}
+
+.sort-arrow.active {
+    opacity: 1;
+    color: #38bdf8;
+    font-weight: bold;
+}
+
+/* ---------- Chi tiết ô dữ liệu bảng lịch sử ---------- */
+.history-cell-title {
+    color: #ffffff;
+    display: block;
+}
+
+.history-cell-sub {
+    display: block;
+    color: #94a3b8;
+    font-size: 12px;
+    margin-top: 2px;
+}
+
+.cf-badge-emp {
+    font-size: 11px !important;
+    font-weight: 700 !important;
+}
+
+.history-manager-name {
+    color: #818cf8;
+    display: block;
+}
+
+.history-date-ended {
+    color: #94a3b8;
+}
+
+.history-effective-date {
+    color: #38bdf8;
+}
+
+.history-date-sub {
+    color: #94a3b8;
+}
+
+.history-role-change {
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.history-old-role {
+    color: #94a3b8;
+}
+
+.history-role-arrow {
+    color: #ff2855;
+}
+
+.history-new-role {
+    color: #4ade80;
+}
+
+.history-same-role {
+    color: #cbd5e1;
+    font-size: 12.5px;
+}
+
+.history-dest-centre {
+    color: #4ade80;
+}
+
+.history-reason {
+    color: #e2e8f0;
+}
+
+.history-notes {
+    color: #94a3b8;
+}

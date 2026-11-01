@@ -20,6 +20,7 @@
     boolean canVerify = Boolean.TRUE.equals(request.getAttribute("canVerify"));
     String csrf = (String) request.getAttribute("csrf");
     String code = (String) request.getAttribute("code");
+    request.setAttribute("activeNav", "checkin");
 %>
 <!DOCTYPE html>
 <html lang="vi">

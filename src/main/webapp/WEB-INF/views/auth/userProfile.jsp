@@ -49,6 +49,7 @@
     if (isInternal) {
         request.setAttribute("pageTitle", "Hồ sơ của tôi");
         request.setAttribute("pageBreadcrumb", "Tài khoản");
+        request.setAttribute("activeNav", "account");
     }
 %>
 <!DOCTYPE html>

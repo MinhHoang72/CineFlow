@@ -17,10 +17,10 @@ import java.util.Set;
 
 /**
  * FE-07 Theo dÃµi giao dá»‹ch thanh toÃ¡n (chá»‰ xem; VNPay tá»± xÃ¡c nháº­n, tiá»n máº·t xÃ¡c nháº­n táº¡i quáº§y):
- *   GET /staff/payments?status=&method=&days=
+ *   GET /staff/payments or /manager/payments?status=&method=&days=
  * NhÃ¢n viÃªn bÃ¡n vÃ© chá»‰ tháº¥y chi nhÃ¡nh cá»§a mÃ¬nh; MANAGER/ADMIN tháº¥y táº¥t cáº£.
  */
-@WebServlet(name = "StaffPaymentServlet", urlPatterns = {"/staff/payments"})
+@WebServlet(name = "StaffPaymentServlet", urlPatterns = {"/staff/payments", "/manager/payments"})
 public class StaffPaymentServlet extends HttpServlet {
 
     private static final Set<String> STATUSES = Set.of("PENDING", "PAID", "FAILED", "TIMEOUT", "CANCELLED");
@@ -62,6 +62,7 @@ public class StaffPaymentServlet extends HttpServlet {
         req.setAttribute("status", status);
         req.setAttribute("method", method);
         req.setAttribute("days", days);
+        req.setAttribute("activeNav", "payments");
         req.getRequestDispatcher("/WEB-INF/views/staff/paymentHistory.jsp").forward(req, resp);
     }
 

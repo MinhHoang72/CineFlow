@@ -462,8 +462,32 @@
 
 .cf-dist-quick-actions {
     display: flex;
-    gap: 8px;
+    align-items: center;
+    gap: 10px;
     margin-left: auto;
+}
+
+.cf-dist-table-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 4px 0 10px;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+}
+
+.cf-dist-bulk-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0;
+    padding: 3px;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    background: #f8fafc;
 }
 
 .cf-btn-tool {
@@ -487,6 +511,33 @@
     background: #1e293b;
     color: #ffffff;
     border-color: rgba(255, 255, 255, 0.25);
+}
+
+.cf-btn-select-all {
+    background: #ffffff;
+    border-color: transparent;
+    color: #0f766e;
+    font-weight: 700;
+    border-radius: 7px;
+}
+
+.cf-btn-select-all:hover {
+    background: #ccfbf1;
+    border-color: transparent;
+    color: #115e59;
+}
+
+.cf-btn-unselect-all {
+    background: transparent;
+    border-color: transparent;
+    color: #475569;
+    border-radius: 7px;
+}
+
+.cf-btn-unselect-all:hover {
+    background: #e2e8f0;
+    border-color: transparent;
+    color: #1e293b;
 }
 
 .cf-btn-tool svg {

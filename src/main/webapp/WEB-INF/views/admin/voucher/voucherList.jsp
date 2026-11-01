@@ -1,4 +1,4 @@
-﻿<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ page import="model.dto.common.PageDTO, model.entity.Voucher, model.entity.User" %>
 <%@ include file="header.jspf" %>
@@ -127,7 +127,6 @@
                         <a class="cf-btn cf-btn-sm cf-btn-secondary" href="${baseUrl}/form?id=${v.voucherId}">Sửa</a>
                         
                         <form class="vc-inline" method="post" action="${baseUrl}/status">
-                            <input type="hidden" name="_csrf" value="${csrf}">
                             <input type="hidden" name="id" value="${v.voucherId}">
                             <input type="hidden" name="newStatus" value="${v.status == 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'}">
                             <input type="hidden" name="back" value="${backQuery}">

@@ -623,53 +623,7 @@ GO
 
 
 /* =========================================================
-   21. PROMOTIONS
-   ========================================================= */
-
-CREATE TABLE Promotions (
-    PromotionID INT IDENTITY(1,1) PRIMARY KEY,
-
-    PromotionName NVARCHAR(150) NOT NULL,
-
-    Description NVARCHAR(1000) NULL,
-
-    DiscountPercentage DECIMAL(5,2) NULL,
-
-    StartDate DATETIME2 NOT NULL,
-
-    EndDate DATETIME2 NOT NULL,
-
-    Status VARCHAR(20) NOT NULL
-        DEFAULT 'ACTIVE',
-
-    CreatedAt DATETIME2 NOT NULL
-        DEFAULT GETDATE(),
-
-    CONSTRAINT CK_Promotions_Discount
-        CHECK (
-            DiscountPercentage IS NULL
-            OR (
-                DiscountPercentage >= 0
-                AND DiscountPercentage <= 100
-            )
-        ),
-
-    CONSTRAINT CK_Promotions_Date
-        CHECK (EndDate > StartDate),
-
-    CONSTRAINT CK_Promotions_Status
-        CHECK (Status IN (
-            'ACTIVE',
-            'INACTIVE',
-            'EXPIRED'
-        ))
-);
-GO
-
-
-
-/* =========================================================
-   22. BOOKINGS
+   21. BOOKINGS
    ========================================================= */
 
 CREATE TABLE Bookings (
@@ -24093,18 +24047,6 @@ SET IDENTITY_INSERT Vouchers OFF;
 GO
 
 -- ====================================================================================
--- Promotions (2 bản ghi)
--- ====================================================================================
-SET IDENTITY_INSERT Promotions ON;
-GO
-INSERT INTO Promotions (PromotionID, PromotionName, Description, DiscountPercentage, StartDate, EndDate, Status, CreatedAt) VALUES
-(1, N'Thứ 4 vui vẻ', N'Giảm giá vé vào thứ 4', 10.00, '2026-01-01 00:00:00', '2026-12-31 00:00:00', N'ACTIVE', '2026-10-03 23:08:30'),
-(2, N'Weekend Cinema', N'Ưu đãi cuối tuần', 5.00, '2026-01-01 00:00:00', '2026-12-31 00:00:00', N'ACTIVE', '2026-10-03 23:08:30');
-GO
-SET IDENTITY_INSERT Promotions OFF;
-GO
-
--- ====================================================================================
 -- Bookings (26 bản ghi)
 -- ====================================================================================
 SET IDENTITY_INSERT Bookings ON;
@@ -24440,7 +24382,6 @@ UNION ALL SELECT 'Vouchers', COUNT(*) FROM Vouchers
 UNION ALL SELECT 'VoucherDays', COUNT(*) FROM VoucherDays
 UNION ALL SELECT 'VoucherMovies', COUNT(*) FROM VoucherMovies
 UNION ALL SELECT 'VoucherCentres', COUNT(*) FROM VoucherCentres
-UNION ALL SELECT 'Promotions', COUNT(*) FROM Promotions
 UNION ALL SELECT 'Bookings', COUNT(*) FROM Bookings
 UNION ALL SELECT 'BookingSeats', COUNT(*) FROM BookingSeats
 UNION ALL SELECT 'Tickets', COUNT(*) FROM Tickets

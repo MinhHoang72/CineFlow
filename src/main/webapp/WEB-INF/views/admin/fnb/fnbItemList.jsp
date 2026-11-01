@@ -1,4 +1,4 @@
-﻿<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ page import="model.dto.common.PageDTO, model.dto.fnb.FnbRowDTO, model.dto.common.OptionDTO, java.util.List" %>
 <%@ include file="header.jspf" %>
 <%

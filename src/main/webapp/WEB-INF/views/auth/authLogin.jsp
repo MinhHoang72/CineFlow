@@ -78,6 +78,10 @@
                     <p class="form-error" role="alert">Tài khoản này đã bị tạm khóa bởi Quản trị viên.</p>
                 <% } else if ("inactive".equals(errorParam)) { %>
                     <p class="form-error" role="alert">Tài khoản này đang tạm ngưng hoạt động. Vui lòng liên hệ Quản trị viên.</p>
+                <% } else if ("manager_unassigned".equals(errorParam)) { %>
+                    <p class="form-error" role="alert">Tài khoản Quản lý hiện chưa được phân công chi nhánh. Vui lòng liên hệ Quản trị viên để được bổ nhiệm.</p>
+                <% } else if ("staff_unassigned".equals(errorParam)) { %>
+                    <p class="form-error" role="alert">Tài khoản hiện chưa được phân công chi nhánh hoặc đã ngừng hoạt động. Vui lòng liên hệ Quản trị viên.</p>
                 <% } else if ("unverified".equals(errorParam)) { %>
                     <div style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); color: #F59E0B; padding: 12px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 18px; line-height: 1.5;">
                         ⚠ Tài khoản của bạn chưa được kích hoạt qua email.<br>

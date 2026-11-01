@@ -9,7 +9,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import model.entity.User;
-import utils.WebUtil;
+import dao.UserDAO;
 
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -24,6 +24,9 @@ import java.nio.charset.StandardCharsets;
  * - Nếu có vai trò ADMIN: cho phép tiếp tục chuỗi filter.
  */
 public class AdminFilter implements Filter {
+
+    private final UserDAO userDAO = new UserDAO();
+    private static final long AUTH_CACHE_MS = 15_000L;
 
     /**
      * Kiểm tra phiên hiện tại đã đăng nhập tài khoản hay chưa.
@@ -104,11 +107,29 @@ public class AdminFilter implements Filter {
         }
 
         // 2. Kiểm tra vai trò ADMIN (Role-Based Access Control - RBAC)
-        // Nếu không phải ADMIN, tự động chuyển hướng ngay lập tức (Silent Redirect) về trang đúng vai trò, không hiện lỗi
         if (!isAdmin(session)) {
-            String targetPath = WebUtil.getRoleDefaultPath(session);
-            httpResponse.sendRedirect(httpResponse.encodeRedirectURL(httpRequest.getContextPath() + targetPath));
+            httpResponse.sendError(HttpServletResponse.SC_FORBIDDEN,
+                    "Bạn không có quyền truy cập khu vực quản trị.");
             return;
+        }
+
+        Long checkedAt = session.getAttribute("adminAuthCheckedAt") instanceof Long
+                ? (Long) session.getAttribute("adminAuthCheckedAt") : null;
+        if (checkedAt == null || System.currentTimeMillis() - checkedAt > AUTH_CACHE_MS) {
+            Object idObj = session.getAttribute("userId");
+            int userId = idObj instanceof Number ? ((Number) idObj).intValue() : -1;
+            User freshUser = userId > 0 ? userDAO.getUserById(userId) : null;
+            if (freshUser == null || !"ADMIN".equalsIgnoreCase(freshUser.getRole())
+                    || !"ACTIVE".equalsIgnoreCase(freshUser.getStatus())) {
+                session.invalidate();
+                httpResponse.sendRedirect(httpResponse.encodeRedirectURL(
+                        httpRequest.getContextPath() + "/login?error=inactive"));
+                return;
+            }
+            session.setAttribute("user", freshUser);
+            session.setAttribute("userId", freshUser.getUserId());
+            session.setAttribute("role", freshUser.getRole());
+            session.setAttribute("adminAuthCheckedAt", System.currentTimeMillis());
         }
 
         // 3. Đã xác thực quyền Admin hợp lệ -> Cho phép đi tiếp vào Controller

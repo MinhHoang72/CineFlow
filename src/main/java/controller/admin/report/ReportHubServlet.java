@@ -144,6 +144,7 @@ public class ReportHubServlet extends HttpServlet {
         request.setAttribute("centreRows", sales.byCentre(from, toExclusive, centreId));
         request.setAttribute("fnbTop", sales.topFnb(from, toExclusive, centreId, 10));
         request.setAttribute("pageTitle", "Doanh thu & bán hàng");
+        request.setAttribute("activeNav", "report-sales");
         request.getRequestDispatcher("/WEB-INF/views/admin/report/reportSales.jsp").forward(request, response);
     }
 
@@ -175,6 +176,7 @@ public class ReportHubServlet extends HttpServlet {
         request.setAttribute("scans", operations.scansByStaff(from, toExclusive, centreId));
         request.setAttribute("pagerBase", "/report/operations?" + filters + "&page=");
         request.setAttribute("pageTitle", "Chỉ số vận hành");
+        request.setAttribute("activeNav", "report-operations");
         request.getRequestDispatcher("/WEB-INF/views/admin/report/reportOperations.jsp").forward(request, response);
     }
 
@@ -198,6 +200,7 @@ public class ReportHubServlet extends HttpServlet {
         request.setAttribute("activeCentres", operations.activeCentres());
         request.setAttribute("customers", operations.activeCustomers());
         request.setAttribute("pageTitle", "Dashboard");
+        request.setAttribute("activeNav", "dashboard");
         request.getRequestDispatcher("/WEB-INF/views/admin/report/reportChain.jsp").forward(request, response);
     }
 }

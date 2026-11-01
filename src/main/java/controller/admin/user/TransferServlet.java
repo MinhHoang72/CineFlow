@@ -22,8 +22,8 @@ import java.util.List;
  * Controller điều khiển nghiệp vụ Bổ nhiệm Quản lý trung tâm và Điều chuyển nhân sự dành cho Quản trị viên (Admin).
  * URL ánh xạ: /admin/transfers
  */
-@WebServlet(name = "StaffTransferServlet", urlPatterns = {"/admin/transfers"})
-public class StaffTransferServlet extends HttpServlet {
+@WebServlet(name = "TransferServlet", urlPatterns = {"/admin/transfers"})
+public class TransferServlet extends HttpServlet {
 
     private final UserDAO userDAO = new UserDAO();
     private final CinemaDAO cinemaDAO = new CinemaDAO();
@@ -137,7 +137,7 @@ public class StaffTransferServlet extends HttpServlet {
         request.setAttribute("activeNav", "transfers");
 
         // 8. Chuyển tiếp tới giao diện transfers.jsp
-        request.getRequestDispatcher("/WEB-INF/views/admin/user/staffTransfer.jsp").forward(request, response);
+        request.getRequestDispatcher("/WEB-INF/views/admin/user/transfers.jsp").forward(request, response);
     }
 
     /**
@@ -200,15 +200,37 @@ public class StaffTransferServlet extends HttpServlet {
             }
         }
 
-        // 4. Xử lý miễn nhiệm Manager (action = "unassign_manager")
-        // Hệ thống không cho phép rạp bị bỏ trống Quản lý; muốn thay thế phải dùng chức năng Điều chuyển
+        // 4. Xử lý miễn nhiệm Quản lý (action = "unassign_manager")
         if ("unassign_manager".equalsIgnoreCase(action)) {
-            response.sendRedirect(request.getContextPath() + "/admin/transfers?error=unassign_not_supported&tab=manager");
-            return;
+            try {
+                String cParam = request.getParameter("centreId");
+                int centreId = Integer.parseInt(cParam);
+                String mParam = request.getParameter("managerId");
+                int managerId = Integer.parseInt(mParam);
+                String reason = request.getParameter("reason");
+
+                if (reason == null || reason.trim().isEmpty()) {
+                    response.sendRedirect(request.getContextPath() + "/admin/transfers?error=missing_unassign_reason&tab=manager");
+                    return;
+                }
+
+                boolean ok = userDAO.unassignManager(centreId, managerId, adminId, reason.trim());
+                if (ok) {
+                    response.sendRedirect(request.getContextPath() + "/admin/transfers?success=manager_unassigned&tab=manager");
+                } else {
+                    response.sendRedirect(request.getContextPath() + "/admin/transfers?error=unassign_failed&tab=manager");
+                }
+                return;
+            } catch (Exception e) {
+                response.sendRedirect(request.getContextPath() + "/admin/transfers?error=invalid_data&tab=manager");
+                return;
+            }
         }
 
-        // 5. Xử lý điều chuyển nhân sự hoặc điều chuyển Quản lý (action = "transfer_staff" / "transfer")
-        if ("transfer_staff".equalsIgnoreCase(action) || "transfer".equalsIgnoreCase(action) || "transfer_manager".equalsIgnoreCase(action)) {
+        // 5. Xử lý điều chuyển nhân sự (action = "transfer_staff" / "transfer")
+        // Lưu ý: Chức năng điều chuyển chỉ áp dụng cho nhân viên thường (Bán vé, Soát vé).
+        // Vị trí Quản lý trung tâm thực hiện độc lập qua Bổ nhiệm & Miễn nhiệm.
+        if ("transfer_staff".equalsIgnoreCase(action) || "transfer".equalsIgnoreCase(action)) {
             try {
                 // 5.1. Đọc thông tin nhân sự cần chuyển và cụm rạp đích đến
                 int userId = Integer.parseInt(request.getParameter("userId"));
@@ -217,12 +239,10 @@ public class StaffTransferServlet extends HttpServlet {
                 String reason = request.getParameter("reason");
                 String notes = request.getParameter("notes");
                 String effectiveDateParam = request.getParameter("effectiveDate");
+                String newRoleParam = request.getParameter("newRole");
 
-                // 5.2. Bắt buộc phải có lý do điều chuyển nhân sự
-                if (reason == null || reason.trim().isEmpty()) {
-                    response.sendRedirect(request.getContextPath() + "/admin/transfers?error=missing_reason&tab=staff");
-                    return;
-                }
+                // 5.2. Lý do điều chuyển là không bắt buộc; để trống sẽ lưu chuỗi rỗng.
+                String transferReason = reason != null ? reason.trim() : "";
 
                 // 5.3. Kiểm tra xem người dùng cần điều chuyển có tồn tại trong hệ thống không
                 User targetUser = userDAO.getUserById(userId);
@@ -231,32 +251,22 @@ public class StaffTransferServlet extends HttpServlet {
                     return;
                 }
 
-                // 5.4. Trường hợp điều chuyển Quản lý (Role = MANAGER)
-                if ("MANAGER".equalsIgnoreCase(targetUser.getRole())) {
-                    String result = userDAO.transferManager(userId, toCentreId, adminId, reason.trim(), notes != null ? notes.trim() : "");
-                    if ("SUCCESS".equals(result)) {
-                        response.sendRedirect(request.getContextPath() + "/admin/transfers?success=transferred&tab=staff");
-                    } else if ("SAME_CENTRE".equals(result)) {
-                        response.sendRedirect(request.getContextPath() + "/admin/transfers?error=same_centre&tab=staff");
-                    } else if ("CENTRE_ALREADY_HAS_MANAGER".equals(result)) {
-                        response.sendRedirect(request.getContextPath() + "/admin/transfers?error=dest_centre_has_manager&tab=staff");
-                    } else if ("MANAGER_NOT_ACTIVE".equals(result)) {
-                        response.sendRedirect(request.getContextPath() + "/admin/transfers?error=user_inactive&tab=staff");
-                    } else if ("MANAGER_NOT_ASSIGNED".equals(result)) {
-                        response.sendRedirect(request.getContextPath() + "/admin/transfers?error=manager_not_assigned&tab=staff");
-                    } else if ("NOT_A_MANAGER".equals(result)) {
-                        response.sendRedirect(request.getContextPath() + "/admin/transfers?error=not_manager&tab=staff");
-                    } else if ("CENTRE_INACTIVE".equals(result)) {
-                        response.sendRedirect(request.getContextPath() + "/admin/transfers?error=centre_inactive&tab=staff");
-                    } else if ("CONCURRENCY_CONFLICT".equals(result)) {
-                        response.sendRedirect(request.getContextPath() + "/admin/transfers?error=concurrency_conflict&tab=staff");
-                    } else {
-                        response.sendRedirect(request.getContextPath() + "/admin/transfers?error=transfer_failed&tab=staff");
-                    }
+                // Không áp dụng điều chuyển cho Quản lý (Quản lý chỉ dùng Bổ nhiệm / Miễn nhiệm)
+                if ("MANAGER".equalsIgnoreCase(targetUser.getRole()) || targetUser.isManager()) {
+                    response.sendRedirect(request.getContextPath() + "/admin/transfers?error=manager_transfer_not_allowed&tab=staff");
                     return;
                 }
 
-                // 5.5. Trường hợp điều chuyển nhân viên thông thường (Staff bán vé / soát vé)
+                // Xác định vai trò mục tiêu tại trung tâm mới (chỉ chấp nhận các vai trò nhân viên)
+                String finalRole = (newRoleParam != null && !newRoleParam.trim().isEmpty() && !"KEEP".equalsIgnoreCase(newRoleParam.trim()))
+                        ? newRoleParam.trim().toUpperCase()
+                        : targetUser.getRole();
+
+                if ("MANAGER".equalsIgnoreCase(finalRole)) {
+                    response.sendRedirect(request.getContextPath() + "/admin/transfers?error=manager_transfer_not_allowed&tab=staff");
+                    return;
+                }
+
                 java.sql.Date effectiveDate = null;
                 if (effectiveDateParam != null && !effectiveDateParam.trim().isEmpty()) {
                     try {
@@ -268,8 +278,10 @@ public class StaffTransferServlet extends HttpServlet {
                     effectiveDate = new java.sql.Date(System.currentTimeMillis());
                 }
 
-                // 5.6. Thực thi điều chuyển nhân viên thông thường qua UserDAO
-                String result = userDAO.transferRegularStaff(userId, toCentreId, adminId, reason.trim(), notes != null ? notes.trim() : "", effectiveDate);
+                // Thực hiện điều chuyển nhân viên thông thường
+                String result = userDAO.transferRegularStaff(userId, toCentreId, adminId, transferReason, notes != null ? notes.trim() : "", effectiveDate, finalRole);
+
+                // 5.4. Xử lý kết quả trả về từ DAO
                 if ("SUCCESS".equals(result)) {
                     response.sendRedirect(request.getContextPath() + "/admin/transfers?success=transferred&tab=staff");
                 } else if ("SAME_CENTRE".equals(result)) {

@@ -1,15 +1,6 @@
 <%@ page pageEncoding="UTF-8" %>
 <%-- Ve dien tu gop cua ca don: 1 ma QR + bang chi tiet (ghe; sau nay them dong F&B vao cung bang).
      Can co: booking, bookingQr. --%>
-<style>
-    .eticket { border: 2px dashed #333; border-radius: 10px; background: #fff; padding: 20px; }
-    .eticket .qr { width: 200px; height: 200px; }
-    @media print {
-        .no-print, .alert { display: none !important; }
-        body { background: #fff; }
-        .eticket { page-break-inside: avoid; }
-    }
-</style>
 <div class="eticket" data-bs-theme="light">
     <div class="row g-4 align-items-center">
         <div class="col-md-auto text-center">

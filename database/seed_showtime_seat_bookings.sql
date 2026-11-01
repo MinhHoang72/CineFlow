@@ -1,5 +1,5 @@
 /* Local demonstration bookings for the seat map.
-   Up to 3 upcoming shows per centre per day, today and tomorrow; 6 seats each.
+   Up to 3 upcoming shows per centre per day, next 3 days; 6 seats each. Requires booking_payment_patch.sql.
    COUNTER + CONFIRMED, no customer identity, no external payment calls.
    DEMOSEAT-<ShowtimeID> makes reruns idempotent. Existing occupied seats are excluded.
 */
@@ -7,7 +7,8 @@ SET NOCOUNT ON;
 SET XACT_ABORT ON;
 SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
 DECLARE @Now datetime2=SYSDATETIME();
-DECLARE @Day date=CAST(@Now AS date);
+DECLARE @StartDate date=DATEADD(day,1,CAST(@Now AS date));
+DECLARE @Days int=3;
 DECLARE @Created TABLE(BookingID int,BookingCode varchar(30),ShowtimeID int,Seats int);
 BEGIN TRY
  BEGIN TRANSACTION;
@@ -15,8 +16,10 @@ BEGIN TRY
  ;WITH candidates AS (
   SELECT s.ShowtimeID,h.CentreID,s.HallID,h.HallType,s.StartTime,
    ROW_NUMBER() OVER(PARTITION BY h.CentreID,CAST(s.StartTime AS date) ORDER BY s.StartTime,s.ShowtimeID) rn
-  FROM dbo.Showtimes s WITH(UPDLOCK,HOLDLOCK) JOIN dbo.Halls h ON h.HallID=s.HallID
-  WHERE s.Status='SCHEDULED' AND s.StartTime>@Now AND s.StartTime<DATEADD(day,2,CAST(@Day AS datetime2))
+  FROM dbo.Showtimes s WITH(UPDLOCK,HOLDLOCK) JOIN dbo.Halls h ON h.HallID=s.HallID JOIN dbo.Centres ce ON ce.CentreID=h.CentreID JOIN dbo.Movies m ON m.MovieID=s.MovieID
+  WHERE s.Status='SCHEDULED' AND s.StartTime>=@StartDate AND s.StartTime<DATEADD(day,@Days,@StartDate)
+   AND ce.Status='ACTIVE' AND m.Status='NOW_SHOWING'
+   AND CAST(s.StartTime AS time)>='09:00' AND CAST(s.StartTime AS time)<='22:00'
    AND h.Status='AVAILABLE'
    AND (SELECT COUNT(*) FROM dbo.Seats se WHERE se.HallID=s.HallID AND se.Status='AVAILABLE')>=6
  )
@@ -36,19 +39,19 @@ BEGIN TRY
    SELECT TOP 6 se.SeatID,base.BasePrice+ISNULL(ts.Surcharge,0)+ISNULL(ss.Amount,0)+ISNULL(hs.Amount,0)
    FROM dbo.Seats se
    CROSS APPLY(SELECT TOP 1 BasePrice FROM dbo.CentrePricing WHERE CentreID=@Centre AND EffectiveFrom<=@Start AND (EffectiveTo IS NULL OR EffectiveTo>@Start) ORDER BY EffectiveFrom DESC,CentrePricingID DESC) base
-   OUTER APPLY(SELECT TOP 1 Surcharge FROM dbo.TimeSlotPricing WHERE CentreID=@Centre AND EffectiveFrom<=@Start AND (EffectiveTo IS NULL OR EffectiveTo>@Start) AND CAST(@Start AS time)>=StartTime AND CAST(@Start AS time)<EndTime ORDER BY EffectiveFrom DESC,TimeSlotPricingID DESC) ts
-   OUTER APPLY(SELECT TOP 1 Amount FROM dbo.Surcharges WHERE SurchargeType='SEAT' AND TargetValue=se.SeatType AND EffectiveFrom<=@Start AND (EffectiveTo IS NULL OR EffectiveTo>@Start) ORDER BY EffectiveFrom DESC,SurchargeID DESC) ss
-   OUTER APPLY(SELECT TOP 1 Amount FROM dbo.Surcharges WHERE SurchargeType='HALL' AND TargetValue=@HallType AND EffectiveFrom<=@Start AND (EffectiveTo IS NULL OR EffectiveTo>@Start) ORDER BY EffectiveFrom DESC,SurchargeID DESC) hs
+   OUTER APPLY(SELECT TOP 1 Surcharge FROM dbo.TimeSlotPricing WHERE CentreID=@Centre AND EffectiveFrom<=@Start AND (EffectiveTo IS NULL OR EffectiveTo>@Start) AND CAST(@Start AS time) BETWEEN StartTime AND EndTime ORDER BY StartTime DESC) ts
+   OUTER APPLY(SELECT SUM(Amount) Amount FROM dbo.Surcharges WHERE SurchargeType='SEAT' AND TargetValue=se.SeatType AND EffectiveFrom<=@Start AND (EffectiveTo IS NULL OR EffectiveTo>@Start)) ss
+   OUTER APPLY(SELECT SUM(Amount) Amount FROM dbo.Surcharges WHERE SurchargeType='HALL' AND TargetValue=@HallType AND EffectiveFrom<=@Start AND (EffectiveTo IS NULL OR EffectiveTo>@Start)) hs
    WHERE se.HallID=@Hall AND se.Status='AVAILABLE'
-    AND NOT EXISTS(SELECT 1 FROM dbo.BookingSeats bs WITH(UPDLOCK,HOLDLOCK) JOIN dbo.Bookings b ON b.BookingID=bs.BookingID WHERE b.ShowtimeID=@Show AND b.BookingStatus IN('PENDING','CONFIRMED','COMPLETED') AND bs.SeatID=se.SeatID AND (bs.SeatStatus='CONFIRMED' OR (bs.SeatStatus='HELD' AND bs.HoldUntil>@Now)))
+    AND NOT EXISTS(SELECT 1 FROM dbo.BookingSeats bs WITH(UPDLOCK,HOLDLOCK) JOIN dbo.Bookings b ON b.BookingID=bs.BookingID WHERE b.ShowtimeID=@Show AND bs.SeatID=se.SeatID AND bs.SeatStatus IN ('HELD','CONFIRMED'))
    ORDER BY CASE WHEN se.SeatRow IN('D','E') THEN 0 ELSE 1 END, CASE WHEN se.SeatNumber BETWEEN 4 AND 9 THEN 0 ELSE 1 END,se.SeatRow,se.SeatNumber;
    IF (SELECT COUNT(*) FROM @Seats)=6
    BEGIN
     INSERT INTO dbo.Bookings(BookingCode,UserID,ShowtimeID,BookingType,BookingStatus,SubTotal,DiscountAmount,TotalAmount)
      SELECT @Code,NULL,@Show,'COUNTER','CONFIRMED',SUM(Price),0,SUM(Price) FROM @Seats;
     SET @Booking=CAST(SCOPE_IDENTITY() AS int);
-    INSERT INTO dbo.BookingSeats(BookingID,SeatID,Price,SeatStatus,HoldUntil)
-     SELECT @Booking,SeatID,Price,'CONFIRMED',NULL FROM @Seats;
+    INSERT INTO dbo.BookingSeats(BookingID,ShowtimeID,SeatID,Price,SeatStatus,HoldUntil)
+     SELECT @Booking,@Show,SeatID,Price,'CONFIRMED',NULL FROM @Seats;
     INSERT INTO @Created VALUES(@Booking,@Code,@Show,6);
    END;
   END;

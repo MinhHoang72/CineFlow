@@ -8,9 +8,10 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
- * Service: Xử lý logic nghiệp vụ Mã giảm giá & Khuyến mãi (Voucher & Promotions).
+ * Service: Xử lý logic nghiệp vụ mã giảm giá (Voucher).
  * Nhiệm vụ:
  * - Kiểm tra điều kiện hiệu lực của voucher (ngày áp dụng, số lượt dùng tối đa, trạng thái).
  * - Kiểm tra giá trị đơn hàng tối thiểu (Minimum Order Value).
@@ -98,7 +99,6 @@ public class VoucherService {
         }
 
         BigDecimal discount = BigDecimal.ZERO;
-        // DB luu PERCENT (CK_Vouchers_Type), giu PERCENTAGE cho tuong thich
         if ("PERCENT".equalsIgnoreCase(voucher.getDiscountType()) || "PERCENTAGE".equalsIgnoreCase(voucher.getDiscountType())) {
             discount = orderAmount.multiply(voucher.getDiscountValue())
                     .divide(BigDecimal.valueOf(100), 0, RoundingMode.HALF_UP);
@@ -106,7 +106,6 @@ public class VoucherService {
                 discount = voucher.getMaximumDiscount();
             }
         } else {
-            // FIXED_AMOUNT
             discount = voucher.getDiscountValue();
             if (discount.compareTo(orderAmount) > 0) {
                 discount = orderAmount;
@@ -117,10 +116,17 @@ public class VoucherService {
     }
 
     /**
-     * Tìm kiếm và phân trang danh sách Voucher.
+     * Tìm kiếm và phân trang danh sách Voucher theo phạm vi chi nhánh (hoặc toàn chuỗi nếu centreId = null).
+     */
+    public PageDTO<Voucher> searchVouchers(String key, String status, String type, Integer centreId, int page, int size) {
+        return voucherDAO.search(key, status, type, centreId, page, size);
+    }
+
+    /**
+     * Tìm kiếm và phân trang danh sách Voucher toàn hệ thống (Admin).
      */
     public PageDTO<Voucher> searchVouchers(String key, String status, String type, int page, int size) {
-        return voucherDAO.search(key, status, type, null, page, size); // null = moi chi nhanh (Admin)
+        return searchVouchers(key, status, type, null, page, size);
     }
 
     /**
@@ -128,6 +134,13 @@ public class VoucherService {
      */
     public Voucher getVoucherById(int id) {
         return voucherDAO.find(id);
+    }
+
+    /**
+     * Kiểm tra voucher có thuộc rạp chỉ định hay không.
+     */
+    public boolean belongsToCentre(int voucherId, int centreId) {
+        return voucherDAO.belongsToCentre(voucherId, centreId);
     }
 
     /**

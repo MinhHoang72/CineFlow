@@ -135,12 +135,10 @@ public class MovieService {
         }
         List<Centre> centres = cinemaDAO.getDistributionCentres(movieId);
         // Quy tắc Opt-out thông minh: Phim mới chưa từng cấu hình phân phối trong CSDL
-        // sẽ mặc định phân phối cho toàn bộ các cụm rạp đang hoạt động (ACTIVE).
+        // sẽ mặc định phân phối cho toàn bộ các cụm rạp trong chuỗi (kể cả rạp đang bảo trì/tạm hoãn).
         if (!cinemaDAO.hasDistributionConfig(movieId)) {
             for (Centre c : centres) {
-                if ("ACTIVE".equalsIgnoreCase(c.getStatus())) {
-                    c.setDistributed(true);
-                }
+                c.setDistributed(true);
             }
         }
         return centres;
