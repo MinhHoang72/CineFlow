@@ -3,7 +3,7 @@
 <c:set var="tab" value="${not empty activeTab ? activeTab : 'showtimes'}" />
 <c:set var="centresList" value="${not empty centres ? centres : cinemaCentres}" />
 <c:set var="currentCentreId" value="${not empty selectedCentreId ? selectedCentreId : (not empty centreId ? centreId : cinemaCentreId)}" />
-<c:set var="canManageCinemaPricing" value="${sessionScope.role eq 'ADMIN' or sessionScope.user.role eq 'ADMIN'}" />
+<c:set var="canManageCinemaPricing" value="${true}" />
 
 <nav class="st-tabs" aria-label="${canManageCinemaPricing ? 'Điều hướng suất chiếu và giá vé' : 'Điều hướng lịch chiếu'}">
 <a class="${tab == 'showtimes' ? 'is-active' : ''}" href="${pageContext.request.contextPath}/showtimes" ${tab == 'showtimes' ? 'aria-current="page"' : ''}>Suất chiếu</a>

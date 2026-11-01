@@ -29,6 +29,8 @@
     if (activeNav == null || activeNav.isBlank() || "report-hub".equals(activeNav)) {
         if (fullReqPath.contains("/admin/centres") || fullReqPath.contains("/admin/centre") || fullReqPath.contains("/halls") || fullReqPath.contains("/seats") || jspUri.contains("halls")) {
             activeNav = "centres";
+        } else if (fullReqPath.contains("/pricing") || jspUri.contains("pricing")) {
+            activeNav = "pricing";
         } else if (fullReqPath.contains("/admin/distribution")) {
             activeNav = "distribution";
         } else if (fullReqPath.contains("/admin/movies") || fullReqPath.contains("/admin/movie")) {
@@ -74,6 +76,11 @@
 
     <div class="cf-sidebar-section">HỆ THỐNG CỤM RẠP</div>
     <nav class="cf-sidebar-nav">
+        <a class="<%= "pricing".equals(activeNav) ? "active" : "" %>" href="<%= cfPath %>/pricing">
+            <span class="icon">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+            </span>Bảng giá vé &amp; Phụ thu
+        </a>
         <a class="<%= "centres".equals(activeNav) ? "active" : "" %>" href="<%= cfPath %>/admin/centres">
             <span class="icon">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M3 7v14M21 7v14M6 7V3h12v4M9 11h2M13 11h2M9 15h2M13 15h2"/></svg>

@@ -126,7 +126,7 @@ public class ManagerFilter implements Filter {
         String servletPath = httpRequest.getServletPath();
         boolean pricingRoute = "/pricing".equals(servletPath)
                 || (servletPath != null && servletPath.startsWith("/pricing/"));
-        if (pricingRoute && !isAdmin(session)) {
+        if (pricingRoute && !isManagerOrAdmin(session)) {
             httpResponse.sendError(HttpServletResponse.SC_FORBIDDEN,
                     "Chức năng quản lý giá vé và phụ thu chỉ dành cho quản trị viên.");
             return;
