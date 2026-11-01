@@ -15,6 +15,14 @@ public class CancelShowtimeServlet
             HttpServletResponse response)
             throws IOException {
 
+        HttpSession session = request.getSession(false);
+        String role = session != null ? (String) session.getAttribute("role") : null;
+        if (!"MANAGER".equalsIgnoreCase(role)) {
+            request.getSession().setAttribute("error", "Chỉ Quản lý cụm rạp mới có quyền hủy suất chiếu.");
+            redirect(request, response);
+            return;
+        }
+
         try {
 
             int showtimeId =

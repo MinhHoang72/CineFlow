@@ -21,6 +21,14 @@ public class CreateShowtimeServlet
             HttpServletResponse response)
             throws ServletException, IOException {
 
+        HttpSession session = request.getSession(false);
+        String role = session != null ? (String) session.getAttribute("role") : null;
+        if (!"MANAGER".equalsIgnoreCase(role)) {
+            setError(request, "Chỉ Quản lý cụm rạp mới có quyền tạo suất chiếu.");
+            redirect(request, response);
+            return;
+        }
+
         try {
 
             int movieId =

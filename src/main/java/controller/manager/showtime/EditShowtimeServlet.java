@@ -28,6 +28,14 @@ public class EditShowtimeServlet
                 + request.getParameter("id")
         );
 
+        HttpSession session = request.getSession(false);
+        String role = session != null ? (String) session.getAttribute("role") : null;
+        if (!"MANAGER".equalsIgnoreCase(role)) {
+            request.getSession().setAttribute("error", "Chỉ Quản lý cụm rạp mới có quyền chỉnh sửa suất chiếu.");
+            response.sendRedirect(request.getContextPath() + "/showtimes");
+            return;
+        }
+
         try {
 
             int id =

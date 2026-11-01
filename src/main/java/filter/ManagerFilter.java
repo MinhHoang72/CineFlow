@@ -64,6 +64,19 @@ public class ManagerFilter implements Filter {
         return false;
     }
 
+    private boolean isManager(HttpSession session) {
+        if (session == null) {
+            return false;
+        }
+        Object roleObj = session.getAttribute("role");
+        if (roleObj instanceof String && "MANAGER".equalsIgnoreCase((String) roleObj)) {
+            return true;
+        }
+        Object userObj = session.getAttribute("user");
+        return userObj instanceof User
+                && "MANAGER".equalsIgnoreCase(((User) userObj).getRole());
+    }
+
     private boolean isAdmin(HttpSession session) {
         if (session == null) {
             return false;
@@ -126,9 +139,25 @@ public class ManagerFilter implements Filter {
         String servletPath = httpRequest.getServletPath();
         boolean pricingRoute = "/pricing".equals(servletPath)
                 || (servletPath != null && servletPath.startsWith("/pricing/"));
-        if (pricingRoute && !isManagerOrAdmin(session)) {
+        if (pricingRoute) {
+            if (isAdmin(session)) {
+                httpResponse.sendRedirect(httpRequest.getContextPath() + "/dashboard");
+                return;
+            }
+            if (!isManager(session)) {
+                httpResponse.sendError(HttpServletResponse.SC_FORBIDDEN,
+                        "Chức năng quản lý giá vé và phụ thu chỉ dành cho Quản lý cụm rạp.");
+                return;
+            }
+        }
+
+        boolean showtimeWriteRoute = "/showtimes/create".equals(servletPath)
+                || "/showtimes/edit".equals(servletPath)
+                || "/showtimes/update".equals(servletPath)
+                || "/showtimes/cancel".equals(servletPath);
+        if (showtimeWriteRoute && isAdmin(session)) {
             httpResponse.sendError(HttpServletResponse.SC_FORBIDDEN,
-                    "Chức năng quản lý giá vé và phụ thu chỉ dành cho quản trị viên.");
+                    "Quản trị viên không có quyền tạo hoặc chỉnh sửa suất chiếu. Chức năng này thuộc quyền của Quản lý cụm rạp.");
             return;
         }
 
