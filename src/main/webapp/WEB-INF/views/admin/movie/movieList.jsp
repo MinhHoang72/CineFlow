@@ -140,10 +140,10 @@
 
             <!-- BẢNG DANH MỤC PHIM VÀ BỘ LỌC ĐA NĂNG -->
             <section class="cf-card">
-                <!-- THANH CÔNG CỤ: TÌM KIẾM VÀ BỘ LỌC -->
-                <div class="cf-card-toolbar-multi">
-                    <!-- HÀNG 1: TABS TRẠNG THÁI PHIM (PILLS) VÀ TÙY CHỌN HIỂN THỊ -->
-                    <div class="cf-toolbar-row cf-toolbar-row-top">
+                <!-- THANH CÔNG CỤ: TẤT CẢ GỌN GÀNG TRÊN 1 HÀNG DUY NHẤT -->
+                <div class="cf-card-toolbar-compact">
+                    <!-- BÊN TRÁI: CÁC NÚT LỌC TRẠNG THÁI (PILLS) -->
+                    <div class="cf-toolbar-left">
                         <div class="cf-filter-pills">
                             <button type="button" class="cf-pill active" data-status="ALL">Tất cả phim (<%= totalMovies %>)</button>
                             <button type="button" class="cf-pill" data-status="NOW_SHOWING">Đang chiếu (<%= nowShowingCount %>)</button>
@@ -151,53 +151,41 @@
                             <button type="button" class="cf-pill" data-status="ENDED">Đã kết thúc (<%= endedCount %>)</button>
                             <button type="button" class="cf-pill" data-status="ARCHIVED">Lưu trữ (<%= archivedCount %>)</button>
                         </div>
-
-                        <div class="cf-toolbar-right">
-                            <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--cf-muted);">
-                                <span>Hiển thị:</span>
-                                <select id="moviePageSizeSelect" class="cf-select-sm">
-                                    <option value="8">8 phim</option>
-                                    <option value="12" selected>12 phim</option>
-                                    <option value="24">24 phim</option>
-                                    <option value="50">50 phim</option>
-                                    <option value="ALL">Tất cả</option>
-                                </select>
-                            </div>
-                        </div>
                     </div>
 
-                    <!-- HÀNG 2: THANH TÌM KIẾM THÔNG MINH (LIVE FUZZY SEARCH + ĐỀ XUẤT TỨC THÌ) -->
-                    <div class="cf-toolbar-row cf-toolbar-row-filters">
-                        <div class="cf-toolbar-left cf-filters-wrap" style="flex: 1; position: relative;">
-                            <!-- Ô tìm kiếm tức thì với đề xuất thông minh -->
-                            <div class="cf-search-box cf-search-box-expanded" id="movieSearchBoxWrap">
-                                <input type="text"
-                                       id="movieSearchInput"
-                                       placeholder="Tìm theo tên phim, thể loại, đạo diễn... (VD: h, đất rừng, hanh tinh)"
-                                       autocomplete="off"
-                                       spellcheck="false">
-                                <button type="button" id="movieSearchClearBtn" class="cf-search-clear-btn" title="Xóa từ khóa tìm kiếm" aria-label="Xóa từ khóa tìm kiếm" style="display: none;">✕</button>
+                    <!-- BÊN PHẢI: Ô TÌM KIẾM TỰ ĐỘNG + NÚT RESET + CHỌN SỐ LƯỢNG HIỂN THỊ -->
+                    <div class="cf-toolbar-right">
+                        <!-- Ô tìm kiếm thu gọn - gõ phím danh sách bảng phim bên dưới tự động lọc tức thì -->
+                        <div class="cf-search-box cf-search-box-compact" id="movieSearchBoxWrap">
+                            <svg class="cf-search-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            </svg>
+                            <input type="text"
+                                   id="movieSearchInput"
+                                   placeholder="Tìm tên phim, thể loại, đạo diễn..."
+                                   autocomplete="off"
+                                   spellcheck="false">
+                            <button type="button" id="movieSearchClearBtn" class="cf-search-clear-btn" title="Xóa từ khóa tìm kiếm" aria-label="Xóa từ khóa" style="display: none;">✕</button>
+                        </div>
 
-                                <!-- DROPDOWN ĐỀ XUẤT PHIM TỨC THÌ (SEARCH-AS-YOU-TYPE AUTOCOMPLETE) -->
-                                <div id="movieSearchSuggestions" class="cf-search-suggestions" style="display: none;" role="listbox">
-                                    <div class="cf-suggestions-header">
-                                        <span>GỢI Ý PHIM PHÙ HỢP</span>
-                                        <span class="cf-suggestions-count" id="movieSuggestionsCount">0 gợi ý</span>
-                                    </div>
-                                    <div class="cf-suggestions-list" id="movieSuggestionsList"></div>
-                                    <div class="cf-suggestions-footer">
-                                        <small>Bấm vào phim để chọn · Phím <strong>↑</strong> <strong>↓</strong> điều hướng, <strong>Enter</strong> chọn, <strong>Esc</strong> đóng</small>
-                                    </div>
-                                </div>
-                            </div>
+                        <!-- Nút Xóa nhanh khi đang có từ khóa -->
+                        <button type="button" id="btnResetFilters" class="cf-btn-reset-filter" title="Xóa tìm kiếm và đặt lại" style="display: none;">
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                                <path d="M3 3v5h5"></path>
+                            </svg>
+                        </button>
 
-                            <!-- Nút Xóa nhanh khi đang có từ khóa -->
-                            <button type="button" id="btnResetFilters" class="cf-btn-reset-filter" title="Xóa tìm kiếm và đặt lại" style="display: none;">
-                                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
-                                    <path d="M3 3v5h5"></path>
-                                </svg>
-                            </button>
+                        <div class="cf-page-size-wrap">
+                            <span>Hiển thị:</span>
+                            <select id="moviePageSizeSelect" class="cf-select-sm">
+                                <option value="8">8 phim</option>
+                                <option value="12" selected>12 phim</option>
+                                <option value="24">24 phim</option>
+                                <option value="50">50 phim</option>
+                                <option value="ALL">Tất cả</option>
+                            </select>
                         </div>
                     </div>
                 </div>
@@ -329,9 +317,6 @@
             paginationId: 'moviePaginationControls',
             searchInputId: 'movieSearchInput',
             searchBoxWrapId: 'movieSearchBoxWrap',
-            suggestionsDropdownId: 'movieSearchSuggestions',
-            suggestionsListId: 'movieSuggestionsList',
-            suggestionsCountId: 'movieSuggestionsCount',
             clearButtonId: 'movieSearchClearBtn',
             statusPillSelector: '.cf-pill[data-status]',
             resetButtonId: 'btnResetFilters',

@@ -218,10 +218,6 @@ function initAdminPagination(options) {
     const tableBody = document.getElementById(options.tableBodyId);
     const paginationContainer = document.getElementById(options.paginationId);
     const searchInput = document.getElementById(options.searchInputId);
-    const searchBoxWrap = options.searchBoxWrapId ? document.getElementById(options.searchBoxWrapId) : null;
-    const suggestionsDropdown = options.suggestionsDropdownId ? document.getElementById(options.suggestionsDropdownId) : null;
-    const suggestionsList = options.suggestionsListId ? document.getElementById(options.suggestionsListId) : null;
-    const suggestionsCount = options.suggestionsCountId ? document.getElementById(options.suggestionsCountId) : null;
     const clearButton = options.clearButtonId ? document.getElementById(options.clearButtonId) : null;
     const statusPills = document.querySelectorAll(options.statusPillSelector || '.cf-pill[data-status]');
     const resetFiltersBtn = options.resetButtonId ? document.getElementById(options.resetButtonId) : null;
@@ -234,7 +230,7 @@ function initAdminPagination(options) {
     const tableRows = tableBody ? Array.from(tableBody.querySelectorAll('tr[data-movie-id]')) : [];
     const totalItemsCount = tableRows.length;
 
-    // Cache movie metadata for fast fuzzy lookup
+    // Lưu trữ metadata của phim để tìm kiếm tức thì
     const movieDataList = tableRows.map(row => {
         const id = row.dataset.movieId || '';
         const code = row.dataset.code || ('CF-' + id.padStart(4, '0'));
@@ -246,24 +242,22 @@ function initAdminPagination(options) {
         const releaseDate = row.dataset.releaseDate || '';
         const durationEl = row.querySelector('td:nth-child(4) strong');
         const duration = durationEl ? durationEl.textContent.trim() : '';
-        const thumbImg = row.querySelector('.movie-thumb img');
-        const posterUrl = thumbImg ? thumbImg.src : '';
-        const editLink = row.querySelector('.cf-btn-edit');
-        const editUrl = editLink ? editLink.href : '';
+        const titleLink = row.querySelector('.movie-title-link');
+        const originalTitle = titleLink ? titleLink.textContent.trim() : title;
 
         return {
             row,
             movieId: id,
             code,
             title,
+            originalTitle,
+            titleLink,
             genre,
             director,
             status,
             ageRating,
             releaseDate,
-            duration,
-            posterUrl,
-            editUrl
+            duration
         };
     });
 
@@ -271,38 +265,18 @@ function initAdminPagination(options) {
     let pageSize = pageSizeSelect ? (parseInt(pageSizeSelect.value, 10) || 12) : 12;
     let currentStatus = 'ALL';
     let currentSearch = '';
-    let focusedSuggestionIndex = -1;
-
-    function getStatusText(st) {
-        switch (st) {
-            case 'NOW_SHOWING': return 'Đang chiếu';
-            case 'COMING_SOON': return 'Sắp khởi chiếu';
-            case 'ENDED': return 'Đã kết thúc';
-            case 'ARCHIVED': return 'Lưu trữ';
-            default: return st;
-        }
-    }
-
-    function getBadgeClass(st) {
-        switch (st) {
-            case 'NOW_SHOWING': return 'cf-badge-success';
-            case 'COMING_SOON': return 'cf-badge-info';
-            case 'ENDED': return 'cf-badge-warning';
-            default: return 'cf-badge-muted';
-        }
-    }
 
     function render() {
         const matchedMovies = [];
 
         movieDataList.forEach(item => {
-            // Lọc theo Status Pill
+            // 1. Lọc theo trạng thái phim (Pills)
             if (currentStatus !== 'ALL' && item.status !== currentStatus) {
                 item.row.style.display = 'none';
                 return;
             }
 
-            // Lọc theo Fuzzy Search
+            // 2. Lọc thông minh theo từ khóa (Fuzzy, Accent-insensitive, Typo-tolerant)
             const matchResult = computeMovieMatch(currentSearch, item);
             if (matchResult.isMatch) {
                 matchedMovies.push({
@@ -314,10 +288,21 @@ function initAdminPagination(options) {
             }
         });
 
-        // Sắp xếp các dòng hiển thị theo điểm số tương đồng
+        // Sắp xếp các dòng hiển thị: điểm số tương đồng cao nhất lên đầu
         if (currentSearch.trim()) {
             matchedMovies.sort((a, b) => b.score - a.score);
         }
+
+        // Highlight ký tự hoặc từ khớp trực tiếp trong tên phim trên bảng
+        movieDataList.forEach(item => {
+            if (item.titleLink) {
+                if (currentSearch.trim()) {
+                    item.titleLink.innerHTML = highlightMatch(item.originalTitle, currentSearch);
+                } else {
+                    item.titleLink.textContent = item.originalTitle;
+                }
+            }
+        });
 
         const visibleRows = matchedMovies.map(m => m.item.row);
         const totalFiltered = visibleRows.length;
@@ -330,15 +315,16 @@ function initAdminPagination(options) {
         const startIndex = (currentPage - 1) * actualPageSize;
         const endIndex = pageSize === 0 ? totalFiltered : Math.min(startIndex + actualPageSize, totalFiltered);
 
-        // Ẩn tất cả dòng và hiển thị các dòng thuộc trang hiện tại
+        // Ẩn tất cả dòng và hiển thị các dòng trang hiện tại theo thứ tự điểm số
         tableRows.forEach(r => { r.style.display = 'none'; });
         for (let i = startIndex; i < endIndex; i++) {
             if (visibleRows[i]) {
+                if (tableBody) tableBody.appendChild(visibleRows[i]);
                 visibleRows[i].style.display = '';
             }
         }
 
-        // Xử lý empty state
+        // Xử lý Empty State khi không có kết quả
         if (totalFiltered === 0) {
             if (emptyState) emptyState.style.display = 'block';
             if (tableWrapper) tableWrapper.style.display = 'none';
@@ -347,7 +333,7 @@ function initAdminPagination(options) {
             if (tableWrapper) tableWrapper.style.display = '';
         }
 
-        // Hiển thị thông tin phân trang
+        // Cập nhật thông tin phân trang
         if (infoDisplay) {
             if (totalFiltered === 0) {
                 infoDisplay.innerHTML = 'Không tìm thấy phim phù hợp với từ khóa <strong>"' + escapeHtml(currentSearch) + '"</strong>';
@@ -427,185 +413,53 @@ function initAdminPagination(options) {
         paginationContainer.appendChild(nextBtn);
     }
 
-    // --- AUTOCOMPLETE SUGGESTIONS POPUP (ĐỀ XUẤT TỨC THÌ) ---
-    function updateSuggestions(query) {
-        if (!suggestionsDropdown || !suggestionsList) return;
-
-        const q = (query || '').trim();
-        if (!q) {
-            closeSuggestions();
-            return;
-        }
-
-        const scored = [];
-        movieDataList.forEach(item => {
-            const res = computeMovieMatch(q, item);
-            if (res.isMatch) {
-                scored.push({ item, score: res.score });
-            }
-        });
-
-        scored.sort((a, b) => b.score - a.score);
-        focusedSuggestionIndex = -1;
-
-        if (scored.length === 0) {
-            suggestionsList.innerHTML = `
-                <div class="cf-suggestions-empty">
-                    🔍 Không tìm thấy phim phù hợp với từ khóa "<strong>${escapeHtml(q)}</strong>"<br>
-                    <small style="color: var(--cf-muted); margin-top: 4px; display: inline-block;">Thử gõ không dấu hoặc kiểm tra lại tên phim.</small>
-                </div>
-            `;
-            if (suggestionsCount) suggestionsCount.textContent = '0 gợi ý';
-            suggestionsDropdown.style.display = 'block';
-            return;
-        }
-
-        const topSuggestions = scored.slice(0, 8);
-        if (suggestionsCount) {
-            suggestionsCount.textContent = `${scored.length} phim phù hợp`;
-        }
-
-        suggestionsList.innerHTML = topSuggestions.map((s, idx) => {
-            const m = s.item;
-            const highlightedTitle = highlightMatch(m.title, q);
-            const thumbHtml = m.posterUrl
-                ? `<img src="${escapeHtml(m.posterUrl)}" alt="" onerror="this.parentElement.innerHTML='🎬';">`
-                : '🎬';
-
-            return `
-                <div class="cf-suggestion-item" data-index="${idx}" data-movie-id="${escapeHtml(m.movieId)}" data-title="${escapeHtml(m.title)}">
-                    <div class="cf-sugg-thumb">${thumbHtml}</div>
-                    <div class="cf-sugg-info">
-                        <div class="cf-sugg-title">${highlightedTitle}</div>
-                        <div class="cf-sugg-meta">
-                            <span class="cf-sugg-code">${escapeHtml(m.code)}</span>
-                            <span>${escapeHtml(m.genre || 'Chưa cập nhật')}</span>
-                            ${m.duration ? `<span>${escapeHtml(m.duration)} phút</span>` : ''}
-                        </div>
-                    </div>
-                    <div class="cf-sugg-badge">
-                        <span class="cf-badge ${getBadgeClass(m.status)}">${getStatusText(m.status)}</span>
-                    </div>
-                </div>
-            `;
-        }).join('');
-
-        // Gắn sự kiện click cho từng gợi ý
-        suggestionsList.querySelectorAll('.cf-suggestion-item').forEach(el => {
-            el.addEventListener('click', () => {
-                const chosenTitle = el.dataset.title;
-                if (searchInput) {
-                    searchInput.value = chosenTitle;
-                    currentSearch = chosenTitle;
-                    if (clearButton) clearButton.style.display = 'inline-flex';
-                    if (resetFiltersBtn) resetFiltersBtn.style.display = 'grid';
-                    currentPage = 1;
-                    render();
-                }
-                closeSuggestions();
-            });
-        });
-
-        suggestionsDropdown.style.display = 'block';
-    }
-
-    function closeSuggestions() {
-        if (suggestionsDropdown) {
-            suggestionsDropdown.style.display = 'none';
-        }
-        focusedSuggestionIndex = -1;
-    }
-
-    function highlightFocusedSuggestion() {
-        if (!suggestionsList) return;
-        const items = suggestionsList.querySelectorAll('.cf-suggestion-item');
-        items.forEach((item, idx) => {
-            if (idx === focusedSuggestionIndex) {
-                item.classList.add('is-focused');
-                item.scrollIntoView({ block: 'nearest' });
-            } else {
-                item.classList.remove('is-focused');
-            }
-        });
-    }
-
     // --- SỰ KIỆN TÌM KIẾM TỨC THÌ (SEARCH-AS-YOU-TYPE) ---
+    // Gõ bất kỳ ký tự nào, danh sách bảng phim bên dưới tự động lọc theo ý người dùng
     if (searchInput) {
         searchInput.addEventListener('input', (e) => {
-            const val = e.target.value;
-            currentSearch = val;
+            currentSearch = e.target.value;
             currentPage = 1;
 
             if (clearButton) {
-                clearButton.style.display = val.trim() ? 'inline-flex' : 'none';
+                clearButton.style.display = currentSearch.trim() ? 'inline-flex' : 'none';
             }
             if (resetFiltersBtn) {
-                resetFiltersBtn.style.display = val.trim() ? 'grid' : 'none';
+                resetFiltersBtn.style.display = currentSearch.trim() ? 'grid' : 'none';
             }
 
-            // 1. Lọc bảng tức thì trên từng ký tự
             render();
-
-            // 2. Mở dropdown đề xuất tự động
-            updateSuggestions(val);
-        });
-
-        searchInput.addEventListener('focus', () => {
-            if (searchInput.value.trim()) {
-                updateSuggestions(searchInput.value);
-            }
-        });
-
-        // Điều khiển phím mũi tên và Enter
-        searchInput.addEventListener('keydown', (e) => {
-            if (!suggestionsDropdown || suggestionsDropdown.style.display === 'none') {
-                return;
-            }
-            const items = suggestionsList.querySelectorAll('.cf-suggestion-item');
-            if (items.length === 0) return;
-
-            if (e.key === 'ArrowDown') {
-                e.preventDefault();
-                focusedSuggestionIndex = (focusedSuggestionIndex + 1) % items.length;
-                highlightFocusedSuggestion();
-            } else if (e.key === 'ArrowUp') {
-                e.preventDefault();
-                focusedSuggestionIndex = (focusedSuggestionIndex - 1 + items.length) % items.length;
-                highlightFocusedSuggestion();
-            } else if (e.key === 'Enter') {
-                if (focusedSuggestionIndex >= 0 && focusedSuggestionIndex < items.length) {
-                    e.preventDefault();
-                    items[focusedSuggestionIndex].click();
-                } else {
-                    closeSuggestions();
-                }
-            } else if (e.key === 'Escape') {
-                closeSuggestions();
-            }
         });
     }
+
+    const resetSearchAndFilters = () => {
+        if (searchInput) {
+            searchInput.value = '';
+            searchInput.focus();
+        }
+        currentSearch = '';
+        if (clearButton) clearButton.style.display = 'none';
+        if (resetFiltersBtn) resetFiltersBtn.style.display = 'none';
+        currentPage = 1;
+        render();
+    };
 
     if (clearButton) {
-        clearButton.addEventListener('click', () => {
-            if (searchInput) {
-                searchInput.value = '';
-                searchInput.focus();
-            }
-            currentSearch = '';
-            clearButton.style.display = 'none';
-            if (resetFiltersBtn) resetFiltersBtn.style.display = 'none';
-            closeSuggestions();
-            currentPage = 1;
-            render();
-        });
+        clearButton.addEventListener('click', resetSearchAndFilters);
     }
 
-    // Đóng dropdown khi click ra ngoài
-    document.addEventListener('click', (e) => {
-        if (searchBoxWrap && !searchBoxWrap.contains(e.target)) {
-            closeSuggestions();
-        }
-    });
+    if (resetFiltersBtn) {
+        resetFiltersBtn.addEventListener('click', resetSearchAndFilters);
+    }
+
+    if (emptyResetBtn) {
+        emptyResetBtn.addEventListener('click', () => {
+            statusPills.forEach(p => p.classList.remove('active'));
+            const allPill = document.querySelector('.cf-pill[data-status="ALL"]');
+            if (allPill) allPill.classList.add('active');
+            currentStatus = 'ALL';
+            resetSearchAndFilters();
+        });
+    }
 
     // Lọc theo Status Pills
     statusPills.forEach(pill => {
@@ -615,36 +469,8 @@ function initAdminPagination(options) {
             currentStatus = pill.dataset.status || 'ALL';
             currentPage = 1;
             render();
-            if (searchInput && searchInput.value.trim()) {
-                updateSuggestions(searchInput.value);
-            }
         });
     });
-
-    // Nút đặt lại bộ lọc
-    if (resetFiltersBtn) {
-        resetFiltersBtn.addEventListener('click', () => {
-            if (searchInput) searchInput.value = '';
-            currentSearch = '';
-            if (clearButton) clearButton.style.display = 'none';
-            resetFiltersBtn.style.display = 'none';
-            closeSuggestions();
-            currentPage = 1;
-            render();
-        });
-    }
-
-    if (emptyResetBtn) {
-        emptyResetBtn.addEventListener('click', () => {
-            if (searchInput) searchInput.value = '';
-            currentSearch = '';
-            if (clearButton) clearButton.style.display = 'none';
-            if (resetFiltersBtn) resetFiltersBtn.style.display = 'none';
-            closeSuggestions();
-            currentPage = 1;
-            render();
-        });
-    }
 
     if (pageSizeSelect) {
         pageSizeSelect.addEventListener('change', () => {
@@ -655,6 +481,6 @@ function initAdminPagination(options) {
         });
     }
 
-    // Khởi tạo ban đầu
+    // Khởi tạo hiển thị lần đầu
     render();
 }
