@@ -23,16 +23,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 /**
- * Controller xử lý phân hệ Cấu hình Sơ đồ & Trạng thái Ghế (UC-FE-03.3: Configure Seat Layout & Maintenance).
- * Primary Actor: Centre Manager / Technical Staff (hoặc Admin).
- *
- * Nghiệp vụ:
- * - BR-HS-02: Mỗi ghế thuộc về đúng một phòng chiếu. Ghế ở trạng thái Under Maintenance không thể đặt vé.
- * - Trường hợp A: Khởi tạo sơ đồ lưới ghế (Generate Layout Grid: Hàng, Cột, Phân hạng Standard, VIP, Sweetbox, Lối đi).
- * - Trường hợp B: Vận hành & Khóa ghế bảo trì hàng ngày (Set Maintenance Status).
- * - Alt 1: Chặn khởi tạo lại kích thước lưới nếu phòng đã có lịch chiếu / đặt vé mở bán.
- * - Alt 2: Chặn khóa bảo trì nếu ghế đã được khách đặt trước trong một suất chiếu sắp tới.
- * - Tự động đồng bộ lại tổng sức chứa khả dụng (Capacity) của phòng chiếu.
+ * Controller điều khiển cấu hình Sơ đồ Ghế (UC-FE-03.3: Configure Cinema Hall Seat Layout).
+ * Phân quyền chuẩn: Chỉ Branch Manager mới được quyền cấu hình sơ đồ ghế cho phòng chiếu thuộc chi nhánh mình.
+ * Admin quản lý hệ thống vĩ mô, không trực tiếp vẽ hay cấu hình sơ đồ ghế.
  */
 @WebServlet(name = "SeatConfigurationServlet", urlPatterns = {"/manager/seat-config", "/admin/seat-config"})
 public class SeatConfigurationServlet extends HttpServlet {
@@ -42,21 +35,24 @@ public class SeatConfigurationServlet extends HttpServlet {
     private final CentreDAO centreDAO = new CentreDAO();
     private final Gson gson = new Gson();
 
-    private boolean isManagerOrAdmin(HttpSession session) {
+    /**
+     * Kiểm tra người dùng hiện tại có vai trò MANAGER hay không.
+     */
+    private boolean isManager(HttpSession session) {
         if (session == null) {
             return false;
         }
         Object roleObj = session.getAttribute("role");
         if (roleObj instanceof String) {
             String role = (String) roleObj;
-            if ("MANAGER".equalsIgnoreCase(role) || "ADMIN".equalsIgnoreCase(role)) {
+            if ("MANAGER".equalsIgnoreCase(role)) {
                 return true;
             }
         }
         Object userObj = session.getAttribute("user");
         if (userObj instanceof User) {
             String role = ((User) userObj).getRole();
-            return role != null && ("MANAGER".equalsIgnoreCase(role) || "ADMIN".equalsIgnoreCase(role));
+            return role != null && "MANAGER".equalsIgnoreCase(role);
         }
         return false;
     }
@@ -81,8 +77,10 @@ public class SeatConfigurationServlet extends HttpServlet {
             return;
         }
 
-        if (!isManagerOrAdmin(session)) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Bạn không có quyền truy cập cấu hình sơ đồ ghế.");
+        // Chỉ cho phép Quản lý chi nhánh
+        if (!isManager(session)) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN,
+                    "Chức năng cấu hình sơ đồ ghế chỉ dành cho Quản lý chi nhánh (Manager). Quản trị viên (Admin) không trực tiếp cấu hình ghế.");
             return;
         }
 
@@ -102,10 +100,9 @@ public class SeatConfigurationServlet extends HttpServlet {
         }
 
         User user = getCurrentUser(session);
-        boolean isAdmin = user != null && "ADMIN".equalsIgnoreCase(user.getRole());
 
-        // Nếu là Manager, bắt buộc phòng chiếu phải thuộc Cụm rạp mà Manager phụ trách
-        if (!isAdmin && (user == null || user.getCentreId() == null || user.getCentreId() != hall.getCentreId())) {
+        // Bắt buộc phòng chiếu phải thuộc Cụm rạp mà Manager phụ trách
+        if (user == null || user.getCentreId() == null || !user.getCentreId().equals(hall.getCentreId())) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN, "Bạn chỉ được cấu hình sơ đồ ghế cho Cụm rạp mình phụ trách.");
             return;
         }
@@ -159,7 +156,7 @@ public class SeatConfigurationServlet extends HttpServlet {
         request.setAttribute("existingSeats", existingSeats);
         request.setAttribute("seatsJson", seatsJson);
         request.setAttribute("hasBookedShowtimes", hasBookedShowtimes);
-        request.setAttribute("isAdmin", isAdmin);
+        request.setAttribute("isAdmin", false);
 
         // Thuộc tính phân trang và bộ lọc danh sách ghế
         request.setAttribute("pagedSeats", pagedSeats);
@@ -184,8 +181,8 @@ public class SeatConfigurationServlet extends HttpServlet {
         request.setCharacterEncoding("UTF-8");
 
         HttpSession session = request.getSession(false);
-        if (!isManagerOrAdmin(session)) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Bạn không có quyền thực hiện thao tác này.");
+        if (!isManager(session)) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Bạn không có quyền thực hiện thao tác này. Chức năng chỉ dành cho Quản lý chi nhánh (Manager).");
             return;
         }
 
@@ -205,9 +202,8 @@ public class SeatConfigurationServlet extends HttpServlet {
         }
 
         User user = getCurrentUser(session);
-        boolean isAdmin = user != null && "ADMIN".equalsIgnoreCase(user.getRole());
 
-        if (!isAdmin && (user == null || user.getCentreId() == null || user.getCentreId() != hall.getCentreId())) {
+        if (user == null || user.getCentreId() == null || !user.getCentreId().equals(hall.getCentreId())) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN, "Bạn chỉ được cấu hình sơ đồ ghế cho Cụm rạp mình phụ trách.");
             return;
         }
