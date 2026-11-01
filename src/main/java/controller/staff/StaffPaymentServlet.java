@@ -1,8 +1,8 @@
 package controller.staff;
 
-import dao.PaymentDAO;
-import model.entity.Payment;
 import model.entity.User;
+import service.PaymentService;
+import service.PaymentService.TrackingSummary;
 import utils.WebUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -10,15 +10,13 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.sql.SQLException;
-import java.util.List;
 import java.util.Set;
 
 /**
- * FE-07 Theo dÃµi giao dá»‹ch thanh toÃ¡n (chá»‰ xem; VNPay tá»± xÃ¡c nháº­n, tiá»n máº·t xÃ¡c nháº­n táº¡i quáº§y):
+ * FE-07 Theo dõi giao dịch thanh toán (chỉ xem; VNPay tự xác nhận, tiền mặt xác nhận tại quầy):
  *   GET /staff/payments or /manager/payments?status=&method=&days=
- * NhÃ¢n viÃªn bÃ¡n vÃ© chá»‰ tháº¥y chi nhÃ¡nh cá»§a mÃ¬nh; MANAGER/ADMIN tháº¥y táº¥t cáº£.
+ * Nhân viên bán vé chỉ thấy chi nhánh của mình; MANAGER/ADMIN thấy tất cả.
  */
 @WebServlet(name = "StaffPaymentServlet", urlPatterns = {"/staff/payments", "/manager/payments"})
 public class StaffPaymentServlet extends HttpServlet {
@@ -27,7 +25,7 @@ public class StaffPaymentServlet extends HttpServlet {
     private static final Set<String> METHODS = Set.of("QR", "CASH");
     private static final Set<Integer> DAY_OPTIONS = Set.of(1, 7, 30);
 
-    private final PaymentDAO paymentDAO = new PaymentDAO();
+    private final PaymentService paymentService = new PaymentService();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -42,23 +40,15 @@ public class StaffPaymentServlet extends HttpServlet {
         Integer days = WebUtil.parseInt(req.getParameter("days"));
         if (days == null || !DAY_OPTIONS.contains(days)) days = 1;
 
-        List<Payment> payments;
+        TrackingSummary summary;
         try {
-            payments = paymentDAO.getTransactionsForTracking(centreScope(staff), status, method, days);
+            summary = paymentService.getTransactionsForTracking(centreScope(staff), status, method, days);
         } catch (SQLException e) {
             throw new ServletException(e);
         }
-        BigDecimal paidTotal = BigDecimal.ZERO;
-        int paidCount = 0;
-        for (Payment p : payments) {
-            if ("PAID".equals(p.getStatus())) {
-                paidTotal = paidTotal.add(p.getAmount());
-                paidCount++;
-            }
-        }
-        req.setAttribute("payments", payments);
-        req.setAttribute("paidTotal", paidTotal);
-        req.setAttribute("paidCount", paidCount);
+        req.setAttribute("payments", summary.payments());
+        req.setAttribute("paidTotal", summary.paidTotal());
+        req.setAttribute("paidCount", summary.paidCount());
         req.setAttribute("status", status);
         req.setAttribute("method", method);
         req.setAttribute("days", days);
@@ -66,7 +56,7 @@ public class StaffPaymentServlet extends HttpServlet {
         req.getRequestDispatcher("/WEB-INF/views/staff/paymentHistory.jsp").forward(req, resp);
     }
 
-    /** GiÃ¡ trá»‹ bá»™ lá»c há»£p lá»‡, null = khÃ´ng lá»c (Set.of khÃ´ng nháº­n contains(null)). */
+    /** Giá trị bộ lọc hợp lệ, null = không lọc (Set.of không nhận contains(null)). */
     private static String allowed(Set<String> values, String value) {
         return value != null && values.contains(value) ? value : null;
     }
