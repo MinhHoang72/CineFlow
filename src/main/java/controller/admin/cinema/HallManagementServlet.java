@@ -15,10 +15,11 @@ import service.CinemaService;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 
 /**
- * Controller: Quản lý Phòng chiếu (Halls).
+ * Controller điều khiển phân hệ Quản lý Phòng chiếu (UC-FE-03.2: Manage Cinema Halls).
+ * Phân quyền chuẩn: Chỉ Branch Manager mới được quyền quản lý phòng chiếu của chi nhánh mình.
+ * Admin chỉ quản lý vĩ mô cụm rạp, không trực tiếp quản lý/chỉnh sửa phòng chiếu của chi nhánh.
  * Toàn bộ logic nghiệp vụ được ủy quyền cho CinemaService (Mô hình 3 lớp).
  */
 @WebServlet(name = "HallManagementServlet", urlPatterns = {"/manager/halls", "/admin/halls"})
@@ -26,21 +27,24 @@ public class HallManagementServlet extends HttpServlet {
 
     private final CinemaService cinemaService = new CinemaService();
 
-    private boolean isManagerOrAdmin(HttpSession session) {
+    /**
+     * Kiểm tra người dùng hiện tại có vai trò MANAGER hay không.
+     */
+    private boolean isManager(HttpSession session) {
         if (session == null) {
             return false;
         }
         Object roleObj = session.getAttribute("role");
         if (roleObj instanceof String) {
             String role = (String) roleObj;
-            if ("MANAGER".equalsIgnoreCase(role) || "ADMIN".equalsIgnoreCase(role)) {
+            if ("MANAGER".equalsIgnoreCase(role)) {
                 return true;
             }
         }
         Object userObj = session.getAttribute("user");
         if (userObj instanceof User) {
             String role = ((User) userObj).getRole();
-            return role != null && ("MANAGER".equalsIgnoreCase(role) || "ADMIN".equalsIgnoreCase(role));
+            return role != null && "MANAGER".equalsIgnoreCase(role);
         }
         return false;
     }
@@ -65,34 +69,14 @@ public class HallManagementServlet extends HttpServlet {
             return;
         }
 
-        if (!isManagerOrAdmin(session)) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Bạn không có quyền truy cập trang Quản lý phòng chiếu.");
+        if (!isManager(session)) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN,
+                    "Chức năng này chỉ dành cho Quản lý chi nhánh (Branch Manager). Quản trị viên (Admin) không trực tiếp quản lý phòng chiếu.");
             return;
         }
 
         User user = getCurrentUser(session);
-        boolean isAdmin = user != null && "ADMIN".equalsIgnoreCase(user.getRole());
-
-        int targetCentreId = 0;
-        List<Centre> allCentres = null;
-
-        if (isAdmin) {
-            allCentres = cinemaService.getAllCentres(null, "ALL");
-            String centreParam = request.getParameter("centreId");
-            if (centreParam != null && !centreParam.trim().isEmpty()) {
-                try {
-                    targetCentreId = Integer.parseInt(centreParam.trim());
-                } catch (NumberFormatException ignored) {
-                }
-            }
-            if (targetCentreId <= 0 && allCentres != null && !allCentres.isEmpty()) {
-                targetCentreId = allCentres.get(0).getCentreId();
-            }
-        } else {
-            if (user != null && user.getCentreId() != null && user.getCentreId() > 0) {
-                targetCentreId = user.getCentreId();
-            }
-        }
+        int targetCentreId = (user != null && user.getCentreId() != null) ? user.getCentreId() : 0;
 
         if (targetCentreId <= 0) {
             request.setAttribute("noCentreAssigned", true);
@@ -123,8 +107,8 @@ public class HallManagementServlet extends HttpServlet {
         request.setAttribute("page", pageResult);
         request.setAttribute("currentCentre", currentCentre);
         request.setAttribute("targetCentreId", targetCentreId);
-        request.setAttribute("allCentres", allCentres);
-        request.setAttribute("isAdmin", isAdmin);
+        request.setAttribute("allCentres", null);
+        request.setAttribute("isAdmin", false);
         request.setAttribute("halls", pageResult.getItems());
         request.setAttribute("currentSearch", search != null ? search.trim() : "");
         request.setAttribute("currentStatus", status);
@@ -145,24 +129,14 @@ public class HallManagementServlet extends HttpServlet {
         request.setCharacterEncoding("UTF-8");
 
         HttpSession session = request.getSession(false);
-        if (!isManagerOrAdmin(session)) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Bạn không có quyền thực hiện thao tác này.");
+        if (!isManager(session)) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN,
+                    "Bạn không có quyền thực hiện thao tác này. Chức năng chỉ dành cho Quản lý chi nhánh (Manager).");
             return;
         }
 
         User user = getCurrentUser(session);
-        boolean isAdmin = user != null && "ADMIN".equalsIgnoreCase(user.getRole());
-
-        int centreId = 0;
-        if (isAdmin) {
-            String centreParam = request.getParameter("centreId");
-            try {
-                centreId = Integer.parseInt(centreParam.trim());
-            } catch (Exception ignored) {
-            }
-        } else if (user != null && user.getCentreId() != null) {
-            centreId = user.getCentreId();
-        }
+        int centreId = (user != null && user.getCentreId() != null) ? user.getCentreId() : 0;
 
         if (centreId <= 0) {
             response.sendRedirect(request.getContextPath() + "/manager/halls?error=no_centre");
@@ -170,9 +144,6 @@ public class HallManagementServlet extends HttpServlet {
         }
 
         StringBuilder redirectUrl = new StringBuilder(request.getContextPath() + "/manager/halls?");
-        if (isAdmin) {
-            redirectUrl.append("centreId=").append(centreId).append("&");
-        }
 
         String filterSearch = request.getParameter("search");
         String filterStatus = request.getParameter("status");

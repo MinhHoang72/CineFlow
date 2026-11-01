@@ -1015,7 +1015,7 @@ GO
 CREATE TABLE CheckInLogs (
     CheckInID INT IDENTITY(1,1) PRIMARY KEY,
 
-    TicketID INT NOT NULL,
+    TicketID INT NULL,
 
     CheckedBy INT NOT NULL,
 
