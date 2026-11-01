@@ -314,6 +314,7 @@ request.setAttribute("baseUrl", base);
         String code = param(request, "code").toUpperCase();
         String name = param(request, "name");
         String description = param(request, "description");
+        String imageUrl = param(request, "imageUrl");
         String type = param(request, "type");
         String status = param(request, "status");
 
@@ -325,6 +326,7 @@ request.setAttribute("baseUrl", base);
         voucher.setVoucherCode(code);
         voucher.setVoucherName(name);
         voucher.setDescription(description);
+        voucher.setImageUrl(imageUrl.isEmpty() ? null : imageUrl);
         voucher.setDiscountType(type);
         voucher.setStatus(status);
 

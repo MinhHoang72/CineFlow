@@ -53,6 +53,21 @@
         </div>
 
         <div class="cf-form-group">
+            <label class="cf-form-label">Hình ảnh / Banner Voucher (URL)</label>
+            <input class="cf-form-control" type="text" name="imageUrl" id="voucherImageUrl" maxlength="500"
+                   placeholder="Dán đường dẫn ảnh (VD: https://...)"
+                   value="${voucher.imageUrl}" oninput="updateVoucherImagePreview(this.value)">
+            <c:if test="${not empty errors.imageUrl}">
+                <div class="vc-error">${errors.imageUrl}</div>
+            </c:if>
+            <div id="voucherImagePreviewContainer" style="margin-top: 10px; display: ${not empty voucher.imageUrl ? 'block' : 'none'};">
+                <img id="voucherImagePreview" src="${voucher.imageUrl}" alt="Preview"
+                     style="max-width: 260px; max-height: 140px; border-radius: 6px; border: 1px solid #cbd5e1; object-fit: cover;"
+                     onerror="this.parentElement.style.display='none';">
+            </div>
+        </div>
+
+        <div class="cf-form-group">
             <label class="cf-form-label">Mô tả</label>
             <textarea class="cf-form-textarea" name="description" rows="3" maxlength="500">${voucher.description}</textarea>
             <c:if test="${not empty errors.description}">
@@ -142,3 +157,16 @@
 </div>
 
 <%@ include file="footer.jspf" %>
+
+<script>
+    function updateVoucherImagePreview(url) {
+        const container = document.getElementById('voucherImagePreviewContainer');
+        const img = document.getElementById('voucherImagePreview');
+        if (url && url.trim().length > 0) {
+            img.src = url.trim();
+            container.style.display = 'block';
+        } else {
+            container.style.display = 'none';
+        }
+    }
+</script>
