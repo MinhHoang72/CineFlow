@@ -1,4 +1,4 @@
-﻿<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ page import="model.entity.Centre,model.entity.Hall,java.util.List" %>
 <%
     // 1. Kiểm tra quyền hạn Admin (RBAC)
@@ -199,7 +199,7 @@
                             <td>
                                 <!-- BR-HS-01: Một Centre quản lý danh sách các Hall trực thuộc -->
                                 <button type="button" class="cf-badge cf-badge-halls"
-                                        onclick="openViewHallsModal(<%= c.getCentreId() %>, '<%= c.getCentreName().replace("'", "\\'") %>')"
+                                        onclick="openViewHallsModal(<%= c.getCentreId() %>, '<%= c.getCentreName() != null ? c.getCentreName().replace("'", "\\'") : "" %>')"
                                         title="Bấm để xem danh sách phòng chiếu trực thuộc">
                                     <span>🎬</span>
                                     <span><%= c.getHallCount() %> Phòng (<%= c.getSeatCount() %> ghế)</span>
@@ -216,13 +216,13 @@
                                 <div class="cf-actions" style="justify-content: flex-end;">
                                     <!-- Nút Sửa -->
                                     <button type="button" class="cf-btn cf-btn-secondary cf-btn-sm"
-                                            onclick="openEditCentreModal(<%= c.getCentreId() %>, '<%= c.getCentreName().replace("'", "\\'") %>', '<%= c.getAddress().replace("'", "\\'") %>', '<%= c.getPhone() != null ? c.getPhone().replace("'", "\\'") : "" %>', '<%= c.getCity() != null ? c.getCity().replace("'", "\\'") : "" %>')">
+                                            onclick="openEditCentreModal(<%= c.getCentreId() %>, '<%= c.getCentreName() != null ? c.getCentreName().replace("'", "\\'") : "" %>', '<%= c.getAddress() != null ? c.getAddress().replace("'", "\\'") : "" %>', '<%= c.getPhone() != null ? c.getPhone().replace("'", "\\'") : "" %>', '<%= c.getCity() != null ? c.getCity().replace("'", "\\'") : "" %>')">
                                         Sửa
                                     </button>
 
                                     <!-- Nút Toggle Status (Bật / Tắt trạng thái) -->
                                     <form method="POST" action="${pageContext.request.contextPath}/admin/centres" style="display: inline-block; margin: 0;"
-                                          onsubmit="return confirmToggleStatus('<%= c.getCentreName().replace("'", "\\'") %>', <%= isActive %>);">
+                                          onsubmit="return confirmToggleStatus('<%= c.getCentreName() != null ? c.getCentreName().replace("'", "\\'") : "" %>', <%= isActive %>);">
                                         <input type="hidden" name="action" value="toggleStatus">
                                         <input type="hidden" name="centreId" value="<%= c.getCentreId() %>">
                                         <input type="hidden" name="search" value="<%= currentSearch != null ? currentSearch : "" %>">
@@ -255,7 +255,7 @@
                     </tbody>
                 </table>
 
-                <% if (totalFilteredCentres != null && totalFilteredCentres > 0) { 
+                <% if (totalFilteredCentres > 0) { 
                     int startItem = (currentPage - 1) * pageSize + 1;
                     int endItem = Math.min(currentPage * pageSize, totalFilteredCentres);
 

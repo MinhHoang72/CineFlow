@@ -142,19 +142,8 @@
             <section class="cf-card">
                 <!-- THANH CÔNG CỤ: TÌM KIẾM VÀ BỘ LỌC -->
                 <div class="cf-card-toolbar-multi">
-                    <!-- HÀNG 1: TÌM KIẾM TỪ KHÓA, MÃ PHIM VÀ PILLS TRẠNG THÁI -->
-                    <div class="cf-toolbar-row">
-                        <div class="cf-toolbar-left">
-                            <div class="cf-search-box">
-                                <input type="text" id="movieSearchInput" placeholder="Tìm theo tên, thể loại, đạo diễn...">
-                            </div>
-
-                            <div class="cf-code-search-box">
-                                <span class="cf-code-icon">#</span>
-                                <input type="text" id="movieIdInput" placeholder="Mã phim (vd: 18, CF-0018)...">
-                            </div>
-                        </div>
-
+                    <!-- HÀNG 1: TABS TRẠNG THÁI PHIM (PILLS) VÀ TÙY CHỌN HIỂN THỊ -->
+                    <div class="cf-toolbar-row cf-toolbar-row-top">
                         <div class="cf-filter-pills">
                             <button type="button" class="cf-pill active" data-status="ALL">Tất cả phim (<%= totalMovies %>)</button>
                             <button type="button" class="cf-pill" data-status="NOW_SHOWING">Đang chiếu (<%= nowShowingCount %>)</button>
@@ -162,11 +151,30 @@
                             <button type="button" class="cf-pill" data-status="ENDED">Đã kết thúc (<%= endedCount %>)</button>
                             <button type="button" class="cf-pill" data-status="ARCHIVED">Lưu trữ (<%= archivedCount %>)</button>
                         </div>
+
+                        <div class="cf-toolbar-right">
+                            <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--cf-muted);">
+                                <span>Hiển thị:</span>
+                                <select id="moviePageSizeSelect" class="cf-select-sm">
+                                    <option value="8">8 phim</option>
+                                    <option value="12" selected>12 phim</option>
+                                    <option value="24">24 phim</option>
+                                    <option value="50">50 phim</option>
+                                    <option value="ALL">Tất cả</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- HÀNG 2: BỘ LỌC NÂNG CAO (THỂ LOẠI, ĐỘ TUỔI, NGÀY KHỞI CHIẾU, RESET, PHÂN TRANG) -->
+                    <!-- HÀNG 2: BỘ CÔNG CỤ TÌM KIẾM TỪ KHÓA, MÃ PHIM, THỂ LOẠI, ĐỘ TUỔI VÀ ĐẶT LẠI -->
                     <div class="cf-toolbar-row cf-toolbar-row-filters">
                         <div class="cf-toolbar-left cf-filters-wrap">
+                            <!-- Tìm theo tên phim, thể loại, đạo diễn -->
+                            <div class="cf-search-box">
+                                <input type="text" id="movieSearchInput" placeholder="Tìm theo tên phim, thể loại, đạo diễn...">
+                            </div>
+
+
                             <!-- Lọc Thể loại -->
                             <select id="movieGenreSelect" class="cf-select-sm" title="Lọc theo thể loại phim">
                                 <option value="ALL">Tất cả thể loại</option>
@@ -185,43 +193,8 @@
                                 <option value="T18">T18 - Khán giả từ 18 tuổi</option>
                             </select>
 
-                            <!-- Lọc Ngày khởi chiếu (Mốc nhanh) -->
-                            <select id="movieReleasePresetSelect" class="cf-select-sm" title="Lọc theo mốc ngày khởi chiếu">
-                                <option value="ALL">Tất cả ngày chiếu</option>
-                                <option value="RELEASED">Đã khởi chiếu (≤ hôm nay)</option>
-                                <option value="UPCOMING">Sắp khởi chiếu (&gt; hôm nay)</option>
-                                <option value="THIS_MONTH">Khởi chiếu tháng này</option>
-                                <option value="CUSTOM">Chọn khoảng ngày...</option>
-                            </select>
-
-                            <!-- Khoảng ngày Từ - Đến -->
-                            <div class="cf-date-filter-wrap" id="movieDateFilterWrap">
-                                <span class="cf-date-label">Từ</span>
-                                <input type="date" id="movieReleaseFrom" class="cf-date-input" title="Khởi chiếu từ ngày">
-                                <span class="cf-date-label">Đến</span>
-                                <input type="date" id="movieReleaseTo" class="cf-date-input" title="Khởi chiếu đến ngày">
-                            </div>
-
                             <!-- Nút Reset bộ lọc -->
-                            <button type="button" class="cf-btn-reset-filter" id="btnResetFilters" title="Đặt lại tất cả bộ lọc về mặc định">
-                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <polyline points="23 4 23 10 17 10"></polyline>
-                                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
-                                </svg>
-                            </button>
-                        </div>
-
-                        <div class="cf-toolbar-right">
-                            <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--cf-muted);">
-                                <span>Hiển thị:</span>
-                                <select id="moviePageSizeSelect" class="cf-select-sm">
-                                    <option value="8">8 phim</option>
-                                    <option value="12" selected>12 phim</option>
-                                    <option value="24">24 phim</option>
-                                    <option value="50">50 phim</option>
-                                    <option value="ALL">Tất cả</option>
-                                </select>
-                            </div>
+                          
                         </div>
                     </div>
                 </div>
@@ -355,9 +328,6 @@
             statusPillSelector: '.cf-pill[data-status]',
             genreSelectId: 'movieGenreSelect',
             ageSelectId: 'movieAgeSelect',
-            releasePresetSelectId: 'movieReleasePresetSelect',
-            releaseFromInputId: 'movieReleaseFrom',
-            releaseToInputId: 'movieReleaseTo',
             resetButtonId: 'btnResetFilters',
             pageSizeSelectId: 'moviePageSizeSelect',
             infoDisplayId: 'moviePaginationInfo',

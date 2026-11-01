@@ -192,6 +192,10 @@
     gap: 10px;
 }
 
+.cf-filters-wrap .cf-search-box {
+    width: 280px;
+}
+
 .cf-code-search-box {
     position: relative;
     display: inline-flex;

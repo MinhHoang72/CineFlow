@@ -49,7 +49,8 @@ public class CinemaDAO {
     private List<Movie> getMoviesByStatus(String status) {
         String sql = "SELECT MovieID, Title, Description, Duration, Genre, Director, Cast, Language, "
                 + "ReleaseDate, EndDate, PosterURL, TrailerURL, AgeRating, Status FROM Movies WHERE Status = ? "
-                + "ORDER BY ReleaseDate DESC, MovieID DESC";
+                // MovieID is generated when an admin adds a movie, so newest additions lead each home catalog.
+                + "ORDER BY MovieID DESC, ReleaseDate DESC";
         List<Movie> movies = new ArrayList<>();
 
         try (Connection connection = DBContext.getConnection();
