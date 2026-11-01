@@ -2784,6 +2784,99 @@ html[data-theme="light"].cf-css-admin-movies .cf-toolbar-row-filters {
     border-top: 1px dashed rgba(15, 23, 42, 0.08);
 }
 
+html[data-theme="light"].cf-css-admin-movies .cf-search-box-expanded input {
+    background: #ffffff;
+    border: 1px solid rgba(15, 23, 42, 0.14);
+    border-radius: 8px;
+    color: #0f172a;
+    outline: none;
+}
+
+html[data-theme="light"].cf-css-admin-movies .cf-search-box-expanded input::placeholder {
+    color: #64748b;
+}
+
+html[data-theme="light"].cf-css-admin-movies .cf-search-box-expanded input:focus {
+    background: #ffffff;
+    border-color: var(--cf-primary, #ff2855);
+    box-shadow: 0 0 0 3px rgba(255, 40, 85, 0.2), 0 4px 12px rgba(15, 23, 42, 0.122);
+}
+
+html[data-theme="light"].cf-css-admin-movies .cf-search-clear-btn {
+    background: rgba(148, 163, 184, 0.2);
+    border: none;
+    border-radius: 50%;
+    color: #1e293b;
+}
+
+html[data-theme="light"].cf-css-admin-movies .cf-search-clear-btn:hover {
+    background: var(--cf-primary, #ff2855);
+    color: #ffffff;
+}
+
+html[data-theme="light"].cf-css-admin-movies .cf-search-suggestions {
+    background: #ffffff;
+    border: 1px solid rgba(15, 23, 42, 0.16);
+    border-radius: 10px;
+    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.245), 0 0 0 1px rgba(15, 23, 42, 0.055);
+}
+
+html[data-theme="light"].cf-css-admin-movies .cf-suggestions-header {
+    background: rgba(255, 255, 255, 0.9);
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+    color: #64748b;
+}
+
+html[data-theme="light"].cf-css-admin-movies .cf-suggestions-count {
+    color: var(--cf-primary, #ff2855);
+}
+
+html[data-theme="light"].cf-css-admin-movies .cf-suggestion-item {
+    border-radius: 8px;
+    border: 1px solid transparent;
+    color: inherit;
+}
+
+html[data-theme="light"].cf-css-admin-movies .cf-suggestion-item:hover,
+html[data-theme="light"].cf-css-admin-movies .cf-suggestion-item.is-focused {
+    background: rgba(255, 40, 85, 0.14);
+    border-color: rgba(255, 40, 85, 0.35);
+}
+
+html[data-theme="light"].cf-css-admin-movies .cf-sugg-thumb {
+    border-radius: 4px;
+    background: #ffffff;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.122);
+}
+
+html[data-theme="light"].cf-css-admin-movies .cf-sugg-title {
+    color: #0f172a;
+}
+
+html[data-theme="light"].cf-css-admin-movies .cf-sugg-title mark {
+    background: rgba(255, 40, 85, 0.35);
+    color: #ff94ab;
+    border-radius: 3px;
+}
+
+html[data-theme="light"].cf-css-admin-movies .cf-sugg-meta {
+    color: #64748b;
+}
+
+html[data-theme="light"].cf-css-admin-movies .cf-sugg-code {
+    color: #0f172a;
+}
+
+html[data-theme="light"].cf-css-admin-movies .cf-suggestions-footer {
+    background: rgba(255, 255, 255, 0.85);
+    border-top: 1px solid rgba(15, 23, 42, 0.08);
+    color: #64748b;
+}
+
+html[data-theme="light"].cf-css-admin-movies .cf-suggestions-empty {
+    color: #64748b;
+}
+
 html[data-theme="light"].cf-css-admin-movies .cf-code-search-box input {
     background: #ffffff;
     border: 1px solid rgba(15, 23, 42, 0.12);
