@@ -5,6 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.sql.Types;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -58,8 +59,15 @@ public class CheckInDAO {
                     }
                 }
 
+                // Khi không tìm thấy vé, vẫn ghi log thất bại
                 if (ticket == null) {
-                    connection.rollback();
+                    try (PreparedStatement logStmt = connection.prepareStatement(
+                            "INSERT INTO CheckInLogs (TicketID, CheckedBy, Result, Note) VALUES (NULL, ?, 'REJECTED', ?)")) {
+                        logStmt.setInt(1, staffId);
+                        logStmt.setString(2, "Không tìm thấy vé với mã này.");
+                        logStmt.executeUpdate();
+                    }
+                    connection.commit();
                     return new CheckInResultDTO(false, "Không tìm thấy vé với mã này.", null);
                 }
 
@@ -127,13 +135,13 @@ public class CheckInDAO {
         String sql = "SELECT TOP (?) l.CheckInID, t.TicketCode, m.Title, h.HallName, "
                 + "se.SeatRow + CAST(se.SeatNumber AS VARCHAR(10)) AS SeatLabel, u.FullName, l.CheckInTime, l.Result, l.Note "
                 + "FROM CheckInLogs l "
-                + "JOIN Tickets t ON t.TicketID = l.TicketID "
-                + "JOIN BookingSeats bs ON bs.BookingSeatID = t.BookingSeatID "
-                + "JOIN Bookings b ON b.BookingID = bs.BookingID "
-                + "JOIN Seats se ON se.SeatID = bs.SeatID "
-                + "JOIN Showtimes st ON st.ShowtimeID = b.ShowtimeID "
-                + "JOIN Movies m ON m.MovieID = st.MovieID "
-                + "JOIN Halls h ON h.HallID = st.HallID "
+                + "LEFT JOIN Tickets t ON t.TicketID = l.TicketID "
+                + "LEFT JOIN BookingSeats bs ON bs.BookingSeatID = t.BookingSeatID "
+                + "LEFT JOIN Bookings b ON b.BookingID = bs.BookingID "
+                + "LEFT JOIN Seats se ON se.SeatID = bs.SeatID "
+                + "LEFT JOIN Showtimes st ON st.ShowtimeID = b.ShowtimeID "
+                + "LEFT JOIN Movies m ON m.MovieID = st.MovieID "
+                + "LEFT JOIN Halls h ON h.HallID = st.HallID "
                 + "JOIN Users u ON u.UserID = l.CheckedBy "
                 + "WHERE u.CentreID = ? ORDER BY l.CheckInTime DESC, l.CheckInID DESC";
         try (Connection connection = DBContext.getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
