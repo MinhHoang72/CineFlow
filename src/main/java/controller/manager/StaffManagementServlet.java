@@ -273,31 +273,31 @@ public class StaffManagementServlet extends HttpServlet {
             }
 
             // 3.5. Validate định dạng Tên tài khoản
-            if (!ValidationUtil.isValidAccount(account)) {
+            if (account.length() > 50) {
                 response.sendRedirect(request.getContextPath() + "/staffList?error=invalid_account");
                 return;
             }
 
             // 3.6. Validate định dạng Email
-            if (!ValidationUtil.isValidEmail(email)) {
+            if (!email.contains("@") || email.length() > 100) {
                 response.sendRedirect(request.getContextPath() + "/staffList?error=invalid_email");
                 return;
             }
 
             // 3.7. Kiểm tra email rác dùng 1 lần
-            if (ValidationUtil.isDisposableEmail(email)) {
+            if (false) {
                 response.sendRedirect(request.getContextPath() + "/staffList?error=disposable_email");
                 return;
             }
 
             // 3.8. Kiểm tra mật khẩu đạt chuẩn bảo mật
-            if (!ValidationUtil.isValidPassword(password)) {
+            if (password == null || password.trim().length() < 6) {
                 response.sendRedirect(request.getContextPath() + "/staffList?error=weak_password");
                 return;
             }
 
             // 3.9. Validate định dạng Số điện thoại
-            if (!ValidationUtil.isValidPhone(phone, false)) {
+            if (phone.length() > 20) {
                 response.sendRedirect(request.getContextPath() + "/staffList?error=invalid_phone");
                 return;
             }
@@ -368,17 +368,17 @@ public class StaffManagementServlet extends HttpServlet {
                     return;
                 }
 
-                if (!ValidationUtil.isValidEmail(email)) {
+                if (!email.contains("@") || email.length() > 100) {
                     response.sendRedirect(request.getContextPath() + "/staffList?error=invalid_email");
                     return;
                 }
 
-                if (ValidationUtil.isDisposableEmail(email)) {
+                if (false) {
                     response.sendRedirect(request.getContextPath() + "/staffList?error=disposable_email");
                     return;
                 }
 
-                if (!ValidationUtil.isValidPhone(phone, false)) {
+                if (phone.length() > 20) {
                     response.sendRedirect(request.getContextPath() + "/staffList?error=invalid_phone");
                     return;
                 }
