@@ -1,106 +1,41 @@
 package controller.manager.showtime;
 
-import dao.ShowtimeDAO;
 import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.*;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+import service.ShowtimeService;
+
 import java.io.IOException;
 
 @WebServlet("/showtimes/cancel")
-public class CancelShowtimeServlet
-        extends HttpServlet {
+public class CancelShowtimeServlet extends HttpServlet {
+
+    private final ShowtimeService showtimeService = new ShowtimeService();
 
     @Override
-    protected void doPost(
-            HttpServletRequest request,
-            HttpServletResponse response)
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
 
         HttpSession session = request.getSession(false);
         String role = session != null ? (String) session.getAttribute("role") : null;
         if (!"MANAGER".equalsIgnoreCase(role)) {
             request.getSession().setAttribute("error", "Chỉ Quản lý cụm rạp mới có quyền hủy suất chiếu.");
-            redirect(request, response);
+            response.sendRedirect(request.getContextPath() + "/showtimes");
             return;
         }
 
         try {
-
-            int showtimeId =
-                    Integer.parseInt(
-                            request.getParameter(
-                                    "showtimeId"
-                            )
-                    );
-
-            ShowtimeDAO dao =
-                    new ShowtimeDAO();
-
-
-            /*
-             * Không cho cancel nếu
-             * đã có booking active
-             */
-            if (dao.hasActiveBookings(
-                    showtimeId)) {
-
-                request.getSession()
-                        .setAttribute(
-                                "error",
-                                "Cannot cancel showtime because it already has active bookings."
-                        );
-
-                redirect(request, response);
-
-                return;
-            }
-
-
-            boolean success =
-                    dao.cancelShowtime(
-                            showtimeId
-                    );
-
-
-            if (success) {
-
-                request.getSession()
-                        .setAttribute(
-                                "message",
-                                "Showtime cancelled successfully."
-                        );
-
-            } else {
-
-                request.getSession()
-                        .setAttribute(
-                                "error",
-                                "Unable to cancel showtime."
-                        );
-            }
-
+            int showtimeId = Integer.parseInt(request.getParameter("showtimeId"));
+            showtimeService.cancelShowtime(showtimeId);
+            request.getSession().setAttribute("message", "Suất chiếu #" + showtimeId + " đã được hủy thành công.");
+        } catch (IllegalStateException e) {
+            request.getSession().setAttribute("error", e.getMessage());
         } catch (Exception e) {
-
-            e.printStackTrace();
-
-            request.getSession()
-                    .setAttribute(
-                            "error",
-                            "Invalid showtime."
-                    );
+            request.getSession().setAttribute("error", "Không thể hủy suất chiếu. Vui lòng thử lại.");
         }
 
-        redirect(request, response);
-    }
-
-
-    private void redirect(
-            HttpServletRequest request,
-            HttpServletResponse response)
-            throws IOException {
-
-        response.sendRedirect(
-                request.getContextPath()
-                + "/showtimes"
-        );
+        response.sendRedirect(request.getContextPath() + "/showtimes");
     }
 }

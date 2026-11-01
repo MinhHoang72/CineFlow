@@ -1,6 +1,5 @@
 package controller.admin.fnb;
 
-import dao.FnbDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
@@ -17,29 +16,31 @@ import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import model.entity.ComboLine;
 import model.entity.FnbCombo;
 import model.entity.FnbItem;
 import model.dto.fnb.FnbRowDTO;
 import model.dto.common.OptionDTO;
 import model.dto.common.PageDTO;
 import model.entity.User;
+import service.FnbService;
 import utils.MediaStorage;
 
+/**
+ * Controller: Điều khiển phân hệ Bắp nước (F&B) và Quản lý kho chi nhánh.
+ * Ủy quyền nghiệp vụ xử lý cho FnbService (Mô hình 3 lớp).
+ */
 @MultipartConfig(maxFileSize = 2 * 1024 * 1024, maxRequestSize = 3 * 1024 * 1024)
 @WebServlet(name = "FnbManagementServlet", urlPatterns = {"/fnb", "/fnb/*"})
 public class FnbManagementServlet extends HttpServlet {
 
     private static final int PAGE_SIZE = 10;
-    private static final BigDecimal MAX_PRICE = new BigDecimal("10000000");
-    private final FnbDAO dao = new FnbDAO();
+    private final FnbService fnbService = new FnbService();
 
     private String crumb(User user, String base) {
-        String label = "ADMIN".equals(user.getRole()) ? null : dao.centreLabel(user.getCentreId());
+        String label = "ADMIN".equals(user.getRole()) ? null : fnbService.getCentreLabel(user.getCentreId());
         return label == null ? base : base + " · " + label;
     }
 
@@ -92,11 +93,9 @@ public class FnbManagementServlet extends HttpServlet {
             return;
         }
         String path = request.getPathInfo() == null ? "/" : request.getPathInfo();
-        // Các action kho: chỉ MANAGER được POST
         if ("/stock/toggle".equals(path) || "/stock/quantity".equals(path)) {
             if (!"MANAGER".equals(user.getRole())) {
-                response.sendError(HttpServletResponse.SC_FORBIDDEN,
-                        "Chỉ Manager của Centre mới được cập nhật kho.");
+                response.sendError(HttpServletResponse.SC_FORBIDDEN, "Chỉ Manager của Centre mới được cập nhật kho.");
                 return;
             }
             switch (path) {
@@ -109,10 +108,8 @@ public class FnbManagementServlet extends HttpServlet {
             }
             return;
         }
-        // Các action thực đơn (item/combo): chỉ MANAGER được POST
         if (!"MANAGER".equals(user.getRole())) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN,
-                    "Chỉ Manager của Centre mới được thay đổi thực đơn.");
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Chỉ Manager của Centre mới được thay đổi thực đơn.");
             return;
         }
         switch (path) {
@@ -315,7 +312,7 @@ public class FnbManagementServlet extends HttpServlet {
         Integer selectedCentre = user.getCentreId();
         List<OptionDTO> centres = null;
         if (admin) {
-            centres = dao.centres();
+            centres = fnbService.getCentres();
             selectedCentre = null;
             String centreText = request.getParameter("centreId");
             if (centreText != null && centreText.matches("[0-9]+") && centreText.length() < 10) {
@@ -328,7 +325,7 @@ public class FnbManagementServlet extends HttpServlet {
             }
         }
 
-        PageDTO<FnbRowDTO> result = dao.search(q, category, status, minPrice, maxPrice, sort,
+        PageDTO<FnbRowDTO> result = fnbService.search(q, category, status, minPrice, maxPrice, sort,
                 selectedCentre, page, PAGE_SIZE);
 
         String minValue = minPrice == null ? "" : minPrice.stripTrailingZeros().toPlainString();
@@ -348,7 +345,7 @@ public class FnbManagementServlet extends HttpServlet {
         request.setAttribute("sort", sort);
         request.setAttribute("minPrice", minValue);
         request.setAttribute("maxPrice", maxValue);
-        request.setAttribute("categories", dao.categories());
+        request.setAttribute("categories", fnbService.getCategories());
         request.setAttribute("centres", centres);
         request.setAttribute("selectedCentre", selectedCentre);
         request.setAttribute("canEdit", manager);
@@ -372,7 +369,7 @@ public class FnbManagementServlet extends HttpServlet {
         FnbItem item = new FnbItem();
         String idText = request.getParameter("id");
         if (idText != null && idText.matches("[0-9]+") && idText.length() < 10) {
-            item = dao.findItem(Integer.parseInt(idText));
+            item = fnbService.findItem(Integer.parseInt(idText));
             if (item == null) {
                 flash(request, "error", "Không tìm thấy món.");
                 response.sendRedirect(request.getContextPath() + "/fnb");
@@ -384,7 +381,7 @@ public class FnbManagementServlet extends HttpServlet {
             }
         }
         request.setAttribute("item", item);
-        request.setAttribute("categories", dao.categories());
+        request.setAttribute("categories", fnbService.getCategories());
         request.setAttribute("csrf", csrfToken(request));
         request.setAttribute("pageTitle", item.getFnbItemId() == 0 ? "Thêm món" : "Sửa món");
         request.setAttribute("pageBreadcrumb", crumb(user, "Bắp nước"));
@@ -398,7 +395,7 @@ public class FnbManagementServlet extends HttpServlet {
         item.setCentreId(centreId);
         String idText = request.getParameter("id");
         if (idText != null && idText.matches("[0-9]+") && idText.length() < 10) {
-            item = dao.findItem(Integer.parseInt(idText));
+            item = fnbService.findItem(Integer.parseInt(idText));
             if (item == null) {
                 flash(request, "error", "Không tìm thấy món.");
                 response.sendRedirect(request.getContextPath() + "/fnb");
@@ -410,64 +407,19 @@ public class FnbManagementServlet extends HttpServlet {
             }
         }
 
-        Map<String, String> errors = new LinkedHashMap<>();
-        String name = request.getParameter("name") == null ? "" : request.getParameter("name").trim();
-        String description = request.getParameter("description") == null ? "" : request.getParameter("description").trim();
-        String status = request.getParameter("status") == null ? "" : request.getParameter("status").trim();
-        String priceText = request.getParameter("price") == null ? "" : request.getParameter("price").trim();
-        String categoryText = request.getParameter("categoryId") == null ? "" : request.getParameter("categoryId").trim();
+        String name = request.getParameter("name");
+        String description = request.getParameter("description");
+        String status = request.getParameter("status");
+        String priceText = request.getParameter("price");
+        String categoryText = request.getParameter("categoryId");
 
-        item.setItemName(name);
-        item.setDescription(description);
-        item.setStatus(status);
-        Part imagePart = uploadedImage(request, errors);
+        FnbService.ValidationResult<FnbItem> valResult = fnbService.validateItem(item, name, description, status, priceText, categoryText);
+        Part imagePart = uploadedImage(request, valResult.getErrors());
 
-        if (name.isEmpty()) {
-            errors.put("name", "Tên món là bắt buộc.");
-        } else if (name.length() > 100) {
-            errors.put("name", "Tên món tối đa 100 ký tự.");
-        }
-        if (description.length() > 500) {
-            errors.put("description", "Mô tả tối đa 500 ký tự.");
-        }
-
-        List<OptionDTO> categories = dao.categories();
-        int categoryId = 0;
-        if (categoryText.matches("[0-9]+") && categoryText.length() < 10) {
-            categoryId = Integer.parseInt(categoryText);
-        }
-        boolean categoryOk = false;
-        for (OptionDTO option : categories) {
-            if (option.getId() == categoryId) {
-                categoryOk = true;
-            }
-        }
-        item.setCategoryId(categoryId);
-        if (!categoryOk) {
-            errors.put("categoryId", "Hãy chọn danh mục.");
-        }
-
-        try {
-            BigDecimal price = new BigDecimal(priceText.replace(",", ""));
-            item.setPrice(price);
-            if (price.signum() <= 0 || price.compareTo(MAX_PRICE) > 0 || price.scale() > 2) {
-                errors.put("price", "Giá phải lớn hơn 0 và tối đa 10.000.000 đ.");
-            }
-        } catch (NumberFormatException exception) {
-            errors.put("price", "Hãy nhập giá hợp lệ.");
-        }
-
-        if (!"ACTIVE".equals(status) && !"INACTIVE".equals(status)) {
-            errors.put("status", "Hãy chọn trạng thái.");
-        } else if ("INACTIVE".equals(status) && item.getFnbItemId() > 0
-                && dao.countActiveCombosUsing(item.getFnbItemId()) > 0) {
-            errors.put("status", "Món đang nằm trong combo đang bán, hãy gỡ khỏi combo trước khi lưu trữ.");
-        }
-
-        if (!errors.isEmpty()) {
-            request.setAttribute("errors", errors);
+        if (!valResult.isValid() || !valResult.getErrors().isEmpty()) {
+            request.setAttribute("errors", valResult.getErrors());
             request.setAttribute("item", item);
-            request.setAttribute("categories", categories);
+            request.setAttribute("categories", fnbService.getCategories());
             request.setAttribute("csrf", csrfToken(request));
             request.setAttribute("pageTitle", item.getFnbItemId() == 0 ? "Thêm món" : "Sửa món");
             request.setAttribute("pageBreadcrumb", crumb(user, "Bắp nước"));
@@ -484,13 +436,9 @@ public class FnbManagementServlet extends HttpServlet {
         }
         item.setImageUrl(newImage);
         try {
-            if (item.getFnbItemId() == 0) {
-                dao.insertItem(item);
-                flash(request, "success", "Đã thêm món \"" + item.getItemName() + "\".");
-            } else {
-                dao.updateItem(item);
-                flash(request, "success", "Đã cập nhật món \"" + item.getItemName() + "\".");
-            }
+            boolean isNew = item.getFnbItemId() == 0;
+            fnbService.saveItem(item);
+            flash(request, "success", (isNew ? "Đã thêm món \"" : "Đã cập nhật món \"") + item.getItemName() + "\".");
             if (oldImage != null && !oldImage.equals(newImage)) {
                 deleteImage(request, oldImage);
             }
@@ -514,7 +462,7 @@ public class FnbManagementServlet extends HttpServlet {
         FnbCombo combo = new FnbCombo();
         String idText = request.getParameter("id");
         if (idText != null && idText.matches("[0-9]+") && idText.length() < 10) {
-            combo = dao.findCombo(Integer.parseInt(idText));
+            combo = fnbService.findCombo(Integer.parseInt(idText));
             if (combo == null) {
                 flash(request, "error", "Không tìm thấy combo.");
                 response.sendRedirect(request.getContextPath() + "/fnb");
@@ -526,7 +474,7 @@ public class FnbManagementServlet extends HttpServlet {
             }
         }
         request.setAttribute("combo", combo);
-        request.setAttribute("items", dao.activeItems(centreId));
+        request.setAttribute("items", fnbService.getActiveItems(centreId));
         request.setAttribute("csrf", csrfToken(request));
         request.setAttribute("pageTitle", combo.getComboId() == 0 ? "Tạo combo" : "Sửa combo");
         request.setAttribute("pageBreadcrumb", crumb(user, "Bắp nước"));
@@ -540,7 +488,7 @@ public class FnbManagementServlet extends HttpServlet {
         combo.setCentreId(centreId);
         String idText = request.getParameter("id");
         if (idText != null && idText.matches("[0-9]+") && idText.length() < 10) {
-            combo = dao.findCombo(Integer.parseInt(idText));
+            combo = fnbService.findCombo(Integer.parseInt(idText));
             if (combo == null) {
                 flash(request, "error", "Không tìm thấy combo.");
                 response.sendRedirect(request.getContextPath() + "/fnb");
@@ -552,83 +500,20 @@ public class FnbManagementServlet extends HttpServlet {
             }
         }
 
-        Map<String, String> errors = new LinkedHashMap<>();
-        String name = request.getParameter("name") == null ? "" : request.getParameter("name").trim();
-        String description = request.getParameter("description") == null ? "" : request.getParameter("description").trim();
-        String status = request.getParameter("status") == null ? "" : request.getParameter("status").trim();
-        String priceText = request.getParameter("price") == null ? "" : request.getParameter("price").trim();
-
-        combo.setComboName(name);
-        combo.setDescription(description);
-        combo.setStatus(status);
-        Part imagePart = uploadedImage(request, errors);
-
-        if (name.isEmpty()) {
-            errors.put("name", "Tên combo là bắt buộc.");
-        } else if (name.length() > 100) {
-            errors.put("name", "Tên combo tối đa 100 ký tự.");
-        }
-        if (description.length() > 500) {
-            errors.put("description", "Mô tả tối đa 500 ký tự.");
-        }
-        if (!"ACTIVE".equals(status) && !"INACTIVE".equals(status)) {
-            errors.put("status", "Hãy chọn trạng thái.");
-        }
-        try {
-            BigDecimal price = new BigDecimal(priceText.replace(",", ""));
-            combo.setPrice(price);
-            if (price.signum() <= 0 || price.compareTo(MAX_PRICE) > 0 || price.scale() > 2) {
-                errors.put("price", "Giá phải lớn hơn 0 và tối đa 10.000.000 đ.");
-            }
-        } catch (NumberFormatException exception) {
-            errors.put("price", "Hãy nhập giá hợp lệ.");
-        }
-
-        List<FnbItem> items = dao.activeItems(centreId);
-        Map<Integer, Integer> merged = new LinkedHashMap<>();
+        String name = request.getParameter("name");
+        String description = request.getParameter("description");
+        String status = request.getParameter("status");
+        String priceText = request.getParameter("price");
         String[] itemIds = request.getParameterValues("lineItem");
         String[] quantities = request.getParameterValues("lineQty");
-        if (itemIds != null && quantities != null) {
-            for (int i = 0; i < itemIds.length && i < quantities.length; i++) {
-                String itemText = itemIds[i].trim();
-                String quantityText = quantities[i].trim();
-                if (itemText.isEmpty() && quantityText.isEmpty()) {
-                    continue;
-                }
-                boolean itemOk = false;
-                int itemId = 0;
-                if (itemText.matches("[0-9]+") && itemText.length() < 10) {
-                    itemId = Integer.parseInt(itemText);
-                    for (FnbItem option : items) {
-                        if (option.getFnbItemId() == itemId) {
-                            itemOk = true;
-                        }
-                    }
-                }
-                if (!itemOk) {
-                    errors.put("lines", "Mỗi dòng cần chọn một món đang bán của Centre.");
-                    break;
-                }
-                if (!quantityText.matches("[0-9]+") || quantityText.length() > 3
-                        || Integer.parseInt(quantityText) < 1 || Integer.parseInt(quantityText) > 99) {
-                    errors.put("lines", "Số lượng mỗi món phải từ 1 đến 99.");
-                    break;
-                }
-                merged.merge(itemId, Integer.parseInt(quantityText), Integer::sum);
-            }
-        }
-        combo.getLines().clear();
-        for (Map.Entry<Integer, Integer> entry : merged.entrySet()) {
-            combo.getLines().add(new ComboLine(entry.getKey(), Math.min(99, entry.getValue())));
-        }
-        if (combo.getLines().isEmpty() && !errors.containsKey("lines")) {
-            errors.put("lines", "Combo cần ít nhất một món.");
-        }
 
-        if (!errors.isEmpty()) {
-            request.setAttribute("errors", errors);
+        FnbService.ValidationResult<FnbCombo> valResult = fnbService.validateCombo(combo, name, description, status, priceText, itemIds, quantities, centreId);
+        Part imagePart = uploadedImage(request, valResult.getErrors());
+
+        if (!valResult.isValid() || !valResult.getErrors().isEmpty()) {
+            request.setAttribute("errors", valResult.getErrors());
             request.setAttribute("combo", combo);
-            request.setAttribute("items", items);
+            request.setAttribute("items", fnbService.getActiveItems(centreId));
             request.setAttribute("csrf", csrfToken(request));
             request.setAttribute("pageTitle", combo.getComboId() == 0 ? "Tạo combo" : "Sửa combo");
             request.setAttribute("pageBreadcrumb", crumb(user, "Bắp nước"));
@@ -646,7 +531,7 @@ public class FnbManagementServlet extends HttpServlet {
         }
         combo.setImageUrl(newImage);
         try {
-            dao.saveCombo(combo);
+            fnbService.saveCombo(combo);
             flash(request, "success", (isNew ? "Đã tạo combo \"" : "Đã cập nhật combo \"") + combo.getComboName() + "\".");
             if (oldImage != null && !oldImage.equals(newImage)) {
                 deleteImage(request, oldImage);
@@ -670,58 +555,25 @@ public class FnbManagementServlet extends HttpServlet {
         String back = request.getParameter("back") == null ? "" : request.getParameter("back").replaceAll("[^A-Za-z0-9%&=._~+-]", "");
         String target = request.getContextPath() + "/fnb" + (back.isEmpty() ? "" : "?" + back);
 
-        if (idText == null || !idText.matches("[0-9]+") || idText.length() >= 10
-                || (!"ACTIVE".equals(status) && !"INACTIVE".equals(status))) {
-            flash(request, "error", "Yêu cầu không hợp lệ.");
-            response.sendRedirect(target);
-            return;
+        int id = 0;
+        if (idText != null && idText.matches("[0-9]+") && idText.length() < 10) {
+            id = Integer.parseInt(idText);
         }
-        int id = Integer.parseInt(idText);
 
-        boolean exists;
-        int owner = 0;
-        if (combo) {
-            FnbCombo found = dao.findCombo(id);
-            exists = found != null;
-            if (exists) {
-                owner = found.getCentreId();
-            }
+        FnbService.OperationResult opResult = fnbService.changeStatus(combo, id, status, centreId);
+        if (opResult.status() == FnbService.StatusResult.FORBIDDEN) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, opResult.message());
+            return;
+        }
+
+        if (opResult.isSuccess()) {
+            flash(request, "success", opResult.message());
         } else {
-            FnbItem found = dao.findItem(id);
-            exists = found != null;
-            if (exists) {
-                owner = found.getCentreId();
-            }
-        }
-        if (!exists) {
-            flash(request, "error", "Không tìm thấy món hoặc combo.");
-            response.sendRedirect(target);
-            return;
-        }
-        if (owner != centreId) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Món hoặc combo này thuộc Centre khác.");
-            return;
-        }
-        if (!combo && "INACTIVE".equals(status) && dao.countActiveCombosUsing(id) > 0) {
-            flash(request, "error", "Món đang nằm trong combo đang bán, hãy gỡ khỏi combo trước khi lưu trữ.");
-            response.sendRedirect(target);
-            return;
-        }
-        try {
-            dao.setStatus(combo, id, status);
-            flash(request, "success", (combo ? "Combo " : "Món ") + ("ACTIVE".equals(status) ? "đã được khôi phục." : "đã được lưu trữ."));
-        } catch (SQLException exception) {
-            exception.printStackTrace();
-            flash(request, "error", "Không đổi được trạng thái, vui lòng thử lại.");
+            flash(request, "error", opResult.message());
         }
         response.sendRedirect(target);
     }
 
-    /**
-     * Hiển thị trang Kho theo Centre.
-     * Quyền: MANAGER (xem + sửa), TICKET_SALES_STAFF (chỉ xem).
-     * ADMIN không được truy cập (không gắn với centre cụ thể).
-     */
     private void showStock(HttpServletRequest request, HttpServletResponse response, User user)
             throws ServletException, IOException {
         boolean manager = "MANAGER".equals(user.getRole());
@@ -731,8 +583,8 @@ public class FnbManagementServlet extends HttpServlet {
                     "Trang kho chỉ dành cho Manager và nhân viên bán vé của chi nhánh.");
             return;
         }
-        request.setAttribute("rows", dao.stock(user.getCentreId()));
-        request.setAttribute("canEdit", manager);   // chỉ Manager mới được cập nhật kho
+        request.setAttribute("rows", fnbService.getStock(user.getCentreId()));
+        request.setAttribute("canEdit", manager);
         request.setAttribute("csrf", csrfToken(request));
         request.setAttribute("pageTitle", "Kho theo Centre");
         request.setAttribute("pageBreadcrumb", crumb(user, "Bắp nước"));
@@ -741,11 +593,6 @@ public class FnbManagementServlet extends HttpServlet {
         request.getRequestDispatcher("/WEB-INF/views/admin/fnb/fnbInventory.jsp").forward(request, response);
     }
 
-    /**
-     * Toggle IsAvailable thủ công (Manager override).
-     * Không thay đổi StockQuantity.
-     * Dùng khi Manager muốn tắt món dù còn hàng (hàng lỗi, hết đột xuất).
-     */
     private void toggleStock(HttpServletRequest request, HttpServletResponse response, User user)
             throws IOException {
         int centreId = user.getCentreId();
@@ -759,12 +606,12 @@ public class FnbManagementServlet extends HttpServlet {
             return;
         }
         int itemId = Integer.parseInt(itemText);
-        if (!dao.isStockableItem(itemId, centreId)) {
+        if (!fnbService.isStockableItem(itemId, centreId)) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN, "Món này không thuộc kho của Centre bạn.");
             return;
         }
         try {
-            dao.setAvailability(centreId, itemId, Boolean.parseBoolean(available));
+            fnbService.setAvailability(centreId, itemId, Boolean.parseBoolean(available));
             flash(request, "success", "Đã cập nhật tình trạng kho.");
         } catch (SQLException exception) {
             exception.printStackTrace();
@@ -773,11 +620,6 @@ public class FnbManagementServlet extends HttpServlet {
         response.sendRedirect(target);
     }
 
-    /**
-     * Cập nhật số lượng tồn kho (Manager nhập tay).
-     * Khi quantity = 0 → hệ thống tự đặt IsAvailable = false.
-     * Khi quantity > 0 → tự đặt IsAvailable = true.
-     */
     private void updateQuantity(HttpServletRequest request, HttpServletResponse response, User user)
             throws IOException {
         int centreId = user.getCentreId();
@@ -796,12 +638,12 @@ public class FnbManagementServlet extends HttpServlet {
         }
         int itemId = Integer.parseInt(itemText);
         int quantity = Integer.parseInt(qtyText);
-        if (!dao.isStockableItem(itemId, centreId)) {
+        if (!fnbService.isStockableItem(itemId, centreId)) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN, "Món này không thuộc kho của Centre bạn.");
             return;
         }
         try {
-            dao.updateStockQuantity(centreId, itemId, quantity);
+            fnbService.updateStockQuantity(centreId, itemId, quantity);
             String msg = quantity == 0
                     ? "Đã cập nhật số lượng về 0 – món tự động chuyển sang Hết hàng."
                     : "Đã cập nhật số lượng: " + quantity + " → Còn hàng.";

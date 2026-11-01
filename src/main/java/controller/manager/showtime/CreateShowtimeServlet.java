@@ -1,252 +1,48 @@
 package controller.manager.showtime;
 
-import dao.MovieDAO;
-import dao.ShowtimeDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.*;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+import service.ShowtimeService;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
 
-import model.entity.Showtime;
-
 @WebServlet("/showtimes/create")
-public class CreateShowtimeServlet
-        extends HttpServlet {
+public class CreateShowtimeServlet extends HttpServlet {
+
+    private final ShowtimeService showtimeService = new ShowtimeService();
 
     @Override
-    protected void doPost(
-            HttpServletRequest request,
-            HttpServletResponse response)
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
         HttpSession session = request.getSession(false);
         String role = session != null ? (String) session.getAttribute("role") : null;
         if (!"MANAGER".equalsIgnoreCase(role)) {
-            setError(request, "Chỉ Quản lý cụm rạp mới có quyền tạo suất chiếu.");
-            redirect(request, response);
+            request.getSession().setAttribute("error", "Chỉ Quản lý cụm rạp mới có quyền tạo suất chiếu.");
+            response.sendRedirect(request.getContextPath() + "/showtimes");
             return;
         }
 
         try {
-
-            int movieId =
-                Integer.parseInt(
-                    request.getParameter(
-                        "movieId"
-                    )
-                );
-
-            int hallId =
-                Integer.parseInt(
-                    request.getParameter(
-                        "hallId"
-                    )
-                );
-
-            LocalDateTime startTime =
-                LocalDateTime.parse(
-                    request.getParameter(
-                        "startTime"
-                    )
-                );
-
+            int movieId = Integer.parseInt(request.getParameter("movieId"));
+            int hallId = Integer.parseInt(request.getParameter("hallId"));
+            LocalDateTime startTime = LocalDateTime.parse(request.getParameter("startTime"));
             int cleaningBuffer = 15;
+            int managerId = ShowtimeService.requireUserId(request);
 
-            /*
-             * Demo manager ID.
-             * Sau này lấy từ session.
-             */
-            int managerId = service.ShowtimeService.requireUserId(request);
-
-            ShowtimeDAO showtimeDAO =
-                    new ShowtimeDAO();
-
-            MovieDAO movieDAO =
-                    new MovieDAO();
-
-
-            /*
-             * 1. Check hall
-             */
-            if (!showtimeDAO
-                    .isHallAvailable(hallId)) {
-
-                setError(
-                    request,
-                    "Selected hall is not available."
-                );
-
-                redirect(request, response);
-
-                return;
-            }
-
-
-            /*
-             * 2. Check movie belongs
-             * to centre
-             */
-            if (!showtimeDAO
-                    .isMovieAvailableForHall(
-                        movieId,
-                        hallId
-                    )) {
-
-                setError(
-                    request,
-                    "This movie is not available at the selected centre."
-                );
-
-                redirect(request, response);
-
-                return;
-            }
-
-
-            /*
-             * 3. Get movie duration
-             */
-            int duration =
-                    movieDAO.getMovieDuration(
-                        movieId
-                    );
-
-            if (duration <= 0) {
-
-                setError(
-                    request,
-                    "Invalid movie duration."
-                );
-
-                redirect(request, response);
-
-                return;
-            }
-
-
-            /*
-             * 4. Calculate EndTime
-             */
-            LocalDateTime endTime =
-                    startTime.plusMinutes(
-                        duration
-                    );
-
-
-            /*
-             * 5. Check conflict
-             */
-            boolean conflict =
-                showtimeDAO
-                    .hasScheduleConflict(
-                        hallId,
-                        startTime,
-                        endTime,
-                        cleaningBuffer,
-                        null
-                    );
-
-            if (conflict) {
-
-                setError(
-                    request,
-                    "Schedule conflict: this hall is already occupied during the selected time."
-                );
-
-                redirect(request, response);
-
-                return;
-            }
-
-
-            /*
-             * 6. Create Showtime
-             */
-            Showtime showtime =
-                    new Showtime();
-
-            showtime.setMovieId(
-                    movieId
-            );
-
-            showtime.setHallId(
-                    hallId
-            );
-
-            showtime.setStartTime(
-                    startTime
-            );
-
-            showtime.setEndTime(
-                    endTime
-            );
-
-            showtime.setCleaningBufferMinutes(
-                    cleaningBuffer
-            );
-
-            showtime.setCreatedBy(
-                    managerId
-            );
-
-
-            boolean success =
-                showtimeDAO.insertShowtime(
-                    showtime
-                );
-
-            if (success) {
-
-                request.getSession()
-                    .setAttribute(
-                        "message",
-                        "Showtime created successfully."
-                    );
-
-            } else {
-
-                setError(
-                    request,
-                    "Unable to create showtime."
-                );
-            }
-
+            showtimeService.createShowtime(movieId, hallId, startTime, cleaningBuffer, managerId);
+            request.getSession().setAttribute("message", "Suất chiếu đã được tạo thành công.");
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            request.getSession().setAttribute("error", e.getMessage());
         } catch (Exception e) {
-
-            e.printStackTrace();
-
-            setError(
-                request,
-                "Invalid showtime information."
-            );
+            request.getSession().setAttribute("error", "Lỗi dữ liệu đầu vào khi tạo suất chiếu.");
         }
 
-        redirect(request, response);
-    }
-
-
-    private void setError(
-            HttpServletRequest request,
-            String message) {
-
-        request.getSession()
-            .setAttribute(
-                "error",
-                message
-            );
-    }
-
-
-    private void redirect(
-            HttpServletRequest request,
-            HttpServletResponse response)
-            throws IOException {
-
-        response.sendRedirect(
-            request.getContextPath()
-            + "/showtimes"
-        );
+        response.sendRedirect(request.getContextPath() + "/showtimes");
     }
 }

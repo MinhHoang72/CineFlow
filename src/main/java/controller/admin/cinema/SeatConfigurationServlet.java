@@ -2,9 +2,6 @@ package controller.admin.cinema;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import dao.CentreDAO;
-import dao.HallDAO;
-import dao.SeatDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -15,6 +12,7 @@ import model.entity.Centre;
 import model.entity.Hall;
 import model.dto.pricing.SeatConfigDTO;
 import model.entity.User;
+import service.CinemaService;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -23,23 +21,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 /**
- * Controller xử lý phân hệ Cấu hình Sơ đồ & Trạng thái Ghế (UC-FE-03.3: Configure Seat Layout & Maintenance).
- * Primary Actor: Centre Manager / Technical Staff (hoặc Admin).
- *
- * Nghiệp vụ:
- * - BR-HS-02: Mỗi ghế thuộc về đúng một phòng chiếu. Ghế ở trạng thái Under Maintenance không thể đặt vé.
- * - Trường hợp A: Khởi tạo sơ đồ lưới ghế (Generate Layout Grid: Hàng, Cột, Phân hạng Standard, VIP, Sweetbox, Lối đi).
- * - Trường hợp B: Vận hành & Khóa ghế bảo trì hàng ngày (Set Maintenance Status).
- * - Alt 1: Chặn khởi tạo lại kích thước lưới nếu phòng đã có lịch chiếu / đặt vé mở bán.
- * - Alt 2: Chặn khóa bảo trì nếu ghế đã được khách đặt trước trong một suất chiếu sắp tới.
- * - Tự động đồng bộ lại tổng sức chứa khả dụng (Capacity) của phòng chiếu.
+ * Controller: Cấu hình Sơ đồ & Trạng thái Ghế (Seats).
+ * Mọi nghiệp vụ được ủy quyền cho CinemaService (Mô hình 3 lớp).
  */
 @WebServlet(name = "SeatConfigurationServlet", urlPatterns = {"/manager/seat-config", "/admin/seat-config"})
 public class SeatConfigurationServlet extends HttpServlet {
 
-    private final SeatDAO seatDAO = new SeatDAO();
-    private final HallDAO hallDAO = new HallDAO();
-    private final CentreDAO centreDAO = new CentreDAO();
+    private final CinemaService cinemaService = new CinemaService();
     private final Gson gson = new Gson();
 
     private boolean isManagerOrAdmin(HttpSession session) {
@@ -95,7 +83,7 @@ public class SeatConfigurationServlet extends HttpServlet {
             return;
         }
 
-        Hall hall = hallDAO.getHallById(hallId);
+        Hall hall = cinemaService.getHallById(hallId);
         if (hall == null) {
             response.sendRedirect(request.getContextPath() + "/manager/halls?error=invalid_hall");
             return;
@@ -104,22 +92,17 @@ public class SeatConfigurationServlet extends HttpServlet {
         User user = getCurrentUser(session);
         boolean isAdmin = user != null && "ADMIN".equalsIgnoreCase(user.getRole());
 
-        // Nếu là Manager, bắt buộc phòng chiếu phải thuộc Cụm rạp mà Manager phụ trách
         if (!isAdmin && (user == null || user.getCentreId() == null || user.getCentreId() != hall.getCentreId())) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN, "Bạn chỉ được cấu hình sơ đồ ghế cho Cụm rạp mình phụ trách.");
             return;
         }
 
-        Centre centre = centreDAO.getCentreById(hall.getCentreId());
+        Centre centre = cinemaService.getCentreById(hall.getCentreId());
+        boolean hasBookedShowtimes = cinemaService.hasFutureBookedShowtimes(hallId);
 
-        // Kiểm tra xem phòng chiếu đã phát sinh lịch chiếu tương lai có vé đặt hay chưa (Alt 1)
-        boolean hasBookedShowtimes = seatDAO.hasFutureBookedShowtimes(hallId);
-
-        // Lấy danh sách cấu hình ghế hiện có trong DB
-        List<SeatConfigDTO> existingSeats = seatDAO.getSeatConfigsByHall(hallId);
+        List<SeatConfigDTO> existingSeats = cinemaService.getSeatConfigsByHall(hallId);
         String seatsJson = gson.toJson(existingSeats);
 
-        // Đọc các tham số tìm kiếm & phân trang cho bảng danh sách ghế
         String search = request.getParameter("search");
         String seatType = request.getParameter("seatType");
         String seatStatus = request.getParameter("seatStatus");
@@ -131,7 +114,7 @@ public class SeatConfigurationServlet extends HttpServlet {
         }
 
         int page = 1;
-        int pageSize = 12; // Hiển thị 12 ghế / trang
+        int pageSize = 12;
         try {
             String pageParam = request.getParameter("page");
             if (pageParam != null && !pageParam.trim().isEmpty()) {
@@ -143,7 +126,7 @@ public class SeatConfigurationServlet extends HttpServlet {
             page = 1;
         }
 
-        int totalFilteredSeats = seatDAO.countSeatsByHall(hallId, search, seatType, seatStatus);
+        int totalFilteredSeats = cinemaService.countSeatsByHall(hallId, search, seatType, seatStatus);
         int totalPages = (int) Math.ceil((double) totalFilteredSeats / pageSize);
         if (totalPages < 1) {
             totalPages = 1;
@@ -152,7 +135,7 @@ public class SeatConfigurationServlet extends HttpServlet {
             page = totalPages;
         }
 
-        List<SeatConfigDTO> pagedSeats = seatDAO.getSeatsByHallPaged(hallId, search, seatType, seatStatus, page, pageSize);
+        List<SeatConfigDTO> pagedSeats = cinemaService.getSeatsByHallPaged(hallId, search, seatType, seatStatus, page, pageSize);
 
         request.setAttribute("hall", hall);
         request.setAttribute("centre", centre);
@@ -161,7 +144,6 @@ public class SeatConfigurationServlet extends HttpServlet {
         request.setAttribute("hasBookedShowtimes", hasBookedShowtimes);
         request.setAttribute("isAdmin", isAdmin);
 
-        // Thuộc tính phân trang và bộ lọc danh sách ghế
         request.setAttribute("pagedSeats", pagedSeats);
         request.setAttribute("currentPage", page);
         request.setAttribute("pageSize", pageSize);
@@ -198,7 +180,7 @@ public class SeatConfigurationServlet extends HttpServlet {
             return;
         }
 
-        Hall hall = hallDAO.getHallById(hallId);
+        Hall hall = cinemaService.getHallById(hallId);
         if (hall == null) {
             response.sendRedirect(request.getContextPath() + "/manager/halls?error=invalid_hall");
             return;
@@ -232,18 +214,16 @@ public class SeatConfigurationServlet extends HttpServlet {
             redirectUrl.append("page=").append(URLEncoder.encode(pageParam.trim(), StandardCharsets.UTF_8)).append("&");
         }
 
-        // TÁC VỤ B: KHÓA / MỞ BẢO TRÌ NHANH MỘT GHẾ CỤ THỂ TỪ BẢNG
+        // Khóa / Mở bảo trì nhanh một ghế
         if ("toggleMaintenance".equalsIgnoreCase(action)) {
             String seatIdParam = request.getParameter("seatId");
             try {
                 int seatId = Integer.parseInt(seatIdParam.trim());
-                String result = seatDAO.toggleSeatMaintenance(seatId, hallId);
-                if ("SUCCESS".equals(result)) {
+                CinemaService.Result<String> result = cinemaService.toggleSeatMaintenance(hallId, seatId);
+                if (result.isSuccess()) {
                     redirectUrl.append("success=maintenance_toggled");
-                } else if (result != null && result.startsWith("HAS_FUTURE_BOOKINGS:")) {
-                    String bookedTime = result.substring("HAS_FUTURE_BOOKINGS:".length());
-                    String msg = "CẢNH BÁO: Ghế này đã được đặt vé ở suất chiếu [" + bookedTime + "]. Vui lòng đổi chỗ ngồi thủ công cho khách hàng trước khi khóa bảo trì.";
-                    redirectUrl.append("error=booked_seat&msg=").append(URLEncoder.encode(msg, StandardCharsets.UTF_8));
+                } else if (result.getStatus() == CinemaService.Status.BOOKED_SEAT) {
+                    redirectUrl.append("error=booked_seat&msg=").append(URLEncoder.encode(result.getMessage(), StandardCharsets.UTF_8));
                 } else {
                     redirectUrl.append("error=failed");
                 }
@@ -257,13 +237,6 @@ public class SeatConfigurationServlet extends HttpServlet {
         String seatDataJson = request.getParameter("seatData");
         boolean isRegenerating = "true".equalsIgnoreCase(request.getParameter("isRegenerating"));
 
-        // Alt 1: Phòng chiếu đã có lịch chiếu tương lai mở bán vé nhưng cố tình tái cấu trúc lưới ghế
-        if (isRegenerating && seatDAO.hasFutureBookedShowtimes(hallId)) {
-            redirectUrl.append("error=cannot_regenerate");
-            response.sendRedirect(redirectUrl.toString());
-            return;
-        }
-
         if (seatDataJson == null || seatDataJson.trim().isEmpty()) {
             redirectUrl.append("error=empty_data");
             response.sendRedirect(redirectUrl.toString());
@@ -274,34 +247,18 @@ public class SeatConfigurationServlet extends HttpServlet {
             Type listType = new TypeToken<List<SeatConfigDTO>>() {}.getType();
             List<SeatConfigDTO> seatList = gson.fromJson(seatDataJson, listType);
 
-            if (seatList == null || seatList.isEmpty()) {
-                redirectUrl.append("error=empty_data");
-                response.sendRedirect(redirectUrl.toString());
-                return;
-            }
-
-            // Alt 2: Kiểm tra các ghế bị khóa bảo trì (MAINTENANCE) xem đã có khách đặt trước ở suất chiếu tương lai hay không
-            for (SeatConfigDTO s : seatList) {
-                if ("MAINTENANCE".equalsIgnoreCase(s.getStatus())) {
-                    String bookedShowtime = seatDAO.checkFutureBookingForSeat(hallId, s.getSeatRow(), s.getSeatNumber());
-                    if (bookedShowtime != null) {
-                        String seatLabel = s.getSeatRow() + s.getSeatNumber();
-                        String errorMsg = "CẢNH BÁO: Ghế " + seatLabel + " đã được đặt vé ở suất chiếu [" + bookedShowtime + "]. Vui lòng đổi chỗ ngồi thủ công cho khách hàng trước khi khóa bảo trì.";
-                        redirectUrl.append("error=booked_seat&msg=").append(URLEncoder.encode(errorMsg, StandardCharsets.UTF_8));
-                        response.sendRedirect(redirectUrl.toString());
-                        return;
-                    }
-                }
-            }
-
-            // Thực hiện lưu cấu hình ghế và tự động đồng bộ lại Capacity của phòng chiếu
-            boolean ok = seatDAO.saveSeatLayout(hallId, seatList, isRegenerating);
-            if (ok) {
+            CinemaService.Result<Void> result = cinemaService.saveSeatLayout(hallId, seatList, isRegenerating);
+            if (result.isSuccess()) {
                 redirectUrl.append("success=saved");
+            } else if (result.getStatus() == CinemaService.Status.CANNOT_REGENERATE) {
+                redirectUrl.append("error=cannot_regenerate");
+            } else if (result.getStatus() == CinemaService.Status.BOOKED_SEAT) {
+                redirectUrl.append("error=booked_seat&msg=").append(URLEncoder.encode(result.getMessage(), StandardCharsets.UTF_8));
+            } else if (result.getStatus() == CinemaService.Status.EMPTY_DATA) {
+                redirectUrl.append("error=empty_data");
             } else {
                 redirectUrl.append("error=failed");
             }
-
         } catch (Exception e) {
             e.printStackTrace();
             redirectUrl.append("error=json_error");
