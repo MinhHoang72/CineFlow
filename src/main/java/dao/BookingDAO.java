@@ -4,109 +4,33 @@ import model.entity.Booking;
 import model.entity.Seat;
 import model.entity.Showtime;
 import utils.DBContext;
+import utils.DbUtil;
 import java.math.BigDecimal;
-import java.security.SecureRandom;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
+import java.sql.Types;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 
+/**
+ * Truy cap bang Bookings / BookingSeats. Chi doc / ghi du lieu; quy tac giu ghe, tinh tien, chuyen trang thai
+ * nam o service.BookingService. Cac ham nhan Connection de service gom nhieu thao tac vao mot transaction.
+ */
 public class BookingDAO {
 
-    public static final int HOLD_MINUTES = 5;
-    public static final int MAX_SEATS_PER_BOOKING = 8;
+    /** Tien ve, giam gia va trang thai hien tai cua don. */
+    public record Amounts(BigDecimal subTotal, BigDecimal discountAmount, String status) {}
 
-    private static final SecureRandom RANDOM = new SecureRandom();
+    /** Voucher va khach cua don (null neu khong co). */
+    public record VoucherOwner(Integer voucherId, Integer userId) {}
 
-    public static class SeatUnavailableException extends Exception {
-        public SeatUnavailableException(String message) { super(message); }
-    }
+    // ---------------------------------------------------------------- doc don
 
-    /**
-     * Giu ghe trong HOLD_MINUTES phut: tao Booking PENDING + BookingSeats HELD.
-     * Neu nguoi dung dang co booking PENDING khac cho cung suat chieu thi huy booking do truoc.
-     * @return BookingID vua tao
-     */
-    public int holdSeats(int userId, int showtimeId, List<Integer> seatIds)
-            throws SQLException, SeatUnavailableException {
-        return hold(userId, "ONLINE", showtimeId, seatIds);
-    }
-
-    /** Ban tai quay cho khach vang lai: booking COUNTER, khong gan tai khoan khach. */
-    public int holdCounterSeats(int showtimeId, List<Integer> seatIds)
-            throws SQLException, SeatUnavailableException {
-        return hold(null, "COUNTER", showtimeId, seatIds);
-    }
-
-    private int hold(Integer userId, String bookingType, int showtimeId, List<Integer> seatIds)
-            throws SQLException, SeatUnavailableException {
-        List<Integer> ids = new ArrayList<>(new LinkedHashSet<>(seatIds));
-        if (ids.isEmpty()) throw new SeatUnavailableException("Bạn chưa chọn ghế nào.");
-        if (ids.size() > MAX_SEATS_PER_BOOKING) {
-            throw new SeatUnavailableException("Mỗi lần chỉ được đặt tối đa " + MAX_SEATS_PER_BOOKING + " ghế.");
-        }
-
-        try (Connection conn = DBContext.getConnection()) {
-            conn.setAutoCommit(false);
-            try {
-                releaseExpiredHolds(conn);
-                if (userId != null) cancelUserPendingForShowtime(conn, userId, showtimeId);
-
-                Showtime showtime = ShowtimeDAO.getBookableById(conn, showtimeId);
-                if (showtime == null) throw new SeatUnavailableException("Suất chiếu không còn mở bán.");
-
-                Map<Integer, Seat> seatMap = new HashMap<>();
-                for (Seat s : SeatDAO.getSeatMap(conn, showtime)) seatMap.put(s.getId(), s);
-
-                BigDecimal total = BigDecimal.ZERO;
-                for (Integer id : ids) {
-                    Seat seat = seatMap.get(id);
-                    if (seat == null || !seat.isAvailable()) {
-                        throw new SeatUnavailableException("Ghế bạn chọn không hợp lệ cho suất chiếu này.");
-                    }
-                    if (seat.isTaken()) {
-                        throw new SeatUnavailableException("Ghế " + seat.getLabel() + " vừa có người khác chọn.");
-                    }
-                    total = total.add(seat.getPrice());
-                }
-
-                int bookingId = insertBooking(conn, userId, bookingType, showtimeId, total);
-                Timestamp holdUntil = queryHoldUntil(conn);
-                try (PreparedStatement ps = conn.prepareStatement(
-                        "INSERT INTO BookingSeats (BookingID, ShowtimeID, SeatID, Price, SeatStatus, HoldUntil) "
-                      + "VALUES (?, ?, ?, ?, 'HELD', ?)")) {
-                    for (Integer id : ids) {
-                        ps.setInt(1, bookingId);
-                        ps.setInt(2, showtimeId);
-                        ps.setInt(3, id);
-                        ps.setBigDecimal(4, seatMap.get(id).getPrice());
-                        ps.setTimestamp(5, holdUntil);
-                        ps.addBatch();
-                    }
-                    ps.executeBatch();
-                }
-                conn.commit();
-                return bookingId;
-            } catch (SQLException e) {
-                conn.rollback();
-                if (isDuplicateKey(e)) {
-                    throw new SeatUnavailableException("Một trong các ghế bạn chọn vừa có người khác đặt. Vui lòng chọn lại.");
-                }
-                throw e;
-            } catch (SeatUnavailableException | RuntimeException e) {
-                conn.rollback();
-                throw e;
-            }
-        }
-    }
-
+    /** Don kem suat chieu va ghe (chua gom bap nuoc), null neu khong co. */
     public Booking getBooking(int bookingId) throws SQLException {
         String sql = "SELECT BookingID, BookingCode, UserID, ShowtimeID, BookingType, BookingStatus, SubTotal, DiscountAmount, "
                    + "  TotalAmount, CreatedAt, v.VoucherCode, "
@@ -126,115 +50,77 @@ public class BookingDAO {
                 booking.setSubTotal(rs.getBigDecimal("SubTotal"));
                 booking.setDiscountAmount(rs.getBigDecimal("DiscountAmount"));
                 booking.setVoucherCode(rs.getString("VoucherCode"));
-                booking.setFnbLines(FnbOrderDAO.getLines(conn, bookingId));
                 return booking;
             }
         }
     }
 
-    /** Tong tien don = tien ve (SubTotal) - giam gia + bap nuoc chua huy. */
-    static void recalculateTotal(Connection conn, int bookingId) throws SQLException {
+    public Amounts getAmounts(Connection conn, int bookingId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
-                "UPDATE b SET TotalAmount = CASE WHEN b.SubTotal - b.DiscountAmount < 0 THEN 0 ELSE b.SubTotal - b.DiscountAmount END "
-              + "  + ISNULL((SELECT SUM(o.TotalAmount) FROM FnbOrders o WHERE o.BookingID = b.BookingID AND o.OrderStatus <> 'CANCELLED'), 0), "
-              + "  UpdatedAt = SYSDATETIME() "
-              + "FROM Bookings b WHERE b.BookingID = ? AND b.BookingStatus = 'PENDING'")) {
+                "SELECT SubTotal, DiscountAmount, BookingStatus FROM Bookings WHERE BookingID = ?")) {
             ps.setInt(1, bookingId);
-            ps.executeUpdate();
-        }
-    }
-
-    /** Don doi so tien: huy giao dich VNPay dang cho (so tien cu), khach bam thanh toan lai se tao giao dich moi. */
-    static void cancelPendingPayments(Connection conn, int bookingId) throws SQLException {
-        try (PreparedStatement ps = conn.prepareStatement(
-                "UPDATE Payments SET PaymentStatus = 'CANCELLED' WHERE BookingID = ? AND PaymentStatus = 'PENDING'")) {
-            ps.setInt(1, bookingId);
-            ps.executeUpdate();
-        }
-    }
-
-    /** Nguoi dung tu huy booking dang cho thanh toan. */
-    public boolean cancelPending(int bookingId, int userId) throws SQLException {
-        try (Connection conn = DBContext.getConnection()) {
-            conn.setAutoCommit(false);
-            try {
-                boolean done = cancelPendingBookings(conn,
-                        "BookingID = ? AND UserID = ?", bookingId, userId) > 0;
-                conn.commit();
-                return done;
-            } catch (SQLException | RuntimeException e) {
-                conn.rollback();
-                throw e;
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? new Amounts(rs.getBigDecimal(1), rs.getBigDecimal(2), rs.getString(3)) : null;
             }
         }
     }
 
-    /** Nhan vien huy don tai quay dang cho thanh toan. */
-    public boolean cancelCounterPending(int bookingId) throws SQLException {
-        try (Connection conn = DBContext.getConnection()) {
-            conn.setAutoCommit(false);
-            try {
-                boolean done = cancelPendingBookings(conn,
-                        "BookingID = ? AND BookingType = 'COUNTER'", bookingId) > 0;
-                conn.commit();
-                return done;
-            } catch (SQLException | RuntimeException e) {
-                conn.rollback();
-                throw e;
+    public VoucherOwner getVoucherOwner(Connection conn, int bookingId) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement("SELECT VoucherID, UserID FROM Bookings WHERE BookingID = ?")) {
+            ps.setInt(1, bookingId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) return new VoucherOwner(null, null);
+                int v = rs.getInt("VoucherID");
+                Integer voucherId = rs.wasNull() ? null : v;
+                int u = rs.getInt("UserID");
+                Integer userId = rs.wasNull() ? null : u;
+                return new VoucherOwner(voucherId, userId);
             }
         }
     }
 
-    /** Booking PENDING qua han giu ghe -> EXPIRED, nha ghe, payment dang cho -> TIMEOUT. */
-    static void releaseExpiredHolds(Connection conn) throws SQLException {
-        String expired = "SELECT BookingID FROM Bookings b WHERE b.BookingStatus = 'PENDING' AND EXISTS ("
+    // ---------------------------------------------------------------- tim don cho thanh toan
+
+    /** Don PENDING co ghe HELD da qua HoldUntil (theo gio SQL Server). */
+    public List<Integer> findExpiredPendingIds(Connection conn) throws SQLException {
+        return ids(conn, "SELECT BookingID FROM Bookings b WHERE b.BookingStatus = 'PENDING' AND EXISTS ("
                        + "SELECT 1 FROM BookingSeats bs WHERE bs.BookingID = b.BookingID "
-                       + "AND bs.SeatStatus = 'HELD' AND bs.HoldUntil <= SYSDATETIME())";
-        try (Statement st = conn.createStatement()) {
-            st.executeUpdate("UPDATE Payments SET PaymentStatus = 'TIMEOUT' "
-                    + "WHERE PaymentStatus = 'PENDING' AND BookingID IN (" + expired + ")");
-            FnbOrderDAO.cancelPendingForBookings(conn, expired);
-            st.executeUpdate("UPDATE Bookings SET BookingStatus = 'EXPIRED', UpdatedAt = SYSDATETIME() "
-                    + "WHERE BookingID IN (" + expired + ")");
-            st.executeUpdate("UPDATE BookingSeats SET SeatStatus = 'RELEASED' "
-                    + "WHERE SeatStatus = 'HELD' AND HoldUntil <= SYSDATETIME()");
-        }
+                       + "AND bs.SeatStatus = 'HELD' AND bs.HoldUntil <= SYSDATETIME())");
     }
 
-    private static void cancelUserPendingForShowtime(Connection conn, int userId, int showtimeId) throws SQLException {
-        cancelPendingBookings(conn, "UserID = ? AND ShowtimeID = ?", userId, showtimeId);
+    /** Don PENDING cua khach cho mot suat chieu. */
+    public List<Integer> findPendingIdsOfUserForShowtime(Connection conn, int userId, int showtimeId) throws SQLException {
+        return ids(conn, "SELECT BookingID FROM Bookings WHERE BookingStatus = 'PENDING' AND UserID = ? AND ShowtimeID = ?",
+                userId, showtimeId);
     }
 
-    private static int cancelPendingBookings(Connection conn, String where, int... params) throws SQLException {
-        String ids = "SELECT BookingID FROM Bookings WHERE BookingStatus = 'PENDING' AND " + where;
-        try (PreparedStatement pay = conn.prepareStatement(
-                 "UPDATE Payments SET PaymentStatus = 'CANCELLED' WHERE PaymentStatus = 'PENDING' AND BookingID IN (" + ids + ")");
-             PreparedStatement seats = conn.prepareStatement(
-                 "UPDATE BookingSeats SET SeatStatus = 'CANCELLED' WHERE SeatStatus = 'HELD' AND BookingID IN (" + ids + ")");
-             PreparedStatement booking = conn.prepareStatement(
-                 "UPDATE Bookings SET BookingStatus = 'CANCELLED', UpdatedAt = SYSDATETIME() WHERE BookingStatus = 'PENDING' AND " + where)) {
-            for (PreparedStatement ps : new PreparedStatement[]{pay, seats, booking}) {
-                for (int i = 0; i < params.length; i++) ps.setInt(i + 1, params[i]);
-            }
-            pay.executeUpdate();
-            seats.executeUpdate();
-            FnbOrderDAO.cancelPendingForBookings(conn, ids, params);
-            return booking.executeUpdate();
-        }
+    /** Don PENDING co ma bookingId thuoc khach userId (0 hoac 1 phan tu). */
+    public List<Integer> findPendingIdOfUser(Connection conn, int bookingId, int userId) throws SQLException {
+        return ids(conn, "SELECT BookingID FROM Bookings WHERE BookingStatus = 'PENDING' AND BookingID = ? AND UserID = ?",
+                bookingId, userId);
     }
 
-    private static int insertBooking(Connection conn, Integer userId, String bookingType, int showtimeId,
-            BigDecimal total) throws SQLException {
+    /** Don tai quay PENDING co ma bookingId (0 hoac 1 phan tu). */
+    public List<Integer> findPendingCounterId(Connection conn, int bookingId) throws SQLException {
+        return ids(conn, "SELECT BookingID FROM Bookings WHERE BookingStatus = 'PENDING' AND BookingID = ? "
+                       + "AND BookingType = 'COUNTER'", bookingId);
+    }
+
+    // ---------------------------------------------------------------- ghi don
+
+    /** @return BookingID vua tao */
+    public int insertBooking(Connection conn, String code, Integer userId, String bookingType, int showtimeId,
+            BigDecimal subTotal) throws SQLException {
         String sql = "INSERT INTO Bookings (BookingCode, UserID, ShowtimeID, BookingType, BookingStatus, "
                    + "SubTotal, DiscountAmount, TotalAmount) VALUES (?, ?, ?, ?, 'PENDING', ?, 0, ?)";
         try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            ps.setString(1, newBookingCode());
-            if (userId == null) ps.setNull(2, java.sql.Types.INTEGER);
+            ps.setString(1, code);
+            if (userId == null) ps.setNull(2, Types.INTEGER);
             else ps.setInt(2, userId);
             ps.setInt(3, showtimeId);
             ps.setString(4, bookingType);
-            ps.setBigDecimal(5, total);
-            ps.setBigDecimal(6, total);
+            ps.setBigDecimal(5, subTotal);
+            ps.setBigDecimal(6, subTotal);
             ps.executeUpdate();
             try (ResultSet keys = ps.getGeneratedKeys()) {
                 keys.next();
@@ -243,15 +129,121 @@ public class BookingDAO {
         }
     }
 
-    private static Timestamp queryHoldUntil(Connection conn) throws SQLException {
+    /** Doi trang thai cac don con PENDING. @return so don da doi */
+    public int updatePendingStatus(Connection conn, List<Integer> bookingIds, String newStatus) throws SQLException {
+        if (bookingIds.isEmpty()) return 0;
+        try (PreparedStatement ps = conn.prepareStatement(
+                "UPDATE Bookings SET BookingStatus = ?, UpdatedAt = SYSDATETIME() "
+              + "WHERE BookingStatus = 'PENDING' AND BookingID IN (" + DbUtil.placeholders(bookingIds.size()) + ")")) {
+            ps.setString(1, newStatus);
+            DbUtil.setInts(ps, 2, bookingIds);
+            return ps.executeUpdate();
+        }
+    }
+
+    public void updateStatus(Connection conn, int bookingId, String newStatus) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "UPDATE Bookings SET BookingStatus = ?, UpdatedAt = SYSDATETIME() WHERE BookingID = ?")) {
+            ps.setString(1, newStatus);
+            ps.setInt(2, bookingId);
+            ps.executeUpdate();
+        }
+    }
+
+    /** Ghi tong tien moi cho don con PENDING. */
+    public void updateTotal(Connection conn, int bookingId, BigDecimal total) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "UPDATE Bookings SET TotalAmount = ?, UpdatedAt = SYSDATETIME() WHERE BookingID = ? AND BookingStatus = 'PENDING'")) {
+            ps.setBigDecimal(1, total);
+            ps.setInt(2, bookingId);
+            ps.executeUpdate();
+        }
+    }
+
+    /** Gan / bo voucher cua don con PENDING. @param voucherId null = bo voucher */
+    public void updateVoucher(Connection conn, int bookingId, Integer voucherId, BigDecimal discount) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "UPDATE Bookings SET VoucherID = ?, DiscountAmount = ?, UpdatedAt = SYSDATETIME() "
+              + "WHERE BookingID = ? AND BookingStatus = 'PENDING'")) {
+            if (voucherId == null) ps.setNull(1, Types.INTEGER);
+            else ps.setInt(1, voucherId);
+            ps.setBigDecimal(2, discount);
+            ps.setInt(3, bookingId);
+            ps.executeUpdate();
+        }
+    }
+
+    // ---------------------------------------------------------------- ghe cua don
+
+    /** Ghi cac ghe dang giu (HELD) cua don, gia lay theo tung ghe. */
+    public void insertHeldSeats(Connection conn, int bookingId, int showtimeId, List<Seat> seats, Timestamp holdUntil)
+            throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "INSERT INTO BookingSeats (BookingID, ShowtimeID, SeatID, Price, SeatStatus, HoldUntil) "
+              + "VALUES (?, ?, ?, ?, 'HELD', ?)")) {
+            for (Seat seat : seats) {
+                ps.setInt(1, bookingId);
+                ps.setInt(2, showtimeId);
+                ps.setInt(3, seat.getId());
+                ps.setBigDecimal(4, seat.getPrice());
+                ps.setTimestamp(5, holdUntil);
+                ps.addBatch();
+            }
+            ps.executeBatch();
+        }
+    }
+
+    /** Ghe HELD da qua HoldUntil -> RELEASED (ra khoi unique index, nguoi khac giu duoc). */
+    public void releaseOverdueSeats(Connection conn) throws SQLException {
+        try (Statement st = conn.createStatement()) {
+            st.executeUpdate("UPDATE BookingSeats SET SeatStatus = 'RELEASED' "
+                    + "WHERE SeatStatus = 'HELD' AND HoldUntil <= SYSDATETIME()");
+        }
+    }
+
+    /** Ghe HELD cua cac don -> CANCELLED. */
+    public void cancelHeldSeats(Connection conn, List<Integer> bookingIds) throws SQLException {
+        if (bookingIds.isEmpty()) return;
+        try (PreparedStatement ps = conn.prepareStatement(
+                "UPDATE BookingSeats SET SeatStatus = 'CANCELLED' WHERE SeatStatus = 'HELD' "
+              + "AND BookingID IN (" + DbUtil.placeholders(bookingIds.size()) + ")")) {
+            DbUtil.setInts(ps, 1, bookingIds);
+            ps.executeUpdate();
+        }
+    }
+
+    /**
+     * Ghe cua don -> CONFIRMED (gom ca RELEASED / CANCELLED khi tien ve sau khi het han giu ghe).
+     * @throws SQLException loi trung khoa neu ghe da thuoc don khac (unique index UX_BookingSeats_ActiveSeat)
+     */
+    public void confirmSeats(Connection conn, int bookingId) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "UPDATE BookingSeats SET SeatStatus = 'CONFIRMED', HoldUntil = NULL "
+              + "WHERE BookingID = ? AND SeatStatus IN ('HELD', 'RELEASED', 'CANCELLED')")) {
+            ps.setInt(1, bookingId);
+            ps.executeUpdate();
+        }
+    }
+
+    /** BookingSeatID cua cac ghe CONFIRMED chua xuat ve. */
+    public List<Integer> findConfirmedSeatsWithoutTicket(Connection conn, int bookingId) throws SQLException {
+        return ids(conn, "SELECT bs.BookingSeatID FROM BookingSeats bs "
+                       + "WHERE bs.BookingID = ? AND bs.SeatStatus = 'CONFIRMED' "
+                       + "AND NOT EXISTS (SELECT 1 FROM Tickets t WHERE t.BookingSeatID = bs.BookingSeatID)", bookingId);
+    }
+
+    /** Gio SQL Server cong them so phut (moc het han giu ghe dung chung mot dong ho voi cac cau lenh SQL). */
+    public Timestamp getDbTimePlusMinutes(Connection conn, int minutes) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement("SELECT DATEADD(MINUTE, ?, SYSDATETIME())")) {
-            ps.setInt(1, HOLD_MINUTES);
+            ps.setInt(1, minutes);
             try (ResultSet rs = ps.executeQuery()) {
                 rs.next();
                 return rs.getTimestamp(1);
             }
         }
     }
+
+    // ---------------------------------------------------------------- noi bo
 
     private static Showtime loadShowtime(Connection conn, int showtimeId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(ShowtimeDAO.SELECT + "WHERE s.ShowtimeID = ?")) {
@@ -279,21 +271,14 @@ public class BookingDAO {
         return seats;
     }
 
-    static boolean isDuplicateKey(SQLException e) {
-        for (Throwable t = e; t != null; t = t.getCause()) {
-            if (t instanceof SQLException sql && (sql.getErrorCode() == 2601 || sql.getErrorCode() == 2627)) return true;
+    private static List<Integer> ids(Connection conn, String sql, int... params) throws SQLException {
+        List<Integer> ids = new ArrayList<>();
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            for (int i = 0; i < params.length; i++) ps.setInt(i + 1, params[i]);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) ids.add(rs.getInt(1));
+            }
         }
-        return false;
-    }
-
-    static String randomCode(String prefix, int length) {
-        String chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-        StringBuilder sb = new StringBuilder(prefix);
-        for (int i = 0; i < length; i++) sb.append(chars.charAt(RANDOM.nextInt(chars.length())));
-        return sb.toString();
-    }
-
-    private static String newBookingCode() {
-        return randomCode("CF", 10);
+        return ids;
     }
 }

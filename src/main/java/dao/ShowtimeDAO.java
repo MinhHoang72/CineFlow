@@ -269,7 +269,7 @@ public class ShowtimeDAO {
         }
     }
 
-    static Showtime getBookableById(Connection conn, int showtimeId) throws SQLException {
+    public Showtime getBookableById(Connection conn, int showtimeId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(SELECT + "WHERE " + BOOKABLE + "AND s.ShowtimeID = ?")) {
             ps.setInt(1, showtimeId);
             try (ResultSet rs = ps.executeQuery()) {

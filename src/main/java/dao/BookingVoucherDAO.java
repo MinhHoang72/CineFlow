@@ -2,7 +2,6 @@ package dao;
 
 import model.entity.Voucher;
 import utils.DBContext;
-import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -14,8 +13,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Voucher khi dat ve: tim theo ma, kiem tra pham vi (rap / ngay / phim), luot dung cua khach,
- * gan vao don va ghi nhan luot dung khi thanh toan thanh cong.
+ * Truy cap Vouchers / VoucherCentres / VoucherMovies / VoucherDays / VoucherUsages khi dat ve.
+ * Chi doc / ghi du lieu; kiem tra pham vi, luot dung va ap ma nam o service.BookingExtrasService.
  */
 public class BookingVoucherDAO {
 
@@ -106,106 +105,60 @@ public class BookingVoucherDAO {
         return queryInt("SELECT COUNT(*) FROM VoucherUsages WHERE VoucherID = ? AND UserID = ?", voucherId, userId);
     }
 
-    /**
-     * Voucher co ap dung cho rap / ngay chieu / phim nay khong.
-     * Khong khai bao rap / ngay / phim nao = ap dung tat ca.
-     * @return null neu hop le, nguoc lai la ly do khong ap dung duoc
-     */
-    public String checkScope(Voucher voucher, int centreId, int movieId, LocalDate showDate) throws SQLException {
-        int id = voucher.getVoucherId();
-        if (voucher.getCentreId() != null && voucher.getCentreId() != centreId) {
-            return "Mã giảm giá không áp dụng tại rạp này.";
-        }
-        if (hasRows("SELECT 1 FROM VoucherCentres WHERE VoucherID = ?", id)
-                && !hasRows("SELECT 1 FROM VoucherCentres WHERE VoucherID = ? AND CentreID = ?", id, centreId)) {
-            return "Mã giảm giá không áp dụng tại rạp này.";
-        }
-        if (hasRows("SELECT 1 FROM VoucherMovies WHERE VoucherID = ?", id)
-                && !hasRows("SELECT 1 FROM VoucherMovies WHERE VoucherID = ? AND MovieID = ?", id, movieId)) {
-            return "Mã giảm giá không áp dụng cho phim này.";
-        }
-        if (hasRows("SELECT 1 FROM VoucherDays WHERE VoucherID = ?", id)) {
-            try (Connection conn = DBContext.getConnection();
-                 PreparedStatement ps = conn.prepareStatement(
-                         "SELECT 1 FROM VoucherDays WHERE VoucherID = ? AND DayOfWeek = ?")) {
-                ps.setInt(1, id);
-                ps.setString(2, showDate.getDayOfWeek().name());
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (!rs.next()) return "Mã giảm giá không áp dụng cho ngày chiếu này.";
-                }
-            }
-        }
-        return null;
+    /** Cac rap duoc khai bao rieng cho voucher (rong = khong gioi han). */
+    public List<Integer> getScopeCentreIds(int voucherId) throws SQLException {
+        return intList("SELECT CentreID FROM VoucherCentres WHERE VoucherID = ?", voucherId);
     }
 
-    /** Gan / bo voucher cua don dang giu ghe va tinh lai tong tien. @param voucherId null = bo voucher */
-    public void setBookingVoucher(int bookingId, Integer voucherId, BigDecimal discount) throws SQLException {
-        try (Connection conn = DBContext.getConnection()) {
-            conn.setAutoCommit(false);
-            try {
-                try (PreparedStatement ps = conn.prepareStatement(
-                        "UPDATE Bookings SET VoucherID = ?, DiscountAmount = ?, UpdatedAt = SYSDATETIME() "
-                      + "WHERE BookingID = ? AND BookingStatus = 'PENDING'")) {
-                    if (voucherId == null) ps.setNull(1, Types.INTEGER);
-                    else ps.setInt(1, voucherId);
-                    ps.setBigDecimal(2, voucherId == null ? BigDecimal.ZERO : discount);
-                    ps.setInt(3, bookingId);
-                    ps.executeUpdate();
-                }
-                BookingDAO.recalculateTotal(conn, bookingId);
-                BookingDAO.cancelPendingPayments(conn, bookingId);
-                conn.commit();
-            } catch (SQLException | RuntimeException e) {
-                conn.rollback();
-                throw e;
-            }
-        }
+    /** Cac phim duoc khai bao rieng cho voucher (rong = khong gioi han). */
+    public List<Integer> getScopeMovieIds(int voucherId) throws SQLException {
+        return intList("SELECT MovieID FROM VoucherMovies WHERE VoucherID = ?", voucherId);
     }
 
-    /**
-     * Don da thanh toan co voucher: tang UsedCount; don cua khach co tai khoan ghi them VoucherUsages
-     * (de gioi han luot dung moi khach). Don tai quay khach vang lai khong co UserID nen chi tang UsedCount.
-     */
-    static void recordUsage(Connection conn, int bookingId) throws SQLException {
-        Integer voucherId = null, userId = null;
-        try (PreparedStatement ps = conn.prepareStatement("SELECT VoucherID, UserID FROM Bookings WHERE BookingID = ?")) {
-            ps.setInt(1, bookingId);
+    /** Cac thu trong tuan (MONDAY...) duoc khai bao rieng cho voucher (rong = khong gioi han). */
+    public List<String> getScopeDays(int voucherId) throws SQLException {
+        List<String> days = new ArrayList<>();
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement("SELECT DayOfWeek FROM VoucherDays WHERE VoucherID = ?")) {
+            ps.setInt(1, voucherId);
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    int v = rs.getInt("VoucherID");
-                    if (!rs.wasNull()) voucherId = v;
-                    int u = rs.getInt("UserID");
-                    if (!rs.wasNull()) userId = u;
-                }
+                while (rs.next()) days.add(rs.getString(1));
             }
         }
-        if (voucherId == null) return;
-        if (userId != null) {
-            try (PreparedStatement ps = conn.prepareStatement(
-                    "INSERT INTO VoucherUsages (VoucherID, UserID, BookingID) SELECT ?, ?, ? "
-                  + "WHERE NOT EXISTS (SELECT 1 FROM VoucherUsages WHERE VoucherID = ? AND BookingID = ?)")) {
-                ps.setInt(1, voucherId);
-                ps.setInt(2, userId);
-                ps.setInt(3, bookingId);
-                ps.setInt(4, voucherId);
-                ps.setInt(5, bookingId);
-                ps.executeUpdate();
-            }
+        return days;
+    }
+
+    /** Ghi luot dung voucher cua khach cho don (bo qua neu da ghi). */
+    public void insertUsageIfAbsent(Connection conn, int voucherId, int userId, int bookingId) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "INSERT INTO VoucherUsages (VoucherID, UserID, BookingID) SELECT ?, ?, ? "
+              + "WHERE NOT EXISTS (SELECT 1 FROM VoucherUsages WHERE VoucherID = ? AND BookingID = ?)")) {
+            ps.setInt(1, voucherId);
+            ps.setInt(2, userId);
+            ps.setInt(3, bookingId);
+            ps.setInt(4, voucherId);
+            ps.setInt(5, bookingId);
+            ps.executeUpdate();
         }
+    }
+
+    public void incrementUsedCount(Connection conn, int voucherId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement("UPDATE Vouchers SET UsedCount = UsedCount + 1 WHERE VoucherID = ?")) {
             ps.setInt(1, voucherId);
             ps.executeUpdate();
         }
     }
 
-    private static boolean hasRows(String sql, int... params) throws SQLException {
+    private static List<Integer> intList(String sql, int param) throws SQLException {
+        List<Integer> list = new ArrayList<>();
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            for (int i = 0; i < params.length; i++) ps.setInt(i + 1, params[i]);
+            ps.setInt(1, param);
             try (ResultSet rs = ps.executeQuery()) {
-                return rs.next();
+                while (rs.next()) list.add(rs.getInt(1));
             }
         }
+        return list;
     }
 
     private static int queryInt(String sql, int... params) throws SQLException {

@@ -1,5 +1,6 @@
 package service;
 
+import dao.BookingDAO;
 import dao.BookingVoucherDAO;
 import dao.FnbOrderDAO;
 import model.dto.booking.FnbMenuItemDTO;
@@ -7,33 +8,43 @@ import model.dto.booking.VoucherOptionDTO;
 import model.entity.Booking;
 import model.entity.Showtime;
 import model.entity.Voucher;
+import utils.DbUtil;
 import java.math.BigDecimal;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
  * Bap nuoc va voucher cho don dang giu ghe (dat ve online va ban tai quay).
  * Voucher chi giam tren tien ve (Booking.subTotal), khong giam bap nuoc.
+ * Moi lan doi bap nuoc / voucher: tinh lai tong tien va huy giao dich dang cho (so tien cu).
  */
 public class BookingExtrasService {
 
     private final FnbOrderDAO fnbOrderDAO;
     private final BookingVoucherDAO voucherDAO;
+    private final BookingDAO bookingDAO;
     private final VoucherService voucherService;
+    private final FnbOrderService fnbOrderService;
+    private final BookingService bookingService;
 
     public BookingExtrasService() {
-        this(new FnbOrderDAO(), new BookingVoucherDAO(), new VoucherService());
+        this(new FnbOrderDAO(), new BookingVoucherDAO(), new BookingDAO(), new VoucherService(), new FnbOrderService(),
+                new BookingService());
     }
 
-    public BookingExtrasService(FnbOrderDAO fnbOrderDAO, BookingVoucherDAO voucherDAO, VoucherService voucherService) {
+    public BookingExtrasService(FnbOrderDAO fnbOrderDAO, BookingVoucherDAO voucherDAO, BookingDAO bookingDAO,
+            VoucherService voucherService, FnbOrderService fnbOrderService, BookingService bookingService) {
         this.fnbOrderDAO = fnbOrderDAO;
         this.voucherDAO = voucherDAO;
+        this.bookingDAO = bookingDAO;
         this.voucherService = voucherService;
+        this.fnbOrderService = fnbOrderService;
+        this.bookingService = bookingService;
     }
 
     /** Menu bap nuoc dang ban tai rap cua suat chieu. */
@@ -73,24 +84,27 @@ public class BookingExtrasService {
     }
 
     /**
-     * Doc so luong tu form (tham so qty_I12, qty_C3...) va luu gio bap nuoc.
+     * Doc so luong tu form (qty_I12, qty_C3...), kiem tra mon / so luong / ton kho, thay gio bap nuoc cua don
+     * (gia theo menu hien tai) va tinh lai tong tien.
      * @throws IllegalArgumentException du lieu khong hop le / het hang, message hien cho nguoi dung
      */
     public void saveFnb(Booking booking, Map<String, String[]> params) throws SQLException {
-        Map<String, Integer> cart = new LinkedHashMap<>();
-        for (Map.Entry<String, String[]> e : params.entrySet()) {
-            if (!e.getKey().matches("qty_[IC]\\d{1,9}")) continue;
-            String raw = e.getValue().length == 0 ? "" : e.getValue()[0].trim();
-            int qty;
-            try {
-                qty = raw.isEmpty() ? 0 : Integer.parseInt(raw);
-            } catch (NumberFormatException ex) {
-                throw new IllegalArgumentException("Số lượng bắp nước không hợp lệ.");
-            }
-            cart.put(e.getKey().substring(4), qty);
-        }
+        Map<String, Integer> cart = FnbOrderService.readCart(params);
+        int centreId = booking.getShowtime().getCentreId();
         String orderType = booking.isCounter() ? "COUNTER" : "ONLINE";
-        fnbOrderDAO.replaceCart(booking.getId(), booking.getShowtime().getCentreId(), booking.getUserId(), orderType, cart);
+        DbUtil.inTransaction(conn -> {
+            Map<String, FnbMenuItemDTO> menu = fnbOrderService.loadMenu(conn, centreId);
+            Map<String, Integer> lines = fnbOrderService.validLines(cart, menu);
+            fnbOrderService.checkStock(conn, centreId, lines, menu);
+
+            fnbOrderDAO.deletePendingForBooking(conn, booking.getId());
+            if (!lines.isEmpty()) {
+                fnbOrderService.createOrder(conn, booking.getId(), centreId, booking.getUserId(), orderType, lines, menu);
+            }
+            bookingService.recalculateTotal(conn, booking.getId());
+            bookingService.cancelPendingPayments(conn, booking.getId());
+            return null;
+        });
     }
 
     /**
@@ -108,8 +122,9 @@ public class BookingExtrasService {
                 voucherService.applyVoucher(voucher, booking.getSubTotal(), LocalDateTime.now());
         if (!result.isValid()) throw new IllegalArgumentException(result.getMessage());
 
-        String scopeError = voucherDAO.checkScope(voucher, booking.getShowtime().getCentreId(),
-                booking.getShowtime().getMovieId(), booking.getShowtime().getStartTime().toLocalDateTime().toLocalDate());
+        Showtime st = booking.getShowtime();
+        String scopeError = checkScope(voucher, st.getCentreId(), st.getMovieId(),
+                st.getStartTime().toLocalDateTime().toLocalDate());
         if (scopeError != null) throw new IllegalArgumentException(scopeError);
 
         // Gioi han luot dung moi khach (don tai quay khach vang lai khong co tai khoan: bo qua)
@@ -120,12 +135,42 @@ public class BookingExtrasService {
         }
 
         BigDecimal discount = result.getDiscountAmount().min(booking.getSubTotal());
-        voucherDAO.setBookingVoucher(booking.getId(), voucher.getVoucherId(), discount);
+        setVoucher(booking.getId(), voucher.getVoucherId(), discount);
         return discount;
     }
 
     /** Bo voucher khoi don. */
     public void removeVoucher(Booking booking) throws SQLException {
-        voucherDAO.setBookingVoucher(booking.getId(), null, BigDecimal.ZERO);
+        setVoucher(booking.getId(), null, BigDecimal.ZERO);
+    }
+
+    /**
+     * Voucher co ap dung cho rap / phim / ngay chieu nay khong (khong khai bao rap / phim / ngay = ap dung tat ca).
+     * @return null neu hop le, nguoc lai la ly do khong ap dung duoc
+     */
+    private String checkScope(Voucher voucher, int centreId, int movieId, LocalDate showDate) throws SQLException {
+        int id = voucher.getVoucherId();
+        if (voucher.getCentreId() != null && voucher.getCentreId() != centreId) {
+            return "Mã giảm giá không áp dụng tại rạp này.";
+        }
+        List<Integer> centres = voucherDAO.getScopeCentreIds(id);
+        if (!centres.isEmpty() && !centres.contains(centreId)) return "Mã giảm giá không áp dụng tại rạp này.";
+        List<Integer> movies = voucherDAO.getScopeMovieIds(id);
+        if (!movies.isEmpty() && !movies.contains(movieId)) return "Mã giảm giá không áp dụng cho phim này.";
+        List<String> days = voucherDAO.getScopeDays(id);
+        if (!days.isEmpty() && !days.contains(showDate.getDayOfWeek().name())) {
+            return "Mã giảm giá không áp dụng cho ngày chiếu này.";
+        }
+        return null;
+    }
+
+    /** Gan / bo voucher cua don dang giu ghe, tinh lai tong tien, huy giao dich dang cho. */
+    private void setVoucher(int bookingId, Integer voucherId, BigDecimal discount) throws SQLException {
+        DbUtil.inTransaction(conn -> {
+            bookingDAO.updateVoucher(conn, bookingId, voucherId, voucherId == null ? BigDecimal.ZERO : discount);
+            bookingService.recalculateTotal(conn, bookingId);
+            bookingService.cancelPendingPayments(conn, bookingId);
+            return null;
+        });
     }
 }
