@@ -1,37 +1,5 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ page import="model.entity.Centre,model.entity.Hall,java.util.List" %>
-<%
-    // 1. Kiểm tra quyền hạn Admin (RBAC)
-    String authRole = (String) session.getAttribute("role");
-    if (authRole == null && session.getAttribute("user") instanceof model.entity.User) {
-        authRole = ((model.entity.User) session.getAttribute("user")).getRole();
-    }
-    if (!"ADMIN".equalsIgnoreCase(authRole)) {
-        response.sendError(HttpServletResponse.SC_FORBIDDEN, "Chỉ Quản trị viên (ADMIN) mới có quyền truy cập trang này.");
-        return;
-    }
-
-    request.setAttribute("activeNav", "centres");
-    request.setAttribute("pageTitle", "Quản lý Cụm rạp");
-
-    List<Centre> centres = (List<Centre>) request.getAttribute("centres");
-    Integer totalCentres = (Integer) request.getAttribute("totalCentres");
-    Integer activeCentres = (Integer) request.getAttribute("activeCentres");
-    Integer inactiveCentres = (Integer) request.getAttribute("inactiveCentres");
-    Integer totalHalls = (Integer) request.getAttribute("totalHalls");
-
-    model.dto.common.PageDTO<?> pg = (model.dto.common.PageDTO<?>) request.getAttribute("page");
-    int currentPage = (pg != null) ? pg.getPage() : 1;
-    int pageSize    = (pg != null) ? pg.getSize() : 6;
-    int totalPages  = (pg != null) ? pg.getTotalPages() : 1;
-    int totalFilteredCentres = (pg != null) ? pg.getTotal() : 0;
-
-    String currentSearch = (String) request.getAttribute("currentSearch");
-    String currentStatus = (String) request.getAttribute("currentStatus");
-
-    String successParam = request.getParameter("success");
-    String errorParam = request.getParameter("error");
-%>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -54,7 +22,7 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/alerts.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/manager/shell.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin/dashboard.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin/centres.css?v=<%= System.currentTimeMillis() %>">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin/centres.css">
 </head>
 <body>
 <div class="cf-manager-shell">
@@ -79,59 +47,64 @@
             </div>
 
             <!-- Thông báo thành công / lỗi -->
-            <% if ("created".equals(successParam)) { %>
+            <c:if test="${param.success == 'created'}">
                 <div class="cf-alert cf-alert-success">
                     <span>✓</span> <strong>Thành công!</strong> Đã thêm mới cụm rạp vào hệ thống.
                 </div>
-            <% } else if ("updated".equals(successParam)) { %>
+            </c:if>
+            <c:if test="${param.success == 'updated'}">
                 <div class="cf-alert cf-alert-success">
                     <span>✓</span> <strong>Thành công!</strong> Đã cập nhật thông tin liên hệ và địa chỉ cụm rạp thành công.
                 </div>
-            <% } else if ("status_updated".equals(successParam)) { %>
+            </c:if>
+            <c:if test="${param.success == 'status_updated'}">
                 <div class="cf-alert cf-alert-success">
                     <span>✓</span> <strong>Thành công!</strong> Đã cập nhật trạng thái hoạt động của cụm rạp.
                 </div>
-            <% } else if ("duplicate_name".equals(errorParam)) { %>
+            </c:if>
+            <c:if test="${param.error == 'duplicate_name'}">
                 <div class="cf-alert cf-alert-danger">
                     <span>⚠</span> <strong>Lỗi:</strong> Tên cụm rạp đã tồn tại trong hệ thống. Vui lòng chọn tên khác!
                 </div>
-            <% } else if ("missing_fields".equals(errorParam)) { %>
+            </c:if>
+            <c:if test="${param.error == 'missing_fields'}">
                 <div class="cf-alert cf-alert-danger">
                     <span>⚠</span> <strong>Lỗi:</strong> Vui lòng điền đầy đủ các thông tin bắt buộc (Tên cụm rạp, Địa chỉ, Hotline).
                 </div>
-            <% } else if ("failed".equals(errorParam)) { %>
+            </c:if>
+            <c:if test="${param.error == 'failed'}">
                 <div class="cf-alert cf-alert-danger">
                     <span>⚠</span> <strong>Lỗi:</strong> Không thể thực hiện thao tác. Vui lòng thử lại sau!
                 </div>
-            <% } %>
+            </c:if>
 
             <!-- Thẻ thống kê (Stat Cards) -->
             <div class="cf-stats-grid">
                 <div class="cf-stat-card">
                     <div class="cf-stat-icon primary">🏢</div>
                     <div class="cf-stat-info">
-                        <h3><%= totalCentres != null ? totalCentres : 0 %></h3>
+                        <h3>${totalCentres != null ? totalCentres : 0}</h3>
                         <p>Tổng số Cụm rạp</p>
                     </div>
                 </div>
                 <div class="cf-stat-card">
                     <div class="cf-stat-icon success">✓</div>
                     <div class="cf-stat-info">
-                        <h3><%= activeCentres != null ? activeCentres : 0 %></h3>
+                        <h3>${activeCentres != null ? activeCentres : 0}</h3>
                         <p>Đang hoạt động</p>
                     </div>
                 </div>
                 <div class="cf-stat-card">
                     <div class="cf-stat-icon warning">⏸</div>
                     <div class="cf-stat-info">
-                        <h3><%= inactiveCentres != null ? inactiveCentres : 0 %></h3>
+                        <h3>${inactiveCentres != null ? inactiveCentres : 0}</h3>
                         <p>Tạm ngưng</p>
                     </div>
                 </div>
                 <div class="cf-stat-card">
                     <div class="cf-stat-icon info">🎬</div>
                     <div class="cf-stat-info">
-                        <h3><%= totalHalls != null ? totalHalls : 0 %></h3>
+                        <h3>${totalHalls != null ? totalHalls : 0}</h3>
                         <p>Tổng số Phòng chiếu (Halls)</p>
                     </div>
                 </div>
@@ -144,13 +117,13 @@
                         <span class="icon">
                             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                         </span>
-                        <input type="text" name="search" placeholder="Tìm theo tên cụm rạp, hotline, địa chỉ, thành phố..." value="<%= currentSearch != null ? currentSearch : "" %>">
+                        <input type="text" name="search" placeholder="Tìm theo tên cụm rạp, hotline, địa chỉ, thành phố..." value="${currentSearch}">
                     </div>
 
                     <select name="status" class="cf-select">
-                        <option value="ALL" <%= "ALL".equalsIgnoreCase(currentStatus) ? "selected" : "" %>>Tất cả trạng thái</option>
-                        <option value="ACTIVE" <%= "ACTIVE".equalsIgnoreCase(currentStatus) ? "selected" : "" %>>Đang hoạt động (ACTIVE)</option>
-                        <option value="INACTIVE" <%= "INACTIVE".equalsIgnoreCase(currentStatus) ? "selected" : "" %>>Tạm ngưng (INACTIVE)</option>
+                        <option value="ALL" ${currentStatus == 'ALL' || empty currentStatus ? 'selected' : ''}>Tất cả trạng thái</option>
+                        <option value="ACTIVE" ${currentStatus == 'ACTIVE' ? 'selected' : ''}>Đang hoạt động (ACTIVE)</option>
+                        <option value="INACTIVE" ${currentStatus == 'INACTIVE' ? 'selected' : ''}>Tạm ngưng (INACTIVE)</option>
                     </select>
 
                     <button type="submit" class="cf-btn cf-btn-primary">Lọc</button>
@@ -173,133 +146,145 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <%
-                            if (centres != null && !centres.isEmpty()) {
-                                int centreIndex = (pg != null) ? pg.getFrom() - 1 : 0;
-                                for (Centre c : centres) {
-                                    centreIndex++;
-                                    boolean isActive = "ACTIVE".equalsIgnoreCase(c.getStatus());
-                        %>
-                        <tr>
-                            <td><strong>#<%= centreIndex %></strong></td>
-                            <td>
-                                <strong style="color: #F8FAFC; font-size: 15px;"><%= c.getCentreName() %></strong>
-                            </td>
-                            <td>
-                                <div style="color: #F8FAFC;"><%= c.getAddress() %></div>
-                                <% if (c.getCity() != null && !c.getCity().trim().isEmpty()) { %>
-                                    <small style="color: #94A3B8;"><%= c.getCity() %></small>
-                                <% } %>
-                            </td>
-                            <td>
-                                <%= (c.getPhone() != null && !c.getPhone().trim().isEmpty()) ? "<span style='color: #F8FAFC;'>" + c.getPhone() + "</span>" : "<span style='color: #94A3B8;'>Chưa có</span>" %>
-                            </td>
-                            <td>
-                                <!-- BR-HS-01: Một Centre quản lý danh sách các Hall trực thuộc -->
-                                <button type="button" class="cf-badge cf-badge-halls"
-                                        onclick="openViewHallsModal(<%= c.getCentreId() %>, '<%= c.getCentreName() != null ? c.getCentreName().replace("'", "\\'") : "" %>')"
-                                        title="Bấm để xem danh sách phòng chiếu trực thuộc">
-                                    <span>🎬</span>
-                                    <span><%= c.getHallCount() %> Phòng (<%= c.getSeatCount() %> ghế)</span>
-                                </button>
-                            </td>
-                            <td>
-                                <% if (isActive) { %>
-                                    <span class="cf-badge cf-badge-active">● Hoạt động</span>
-                                <% } else { %>
-                                    <span class="cf-badge cf-badge-inactive">● Tạm ngưng</span>
-                                <% } %>
-                            </td>
-                            <td style="text-align: right;">
-                                <div class="cf-actions" style="justify-content: flex-end;">
-                                    <!-- Nút Sửa -->
-                                    <button type="button" class="cf-btn cf-btn-secondary cf-btn-sm"
-                                            onclick="openEditCentreModal(<%= c.getCentreId() %>, '<%= c.getCentreName() != null ? c.getCentreName().replace("'", "\\'") : "" %>', '<%= c.getAddress() != null ? c.getAddress().replace("'", "\\'") : "" %>', '<%= c.getPhone() != null ? c.getPhone().replace("'", "\\'") : "" %>', '<%= c.getCity() != null ? c.getCity().replace("'", "\\'") : "" %>')">
-                                        Sửa
-                                    </button>
-
-                                    <!-- Nút Toggle Status (Bật / Tắt trạng thái) -->
-                                    <form method="POST" action="${baseUrl}" style="display: inline-block; margin: 0;"
-                                          onsubmit="return confirmToggleStatus('<%= c.getCentreName() != null ? c.getCentreName().replace("'", "\\'") : "" %>', <%= isActive %>);">
-                                        <input type="hidden" name="action" value="toggleStatus">
-                                        <input type="hidden" name="centreId" value="<%= c.getCentreId() %>">
-                                        <input type="hidden" name="back" value="${backQuery}">
-                                        <input type="hidden" name="search" value="<%= currentSearch != null ? currentSearch : "" %>">
-                                        <input type="hidden" name="status" value="<%= currentStatus != null ? currentStatus : "ALL" %>">
-                                        <input type="hidden" name="page" value="<%= currentPage %>">
-
-                                        <% if (isActive) { %>
-                                            <button type="submit" class="cf-btn cf-btn-danger cf-btn-sm" title="Tạm ngưng hoạt động cụm rạp">
-                                                Tắt
+                        <c:choose>
+                            <c:when test="${not empty centres}">
+                                <c:forEach items="${centres}" var="c" varStatus="loop">
+                                    <c:set var="isActive" value="${c.status == 'ACTIVE'}" />
+                                    <tr>
+                                        <td><strong>#${(page.page - 1) * page.size + loop.count}</strong></td>
+                                        <td>
+                                            <strong style="color: #F8FAFC; font-size: 15px;">${c.centreName}</strong>
+                                        </td>
+                                        <td>
+                                            <div style="color: #F8FAFC;">${c.address}</div>
+                                            <c:if test="${not empty c.city}">
+                                                <small style="color: #94A3B8;">${c.city}</small>
+                                            </c:if>
+                                        </td>
+                                        <td>
+                                            <c:choose>
+                                                <c:when test="${not empty c.phone}">
+                                                    <span style="color: #F8FAFC;">${c.phone}</span>
+                                                </c:when>
+                                                <c:otherwise>
+                                                    <span style="color: #94A3B8;">Chưa có</span>
+                                                </c:otherwise>
+                                            </c:choose>
+                                        </td>
+                                        <td>
+                                            <!-- BR-HS-01: Một Centre quản lý danh sách các Hall trực thuộc -->
+                                            <button type="button" class="cf-badge cf-badge-halls"
+                                                    onclick="openViewHallsModal(${c.centreId}, '${c.centreName}')"
+                                                    title="Bấm để xem danh sách phòng chiếu trực thuộc">
+                                                <span>🎬</span>
+                                                <span>${c.hallCount} Phòng (${c.seatCount} ghế)</span>
                                             </button>
-                                        <% } else { %>
-                                            <button type="submit" class="cf-btn cf-btn-primary cf-btn-sm" style="background: #16A34A; border-color: #16A34A;" title="Kích hoạt lại cụm rạp">
-                                                Bật
-                                            </button>
-                                        <% } %>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
-                        <%
-                                }
-                            } else {
-                        %>
-                        <tr>
-                            <td colspan="7" style="text-align: center; padding: 40px; color: #94A3B8;">
-                                Không tìm thấy Cụm rạp nào phù hợp với điều kiện tìm kiếm.
-                            </td>
-                        </tr>
-                        <% } %>
+                                        </td>
+                                        <td>
+                                            <c:choose>
+                                                <c:when test="${isActive}">
+                                                    <span class="cf-badge cf-badge-active">● Hoạt động</span>
+                                                </c:when>
+                                                <c:otherwise>
+                                                    <span class="cf-badge cf-badge-inactive">● Tạm ngưng</span>
+                                                </c:otherwise>
+                                            </c:choose>
+                                        </td>
+                                        <td style="text-align: right;">
+                                            <div class="cf-actions" style="justify-content: flex-end;">
+                                                <!-- Nút Sửa -->
+                                                <button type="button" class="cf-btn cf-btn-secondary cf-btn-sm"
+                                                        onclick="openEditCentreModal(${c.centreId}, '${c.centreName}', '${c.address}', '${c.phone}', '${c.city}')">
+                                                    Sửa
+                                                </button>
+
+                                                <!-- Nút Toggle Status (Bật / Tắt trạng thái) -->
+                                                <form method="POST" action="${baseUrl}" style="display: inline-block; margin: 0;"
+                                                      onsubmit="return confirmToggleStatus('${c.centreName}', ${isActive});">
+                                                    <input type="hidden" name="action" value="toggleStatus">
+                                                    <input type="hidden" name="centreId" value="${c.centreId}">
+                                                    <input type="hidden" name="back" value="${backQuery}">
+                                                    <input type="hidden" name="search" value="${currentSearch}">
+                                                    <input type="hidden" name="status" value="${currentStatus}">
+                                                    <input type="hidden" name="page" value="${page.page}">
+
+                                                    <c:choose>
+                                                        <c:when test="${isActive}">
+                                                            <button type="submit" class="cf-btn cf-btn-danger cf-btn-sm" title="Tạm ngưng hoạt động cụm rạp">
+                                                                Tắt
+                                                            </button>
+                                                        </c:when>
+                                                        <c:otherwise>
+                                                            <button type="submit" class="cf-btn cf-btn-primary cf-btn-sm" style="background: #16A34A; border-color: #16A34A;" title="Kích hoạt lại cụm rạp">
+                                                                Bật
+                                                            </button>
+                                                        </c:otherwise>
+                                                    </c:choose>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </c:forEach>
+                            </c:when>
+                            <c:otherwise>
+                                <tr>
+                                    <td colspan="7" style="text-align: center; padding: 40px; color: #94A3B8;">
+                                        Không tìm thấy Cụm rạp nào phù hợp với điều kiện tìm kiếm.
+                                    </td>
+                                </tr>
+                            </c:otherwise>
+                        </c:choose>
                     </tbody>
                 </table>
 
-                <% if (totalFilteredCentres > 0) { %>
-                <!-- THANH PHÂN TRANG (PAGINATION) -->
-                <div class="cf-pagination-bar">
-                    <div class="cf-pagination-info">
-                        Hiển thị <strong>${result.from} - ${result.to}</strong> trên tổng số <strong>${result.total}</strong> cụm rạp
-                    </div>
-                    <% if (totalPages > 1) { %>
-                    <div class="cf-pagination-controls">
-                        <!-- Nút trang trước (Previous) -->
-                        <% if (currentPage > 1) { %>
-                            <a href="${pagerBase}<%= currentPage - 1 %>" 
-                               class="cf-page-btn" title="Trang trước">«</a>
-                        <% } else { %>
-                            <span class="cf-page-btn disabled" title="Trang trước">«</span>
-                        <% } %>
+                <c:if test="${page.total > 0}">
+                    <!-- THANH PHÂN TRANG (PAGINATION) -->
+                    <div class="cf-pagination-bar">
+                        <div class="cf-pagination-info">
+                            Hiển thị <strong>${page.from} - ${page.to}</strong> trên tổng số <strong>${page.total}</strong> cụm rạp
+                        </div>
+                        <c:if test="${page.totalPages > 1}">
+                            <div class="cf-pagination-controls">
+                                <!-- Nút trang trước (Previous) -->
+                                <c:choose>
+                                    <c:when test="${page.page > 1}">
+                                        <a href="${pagerBase}${page.page - 1}" class="cf-page-btn" title="Trang trước">«</a>
+                                    </c:when>
+                                    <c:otherwise>
+                                        <span class="cf-page-btn disabled" title="Trang trước">«</span>
+                                    </c:otherwise>
+                                </c:choose>
 
-                        <!-- Danh sách các số trang -->
-                        <% for (int i = 1; i <= totalPages; i++) { 
-                            if (i == 1 || i == totalPages || Math.abs(i - currentPage) <= 2) {
-                        %>
-                            <% if (i == currentPage) { %>
-                                <span class="cf-page-btn active"><%= i %></span>
-                            <% } else { %>
-                                <a href="${pagerBase}<%= i %>" 
-                                   class="cf-page-btn"><%= i %></a>
-                            <% } %>
-                        <% 
-                            } else if (i == currentPage - 3 || i == currentPage + 3) { 
-                        %>
-                            <span class="cf-page-ellipsis">...</span>
-                        <% 
-                            }
-                        } 
-                        %>
+                                <!-- Danh sách các số trang -->
+                                <c:forEach begin="1" end="${page.totalPages}" var="i">
+                                    <c:if test="${i == 1 || i == page.totalPages || (i >= page.page - 2 && i <= page.page + 2)}">
+                                        <c:choose>
+                                            <c:when test="${i == page.page}">
+                                                <span class="cf-page-btn active">${i}</span>
+                                            </c:when>
+                                            <c:otherwise>
+                                                <a href="${pagerBase}${i}" class="cf-page-btn">${i}</a>
+                                            </c:otherwise>
+                                        </c:choose>
+                                    </c:if>
+                                    <c:if test="${i == page.page - 3 || i == page.page + 3}">
+                                        <span class="cf-page-ellipsis">...</span>
+                                    </c:if>
+                                </c:forEach>
 
-                        <!-- Nút trang sau (Next) -->
-                        <% if (currentPage < totalPages) { %>
-                            <a href="${pagerBase}<%= currentPage + 1 %>" 
-                               class="cf-page-btn" title="Trang sau">»</a>
-                        <% } else { %>
-                            <span class="cf-page-btn disabled" title="Trang sau">»</span>
-                        <% } %>
+                                <!-- Nút trang sau (Next) -->
+                                <c:choose>
+                                    <c:when test="${page.page < page.totalPages}">
+                                        <a href="${pagerBase}${page.page + 1}" class="cf-page-btn" title="Trang sau">»</a>
+                                    </c:when>
+                                    <c:otherwise>
+                                        <span class="cf-page-btn disabled" title="Trang sau">»</span>
+                                    </c:otherwise>
+                                </c:choose>
+                            </div>
+                        </c:if>
                     </div>
-                    <% } %>
-                </div>
-                <% } %>
+                </c:if>
             </div>
         </main>
     </div>
@@ -317,8 +302,8 @@
         <form method="POST" action="${baseUrl}">
             <input type="hidden" name="action" value="create">
             <input type="hidden" name="back" value="${backQuery}">
-            <input type="hidden" name="search" value="<%= currentSearch != null ? currentSearch : "" %>">
-            <input type="hidden" name="status" value="<%= currentStatus != null ? currentStatus : "ALL" %>">
+            <input type="hidden" name="search" value="${currentSearch}">
+            <input type="hidden" name="status" value="${currentStatus}">
             <input type="hidden" name="page" value="1">
 
             <div class="cf-modal-body">
@@ -365,9 +350,9 @@
             <input type="hidden" name="action" value="update">
             <input type="hidden" name="centreId" id="editCentreId">
             <input type="hidden" name="back" value="${backQuery}">
-            <input type="hidden" name="search" value="<%= currentSearch != null ? currentSearch : "" %>">
-            <input type="hidden" name="status" value="<%= currentStatus != null ? currentStatus : "ALL" %>">
-            <input type="hidden" name="page" value="<%= currentPage %>">
+            <input type="hidden" name="search" value="${currentSearch}">
+            <input type="hidden" name="status" value="${currentStatus}">
+            <input type="hidden" name="page" value="${page.page}">
 
             <div class="cf-modal-body">
                 <div class="cf-form-group">
