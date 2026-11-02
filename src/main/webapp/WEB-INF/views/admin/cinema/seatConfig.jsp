@@ -325,9 +325,7 @@
                         </select>
 
                         <button type="submit" class="cf-btn cf-btn-primary">Lọc</button>
-                        <% if ((currentSearch != null && !currentSearch.isEmpty()) || (currentSeatType != null && !"ALL".equalsIgnoreCase(currentSeatType)) || (currentSeatStatus != null && !"ALL".equalsIgnoreCase(currentSeatStatus))) { %>
-                            <a href="${pageContext.request.contextPath}/manager/seat-config?hallId=<%= hall != null ? hall.getHallId() : 0 %>" class="cf-btn cf-btn-secondary">Xóa lọc</a>
-                        <% } %>
+                        <a href="${baseUrl}?hallId=<%= hall != null ? hall.getHallId() : 0 %>" class="cf-btn cf-btn-secondary">Xóa lọc</a>
                     </form>
                 </div>
 

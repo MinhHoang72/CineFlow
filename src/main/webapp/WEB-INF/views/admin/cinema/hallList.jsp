@@ -212,9 +212,7 @@
                         </select>
 
                         <button type="submit" class="cf-btn cf-btn-primary">Lọc</button>
-                        <% if ((currentSearch != null && !currentSearch.isEmpty()) || (currentStatus != null && !"ALL".equalsIgnoreCase(currentStatus))) { %>
-                            <a href="${pageContext.request.contextPath}/manager/halls<%= isAdmin ? ("?centreId=" + targetCentreId) : "" %>" class="cf-btn cf-btn-secondary">Xóa lọc</a>
-                        <% } %>
+                        <a href="${baseUrl}" class="cf-btn cf-btn-secondary">Xóa lọc</a>
                     </form>
                 </div>
 
