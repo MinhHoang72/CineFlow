@@ -51,6 +51,8 @@
     --cf-text: #F8FAFC;
     --cf-muted: #94A3B8;
     --cf-text-sub: #64748B;
+    --cf-text-secondary: #94A3B8;
+    --cf-surface-secondary: #1E2433;
 
     /* Viền hiệu ứng kính mờ (Glass Borders) */
     --cf-border: rgba(255, 255, 255, 0.08);

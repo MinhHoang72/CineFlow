@@ -7,6 +7,7 @@
         showtimeRole = ((model.entity.User) session.getAttribute("user")).getRole();
     }
     boolean showtimeAdmin = "ADMIN".equalsIgnoreCase(showtimeRole);
+    request.setAttribute("showtimeAdmin", showtimeAdmin);
     request.setAttribute("activeNav", "showtimes");
     request.setAttribute("activeTab", "showtimes");
     request.setAttribute("pageTitle", "Quản lý suất chiếu");
@@ -29,7 +30,9 @@
                             <h1>Quản lý suất chiếu</h1>
                             <p>Sắp xếp lịch chiếu, theo dõi phòng và quản lý từng suất phim.</p>
                         </div>
+                        <% if (!showtimeAdmin) { %>
                         <button class="st-button st-button-primary" type="button" id="st-open-create">＋ Tạo suất chiếu</button>
+                    <% } %>
                     </header>
                     <c:if test="${not empty sessionScope.message}">
                         <div class="st-notice st-success" role="status"><c:out value="${sessionScope.message}" /></div>
@@ -57,6 +60,7 @@
                             <small>Được phân phối tại cụm rạp</small>
                         </div>
                     </div>
+                    <% if (!showtimeAdmin) { %>
                     <dialog class="st-create-dialog" id="create-showtime" aria-labelledby="create-title">
                         <div class="st-panel-heading">
                             <div>
@@ -113,6 +117,7 @@
                             </c:if>
                         </form>
                     </dialog>
+                    <% } %>
                     <section class="st-panel st-schedule" aria-labelledby="schedule-title">
                         <div class="st-panel-heading">
                             <div>
@@ -222,7 +227,7 @@
                                                             href="${pageContext.request.contextPath}/showtimes/seats?id=${s.showtimeId}">
                                                             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
                                                         </a>
-                                                        <c:if test="${s.status == 'SCHEDULED'}">
+                                                        <c:if test="${!showtimeAdmin && s.status == 'SCHEDULED'}">
                                                             <a
                                                                 class="st-link st-icon-action"
                                                                 title="Sửa suất chiếu"
@@ -256,7 +261,7 @@
                             <span class="st-empty-icon" aria-hidden="true">▤</span>
                             <h3>${empty showtimes ? 'Chưa có suất chiếu' : 'Không tìm thấy suất chiếu'}</h3>
                             <p>
-                                ${empty showtimes ? 'Tạo suất chiếu đầu tiên bằng biểu mẫu phía trên.' : 'Thử đổi từ khóa hoặc xóa bộ lọc để xem lại danh sách.'}
+                                ${empty showtimes ? (showtimeAdmin ? 'Chưa có suất chiếu nào tại cụm rạp này.' : 'Tạo suất chiếu đầu tiên bằng biểu mẫu phía trên.') : 'Thử đổi từ khóa hoặc xóa bộ lọc để xem lại danh sách.'}
                             </p>
                         </div>
                         <footer class="st-list-footer">

@@ -161,35 +161,127 @@
 }
 
 /* ==========================================================================
-   THANH CÔNG CỤ VÀ BỘ LỌC ĐA NĂNG (MÃ PHIM, ĐỘ TUỔI, NGÀY CHIẾU)
+   THANH CÔNG CỤ THU GỌN 1 HÀNG DUY NHẤT (PILLS + LIVE SEARCH + PAGE SIZE)
    ========================================================================== */
-.cf-card-toolbar-multi {
-    padding: 14px 20px;
+.cf-card-toolbar-compact {
+    padding: 12px 20px;
     background: rgba(11, 15, 23, 0.4);
     border-bottom: 1px solid var(--cf-border);
     display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.cf-toolbar-row {
-    display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 14px;
     flex-wrap: wrap;
-    gap: 12px;
 }
 
-.cf-toolbar-row-filters {
-    padding-top: 10px;
-    border-top: 1px dashed rgba(255, 255, 255, 0.08);
-}
-
-.cf-filters-wrap {
+.cf-toolbar-left {
     display: flex;
     align-items: center;
+    gap: 8px;
     flex-wrap: wrap;
+}
+
+.cf-toolbar-right {
+    display: flex;
+    align-items: center;
     gap: 10px;
+    flex-shrink: 0;
+}
+
+.cf-search-box-compact {
+    position: relative;
+    width: 270px;
+    transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.cf-search-box-compact:focus-within {
+    width: 320px;
+}
+
+.cf-search-box-compact .cf-search-icon {
+    position: absolute;
+    left: 11px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #64748b;
+    pointer-events: none;
+    transition: color 0.2s ease;
+}
+
+.cf-search-box-compact:focus-within .cf-search-icon {
+    color: var(--cf-primary, #ff2855);
+}
+
+.cf-search-box-compact input {
+    width: 100%;
+    height: 38px;
+    min-height: 38px;
+    padding: 0 32px 0 34px;
+    background: #0f1623;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 8px;
+    color: #f8fafc;
+    font-size: 13px;
+    outline: none;
+    box-sizing: border-box;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.cf-search-box-compact input::placeholder {
+    color: #64748b;
+    font-size: 12.5px;
+}
+
+.cf-search-box-compact input:focus {
+    background: #131c2c;
+    border-color: var(--cf-primary, #ff2855);
+    box-shadow: 0 0 0 3px rgba(255, 40, 85, 0.2);
+}
+
+/* Nút xóa từ khóa (Clear ✕) */
+.cf-search-clear-btn {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 22px;
+    height: 22px;
+    background: rgba(148, 163, 184, 0.2);
+    border: none;
+    border-radius: 50%;
+    color: #cbd5e1;
+    font-size: 11px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    z-index: 2;
+}
+
+.cf-search-clear-btn:hover {
+    background: var(--cf-primary, #ff2855);
+    color: #ffffff;
+    transform: translateY(-50%) scale(1.08);
+}
+
+.cf-page-size-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    color: var(--cf-muted, #94a3b8);
+    white-space: nowrap;
+}
+
+/* Nổi bật ký tự khớp trong bảng phim */
+.movie-title-link mark {
+    background: rgba(255, 40, 85, 0.25);
+    color: #ff3366;
+    padding: 1px 3px;
+    border-radius: 3px;
+    font-weight: 700;
 }
 
 .cf-code-search-box {
@@ -316,13 +408,38 @@
 }
 
 /* Tương thích Light Theme (Giao diện sáng) */
-html[data-theme="light"] .cf-card-toolbar-multi {
-    background: #ffffff;
+html[data-theme="light"] .cf-card-toolbar-compact {
+    background: #f8fafc;
     border-bottom-color: #e2e8f0;
 }
 
-html[data-theme="light"] .cf-toolbar-row-filters {
-    border-top-color: #e2e8f0;
+html[data-theme="light"] .cf-search-box-compact input {
+    background: #ffffff;
+    border-color: #cbd5e1;
+    color: #0f172a;
+}
+
+html[data-theme="light"] .cf-search-box-compact input::placeholder {
+    color: #94a3b8;
+}
+
+html[data-theme="light"] .cf-search-box-compact input:focus {
+    background: #ffffff;
+    border-color: #ff2855;
+    box-shadow: 0 0 0 3px rgba(255, 40, 85, 0.15);
+}
+
+html[data-theme="light"] .cf-search-box-compact .cf-search-icon {
+    color: #94a3b8;
+}
+
+html[data-theme="light"] .cf-search-box-compact:focus-within .cf-search-icon {
+    color: #ff2855;
+}
+
+html[data-theme="light"] .movie-title-link mark {
+    background: rgba(255, 40, 85, 0.16);
+    color: #e11d48;
 }
 
 html[data-theme="light"] .cf-code-search-box input {

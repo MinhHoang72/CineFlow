@@ -1,4 +1,4 @@
-﻿<%@ page pageEncoding="UTF-8" %>
+<%@ page pageEncoding="UTF-8" %>
 <%
     boolean filterAdmin = Boolean.TRUE.equals(request.getAttribute("isAdmin"));
     java.util.List<model.dto.common.OptionDTO> filterCentres = (java.util.List<model.dto.common.OptionDTO>) request.getAttribute("centres");

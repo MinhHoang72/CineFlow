@@ -1,4 +1,4 @@
-﻿<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ page import="model.entity.User,model.entity.Centre,java.util.List" %>
 <%
     String authRole = (String) session.getAttribute("role");
@@ -149,7 +149,7 @@
                 </div>
             <% } else if ("invalid_account".equals(errorParam)) { %>
                 <div class="cf-alert cf-alert-danger">
-                    <span>⚠</span> <strong>Lỗi:</strong> Tên tài khoản từ 3-30 ký tự, chỉ gồm chữ cái, số, gạch dưới, gạch ngang hoặc dấu chấm.
+                    <span>⚠</span> <strong>Lỗi:</strong> Tên tài khoản không được để trống và tối đa 50 ký tự.
                 </div>
             <% } else if ("invalid_email".equals(errorParam)) { %>
                 <div class="cf-alert cf-alert-danger">
@@ -161,11 +161,11 @@
                 </div>
             <% } else if ("weak_password".equals(errorParam)) { %>
                 <div class="cf-alert cf-alert-danger">
-                    <span>⚠</span> <strong>Mật khẩu yếu:</strong> Yêu cầu tối thiểu 8 ký tự, gồm ít nhất 1 chữ hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt.
+                    <span>⚠</span> <strong>Lỗi:</strong> Mật khẩu khởi tạo cần tối thiểu 6 ký tự.
                 </div>
             <% } else if ("invalid_phone".equals(errorParam)) { %>
                 <div class="cf-alert cf-alert-danger">
-                    <span>⚠</span> <strong>Lỗi:</strong> Số điện thoại không hợp lệ (yêu cầu số điện thoại di động Việt Nam 10 số).
+                    <span>⚠</span> <strong>Lỗi:</strong> Số điện thoại không được quá 20 ký tự.
                 </div>
             <% } else if ("unassigned_manager".equals(errorParam)) { %>
                 <div class="cf-alert cf-alert-danger">
@@ -437,7 +437,7 @@
                     <div class="cf-form-group">
                         <label for="createStaffAccount">Tên đăng nhập *</label>
                         <input type="text" id="createStaffAccount" name="account"
-                               placeholder="staff_td_06" required>
+                               placeholder="Ví dụ: namnv, staff01, hung.nv..." maxlength="50" required>
                     </div>
                     <div class="cf-form-group">
                         <label for="createStaffPhone">Số điện thoại</label>
@@ -457,7 +457,7 @@
                     <input type="text" id="createStaffPassword" name="password"
                            value="Staff@123" required>
                     <small style="color:#94a3b8;font-size:12px;line-height:1.5;">
-                        Mật khẩu khởi tạo mặc định: <code>Staff@123</code> (tối thiểu 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt).
+                        Mật khẩu khởi tạo mặc định: <code>Staff@123</code> (hoặc bạn có thể tự nhập mật khẩu từ 6 ký tự trở lên).
                     </small>
                 </div>
             </div>

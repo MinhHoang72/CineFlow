@@ -144,6 +144,13 @@
                     </div>
                 </a>
 
+                <a href="${pageContext.request.contextPath}/pricing" class="quick-nav-card">
+                    <div class="quick-nav-icon" style="background:#FEF3C7;color:#B45309">₫</div>
+                    <div class="quick-nav-meta">
+                        <h3>Bảng giá vé &amp; phụ thu</h3>
+                        <p>Cấu hình giá cơ bản, khung giờ và ghế</p>
+                    </div>
+                </a>
                 <a href="${pageContext.request.contextPath}/manager/halls" class="quick-nav-card">
                     <div class="quick-nav-icon" style="background:#CFFAFE;color:#0E7490">🎬</div>
                     <div class="quick-nav-meta">

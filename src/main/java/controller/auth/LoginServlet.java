@@ -23,15 +23,8 @@ import java.nio.charset.StandardCharsets;
 @WebServlet(name = "LoginServlet", urlPatterns = {"/login", "/auth/login", "/auth/login.jsp"})
 public class LoginServlet extends HttpServlet {
 
-    private UserDAO userDAO;
-
-    /**
-     * Khởi tạo Servlet và đối tượng DAO truy xuất cơ sở dữ liệu.
-     */
-    @Override
-    public void init() {
-        userDAO = new UserDAO();
-    }
+    private final service.UserService userService = new service.UserService();
+    private final UserDAO userDAO = new UserDAO();
 
     /**
      * Xử lý yêu cầu HTTP POST: Xác thực tài khoản/mật khẩu, kiểm tra trạng thái hoạt động và điều hướng người dùng.
@@ -60,79 +53,30 @@ public class LoginServlet extends HttpServlet {
 
         accountOrEmail = accountOrEmail.trim();
 
-        // 4. Tìm kiếm người dùng trong cơ sở dữ liệu qua username hoặc email
-        User user = userDAO.getUserByAccountOrEmail(accountOrEmail);
-        if (user == null) {
-            response.sendRedirect(request.getContextPath() + "/login?error=invalid");
-            return;
-        }
-
-        // 5. Xác thực mật khẩu:
-        String storedPassword = user.getPassword();
-        boolean passwordCorrect;
-
-        // 5.1. Nếu mật khẩu đã được băm bằng BCrypt ($2a$, $2b$...) -> đối soát qua BCrypt
-        if (storedPassword != null && storedPassword.startsWith("$2")) {
-            passwordCorrect = PasswordUtil.checkPassword(password, storedPassword);
-        } else {
-            // 5.2. Hỗ trợ dữ liệu mật khẩu cũ (nếu có) và tự động nâng cấp sang chuẩn băm BCrypt an toàn
-            passwordCorrect = password.equals(storedPassword);
-            if (passwordCorrect) {
-                userDAO.updatePassword(user.getUserId(), PasswordUtil.hashPassword(password));
+        // 4. Ủy quyền toàn bộ xác thực nghiệp vụ cho UserService (3-layer architecture)
+        service.UserService.AuthResult authResult = userService.authenticate(accountOrEmail, password);
+        if (!authResult.isSuccess()) {
+            switch (authResult.getStatus()) {
+                case ACCOUNT_LOCKED:
+                    response.sendRedirect(request.getContextPath() + "/login?error=locked");
+                    return;
+                case ACCOUNT_INACTIVE:
+                    response.sendRedirect(request.getContextPath() + "/login?error=inactive");
+                    return;
+                case EMAIL_UNVERIFIED:
+                    String encodedEmail = URLEncoder.encode(authResult.getUser() != null ? authResult.getUser().getEmail() : "", StandardCharsets.UTF_8);
+                    response.sendRedirect(request.getContextPath() + "/login?error=unverified&email=" + encodedEmail);
+                    return;
+                case MANAGER_UNASSIGNED:
+                    response.sendRedirect(request.getContextPath() + "/login?error=manager_unassigned");
+                    return;
+                default:
+                    response.sendRedirect(request.getContextPath() + "/login?error=invalid");
+                    return;
             }
         }
 
-        // 5.3. Mật khẩu không khớp -> Báo lỗi đăng nhập thất bại
-        if (!passwordCorrect) {
-            response.sendRedirect(request.getContextPath() + "/login?error=invalid");
-            return;
-        }
-
-        // 6. Kiểm tra trạng thái tài khoản:
-        // 6.1. Nếu tài khoản bị KHÓA (LOCKED) do vi phạm chính sách -> Ngăn chặn đăng nhập
-        if ("LOCKED".equalsIgnoreCase(user.getStatus())) {
-            response.sendRedirect(request.getContextPath() + "/login?error=locked");
-            return;
-        }
-
-        boolean isCustomer = "CUSTOMER".equalsIgnoreCase(user.getRole());
-
-        // 6.2. Nếu tài khoản ở trạng thái TẠM NGƯNG (INACTIVE)
-        if ("INACTIVE".equalsIgnoreCase(user.getStatus())) {
-            // Trường hợp khách hàng mới đăng ký nhưng chưa kích hoạt OTP email
-            if (isCustomer && !user.isEmailVerified()) {
-                String encodedEmail = URLEncoder.encode(user.getEmail(), StandardCharsets.UTF_8);
-                response.sendRedirect(request.getContextPath() + "/login?error=unverified&email=" + encodedEmail);
-                return;
-            }
-            // Trường hợp nhân viên/khách hàng bị Admin tạm ngừng hoạt động
-            response.sendRedirect(request.getContextPath() + "/login?error=inactive");
-            return;
-        }
-
-        // Manager chỉ được đăng nhập khu vực vận hành khi còn được phân công
-        // một chi nhánh đang hoạt động. Miễn nhiệm sẽ chặn ngay từ bước login.
-        if ("MANAGER".equalsIgnoreCase(user.getRole())) {
-            Integer managerCentreId = user.getCentreId();
-            if (managerCentreId == null || managerCentreId <= 0
-                    || !userDAO.hasActiveManagerAssignment(user.getUserId(), managerCentreId)) {
-                response.sendRedirect(request.getContextPath() + "/login?error=manager_unassigned");
-                return;
-            }
-        }
-
-        // 6.3. Khách hàng chưa xác thực email (dù status có thể là ACTIVE)
-        if (isCustomer && !user.isEmailVerified()) {
-            String encodedEmail = URLEncoder.encode(user.getEmail(), StandardCharsets.UTF_8);
-            response.sendRedirect(request.getContextPath() + "/login?error=unverified&email=" + encodedEmail);
-            return;
-        }
-
-        // 6.4. Tài khoản nội bộ (Admin, Manager, Staff) do Admin tạo mặc định đã kích hoạt email
-        if (!isCustomer && !user.isEmailVerified()) {
-            userDAO.activateUser(user.getUserId());
-            user.setEmailVerified(true);
-        }
+        User user = authResult.getUser();
 
         // 7. Xác thực thành công: Khởi tạo phiên làm việc (HttpSession) và lưu thông tin định danh
         HttpSession session = request.getSession();

@@ -1,4 +1,4 @@
-﻿<%@ page pageEncoding="UTF-8" %>
+<%@ page pageEncoding="UTF-8" %>
 <%@ page import="model.entity.User" %>
 <%!
     static String esc(Object value) {

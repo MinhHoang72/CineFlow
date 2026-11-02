@@ -1,4 +1,4 @@
-﻿<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ page import="model.dto.report.ReportSummary,model.dto.report.RevenueReport,model.dto.showtime.ShowtimeMetric,java.util.List,java.math.BigDecimal" %>
 <%
     String authRole = (String) session.getAttribute("role");

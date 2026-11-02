@@ -195,17 +195,100 @@ public class ShowtimeService implements ServletContextListener {
     }
 
     /**
-     * Hủy suất chiếu.
+     * Hủy suất chiếu sau khi kiểm tra các điều kiện nghiệp vụ.
      */
     public boolean cancelShowtime(int showtimeId) {
+        if (showtimeDAO.hasActiveBookings(showtimeId)) {
+            throw new IllegalStateException("Không thể hủy suất chiếu vì đã có khách đặt vé.");
+        }
         return showtimeDAO.cancelShowtime(showtimeId);
     }
 
     /**
-     * Cập nhật thông tin suất chiếu.
+     * Cập nhật thông tin suất chiếu sau khi xác thực toàn bộ logic nghiệp vụ và xung đột lịch.
      */
+    public boolean updateShowtime(int showtimeId, int movieId, int hallId, LocalDateTime startTime, int cleaningBuffer) {
+        Showtime old = showtimeDAO.getById(showtimeId);
+        if (old == null || !"SCHEDULED".equals(old.getStatus())) {
+            throw new IllegalStateException("Suất chiếu không tồn tại hoặc không ở trạng thái có thể chỉnh sửa.");
+        }
+        if (!isHallAvailable(hallId)) {
+            throw new IllegalStateException("Phòng chiếu đã chọn không khả dụng.");
+        }
+        if (!isMovieAvailableForHall(movieId, hallId)) {
+            throw new IllegalStateException("Phim chưa được phân phối tới cụm rạp này.");
+        }
+        int duration = getMovieDuration(movieId);
+        if (duration <= 0) {
+            throw new IllegalArgumentException("Thời lượng phim không hợp lệ.");
+        }
+        LocalDateTime endTime = startTime.plusMinutes(duration);
+        if (hasScheduleConflict(hallId, startTime, endTime, cleaningBuffer, showtimeId)) {
+            throw new IllegalStateException("Trùng lịch chiếu hoặc thời gian dọn phòng với suất chiếu khác.");
+        }
+
+        old.setMovieId(movieId);
+        old.setHallId(hallId);
+        old.setStartTime(startTime);
+        old.setEndTime(endTime);
+        old.setCleaningBufferMinutes(cleaningBuffer);
+
+        return showtimeDAO.updateShowtime(old);
+    }
+
     public boolean updateShowtime(Showtime showtime) {
         return showtimeDAO.updateShowtime(showtime);
+    }
+
+    public Showtime getShowtimeById(int showtimeId) {
+        return showtimeDAO.getById(showtimeId);
+    }
+
+    public List<Showtime> getShowtimesByCentre(int centreId) {
+        return showtimeDAO.getByCentre(centreId);
+    }
+
+    public List<model.entity.Movie> getAvailableMoviesByCentre(int centreId) {
+        return movieDAO.getAvailableMoviesByCentre(centreId);
+    }
+
+    public List<model.entity.Hall> getAvailableHallsByCentre(int centreId) {
+        return hallDAO.getAvailableHallsByCentre(centreId);
+    }
+
+    public void synchronizeStatuses() throws SQLException {
+        showtimeDAO.synchronizeStatuses();
+    }
+
+    public java.util.Map<String, Object> checkAvailability(int centreId, int hallId, int movieId, LocalDateTime start) {
+        java.util.Map<String, Object> result = new java.util.LinkedHashMap<>();
+        boolean hallAllowed = getAvailableHallsByCentre(centreId).stream()
+                .anyMatch(h -> h.getHallId() == hallId);
+        model.entity.Movie movie = getAvailableMoviesByCentre(centreId).stream()
+                .filter(m -> m.getMovieId() == movieId).findFirst().orElse(null);
+        if (!hallAllowed || movie == null || movie.getDuration() <= 0) {
+            throw new IllegalArgumentException("Phim hoặc phòng không khả dụng tại cụm rạp này.");
+        }
+        LocalDateTime end = start.plusMinutes(movie.getDuration());
+        List<Showtime> conflicts;
+        try {
+            conflicts = showtimeDAO.findScheduleConflicts(centreId, hallId, start, end, 15);
+        } catch (SQLException e) {
+            throw new RuntimeException("Lỗi kiểm tra xung đột lịch chiếu: " + e.getMessage(), e);
+        }
+        result.put("available", conflicts.isEmpty());
+        result.put("endTime", end.toString());
+        result.put("cleaningUntil", end.plusMinutes(15).toString());
+        List<java.util.Map<String, String>> details = new java.util.ArrayList<>();
+        for (Showtime conflict : conflicts) {
+            details.add(java.util.Map.of("title", conflict.getMovieTitle(),
+                    "start", conflict.getStartTime().toLocalDateTime().toString(),
+                    "end", conflict.getEndTime().toLocalDateTime().toString(),
+                    "busyUntil", conflict.getEndTime().toLocalDateTime()
+                            .plusMinutes(conflict.getCleaningBufferMinutes()).toString()));
+        }
+        result.put("conflicts", details);
+        return result;
     }
 
     private static Integer parseCentre(String value) {

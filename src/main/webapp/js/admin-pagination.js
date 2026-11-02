@@ -1,25 +1,227 @@
 /**
- * Điều khiển bộ phân trang tương tác và lọc dữ liệu trực tiếp trong trang quản trị CineFlow.
- * Hỗ trợ lọc theo:
- * - Trạng thái phim (Tất cả, Đang chiếu, Sắp chiếu, Đã kết thúc, Lưu trữ)
- * - Từ khóa chung (Tên phim, Đạo diễn, Diễn viên, Thể loại...)
- * - Mã phim chuyên biệt (ID số hoặc CF-XXXX)
- * - Thể loại phim (Genre)
- * - Độ tuổi khán giả (Age Rating: P, K, T13, T16, T18)
- * - Ngày khởi chiếu (Mốc nhanh: Đã chiếu, Sắp chiếu, Tháng này, hoặc Chọn khoảng Từ ngày - Đến ngày)
+ * Điều khiển bộ phân trang tương tác và tìm kiếm trực tiếp trong trang quản trị phim CineFlow.
+ * Tính năng chính:
+ * - Tìm kiếm tức thì theo từng ký tự (Search-as-you-type)
+ * - Tự động nhận diện tiếng Việt có dấu / không dấu (Accent-insensitive)
+ * - Hỗ trợ gõ sai ký tự, sai dấu (Typo tolerance & Levenshtein distance)
+ * - Đề xuất tự động (Autocomplete Suggestions Dropdown) với highlight từ khóa
+ * - Phân trang động & Lọc theo trạng thái phát hành
  */
+
+function removeVietnameseDiacritics(str) {
+    if (!str) return '';
+    return str
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/đ/g, 'd')
+        .replace(/Đ/g, 'D')
+        .replace(/[\u02C6\u0306\u031B]/g, '');
+}
+
+function levenshteinDistance(s1, s2) {
+    if (s1 === s2) return 0;
+    const len1 = s1.length, len2 = s2.length;
+    if (len1 === 0) return len2;
+    if (len2 === 0) return len1;
+
+    let prevRow = Array.from({ length: len2 + 1 }, (_, i) => i);
+    let currRow = new Array(len2 + 1);
+
+    for (let i = 1; i <= len1; i++) {
+        currRow[0] = i;
+        const c1 = s1[i - 1];
+        for (let j = 1; j <= len2; j++) {
+            const cost = c1 === s2[j - 1] ? 0 : 1;
+            currRow[j] = Math.min(
+                prevRow[j] + 1,
+                currRow[j - 1] + 1,
+                prevRow[j - 1] + cost
+            );
+        }
+        prevRow = [...currRow];
+    }
+    return prevRow[len2];
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function highlightMatch(text, query) {
+    if (!query || !text) return escapeHtml(text);
+    const qNorm = removeVietnameseDiacritics(query).toLowerCase().trim();
+    if (!qNorm) return escapeHtml(text);
+
+    // Nếu query 1 ký tự, highlight tất cả vị trí xuất hiện ký tự đó
+    if (qNorm.length === 1) {
+        let res = '';
+        for (let i = 0; i < text.length; i++) {
+            const cNorm = removeVietnameseDiacritics(text[i]).toLowerCase();
+            if (cNorm === qNorm) {
+                res += '<mark>' + escapeHtml(text[i]) + '</mark>';
+            } else {
+                res += escapeHtml(text[i]);
+            }
+        }
+        return res;
+    }
+
+    // Tìm vị trí chuỗi con
+    const textNorm = removeVietnameseDiacritics(text).toLowerCase();
+    const idx = textNorm.indexOf(qNorm);
+    if (idx !== -1) {
+        return escapeHtml(text.substring(0, idx)) +
+            '<mark>' + escapeHtml(text.substring(idx, idx + qNorm.length)) + '</mark>' +
+            escapeHtml(text.substring(idx + qNorm.length));
+    }
+
+    // Highlight từng từ
+    const words = qNorm.split(/\s+/).filter(Boolean);
+    let result = escapeHtml(text);
+    for (const w of words) {
+        if (w.length >= 2) {
+            const regex = new RegExp('(' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+            result = result.replace(regex, '<mark>$1</mark>');
+        }
+    }
+    return result;
+}
+
+function computeMovieMatch(rawQuery, movie) {
+    if (!rawQuery) return { isMatch: true, score: 100 };
+
+    const qNorm = removeVietnameseDiacritics(rawQuery).toLowerCase().trim();
+    if (!qNorm) return { isMatch: true, score: 100 };
+
+    const titleNorm = removeVietnameseDiacritics(movie.title || '').toLowerCase();
+    const genreNorm = removeVietnameseDiacritics(movie.genre || '').toLowerCase();
+    const directorNorm = removeVietnameseDiacritics(movie.director || '').toLowerCase();
+    const codeNorm = removeVietnameseDiacritics(movie.code || '').toLowerCase();
+    const idNorm = String(movie.movieId || '').toLowerCase();
+
+    const titleWords = titleNorm.split(/[\s,./_–-]+/).filter(Boolean);
+    const fullTextNorm = `${titleNorm} ${codeNorm} ${genreNorm} ${directorNorm} ${idNorm}`;
+    const allWords = fullTextNorm.split(/[\s,./_–-]+/).filter(Boolean);
+
+    // 1. Query 1 ký tự (VD: 'h' -> tìm thấy 'Hành Tinh Cát', 'Đất Rừng Phương Nam' vì chứa chữ 'h')
+    if (qNorm.length === 1) {
+        if (titleNorm.startsWith(qNorm)) {
+            return { isMatch: true, score: 110 };
+        }
+        for (const tw of titleWords) {
+            if (tw.startsWith(qNorm)) {
+                return { isMatch: true, score: 95 };
+            }
+            if (tw.includes(qNorm)) {
+                return { isMatch: true, score: 75 };
+            }
+        }
+        if (fullTextNorm.includes(qNorm)) {
+            return { isMatch: true, score: 50 };
+        }
+        return { isMatch: false, score: 0 };
+    }
+
+    let score = 0;
+
+    // 2. Exact substring trong title
+    if (titleNorm.includes(qNorm)) {
+        score += 100;
+        if (titleNorm.startsWith(qNorm)) score += 35;
+    } else if (fullTextNorm.includes(qNorm)) {
+        score += 70;
+    }
+
+    // 3. Compact match (không tính khoảng trắng, VD: 'hanhtinhcat' -> 'hanh tinh cat')
+    const compactTarget = titleNorm.replace(/[\s\-_–]+/g, '');
+    const compactQuery = qNorm.replace(/[\s\-_–]+/g, '');
+    if (compactQuery.length >= 3 && compactTarget.includes(compactQuery)) {
+        score += 85;
+    }
+
+    // 4. Acronym / Chữ cái đầu (VD: 'htc' -> 'Hành Tinh Cát', 'drpn' -> 'Đất Rừng Phương Nam')
+    const initials = titleWords.map(w => w[0]).join('');
+    if (qNorm.length >= 2 && initials.includes(qNorm)) {
+        score += 80;
+    }
+
+    // 5. Từng từ với Levenshtein distance (hỗ trợ gõ sai dấu, sai 1-2 ký tự: 'hanh tih' -> 'hanh tinh', 'dât rung' -> 'dat rung')
+    const qWords = qNorm.split(/\s+/).filter(Boolean);
+    let allWordsMatched = true;
+    let wordPoints = 0;
+
+    for (const qw of qWords) {
+        let matchedThisWord = false;
+        // Kiểm tra tiền tố hoặc chứa
+        for (const tw of allWords) {
+            if (tw.startsWith(qw) || tw.includes(qw)) {
+                matchedThisWord = true;
+                wordPoints += (tw.startsWith(qw) ? 25 : 20);
+                break;
+            }
+        }
+
+        // Nếu chưa khớp, kiểm tra khoảng cách sai ký tự nhẹ
+        if (!matchedThisWord) {
+            const maxDist = qw.length <= 2 ? 0 : (qw.length <= 4 ? 1 : 2);
+            if (maxDist > 0) {
+                let best = 999;
+                for (const tw of allWords) {
+                    if (Math.abs(tw.length - qw.length) <= maxDist) {
+                        const dist = levenshteinDistance(qw, tw);
+                        if (dist <= maxDist && dist < best) {
+                            best = dist;
+                        }
+                    }
+                }
+                if (best <= maxDist) {
+                    matchedThisWord = true;
+                    wordPoints += (15 - best * 5);
+                }
+            }
+        }
+
+        if (!matchedThisWord) {
+            allWordsMatched = false;
+            break;
+        }
+    }
+
+    if (allWordsMatched && qWords.length > 0) {
+        score += wordPoints + 30;
+    }
+
+    // 6. Subsequence match (các ký tự xuất hiện theo thứ tự)
+    if (score === 0 && qNorm.length >= 3) {
+        let qIdx = 0;
+        for (let i = 0; i < titleNorm.length && qIdx < qNorm.length; i++) {
+            if (titleNorm[i] === qNorm[qIdx]) qIdx++;
+        }
+        if (qIdx === qNorm.length) {
+            score += 35;
+        }
+    }
+
+    return {
+        isMatch: score > 0,
+        score: score
+    };
+}
+
 function initAdminPagination(options) {
     const tableBody = document.getElementById(options.tableBodyId);
     const paginationContainer = document.getElementById(options.paginationId);
     const searchInput = document.getElementById(options.searchInputId);
-    const codeSearchInput = options.codeSearchInputId ? document.getElementById(options.codeSearchInputId) : null;
-    const statusPills = document.querySelectorAll(options.statusPillSelector || '.filter-pill[data-status], .cf-pill[data-status]');
-    const genreSelect = document.getElementById(options.genreSelectId);
-    const ageSelect = options.ageSelectId ? document.getElementById(options.ageSelectId) : null;
-    const releasePresetSelect = options.releasePresetSelectId ? document.getElementById(options.releasePresetSelectId) : null;
-    const releaseFromInput = options.releaseFromInputId ? document.getElementById(options.releaseFromInputId) : null;
-    const releaseToInput = options.releaseToInputId ? document.getElementById(options.releaseToInputId) : null;
+    const clearButton = options.clearButtonId ? document.getElementById(options.clearButtonId) : null;
+    const statusPills = document.querySelectorAll(options.statusPillSelector || '.cf-pill[data-status]');
     const resetFiltersBtn = options.resetButtonId ? document.getElementById(options.resetButtonId) : null;
+    const emptyResetBtn = options.emptyResetButtonId ? document.getElementById(options.emptyResetButtonId) : null;
     const pageSizeSelect = document.getElementById(options.pageSizeSelectId);
     const infoDisplay = document.getElementById(options.infoDisplayId);
     const tableWrapper = document.getElementById(options.tableWrapperId);
@@ -28,197 +230,127 @@ function initAdminPagination(options) {
     const tableRows = tableBody ? Array.from(tableBody.querySelectorAll('tr[data-movie-id]')) : [];
     const totalItemsCount = tableRows.length;
 
+    // Lưu trữ metadata của phim để tìm kiếm tức thì
+    const movieDataList = tableRows.map(row => {
+        const id = row.dataset.movieId || '';
+        const code = row.dataset.code || ('CF-' + id.padStart(4, '0'));
+        const title = row.dataset.title || '';
+        const genre = row.dataset.genre || '';
+        const director = row.dataset.director || '';
+        const status = row.dataset.status || '';
+        const ageRating = row.dataset.ageRating || 'P';
+        const releaseDate = row.dataset.releaseDate || '';
+        const durationEl = row.querySelector('td:nth-child(4) strong');
+        const duration = durationEl ? durationEl.textContent.trim() : '';
+        const titleLink = row.querySelector('.movie-title-link');
+        const originalTitle = titleLink ? titleLink.textContent.trim() : title;
+
+        return {
+            row,
+            movieId: id,
+            code,
+            title,
+            originalTitle,
+            titleLink,
+            genre,
+            director,
+            status,
+            ageRating,
+            releaseDate,
+            duration
+        };
+    });
+
     let currentPage = 1;
     let pageSize = pageSizeSelect ? (parseInt(pageSizeSelect.value, 10) || 12) : 12;
     let currentStatus = 'ALL';
     let currentSearch = '';
-    let currentCode = '';
-    let currentGenre = 'ALL';
-    let currentAge = 'ALL';
-    let currentReleasePreset = 'ALL';
-    let currentReleaseFrom = '';
-    let currentReleaseTo = '';
-
-    function getTodayString() {
-        const d = new Date();
-        const year = d.getFullYear();
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    }
-
-    function getTomorrowString() {
-        const d = new Date();
-        d.setDate(d.getDate() + 1);
-        const year = d.getFullYear();
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    }
-
-    function getFirstDayOfMonth() {
-        const d = new Date();
-        const year = d.getFullYear();
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        return `${year}-${month}-01`;
-    }
-
-    function getLastDayOfMonth() {
-        const d = new Date();
-        const year = d.getFullYear();
-        const month = d.getMonth() + 1;
-        const lastDay = new Date(year, month, 0).getDate();
-        const monthStr = String(month).padStart(2, '0');
-        const dayStr = String(lastDay).padStart(2, '0');
-        return `${year}-${monthStr}-${dayStr}`;
-    }
-
-    function filterMatches(item) {
-        const title = (item.dataset.title || '').toLowerCase();
-        const genre = (item.dataset.genre || '').toLowerCase();
-        const director = (item.dataset.director || '').toLowerCase();
-        const status = item.dataset.status || '';
-        const id = (item.dataset.movieId || '').trim();
-        const formattedCode = (item.dataset.code || ('cf-' + id.padStart(4, '0'))).toLowerCase();
-        const age = (item.dataset.ageRating || '').trim().toUpperCase();
-        const releaseDateStr = (item.dataset.releaseDate || '').trim(); // YYYY-MM-DD
-
-        // 1. So khớp trạng thái phát hành (Status Pills)
-        if (currentStatus !== 'ALL' && status !== currentStatus) {
-            return false;
-        }
-
-        // 2. So khớp thể loại phim
-        if (currentGenre !== 'ALL' && !genre.includes(currentGenre.toLowerCase())) {
-            return false;
-        }
-
-        // 3. So khớp độ tuổi khán giả (Age Rating)
-        if (currentAge !== 'ALL' && age !== currentAge.toUpperCase()) {
-            return false;
-        }
-
-        // 4. So khớp theo mã phim chuyên biệt
-        if (currentCode) {
-            const rawSearch = currentCode.toLowerCase().trim();
-            const strippedCode = rawSearch.replace(/^cf-?0*/, '');
-            const matchId = id === strippedCode || id === rawSearch;
-            const matchFormatted = formattedCode.includes(rawSearch);
-            const matchPrefix = id.startsWith(strippedCode);
-            if (!matchId && !matchFormatted && !matchPrefix) {
-                return false;
-            }
-        }
-
-        // 5. So khớp theo ngày khởi chiếu
-        if (currentReleasePreset === 'RELEASED') {
-            const today = getTodayString();
-            if (!releaseDateStr || releaseDateStr > today) return false;
-        } else if (currentReleasePreset === 'UPCOMING') {
-            const today = getTodayString();
-            if (!releaseDateStr || releaseDateStr <= today) return false;
-        } else if (currentReleasePreset === 'THIS_MONTH') {
-            const thisMonth = getTodayString().substring(0, 7);
-            if (!releaseDateStr || !releaseDateStr.startsWith(thisMonth)) return false;
-        }
-
-        // Khoảng ngày cụ thể (Từ ngày - Đến ngày)
-        if (currentReleaseFrom) {
-            if (!releaseDateStr || releaseDateStr < currentReleaseFrom) return false;
-        }
-        if (currentReleaseTo) {
-            if (!releaseDateStr || releaseDateStr > currentReleaseTo) return false;
-        }
-
-        // 6. So khớp chuỗi tìm kiếm từ khóa chung (Tên, Thể loại, Đạo diễn, Mã phim)
-        if (currentSearch) {
-            const q = currentSearch.toLowerCase();
-            const textMatch = title.includes(q) ||
-                              genre.includes(q) ||
-                              director.includes(q) ||
-                              id.includes(q) ||
-                              formattedCode.includes(q);
-            if (!textMatch) {
-                return false;
-            }
-        }
-
-        return true;
-    }
 
     function render() {
-        const visibleRows = [];
+        const matchedMovies = [];
 
-        tableRows.forEach(row => {
-            if (filterMatches(row)) {
-                visibleRows.push(row);
+        movieDataList.forEach(item => {
+            // 1. Lọc theo trạng thái phim (Pills)
+            if (currentStatus !== 'ALL' && item.status !== currentStatus) {
+                item.row.style.display = 'none';
+                return;
             }
-            row.style.display = 'none';
+
+            // 2. Lọc thông minh theo từ khóa (Fuzzy, Accent-insensitive, Typo-tolerant)
+            const matchResult = computeMovieMatch(currentSearch, item);
+            if (matchResult.isMatch) {
+                matchedMovies.push({
+                    item,
+                    score: matchResult.score
+                });
+            } else {
+                item.row.style.display = 'none';
+            }
         });
 
+        // Sắp xếp các dòng hiển thị: điểm số tương đồng cao nhất lên đầu
+        if (currentSearch.trim()) {
+            matchedMovies.sort((a, b) => b.score - a.score);
+        }
+
+        // Highlight ký tự hoặc từ khớp trực tiếp trong tên phim trên bảng
+        movieDataList.forEach(item => {
+            if (item.titleLink) {
+                if (currentSearch.trim()) {
+                    item.titleLink.innerHTML = highlightMatch(item.originalTitle, currentSearch);
+                } else {
+                    item.titleLink.textContent = item.originalTitle;
+                }
+            }
+        });
+
+        const visibleRows = matchedMovies.map(m => m.item.row);
         const totalFiltered = visibleRows.length;
         const actualPageSize = pageSize === 0 ? totalFiltered : pageSize;
         const totalPages = Math.ceil(totalFiltered / actualPageSize) || 1;
 
-        if (currentPage > totalPages) {
-            currentPage = totalPages;
-        }
-        if (currentPage < 1) {
-            currentPage = 1;
-        }
+        if (currentPage > totalPages) currentPage = totalPages;
+        if (currentPage < 1) currentPage = 1;
 
         const startIndex = (currentPage - 1) * actualPageSize;
         const endIndex = pageSize === 0 ? totalFiltered : Math.min(startIndex + actualPageSize, totalFiltered);
 
-        // Hiển thị các dòng thuộc trang hiện tại
+        // Ẩn tất cả dòng và hiển thị các dòng trang hiện tại theo thứ tự điểm số
+        tableRows.forEach(r => { r.style.display = 'none'; });
         for (let i = startIndex; i < endIndex; i++) {
             if (visibleRows[i]) {
+                if (tableBody) tableBody.appendChild(visibleRows[i]);
                 visibleRows[i].style.display = '';
             }
         }
 
-        // Xử lý trạng thái danh sách rỗng
+        // Xử lý Empty State khi không có kết quả
         if (totalFiltered === 0) {
-            if (emptyState) {
-                emptyState.style.display = 'block';
-            }
-            if (tableWrapper) {
-                tableWrapper.style.display = 'none';
-            }
+            if (emptyState) emptyState.style.display = 'block';
+            if (tableWrapper) tableWrapper.style.display = 'none';
         } else {
-            if (emptyState) {
-                emptyState.style.display = 'none';
-            }
-            if (tableWrapper) {
-                tableWrapper.style.display = '';
-            }
+            if (emptyState) emptyState.style.display = 'none';
+            if (tableWrapper) tableWrapper.style.display = '';
         }
 
-        // Hiển thị thông tin thống kê số lượng dòng hiển thị
+        // Cập nhật thông tin phân trang
         if (infoDisplay) {
             if (totalFiltered === 0) {
-                infoDisplay.innerHTML = 'Không tìm thấy phim phù hợp với các tiêu chí lọc đã chọn';
+                infoDisplay.innerHTML = 'Không tìm thấy phim phù hợp với từ khóa <strong>"' + escapeHtml(currentSearch) + '"</strong>';
             } else {
                 infoDisplay.innerHTML = `Hiển thị <strong>${startIndex + 1} - ${endIndex}</strong> trong tổng số <strong>${totalFiltered}</strong> phim` +
                     (totalFiltered !== totalItemsCount ? ` (lọc từ tổng số ${totalItemsCount} phim)` : '');
             }
         }
 
-        // Hiển thị các nút phân trang
         renderPaginationControls(totalPages);
     }
 
     function renderPaginationControls(totalPages) {
-        if (!paginationContainer) {
-            return;
-        }
+        if (!paginationContainer) return;
         paginationContainer.innerHTML = '';
+        if (totalPages <= 1) return;
 
-        if (totalPages <= 1) {
-            return;
-        }
-
-        // Nút trang trước (Prev)
         const prevBtn = document.createElement('button');
         prevBtn.type = 'button';
         prevBtn.className = 'cf-page-btn';
@@ -233,35 +365,26 @@ function initAdminPagination(options) {
         });
         paginationContainer.appendChild(prevBtn);
 
-        // Tạo danh sách số trang kèm dấu ba chấm
         const pages = [];
         if (totalPages <= 7) {
-            for (let i = 1; i <= totalPages; i++) {
-                pages.push(i);
-            }
+            for (let i = 1; i <= totalPages; i++) pages.push(i);
         } else {
             pages.push(1);
-            if (currentPage > 3) {
-                pages.push('...');
-            }
+            if (currentPage > 3) pages.push('...');
             const start = Math.max(2, currentPage - 1);
             const end = Math.min(totalPages - 1, currentPage + 1);
-            for (let i = start; i <= end; i++) {
-                pages.push(i);
-            }
-            if (currentPage < totalPages - 2) {
-                pages.push('...');
-            }
+            for (let i = start; i <= end; i++) pages.push(i);
+            if (currentPage < totalPages - 2) pages.push('...');
             pages.push(totalPages);
         }
 
         pages.forEach(p => {
             if (p === '...') {
-                const ellipsis = document.createElement('span');
-                ellipsis.style.padding = '0 6px';
-                ellipsis.style.color = 'var(--cf-muted)';
-                ellipsis.textContent = '...';
-                paginationContainer.appendChild(ellipsis);
+                const span = document.createElement('span');
+                span.style.padding = '0 6px';
+                span.style.color = 'var(--cf-muted)';
+                span.textContent = '...';
+                paginationContainer.appendChild(span);
             } else {
                 const btn = document.createElement('button');
                 btn.type = 'button';
@@ -275,7 +398,6 @@ function initAdminPagination(options) {
             }
         });
 
-        // Nút trang tiếp theo (Next)
         const nextBtn = document.createElement('button');
         nextBtn.type = 'button';
         nextBtn.className = 'cf-page-btn';
@@ -291,31 +413,55 @@ function initAdminPagination(options) {
         paginationContainer.appendChild(nextBtn);
     }
 
-    // Đăng ký các sự kiện lắng nghe tương tác
+    // --- SỰ KIỆN TÌM KIẾM TỨC THÌ (SEARCH-AS-YOU-TYPE) ---
+    // Gõ bất kỳ ký tự nào, danh sách bảng phim bên dưới tự động lọc theo ý người dùng
     if (searchInput) {
-        let debounceTimer;
         searchInput.addEventListener('input', (e) => {
-            clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(() => {
-                currentSearch = e.target.value.trim();
-                currentPage = 1;
-                render();
-            }, 180);
+            currentSearch = e.target.value;
+            currentPage = 1;
+
+            if (clearButton) {
+                clearButton.style.display = currentSearch.trim() ? 'inline-flex' : 'none';
+            }
+            if (resetFiltersBtn) {
+                resetFiltersBtn.style.display = currentSearch.trim() ? 'grid' : 'none';
+            }
+
+            render();
         });
     }
 
-    if (codeSearchInput) {
-        let debounceTimer;
-        codeSearchInput.addEventListener('input', (e) => {
-            clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(() => {
-                currentCode = e.target.value.trim();
-                currentPage = 1;
-                render();
-            }, 180);
+    const resetSearchAndFilters = () => {
+        if (searchInput) {
+            searchInput.value = '';
+            searchInput.focus();
+        }
+        currentSearch = '';
+        if (clearButton) clearButton.style.display = 'none';
+        if (resetFiltersBtn) resetFiltersBtn.style.display = 'none';
+        currentPage = 1;
+        render();
+    };
+
+    if (clearButton) {
+        clearButton.addEventListener('click', resetSearchAndFilters);
+    }
+
+    if (resetFiltersBtn) {
+        resetFiltersBtn.addEventListener('click', resetSearchAndFilters);
+    }
+
+    if (emptyResetBtn) {
+        emptyResetBtn.addEventListener('click', () => {
+            statusPills.forEach(p => p.classList.remove('active'));
+            const allPill = document.querySelector('.cf-pill[data-status="ALL"]');
+            if (allPill) allPill.classList.add('active');
+            currentStatus = 'ALL';
+            resetSearchAndFilters();
         });
     }
 
+    // Lọc theo Status Pills
     statusPills.forEach(pill => {
         pill.addEventListener('click', () => {
             statusPills.forEach(p => p.classList.remove('active'));
@@ -326,104 +472,8 @@ function initAdminPagination(options) {
         });
     });
 
-    if (genreSelect) {
-        genreSelect.addEventListener('change', (e) => {
-            currentGenre = e.target.value;
-            currentPage = 1;
-            render();
-        });
-    }
-
-    if (ageSelect) {
-        ageSelect.addEventListener('change', (e) => {
-            currentAge = e.target.value;
-            currentPage = 1;
-            render();
-        });
-    }
-
-    if (releasePresetSelect) {
-        releasePresetSelect.addEventListener('change', (e) => {
-            currentReleasePreset = e.target.value;
-            if (currentReleasePreset === 'ALL') {
-                currentReleaseFrom = '';
-                currentReleaseTo = '';
-                if (releaseFromInput) releaseFromInput.value = '';
-                if (releaseToInput) releaseToInput.value = '';
-            } else if (currentReleasePreset === 'RELEASED') {
-                currentReleaseFrom = '';
-                currentReleaseTo = getTodayString();
-                if (releaseFromInput) releaseFromInput.value = '';
-                if (releaseToInput) releaseToInput.value = currentReleaseTo;
-            } else if (currentReleasePreset === 'UPCOMING') {
-                currentReleaseFrom = getTomorrowString();
-                currentReleaseTo = '';
-                if (releaseFromInput) releaseFromInput.value = currentReleaseFrom;
-                if (releaseToInput) releaseToInput.value = '';
-            } else if (currentReleasePreset === 'THIS_MONTH') {
-                currentReleaseFrom = getFirstDayOfMonth();
-                currentReleaseTo = getLastDayOfMonth();
-                if (releaseFromInput) releaseFromInput.value = currentReleaseFrom;
-                if (releaseToInput) releaseToInput.value = currentReleaseTo;
-            }
-            currentPage = 1;
-            render();
-        });
-    }
-
-    if (releaseFromInput) {
-        releaseFromInput.addEventListener('change', (e) => {
-            currentReleaseFrom = e.target.value;
-            if (releasePresetSelect && currentReleasePreset !== 'CUSTOM') {
-                releasePresetSelect.value = 'CUSTOM';
-                currentReleasePreset = 'CUSTOM';
-            }
-            currentPage = 1;
-            render();
-        });
-    }
-
-    if (releaseToInput) {
-        releaseToInput.addEventListener('change', (e) => {
-            currentReleaseTo = e.target.value;
-            if (releasePresetSelect && currentReleasePreset !== 'CUSTOM') {
-                releasePresetSelect.value = 'CUSTOM';
-                currentReleasePreset = 'CUSTOM';
-            }
-            currentPage = 1;
-            render();
-        });
-    }
-
-    if (resetFiltersBtn) {
-        resetFiltersBtn.addEventListener('click', () => {
-            if (searchInput) searchInput.value = '';
-            if (codeSearchInput) codeSearchInput.value = '';
-            if (genreSelect) genreSelect.value = 'ALL';
-            if (ageSelect) ageSelect.value = 'ALL';
-            if (releasePresetSelect) releasePresetSelect.value = 'ALL';
-            if (releaseFromInput) releaseFromInput.value = '';
-            if (releaseToInput) releaseToInput.value = '';
-
-            statusPills.forEach(p => p.classList.remove('active'));
-            const allPill = Array.from(statusPills).find(p => p.dataset.status === 'ALL');
-            if (allPill) allPill.classList.add('active');
-
-            currentSearch = '';
-            currentCode = '';
-            currentStatus = 'ALL';
-            currentGenre = 'ALL';
-            currentAge = 'ALL';
-            currentReleasePreset = 'ALL';
-            currentReleaseFrom = '';
-            currentReleaseTo = '';
-            currentPage = 1;
-            render();
-        });
-    }
-
     if (pageSizeSelect) {
-        pageSizeSelect.addEventListener('change', (e) => {
+        pageSizeSelect.addEventListener('change', () => {
             const val = pageSizeSelect.value;
             pageSize = val === 'ALL' ? 0 : parseInt(val, 10);
             currentPage = 1;
