@@ -242,13 +242,11 @@ public class SeatConfigurationServlet extends HttpServlet {
             String seatIdParam = request.getParameter("seatId");
             try {
                 int seatId = Integer.parseInt(seatIdParam.trim());
-                CinemaService.Result<String> result = cinemaService.toggleSeatMaintenance(hallId, seatId);
-                if (result.isSuccess()) {
+                String result = cinemaService.toggleSeatMaintenance(hallId, seatId);
+                if ("success".equals(result)) {
                     redirectUrl.append("success=maintenance_toggled");
-                } else if (result.getStatus() == CinemaService.Status.BOOKED_SEAT) {
-                    redirectUrl.append("error=booked_seat&msg=").append(URLEncoder.encode(result.getMessage(), StandardCharsets.UTF_8));
                 } else {
-                    redirectUrl.append("error=failed");
+                    redirectUrl.append("error=").append(result);
                 }
             } catch (Exception e) {
                 redirectUrl.append("error=invalid_id");
@@ -270,17 +268,11 @@ public class SeatConfigurationServlet extends HttpServlet {
             Type listType = new TypeToken<List<SeatConfigDTO>>() {}.getType();
             List<SeatConfigDTO> seatList = gson.fromJson(seatDataJson, listType);
 
-            CinemaService.Result<Void> result = cinemaService.saveSeatLayout(hallId, seatList, isRegenerating);
-            if (result.isSuccess()) {
+            String result = cinemaService.saveSeatLayout(hallId, seatList, isRegenerating);
+            if ("success".equals(result)) {
                 redirectUrl.append("success=saved");
-            } else if (result.getStatus() == CinemaService.Status.CANNOT_REGENERATE) {
-                redirectUrl.append("error=cannot_regenerate");
-            } else if (result.getStatus() == CinemaService.Status.BOOKED_SEAT) {
-                redirectUrl.append("error=booked_seat&msg=").append(URLEncoder.encode(result.getMessage(), StandardCharsets.UTF_8));
-            } else if (result.getStatus() == CinemaService.Status.EMPTY_DATA) {
-                redirectUrl.append("error=empty_data");
             } else {
-                redirectUrl.append("error=failed");
+                redirectUrl.append("error=").append(result);
             }
         } catch (Exception e) {
             e.printStackTrace();

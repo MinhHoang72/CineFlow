@@ -102,7 +102,7 @@ public class HallManagementServlet extends HttpServlet {
         } catch (NumberFormatException ignored) { }
 
         PageDTO<Hall> pageResult = cinemaService.searchHalls(targetCentreId, search, status, page, 6);
-        CinemaService.HallKpi kpi = cinemaService.getHallsKpi(targetCentreId);
+        CinemaService.HallKpi kpi = cinemaService.getHallKpi(targetCentreId);
 
         String base = request.getContextPath() + "/manager/halls";
         String filters = "search=" + URLEncoder.encode(search != null ? search.trim() : "", StandardCharsets.UTF_8)
@@ -181,16 +181,11 @@ public class HallManagementServlet extends HttpServlet {
             String capacityParam = request.getParameter("capacity");
             String status = request.getParameter("status");
 
-            CinemaService.Result<Hall> result = cinemaService.createHall(centreId, hallName, hallType, capacityParam, status);
-            if (result.isSuccess()) {
+            String result = cinemaService.createHall(centreId, hallName, hallType, capacityParam, status);
+            if ("success".equals(result)) {
                 redirectUrl.append("success=created");
             } else {
-                String err = switch (result.getStatus()) {
-                    case MISSING_FIELDS -> "missing_fields";
-                    case DUPLICATE_NAME -> "duplicate_name";
-                    default -> "failed";
-                };
-                redirectUrl.append("error=").append(err);
+                redirectUrl.append("error=").append(result);
             }
             response.sendRedirect(redirectUrl.toString());
             return;
@@ -213,18 +208,11 @@ public class HallManagementServlet extends HttpServlet {
                 return;
             }
 
-            CinemaService.Result<Hall> result = cinemaService.updateHall(centreId, hallId, hallName, hallType, capacityParam, newStatus);
-            if (result.isSuccess()) {
+            String result = cinemaService.updateHall(centreId, hallId, hallName, hallType, capacityParam, newStatus);
+            if ("success".equals(result)) {
                 redirectUrl.append("success=updated");
             } else {
-                String err = switch (result.getStatus()) {
-                    case INVALID_HALL -> "invalid_hall";
-                    case MISSING_FIELDS -> "missing_fields";
-                    case HAS_FUTURE_BOOKINGS -> "has_future_bookings";
-                    case DUPLICATE_NAME -> "duplicate_name";
-                    default -> "failed";
-                };
-                redirectUrl.append("error=").append(err);
+                redirectUrl.append("error=").append(result);
             }
             response.sendRedirect(redirectUrl.toString());
             return;
@@ -242,16 +230,11 @@ public class HallManagementServlet extends HttpServlet {
                 return;
             }
 
-            CinemaService.Result<Void> result = cinemaService.toggleHallStatus(centreId, hallId);
-            if (result.isSuccess()) {
+            String result = cinemaService.toggleHallStatus(centreId, hallId);
+            if ("success".equals(result)) {
                 redirectUrl.append("success=status_updated");
             } else {
-                String err = switch (result.getStatus()) {
-                    case INVALID_HALL -> "invalid_hall";
-                    case HAS_FUTURE_BOOKINGS -> "has_future_bookings";
-                    default -> "failed";
-                };
-                redirectUrl.append("error=").append(err);
+                redirectUrl.append("error=").append(result);
             }
             response.sendRedirect(redirectUrl.toString());
             return;

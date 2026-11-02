@@ -142,13 +142,11 @@ public class CentreManagementServlet extends HttpServlet {
             String phone      = request.getParameter("phone");
             String city       = request.getParameter("city");
 
-            CinemaService.Result<Centre> result = cinemaService.createCentre(centreName, address, phone, city);
-            if (result.isSuccess()) {
+            String result = cinemaService.createCentre(centreName, address, phone, city);
+            if ("success".equals(result)) {
                 redirectUrl.append("success=created");
             } else {
-                String err = (result.getStatus() == CinemaService.Status.DUPLICATE_NAME) ? "duplicate_name"
-                           : (result.getStatus() == CinemaService.Status.MISSING_FIELDS) ? "missing_fields" : "failed";
-                redirectUrl.append("error=").append(err);
+                redirectUrl.append("error=").append(result);
             }
             response.sendRedirect(redirectUrl.toString());
             return;
@@ -171,13 +169,11 @@ public class CentreManagementServlet extends HttpServlet {
                 return;
             }
 
-            CinemaService.Result<Centre> result = cinemaService.updateCentre(centreId, centreName, address, phone, city);
-            if (result.isSuccess()) {
+            String result = cinemaService.updateCentre(centreId, centreName, address, phone, city);
+            if ("success".equals(result)) {
                 redirectUrl.append("success=updated");
             } else {
-                String err = (result.getStatus() == CinemaService.Status.DUPLICATE_NAME) ? "duplicate_name"
-                           : (result.getStatus() == CinemaService.Status.MISSING_FIELDS) ? "missing_fields" : "failed";
-                redirectUrl.append("error=").append(err);
+                redirectUrl.append("error=").append(result);
             }
             response.sendRedirect(redirectUrl.toString());
             return;
