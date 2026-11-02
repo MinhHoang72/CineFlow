@@ -78,10 +78,11 @@ public class HallDAO {
         List<Object> params = new ArrayList<>();
         params.add(centreId);
 
-        // Lọc theo từ khóa tìm kiếm tên phòng
+        // Lọc theo từ khóa tìm kiếm tên phòng (COLLATE không phân biệt hoa thường và dấu tiếng Việt)
         if (search != null && !search.trim().isEmpty()) {
-            sql.append("AND LOWER(h.HallName) LIKE ? ");
-            params.add("%" + search.trim().toLowerCase() + "%");
+            sql.append("AND (h.HallName COLLATE Latin1_General_100_CI_AI LIKE ?) ");
+            String safeKey = search.trim().replace("[", "[[]").replace("%", "[%]").replace("_", "[_]");
+            params.add("%" + safeKey + "%");
         }
 
         // Lọc theo trạng thái hoặc định dạng kỹ thuật
@@ -146,10 +147,11 @@ public class HallDAO {
         List<Object> params = new ArrayList<>();
         params.add(centreId);
 
-        // Lọc theo từ khóa tìm kiếm tên phòng
+        // Lọc theo từ khóa tìm kiếm tên phòng (COLLATE không phân biệt hoa thường và dấu tiếng Việt)
         if (search != null && !search.trim().isEmpty()) {
-            sql.append("AND LOWER(h.HallName) LIKE ? ");
-            params.add("%" + search.trim().toLowerCase() + "%");
+            sql.append("AND (h.HallName COLLATE Latin1_General_100_CI_AI LIKE ?) ");
+            String safeKey = search.trim().replace("[", "[[]").replace("%", "[%]").replace("_", "[_]");
+            params.add("%" + safeKey + "%");
         }
 
         // Lọc theo trạng thái hoặc định dạng kỹ thuật

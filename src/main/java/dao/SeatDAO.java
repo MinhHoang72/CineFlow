@@ -173,8 +173,11 @@ public class SeatDAO {
         params.add(hallId);
 
         if (search != null && !search.trim().isEmpty()) {
-            String kw = "%" + search.trim().toLowerCase() + "%";
-            sql.append("AND (LOWER(SeatRow) LIKE ? OR LOWER(CONCAT(SeatRow, CAST(SeatNumber AS VARCHAR))) LIKE ? OR CAST(SeatNumber AS VARCHAR) LIKE ?) ");
+            String safeKey = search.trim().replace("[", "[[]").replace("%", "[%]").replace("_", "[_]");
+            String kw = "%" + safeKey + "%";
+            sql.append("AND (SeatRow COLLATE Latin1_General_100_CI_AI LIKE ? "
+                    + "OR CONCAT(SeatRow, CAST(SeatNumber AS VARCHAR)) COLLATE Latin1_General_100_CI_AI LIKE ? "
+                    + "OR CAST(SeatNumber AS VARCHAR) LIKE ?) ");
             params.add(kw);
             params.add(kw);
             params.add(kw);
@@ -238,8 +241,11 @@ public class SeatDAO {
         params.add(hallId);
 
         if (search != null && !search.trim().isEmpty()) {
-            String kw = "%" + search.trim().toLowerCase() + "%";
-            sql.append("AND (LOWER(SeatRow) LIKE ? OR LOWER(CONCAT(SeatRow, CAST(SeatNumber AS VARCHAR))) LIKE ? OR CAST(SeatNumber AS VARCHAR) LIKE ?) ");
+            String safeKey = search.trim().replace("[", "[[]").replace("%", "[%]").replace("_", "[_]");
+            String kw = "%" + safeKey + "%";
+            sql.append("AND (SeatRow COLLATE Latin1_General_100_CI_AI LIKE ? "
+                    + "OR CONCAT(SeatRow, CAST(SeatNumber AS VARCHAR)) COLLATE Latin1_General_100_CI_AI LIKE ? "
+                    + "OR CAST(SeatNumber AS VARCHAR) LIKE ?) ");
             params.add(kw);
             params.add(kw);
             params.add(kw);
