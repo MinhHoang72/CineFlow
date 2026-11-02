@@ -177,45 +177,46 @@
                     <div class="customer-filter-bar">
                         <div class="filter-tabs">
                             <a href="${pageContext.request.contextPath}/admin/customers?status=ALL<%= currentSearch != null && !currentSearch.isBlank() ? "&search=" + esc(currentSearch) : "" %>"
-                               class="filter-tab <%= "ALL".equalsIgnoreCase(currentStatus) ? "active" : "" %>">
+                               class="filter-tab <%= "ALL".equalsIgnoreCase(currentStatus) ? "active" : "" %>" data-status="ALL">
                                 Tất cả (<%= totalCustomers != null ? totalCustomers : 0 %>)
                             </a>
 
                             <a href="${pageContext.request.contextPath}/admin/customers?status=ACTIVE<%= currentSearch != null && !currentSearch.isBlank() ? "&search=" + esc(currentSearch) : "" %>"
-                               class="filter-tab <%= "ACTIVE".equalsIgnoreCase(currentStatus) ? "active" : "" %>">
+                               class="filter-tab <%= "ACTIVE".equalsIgnoreCase(currentStatus) ? "active" : "" %>" data-status="ACTIVE">
                                 Đang hoạt động (<%= activeCustomers != null ? activeCustomers : 0 %>)
                             </a>
 
                             <a href="${pageContext.request.contextPath}/admin/customers?status=LOCKED<%= currentSearch != null && !currentSearch.isBlank() ? "&search=" + esc(currentSearch) : "" %>"
-                               class="filter-tab <%= "LOCKED".equalsIgnoreCase(currentStatus) ? "active" : "" %>">
+                               class="filter-tab <%= "LOCKED".equalsIgnoreCase(currentStatus) ? "active" : "" %>" data-status="LOCKED">
                                 Bị tạm khóa (<%= lockedCustomers != null ? lockedCustomers : 0 %>)
                             </a>
                         </div>
 
-                        <form method="get"
-                              action="${pageContext.request.contextPath}/admin/customers"
-                              class="search-box">
+                        <div class="cf-toolbar-right">
+                            <div class="cf-search-box cf-search-box-compact">
+                                <svg class="cf-search-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                </svg>
+                                <input type="text"
+                                       id="customerSearchInput"
+                                       placeholder="Tìm tên, username, email, SĐT..."
+                                       value="<%= esc(currentSearch) %>"
+                                       autocomplete="off"
+                                       spellcheck="false">
+                                <button type="button" id="customerSearchClearBtn" class="cf-search-clear-btn" style="display: none;" title="Xóa tìm kiếm">✕</button>
+                            </div>
 
-                            <input type="hidden"
-                                   name="status"
-                                   value="<%= esc(currentStatus) %>">
-
-                            <input type="text"
-                                   name="search"
-                                   class="search-input"
-                                   placeholder="🔍 Tìm tên, username, email, SĐT..."
-                                   value="<%= esc(currentSearch) %>">
-
-                            <button type="submit" class="cf-btn cf-btn-secondary btn-filter-search">
-                                Tìm kiếm
-                            </button>
-
-                            <% if (currentSearch != null && !currentSearch.isBlank()) { %>
-                            <a href="${pageContext.request.contextPath}/admin/customers?status=<%= esc(currentStatus) %>" class="cf-btn cf-btn-secondary btn-filter-clear" title="Xóa tìm kiếm">
-                                ✕
-                            </a>
-                            <% } %>
-                        </form>
+                            <div class="cf-page-size-wrap">
+                                <span>Hiển thị:</span>
+                                <select id="customerPageSizeSelect" class="cf-select-sm">
+                                    <option value="10" selected>10 khách hàng</option>
+                                    <option value="20">20 khách hàng</option>
+                                    <option value="50">50 khách hàng</option>
+                                    <option value="ALL">Tất cả</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- BẢNG KHÁCH HÀNG -->
@@ -236,7 +237,14 @@
                                     </tr>
                                 </thead>
 
-                                <tbody>
+                                <tbody id="customerTableBody">
+                                    <tr class="empty-row" id="customerTableEmptyRow" style="display: none;">
+                                        <td colspan="7" class="cf-empty-state customer-empty-cell">
+                                            <div class="customer-empty-icon">🔍</div>
+                                            <strong>Không tìm thấy khách hàng nào phù hợp</strong>
+                                            <p class="customer-empty-sub">Hãy thử tìm kiếm với từ khóa khác hoặc chọn hiển thị tất cả.</p>
+                                        </td>
+                                    </tr>
                                     <% if (customers == null || customers.isEmpty()) { %>
                                     <tr>
                                         <td colspan="7" class="cf-empty-state customer-empty-cell">
@@ -265,7 +273,7 @@
                                                 : "C";
                                     %>
 
-                                    <tr>
+                                    <tr class="customer-row" data-status="<%= esc(c.getStatus()) %>" data-search="<%= esc(c.getFullName()) %> <%= esc(c.getCustomerCode()) %> <%= esc(c.getAccount()) %> <%= esc(c.getEmail()) %> <%= esc(c.getPhone() != null ? c.getPhone() : "") %>">
                                         <!-- KHÁCH HÀNG -->
                                         <td>
                                             <div class="user-cell">
@@ -396,13 +404,39 @@
                                 </tbody>
                             </table>
                         </div>
+
+                        <!-- THANH PHÂN TRANG -->
+                        <div class="cf-pagination-bar">
+                            <div class="cf-pagination-info" id="customerPaginationInfo">
+                                Đang nạp danh sách khách hàng...
+                            </div>
+                            <div class="cf-pagination-controls" id="customerPaginationControls">
+                                <!-- Các nút phân trang được sinh động bởi JS -->
+                            </div>
+                        </div>
                     </div>
                 </main>
             </div>
         </div>
 
+        <script src="${pageContext.request.contextPath}/js/admin-pagination.js?v=<%= System.currentTimeMillis() %>"></script>
         <script>
             document.addEventListener('DOMContentLoaded', function () {
+                initTablePagination({
+                    tableBodyId: 'customerTableBody',
+                    rowSelector: 'tr.customer-row',
+                    emptyRowId: 'customerTableEmptyRow',
+                    paginationId: 'customerPaginationControls',
+                    infoDisplayId: 'customerPaginationInfo',
+                    pageSizeSelectId: 'customerPageSizeSelect',
+                    searchInputId: 'customerSearchInput',
+                    searchClearBtnId: 'customerSearchClearBtn',
+                    statusPillSelector: '.filter-tabs .filter-tab[data-status]',
+                    defaultStatus: '<%= esc(currentStatus != null ? currentStatus : "ALL") %>',
+                    itemLabel: 'khách hàng',
+                    defaultPageSize: 10
+                });
+
                 document.querySelectorAll(
                         '.cf-alert-success, .cf-alert-danger'
                         ).forEach(function (alert) {

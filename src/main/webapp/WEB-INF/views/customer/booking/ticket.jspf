@@ -4,9 +4,23 @@
 <div class="eticket" data-bs-theme="light">
     <div class="row g-4 align-items-center">
         <div class="col-md-auto text-center">
-            <img src="${bookingQr}" alt="QR đơn ${booking.code}" class="qr">
-            <div class="mt-1"><code class="fs-6"><c:out value="${booking.code}"/></code></div>
-            <div class="small text-muted">Đưa mã này cho nhân viên soát vé</div>
+            <c:choose>
+                <c:when test="${isCancelled}">
+                    <div style="position: relative; display: inline-block;">
+                        <img src="${bookingQr}" alt="QR đơn ${booking.code}" class="qr" style="filter: grayscale(100%) opacity(0.35);">
+                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-15deg); background: #dc3545; color: #fff; font-weight: 800; font-size: 13px; padding: 4px 10px; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); white-space: nowrap;">
+                            ĐÃ HỦY
+                        </div>
+                    </div>
+                    <div class="mt-1"><code class="fs-6 text-danger"><c:out value="${booking.code}"/></code></div>
+                    <div class="small text-danger fw-semibold">Vé không còn hiệu lực vào rạp</div>
+                </c:when>
+                <c:otherwise>
+                    <img src="${bookingQr}" alt="QR đơn ${booking.code}" class="qr">
+                    <div class="mt-1"><code class="fs-6"><c:out value="${booking.code}"/></code></div>
+                    <div class="small text-muted">Đưa mã này cho nhân viên soát vé</div>
+                </c:otherwise>
+            </c:choose>
         </div>
         <div class="col">
             <div class="text-muted small">CINEFLOW · <c:out value="${booking.showtime.centreName}"/></div>

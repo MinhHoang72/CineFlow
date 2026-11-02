@@ -463,7 +463,8 @@ function initAdminPagination(options) {
 
     // Lọc theo Status Pills
     statusPills.forEach(pill => {
-        pill.addEventListener('click', () => {
+        pill.addEventListener('click', (e) => {
+                if (pill.tagName === 'A') e.preventDefault();
             statusPills.forEach(p => p.classList.remove('active'));
             pill.classList.add('active');
             currentStatus = pill.dataset.status || 'ALL';
@@ -483,4 +484,306 @@ function initAdminPagination(options) {
 
     // Khởi tạo hiển thị lần đầu
     render();
+}
+
+
+/**
+ * Bộ điều khiển phân trang & tìm kiếm tái sử dụng cho các bảng trong trang quản trị CineFlow.
+ * Sử dụng cho: Quản lý khách hàng, Quản lý manager, Bổ nhiệm & Điều chuyển, Nhật ký lịch sử,...
+ */
+function initTablePagination(options) {
+    if (!options) return null;
+    const tableBody = typeof options.tableBody === 'string'
+        ? document.getElementById(options.tableBody)
+        : (options.tableBody || (options.tableBodyId ? document.getElementById(options.tableBodyId) : null));
+
+    if (!tableBody) return null;
+
+    const rowSelector = options.rowSelector || 'tr:not(.empty-row)';
+    let rows = Array.from(tableBody.querySelectorAll(rowSelector));
+
+    const paginationContainer = typeof options.paginationId === 'string'
+        ? document.getElementById(options.paginationId)
+        : (options.paginationId || options.paginationControls || (options.paginationControlsId ? document.getElementById(options.paginationControlsId) : null));
+
+    const infoDisplay = typeof options.infoDisplayId === 'string'
+        ? document.getElementById(options.infoDisplayId)
+        : (options.infoDisplayId || options.paginationInfo);
+
+    const pageSizeSelect = typeof options.pageSizeSelectId === 'string'
+        ? document.getElementById(options.pageSizeSelectId)
+        : (options.pageSizeSelectId || options.pageSizeSelect);
+
+    const searchInput = typeof options.searchInputId === 'string'
+        ? document.getElementById(options.searchInputId)
+        : (options.searchInputId || options.searchInput);
+
+    const searchClearBtn = typeof options.searchClearBtnId === 'string'
+        ? document.getElementById(options.searchClearBtnId)
+        : (options.searchClearBtnId || options.searchClearBtn);
+
+    const emptyRow = typeof options.emptyRowId === 'string' ? document.getElementById(options.emptyRowId) : options.emptyRow;
+    const emptyState = typeof options.emptyStateId === 'string'
+        ? document.getElementById(options.emptyStateId)
+        : (options.emptyStateId || options.emptyState);
+
+    const tableWrapper = typeof options.tableWrapperId === 'string'
+        ? document.getElementById(options.tableWrapperId)
+        : (options.tableWrapperId || options.tableWrapper);
+
+    const statusPills = options.statusPillSelector
+        ? Array.from(document.querySelectorAll(options.statusPillSelector))
+        : [];
+
+    const statusSelect = typeof options.statusFilterSelectId === 'string'
+        ? document.getElementById(options.statusFilterSelectId)
+        : (options.statusFilterSelectId || options.statusFilterSelect);
+
+    const itemLabel = options.itemLabel || 'bản ghi';
+    let currentPage = 1;
+    let currentStatus = options.defaultStatus || 'ALL';
+    let currentSearch = (searchInput ? searchInput.value : '').trim();
+
+    let pageSize = 10;
+    if (pageSizeSelect) {
+        const val = pageSizeSelect.value;
+        pageSize = val === 'ALL' ? 0 : (parseInt(val, 10) || 10);
+    } else if (typeof options.defaultPageSize !== 'undefined') {
+        pageSize = options.defaultPageSize === 'ALL' ? 0 : parseInt(options.defaultPageSize, 10);
+    }
+
+    function refreshRows() {
+        rows = Array.from(tableBody.querySelectorAll(rowSelector));
+        render();
+    }
+
+    function getFilteredRows() {
+        const qNorm = removeVietnameseDiacritics(currentSearch).toLowerCase().trim();
+        const searchWords = qNorm ? qNorm.split(/\s+/).filter(Boolean) : [];
+        const statusUpper = currentStatus.toUpperCase();
+
+        return rows.filter(row => {
+            // Filter by status if applicable
+            if (statusUpper !== 'ALL') {
+                const rowStatus = (row.dataset.status || '').toUpperCase();
+                if (rowStatus && rowStatus !== statusUpper) {
+                    return false;
+                }
+            }
+
+            // Custom filter callback
+            if (typeof options.customFilter === 'function') {
+                if (!options.customFilter(row)) {
+                    return false;
+                }
+            }
+
+            // Search filtering
+            if (searchWords.length > 0) {
+                const searchTarget = row.dataset.search 
+                    ? removeVietnameseDiacritics(row.dataset.search).toLowerCase()
+                    : removeVietnameseDiacritics(row.innerText || '').toLowerCase();
+                
+                const isMatch = searchWords.every(word => searchTarget.includes(word));
+                if (!isMatch) return false;
+            }
+
+            return true;
+        });
+    }
+
+    function renderPaginationControls(totalPages) {
+        if (!paginationContainer) return;
+        paginationContainer.innerHTML = '';
+        if (totalPages <= 1) return;
+
+        const prevBtn = document.createElement('button');
+        prevBtn.type = 'button';
+        prevBtn.className = 'cf-page-btn';
+        prevBtn.innerHTML = '‹';
+        prevBtn.title = 'Trang trước';
+        prevBtn.disabled = currentPage === 1;
+        prevBtn.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                render();
+            }
+        });
+        paginationContainer.appendChild(prevBtn);
+
+        const pages = [];
+        if (totalPages <= 7) {
+            for (let i = 1; i <= totalPages; i++) pages.push(i);
+        } else {
+            pages.push(1);
+            if (currentPage > 3) pages.push('...');
+            const start = Math.max(2, currentPage - 1);
+            const end = Math.min(totalPages - 1, currentPage + 1);
+            for (let i = start; i <= end; i++) pages.push(i);
+            if (currentPage < totalPages - 2) pages.push('...');
+            pages.push(totalPages);
+        }
+
+        pages.forEach(p => {
+            if (p === '...') {
+                const span = document.createElement('span');
+                span.style.padding = '0 6px';
+                span.style.color = 'var(--cf-muted)';
+                span.textContent = '...';
+                paginationContainer.appendChild(span);
+            } else {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'cf-page-btn' + (p === currentPage ? ' active' : '');
+                btn.textContent = p;
+                btn.addEventListener('click', () => {
+                    currentPage = p;
+                    render();
+                });
+                paginationContainer.appendChild(btn);
+            }
+        });
+
+        const nextBtn = document.createElement('button');
+        nextBtn.type = 'button';
+        nextBtn.className = 'cf-page-btn';
+        nextBtn.innerHTML = '›';
+        nextBtn.title = 'Trang tiếp theo';
+        nextBtn.disabled = currentPage === totalPages;
+        nextBtn.addEventListener('click', () => {
+            if (currentPage < totalPages) {
+                currentPage++;
+                render();
+            }
+        });
+        paginationContainer.appendChild(nextBtn);
+    }
+
+    function render() {
+        const filtered = getFilteredRows();
+        const totalItemsCount = rows.length;
+        const totalFiltered = filtered.length;
+
+        const totalPages = pageSize > 0 ? Math.ceil(totalFiltered / pageSize) : 1;
+        if (currentPage > totalPages && totalPages > 0) {
+            currentPage = totalPages;
+        }
+        if (currentPage < 1) currentPage = 1;
+
+        const startIndex = pageSize > 0 ? (currentPage - 1) * pageSize : 0;
+        const endIndex = pageSize > 0 ? Math.min(startIndex + pageSize, totalFiltered) : totalFiltered;
+
+        // Set visibility of rows
+        const visibleSet = new Set(filtered.slice(startIndex, endIndex));
+        rows.forEach(row => {
+            if (visibleSet.has(row)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        if (emptyRow) { emptyRow.style.display = totalFiltered === 0 ? '' : 'none'; }
+        // Toggle empty state if configured
+        if (emptyState) {
+            if (totalFiltered === 0) {
+                emptyState.style.display = 'block';
+                if (tableWrapper) tableWrapper.style.display = 'none';
+            } else {
+                emptyState.style.display = 'none';
+                if (tableWrapper) tableWrapper.style.display = '';
+            }
+        }
+
+        // Info text
+        if (infoDisplay) {
+            if (totalFiltered === 0) {
+                infoDisplay.innerHTML = 'Không tìm thấy ' + itemLabel + ' nào phù hợp';
+            } else {
+                infoDisplay.innerHTML = 'Hiển thị <strong>' + (startIndex + 1) + ' - ' + endIndex + '</strong> trong tổng số <strong>' + totalFiltered + '</strong> ' + itemLabel +
+                    (totalFiltered !== totalItemsCount ? ' (lọc từ tổng số ' + totalItemsCount + ' ' + itemLabel + ')' : '');
+            }
+        }
+
+        renderPaginationControls(totalPages);
+
+        if (typeof options.onPageChange === 'function') {
+            options.onPageChange({ currentPage, totalPages, totalFiltered, startIndex, endIndex });
+        }
+    }
+
+    // Bind search input
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            currentSearch = e.target.value;
+            currentPage = 1;
+            if (searchClearBtn) {
+                searchClearBtn.style.display = currentSearch ? 'grid' : 'none';
+            }
+            render();
+        });
+    }
+
+    if (searchClearBtn) {
+        searchClearBtn.addEventListener('click', () => {
+            if (searchInput) searchInput.value = '';
+            currentSearch = '';
+            searchClearBtn.style.display = 'none';
+            currentPage = 1;
+            render();
+            if (searchInput) searchInput.focus();
+        });
+        if (searchInput && searchInput.value) {
+            searchClearBtn.style.display = 'grid';
+        }
+    }
+
+    // Bind status pills
+    if (statusPills.length > 0) {
+        statusPills.forEach(pill => {
+            pill.addEventListener('click', (e) => {
+                if (pill.tagName === 'A') e.preventDefault();
+                statusPills.forEach(p => p.classList.remove('active'));
+                pill.classList.add('active');
+                currentStatus = pill.dataset.status || pill.dataset.tab || 'ALL';
+                currentPage = 1;
+                render();
+            });
+        });
+    }
+
+    // Bind status select
+    if (statusSelect) {
+        statusSelect.addEventListener('change', () => {
+            currentStatus = statusSelect.value || 'ALL';
+            currentPage = 1;
+            render();
+        });
+    }
+
+    // Bind page size select
+    if (pageSizeSelect) {
+        pageSizeSelect.addEventListener('change', () => {
+            const val = pageSizeSelect.value;
+            pageSize = val === 'ALL' ? 0 : parseInt(val, 10);
+            currentPage = 1;
+            render();
+        });
+    }
+
+    // Initial render
+    render();
+
+    return {
+        render,
+        refreshRows,
+        setPage: (p) => { currentPage = p; render(); },
+        setStatus: (st) => { currentStatus = st; currentPage = 1; render(); },
+        setSearch: (q) => {
+            currentSearch = q;
+            if (searchInput) searchInput.value = q;
+            currentPage = 1;
+            render();
+        }
+    };
 }

@@ -290,6 +290,7 @@
                                             boolean isActive = "ACTIVE".equals(rawStatus);
                                             boolean isDistributed = c.isDistributed();
                                             int futureCount = c.getFutureShowtimeCount();
+                                            int soldCount = c.getSoldTicketCount();
                                             String cCity = c.getCity() != null ? c.getCity() : "";
 
                                             String badgeText = isActive ? "Hoạt động" : "Tạm ngừng";
@@ -300,10 +301,12 @@
                                             data-id="<%= c.getCentreId() %>"
                                             data-active="<%= isActive ? "1" : "0" %>"
                                             data-name="<%= c.getCentreName().toLowerCase() %>"
+                                            data-centre-name="<%= c.getCentreName() %>"
                                             data-city="<%= cCity.toLowerCase() %>"
                                             data-city-raw="<%= cCity %>"
                                             data-status="<%= rawStatus %>"
-                                            data-future="<%= futureCount %>">
+                                            data-future="<%= futureCount %>"
+                                            data-sold="<%= soldCount %>">
                                             <td>
                                                 <div class="cf-centre-name-cell">
                                                     <span class="cf-centre-icon">
@@ -322,6 +325,11 @@
                                                         </svg>
                                                     </span>
                                                     <span><%= c.getCentreName() %></span>
+                                                    <% if (futureCount > 0 || soldCount > 0) { %>
+                                                        <span class="cf-stat-tag" title="Số lượng suất chiếu tương lai và vé đã bán">
+                                                            <%= futureCount %> suất · <%= soldCount %> vé
+                                                        </span>
+                                                    <% } %>
                                                 </div>
                                             </td>
                                             <td style="color: #94a3b8;">
@@ -343,6 +351,8 @@
                                                                value="<%= c.getCentreId() %>"
                                                                class="cf-switch-input"
                                                                data-future="<%= futureCount %>"
+                                                               data-sold="<%= soldCount %>"
+                                                               data-centre-name="<%= c.getCentreName() %>"
                                                                <%= isDistributed ? "checked" : "" %>>
                                                         <span class="cf-switch-slider"></span>
                                                     </label>
@@ -392,6 +402,56 @@
                     </form>
                     <% } %>
                 </main>
+
+        <!-- MODAL XÁC NHẬN CẢNH BÁO NGHIỆP VỤ MỨC CAO KHI TẮT PHÂN PHỐI -->
+        <div class="cf-modal-backdrop" id="highRiskConfirmModal">
+            <div class="cf-modal-risk">
+                <div class="cf-modal-risk-header">
+                    <h3 class="cf-modal-risk-title">
+                        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                            <line x1="12" y1="9" x2="12" y2="13"></line>
+                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                        </svg>
+                        Xác nhận cảnh báo nghiệp vụ
+                    </h3>
+                    <button type="button" class="cf-modal-risk-close" id="btnRiskModalClose" aria-label="Đóng">&times;</button>
+                </div>
+                <div class="cf-modal-risk-body">
+                    <div class="cf-risk-data-card">
+                        <p class="cf-risk-card-label">
+                            Cụm rạp <strong id="riskCentreName" class="cf-risk-centre-name"></strong> đang có dữ liệu vận hành:
+                        </p>
+                        <div class="cf-risk-stats-grid">
+                            <div class="cf-risk-stat-box">
+                                <div class="cf-risk-stat-title">Suất chiếu tương lai</div>
+                                <div class="cf-risk-stat-number" id="riskFutureCount">0</div>
+                            </div>
+                            <div class="cf-risk-stat-box">
+                                <div class="cf-risk-stat-title">Vé đã bán</div>
+                                <div class="cf-risk-stat-number" id="riskSoldCount">0</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="cf-risk-notice-callout">
+                        <p class="cf-risk-notice-text">
+                            <strong>Lưu ý nghiệp vụ:</strong> Hệ thống cho phép tắt phân phối trong trường hợp khẩn cấp (thu hồi phim hoặc sự cố rạp). Khi tắt, rạp không thể tạo thêm suất chiếu mới và các suất chiếu tương lai có thể cần xử lý hủy.
+                        </p>
+                    </div>
+                    <p class="cf-risk-question">
+                        Bạn có chắc chắn muốn tắt phân phối không?
+                    </p>
+                </div>
+                <div class="cf-modal-risk-footer">
+                    <button type="button" class="cf-btn-risk-cancel" id="btnRiskCancel">
+                        Hủy bỏ (Giữ nguyên)
+                    </button>
+                    <button type="button" class="cf-btn-risk-confirm" id="btnRiskConfirm">
+                        Xác nhận tắt phân phối
+                    </button>
+                </div>
+            </div>
+        </div>
             </div>
         </div>
 
@@ -534,21 +594,80 @@
                     }
                 }
 
+                // Hàm hiển thị Pop-up Cảnh báo nghiệp vụ mức cao khi tắt phân phối
+                function showRiskConfirmModal(centreName, futureCount, soldCount, onConfirm, onCancel) {
+                    const modal = document.getElementById('highRiskConfirmModal');
+                    if (!modal) {
+                        // Fallback xác nhận chuẩn theo đúng yêu cầu
+                        const confirmMsg = "CẢNH BÁO NGHIỆP VỤ MỨC CAO:\n\n"
+                            + "Rạp " + centreName + " đang có " + futureCount + " suất chiếu tương lai và " + soldCount + " vé đã bán.\n\n"
+                            + "Bạn có chắc chắn muốn tắt phân phối không?";
+                        if (confirm(confirmMsg)) {
+                            onConfirm();
+                        } else {
+                            onCancel();
+                        }
+                        return;
+                    }
+
+                    document.getElementById('riskCentreName').textContent = centreName;
+                    document.getElementById('riskFutureCount').textContent = futureCount;
+                    document.getElementById('riskSoldCount').textContent = soldCount;
+
+                    const btnConfirm = document.getElementById('btnRiskConfirm');
+                    const btnCancel = document.getElementById('btnRiskCancel');
+                    const btnClose = document.getElementById('btnRiskModalClose');
+
+                    function cleanup() {
+                        modal.classList.remove('active');
+                        btnConfirm.onclick = null;
+                        btnCancel.onclick = null;
+                        btnClose.onclick = null;
+                    }
+
+                    btnConfirm.onclick = function() {
+                        cleanup();
+                        onConfirm();
+                    };
+
+                    btnCancel.onclick = function() {
+                        cleanup();
+                        onCancel();
+                    };
+
+                    btnClose.onclick = function() {
+                        cleanup();
+                        onCancel();
+                    };
+
+                    modal.classList.add('active');
+                }
+
                 // Xử lý khi click vào Switch Toggle của từng rạp
                 rows.forEach(row => {
                     const switchInput = row.querySelector('.cf-switch-input');
                     const futureCount = parseInt(row.dataset.future || '0', 10);
+                    const soldCount = parseInt(row.dataset.sold || '0', 10);
+                    const centreName = row.dataset.centreName || 'Cụm rạp';
 
                     if (switchInput) {
                         switchInput.addEventListener('change', function () {
-                            if (!this.checked && futureCount > 0) {
-                                const confirmMsg = "Cảnh báo nghiệp vụ:\nCụm rạp này đang có " + futureCount + " suất chiếu trong tương lai của phim này.\n\nBỏ phân phối có thể gây ảnh hưởng đến lịch chiếu và vé khán giả đã đặt. Bạn có chắc chắn muốn bỏ chọn?";
-                                if (!confirm(confirmMsg)) {
-                                    this.checked = true;
-                                    return;
-                                }
+                            if (!this.checked && (futureCount > 0 || soldCount > 0)) {
+                                const targetSw = this;
+                                showRiskConfirmModal(centreName, futureCount, soldCount,
+                                    function() {
+                                        // Đồng ý tắt
+                                        updateCounter();
+                                    },
+                                    function() {
+                                        // Hủy bỏ: phục hồi lại checked
+                                        targetSw.checked = true;
+                                        updateCounter();
+                                    }
+                                );
+                            } else {
+                                updateCounter();
                             }
-                            updateCounter();
                         });
                     }
                 });
@@ -580,31 +699,45 @@
                                 (statusFilter && statusFilter.value !== 'ALL');
 
                         let totalFuture = 0;
+                        let totalSold = 0;
                         rows.forEach(row => {
                             if (!isFiltered || row.style.display !== 'none') {
                                 const sw = row.querySelector('.cf-switch-input');
                                 if (sw && sw.checked) {
                                     totalFuture += parseInt(row.dataset.future || '0', 10);
+                                    totalSold += parseInt(row.dataset.sold || '0', 10);
                                 }
                             }
                         });
 
-                        if (totalFuture > 0) {
-                            const confirmMsg = "Cảnh báo nghiệp vụ:\nCó tổng cộng " + totalFuture + " suất chiếu trong tương lai của phim này tại các rạp được chọn.\n\nBỏ phân phối toàn bộ có thể ảnh hưởng đến lịch chiếu đã lên. Bạn có chắc chắn muốn bỏ chọn tất cả?";
-                            if (!confirm(confirmMsg)) {
-                                return;
-                            }
+                        if (totalFuture > 0 || totalSold > 0) {
+                            showRiskConfirmModal("các cụm rạp đã chọn", totalFuture, totalSold,
+                                function() {
+                                    rows.forEach(row => {
+                                        if (!isFiltered || row.style.display !== 'none') {
+                                            const sw = row.querySelector('.cf-switch-input');
+                                            if (sw && !sw.disabled) {
+                                                sw.checked = false;
+                                            }
+                                        }
+                                    });
+                                    updateCounter();
+                                },
+                                function() {
+                                    // Giữ nguyên
+                                }
+                            );
+                        } else {
+                            rows.forEach(row => {
+                                if (!isFiltered || row.style.display !== 'none') {
+                                    const sw = row.querySelector('.cf-switch-input');
+                                    if (sw && !sw.disabled) {
+                                        sw.checked = false;
+                                    }
+                                }
+                            });
+                            updateCounter();
                         }
-
-                        rows.forEach(row => {
-                            if (!isFiltered || row.style.display !== 'none') {
-                                const sw = row.querySelector('.cf-switch-input');
-                                if (sw && !sw.disabled) {
-                                    sw.checked = false;
-                                }
-                            }
-                        });
-                        updateCounter();
                     });
                 }
 

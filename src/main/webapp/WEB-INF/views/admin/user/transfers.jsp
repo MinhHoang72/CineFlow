@@ -65,22 +65,18 @@
                 <div class="cf-kpi-card">
                     <span class="cf-kpi-label">Tổng cụm rạp</span>
                     <div class="cf-kpi-value"><%= request.getAttribute("kpiTotalCentres") != null ? request.getAttribute("kpiTotalCentres") : 0 %></div>
-                    <span class="cf-kpi-sub">Quy mô mạng lưới CineFlow</span>
                 </div>
                 <div class="cf-kpi-card">
                     <span class="cf-kpi-label kpi-assigned">Có Quản lý hoạt động</span>
                     <div class="cf-kpi-value kpi-assigned"><%= request.getAttribute("kpiAssignedCentres") != null ? request.getAttribute("kpiAssignedCentres") : 0 %></div>
-                    <span class="cf-kpi-sub">Cụm rạp có Quản lý đương nhiệm (ACTIVE)</span>
                 </div>
-                <div class="cf-kpi-card <%= (request.getAttribute("kpiUnassignedCentres") != null && (int)request.getAttribute("kpiUnassignedCentres") > 0) ? "kpi-unassigned-card" : "" %>">
+                <div class="cf-kpi-card">
                     <span class="cf-kpi-label kpi-unassigned">Chưa có Quản lý</span>
                     <div class="cf-kpi-value kpi-unassigned"><%= request.getAttribute("kpiUnassignedCentres") != null ? request.getAttribute("kpiUnassignedCentres") : 0 %></div>
-                    <span class="cf-kpi-sub">Rạp đang trống vị trí Quản lý</span>
                 </div>
                 <div class="cf-kpi-card">
                     <span class="cf-kpi-label kpi-available">Quản lý sẵn sàng</span>
                     <div class="cf-kpi-value kpi-available"><%= request.getAttribute("kpiUnassignedManagers") != null ? request.getAttribute("kpiUnassignedManagers") : 0 %></div>
-                    <span class="cf-kpi-sub">Quản lý tự do sẵn sàng bổ nhiệm</span>
                 </div>
             </div>
 
@@ -177,6 +173,15 @@
                         <div>
                             <h2>Bổ nhiệm &amp; Miễn nhiệm Quản lý theo Trung tâm</h2>
                         </div>
+                        <div class="cf-page-size-wrap">
+                            <span>Hiển thị:</span>
+                            <select id="centrePageSizeSelect" class="cf-select-sm">
+                                <option value="10" selected>10 cụm rạp</option>
+                                <option value="20">20 cụm rạp</option>
+                                <option value="50">50 cụm rạp</option>
+                                <option value="ALL">Tất cả</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="cf-card-body">
                         <div class="cf-table-wrap">
@@ -194,14 +199,17 @@
                                         <th>Thao tác</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody id="centreTableBody">
+                                    <tr class="empty-row" id="centreTableEmptyRow" style="display: none;">
+                                        <td colspan="7" class="cf-empty">Không tìm thấy trung tâm nào phù hợp.</td>
+                                    </tr>
                                     <% if (centresWithManager == null || centresWithManager.isEmpty()) { %>
                                         <tr><td colspan="7" class="cf-empty">Chưa có trung tâm nào trong hệ thống.</td></tr>
                                     <% } else for (Centre b : centresWithManager) {
                                         boolean isActiveManager = b.hasActiveManager();
                                         boolean isCentreActive = "ACTIVE".equalsIgnoreCase(b.getStatus());
                                     %>
-                                        <tr class="centre-row" data-mgr-id="<%= isActiveManager ? b.getManagerId() : 999999 %>">
+                                        <tr class="centre-row" data-mgr-id="<%= isActiveManager ? b.getManagerId() : 999999 %>" data-search="<%= (b.getCentreName() + " " + b.getCity() + " " + (isActiveManager ? "QL" + String.format("%05d", b.getManagerId()) + " " + b.getManagerName() : "")).toLowerCase() %>">
                                             <td>
                                                 <strong class="centre-name"><%= b.getCentreName() %></strong>
                                                 <small class="centre-address"><%= b.getAddress() %></small>
@@ -258,6 +266,16 @@
                             </table>
                         </div>
                     </div>
+
+                    <!-- THANH PHÂN TRANG TAB 1 -->
+                    <div class="cf-pagination-bar">
+                        <div class="cf-pagination-info" id="centrePaginationInfo">
+                            Đang nạp danh sách cụm rạp...
+                        </div>
+                        <div class="cf-pagination-controls" id="centrePaginationControls">
+                            <!-- Các nút phân trang được sinh động bởi JS -->
+                        </div>
+                    </div>
                 </section>
             </div>
 
@@ -288,14 +306,27 @@
                                     <option value="name_desc">Tên Z → A</option>
                                 </select>
 
-                                <input type="text" name="search" id="staffFilterInput" 
-                                       value="<%= request.getAttribute("searchParam") != null ? request.getAttribute("searchParam") : "" %>"
-                                       placeholder="Tìm theo mã, tài khoản hoặc họ tên..." 
-                                       class="input-dark staff-search-input">
+                                <div style="position: relative; display: inline-flex; align-items: center;">
+                                    <input type="text" name="search" id="staffFilterInput" 
+                                           value="<%= request.getAttribute("searchParam") != null ? request.getAttribute("searchParam") : "" %>"
+                                           placeholder="Tìm theo mã, tài khoản hoặc họ tên..." 
+                                           class="input-dark staff-search-input">
+                                    <button type="button" id="staffSearchClearBtn" class="cf-search-clear-btn" style="display: none;" title="Xóa tìm kiếm">✕</button>
+                                </div>
                                 <button type="submit" class="cf-btn cf-btn-secondary cf-btn-sm">Tìm kiếm</button>
                                 <% if ((request.getAttribute("searchParam") != null && !((String)request.getAttribute("searchParam")).trim().isEmpty()) || (roleFilter != null && !"ALL".equalsIgnoreCase(roleFilter))) { %>
                                     <a href="${pageContext.request.contextPath}/admin/transfers?tab=staff" class="cf-btn cf-btn-secondary cf-btn-sm btn-clear-filter">Xóa lọc</a>
                                 <% } %>
+
+                                <div class="cf-page-size-wrap">
+                                    <span>Hiển thị:</span>
+                                    <select id="staffPageSizeSelect" class="cf-select-sm">
+                                        <option value="10" selected>10 nhân sự</option>
+                                        <option value="20">20 nhân sự</option>
+                                        <option value="50">50 nhân sự</option>
+                                        <option value="ALL">Tất cả</option>
+                                    </select>
+                                </div>
                             </form>
                         </div>
                     </div>
@@ -313,7 +344,10 @@
                                         <th>Thao tác</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody id="staffTableBody">
+                                    <tr class="empty-row" id="staffTableEmptyRow" style="display: none;">
+                                        <td colspan="7" class="cf-empty">Không tìm thấy nhân sự nào phù hợp với bộ lọc và từ khóa tìm kiếm.</td>
+                                    </tr>
                                     <% if (staffList == null || staffList.isEmpty()) { %>
                                         <tr><td colspan="7" class="cf-empty">Không tìm thấy nhân sự nào phù hợp với bộ lọc và từ khóa tìm kiếm.</td></tr>
                                     <% } else for (User item : staffList) {
@@ -370,6 +404,16 @@
                                     <% } %>
                                 </tbody>
                             </table>
+                        </div>
+                    </div>
+
+                    <!-- THANH PHÂN TRANG TAB 2 -->
+                    <div class="cf-pagination-bar">
+                        <div class="cf-pagination-info" id="staffPaginationInfo">
+                            Đang nạp danh sách nhân sự...
+                        </div>
+                        <div class="cf-pagination-controls" id="staffPaginationControls">
+                            <!-- Các nút phân trang được sinh động bởi JS -->
                         </div>
                     </div>
                 </section>
@@ -566,12 +610,21 @@
     </div>
 </div>
 
+<script src="${pageContext.request.contextPath}/js/admin-pagination.js?v=<%= System.currentTimeMillis() %>"></script>
 <script>
+    var centrePager = null;
+    var staffPager = null;
+
     function switchMainTab(tabId) {
         document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
         document.querySelectorAll('.tab-pane').forEach(function(p) { p.classList.remove('active'); });
         event.target.classList.add('active');
         document.getElementById(tabId).classList.add('active');
+        if (tabId === 'tab-manager-assignment' && centrePager) {
+            centrePager.render();
+        } else if (tabId === 'tab-staff-transfer' && staffPager) {
+            staffPager.render();
+        }
     }
 
         // Modal Miễn nhiệm Manager
@@ -703,6 +756,7 @@
         });
 
         rows.forEach(function(r) { tbody.appendChild(r); });
+        if (staffPager) staffPager.refreshRows();
 
         table.querySelectorAll('.sort-arrow').forEach(function(ar) {
             ar.textContent = '↕';
@@ -747,6 +801,7 @@
             return centreSortOrder === 'asc' ? cellA.localeCompare(cellB, 'vi', { numeric: true }) : cellB.localeCompare(cellA, 'vi', { numeric: true });
         });
         rows.forEach(function(r) { tbody.appendChild(r); });
+        if (centrePager) centrePager.refreshRows();
 
         var arrow = document.getElementById('arrow-centre-2');
         if (arrow) {
@@ -775,21 +830,29 @@
             }, 2500);
         });
 
-        var input = document.getElementById('staffFilterInput');
-        var rows = document.querySelectorAll('.staff-row');
+        centrePager = initTablePagination({
+            tableBodyId: 'centreTableBody',
+            rowSelector: 'tr.centre-row',
+            emptyRowId: 'centreTableEmptyRow',
+            paginationId: 'centrePaginationControls',
+            infoDisplayId: 'centrePaginationInfo',
+            pageSizeSelectId: 'centrePageSizeSelect',
+            itemLabel: 'cụm rạp',
+            defaultPageSize: 10
+        });
 
-        if (input) {
-            input.addEventListener('input', function () {
-                var q = this.value.toLowerCase().trim();
-
-                rows.forEach(function (row) {
-                    var s = row.getAttribute('data-search') || '';
-                    row.style.display = (!q || s.indexOf(q) !== -1)
-                        ? ''
-                        : 'none';
-                });
-            });
-        }
+        staffPager = initTablePagination({
+            tableBodyId: 'staffTableBody',
+            rowSelector: 'tr.staff-row',
+            emptyRowId: 'staffTableEmptyRow',
+            paginationId: 'staffPaginationControls',
+            infoDisplayId: 'staffPaginationInfo',
+            pageSizeSelectId: 'staffPageSizeSelect',
+            searchInputId: 'staffFilterInput',
+            searchClearBtnId: 'staffSearchClearBtn',
+            itemLabel: 'nhân sự',
+            defaultPageSize: 10
+        });
     });
 </script>
 </body>

@@ -166,22 +166,35 @@
                         <p id="managerCountLabel"><%= totalManagers %> tài khoản trong hệ thống.</p>
                     </div>
                     <div class="manager-filter-toolbar">
-                        <form method="get" action="${pageContext.request.contextPath}/admin/managers" class="manager-search-form">
-                            <input type="text" name="search" id="managerFilterInput" 
+                        <div class="cf-search-box cf-search-box-compact">
+                            <svg class="cf-search-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            </svg>
+                            <input type="text"
+                                   id="managerFilterInput" 
+                                   placeholder="Tìm mã nhân sự, username, họ tên, rạp..." 
                                    value="<%= request.getAttribute("searchParam") != null ? request.getAttribute("searchParam") : "" %>"
-                                   placeholder="🔍 Tìm theo Mã nhân sự (VD: QL00003, 3), username, họ tên, rạp..." 
-                                   class="manager-search-input">
-                            <button type="submit" class="cf-btn cf-btn-secondary cf-btn-sm">Tìm</button>
-                            <% if (request.getAttribute("searchParam") != null && !((String)request.getAttribute("searchParam")).trim().isEmpty()) { %>
-                                <a href="${pageContext.request.contextPath}/admin/managers" class="cf-btn cf-btn-secondary cf-btn-sm btn-clear-filter">Xóa lọc</a>
-                            <% } %>
-                        </form>
+                                   autocomplete="off"
+                                   spellcheck="false">
+                            <button type="button" id="managerSearchClearBtn" class="cf-search-clear-btn" style="display: none;" title="Xóa tìm kiếm">✕</button>
+                        </div>
                         
-                        <select id="statusFilterSelect" class="manager-status-select">
-                            <option value="">Tất cả trạng thái</option>
-                            <option value="st-active">Đang hoạt động</option>
-                            <option value="st-inactive">Tạm ngưng</option>
+                        <select id="statusFilterSelect" class="manager-status-select cf-select-sm">
+                            <option value="ALL">Tất cả trạng thái</option>
+                            <option value="ACTIVE">Đang hoạt động</option>
+                            <option value="INACTIVE">Tạm ngưng</option>
                         </select>
+
+                        <div class="cf-page-size-wrap">
+                            <span>Hiển thị:</span>
+                            <select id="managerPageSizeSelect" class="cf-select-sm">
+                                <option value="10" selected>10 quản lý</option>
+                                <option value="20">20 quản lý</option>
+                                <option value="50">50 quản lý</option>
+                                <option value="ALL">Tất cả</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
                 <div class="cf-card-body">
@@ -198,7 +211,10 @@
                                     <th class="th-action">Thao tác</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody id="managerTableBody">
+                                <tr class="empty-row" id="managerTableEmptyRow" style="display: none;">
+                                    <td colspan="7" class="cf-empty">Không tìm thấy tài khoản quản lý nào phù hợp.</td>
+                                </tr>
                                 <% if (managers == null || managers.isEmpty()) { %>
                                     <tr><td colspan="7" class="cf-empty">Chưa có tài khoản Manager nào trong hệ thống.</td></tr>
                                 <% } else for (User m : managers) {
@@ -209,7 +225,7 @@
                                     String searchData = (m.getEmployeeCode() + " " + m.getUserId() + " ql" + m.getUserId() + " " + m.getFullName() + " " + m.getAccount() + " " + m.getEmail() + " " + (hasCentre ? centreName : "")).toLowerCase();
                                     String statusClass = isActive ? "st-active" : "st-inactive";
                                 %>
-                                    <tr class="manager-row <%= statusClass %>" data-search="<%= searchData %>">
+                                    <tr class="manager-row <%= statusClass %>" data-search="<%= searchData %>" data-status="<%= isActive ? "ACTIVE" : "INACTIVE" %>">
                                         <td><code class="cf-badge cf-badge-primary cf-badge-mgr-code"><%= m.getEmployeeCode() %></code></td>
                                         <td>
                                             <strong class="manager-name"><%= m.getFullName() %></strong>
@@ -261,6 +277,16 @@
                                 <% } %>
                             </tbody>
                         </table>
+                    </div>
+                </div>
+
+                <!-- THANH PHÂN TRANG -->
+                <div class="cf-pagination-bar">
+                    <div class="cf-pagination-info" id="managerPaginationInfo">
+                        Đang nạp danh sách quản lý...
+                    </div>
+                    <div class="cf-pagination-controls" id="managerPaginationControls">
+                        <!-- Các nút phân trang được sinh động bởi JS -->
                     </div>
                 </div>
             </section>
@@ -363,11 +389,13 @@
         </form>
     </div>
 </div>
-
+<script src="${pageContext.request.contextPath}/js/admin-pagination.js?v=<%= System.currentTimeMillis() %>"></script>
 <script>
+    
     function openCreateManagerModal() {
         document.getElementById('createManagerModal').classList.add('active');
     }
+    
     function closeCreateManagerModal() {
         document.getElementById('createManagerModal').classList.remove('active');
     }
@@ -393,38 +421,25 @@
     });
 
     document.addEventListener('DOMContentLoaded', function() {
-        var input = document.getElementById('managerFilterInput');
-        var statusSelect = document.getElementById('statusFilterSelect');
-        var rows = document.querySelectorAll('.manager-row');
-        var label = document.getElementById('managerCountLabel');
-
-        function applyFilter() {
-            var q = input ? input.value.toLowerCase().trim() : '';
-            var statusVal = statusSelect ? statusSelect.value : '';
-            var count = 0;
-
-            rows.forEach(function(r) {
-                var s = r.getAttribute('data-search') || '';
-                var matchSearch = !q || s.indexOf(q) !== -1;
-                var matchStatus = true;
-
-                if (statusVal) {
-                    matchStatus = r.classList.contains(statusVal);
+        var countLabel = document.getElementById('managerCountLabel');
+        initTablePagination({
+            tableBodyId: 'managerTableBody',
+            rowSelector: 'tr.manager-row',
+            emptyRowId: 'managerTableEmptyRow',
+            paginationId: 'managerPaginationControls',
+            infoDisplayId: 'managerPaginationInfo',
+            pageSizeSelectId: 'managerPageSizeSelect',
+            searchInputId: 'managerFilterInput',
+            searchClearBtnId: 'managerSearchClearBtn',
+            statusFilterSelectId: 'statusFilterSelect',
+            itemLabel: 'quản lý',
+            defaultPageSize: 10,
+            onPageChange: function(state) {
+                if (countLabel) {
+                    countLabel.textContent = state.totalFiltered + ' tài khoản đang hiển thị.';
                 }
-
-                if (matchSearch && matchStatus) {
-                    r.style.display = '';
-                    count++;
-                } else {
-                    r.style.display = 'none';
-                }
-            });
-
-            if (label) label.textContent = count + ' tài khoản đang hiển thị.';
-        }
-
-        if (input) input.addEventListener('input', applyFilter);
-        if (statusSelect) statusSelect.addEventListener('change', applyFilter);
+            }
+        });
     });
 </script>
 </body>

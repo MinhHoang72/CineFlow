@@ -367,6 +367,121 @@
     background: rgba(255, 255, 255, 0.03);
 }
 
+.cf-page-size-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    color: var(--cf-muted, #94a3b8);
+    white-space: nowrap;
+}
+
+.cf-search-clear-btn {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: var(--cf-muted, #94a3b8);
+    font-size: 11px;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    transition: all .15s ease;
+}
+
+.cf-search-clear-btn:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.15);
+}
+.cf-toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+.cf-search-box-compact {
+    position: relative;
+    width: 270px;
+    max-width: 100%;
+    transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.cf-search-box-compact:focus-within {
+    width: 310px;
+}
+
+.cf-search-box-compact .cf-search-icon {
+    position: absolute;
+    left: 11px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #64748b;
+    pointer-events: none;
+    transition: color 0.2s ease;
+}
+
+.cf-search-box-compact:focus-within .cf-search-icon {
+    color: var(--cf-primary, #ff2855);
+}
+
+.cf-search-box-compact input {
+    width: 100%;
+    height: 38px;
+    min-height: 38px;
+    padding: 0 32px 0 34px !important;
+    background: #0f1623;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 8px;
+    color: #f8fafc;
+    font-size: 13px;
+    outline: none;
+    box-sizing: border-box;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.cf-search-box-compact input::placeholder {
+    color: #64748b;
+    font-size: 12.5px;
+}
+
+.cf-search-box-compact input:focus {
+    background: #131c2c;
+    border-color: var(--cf-primary, #ff2855);
+    box-shadow: 0 0 0 3px rgba(255, 40, 85, 0.2);
+}
+
+html[data-theme="light"] .cf-search-box-compact input {
+    background: #ffffff !important;
+    border-color: #cbd5e1 !important;
+    color: #0f172a !important;
+}
+
+html[data-theme="light"] .cf-search-box-compact input::placeholder {
+    color: #94a3b8 !important;
+}
+
+html[data-theme="light"] .cf-search-box-compact input:focus {
+    background: #ffffff !important;
+    border-color: #ff2855 !important;
+    box-shadow: 0 0 0 3px rgba(255, 40, 85, 0.15) !important;
+}
+
+html[data-theme="light"] .cf-search-box-compact .cf-search-icon {
+    color: #94a3b8;
+}
+
+html[data-theme="light"] .cf-search-box-compact:focus-within .cf-search-icon {
+    color: #ff2855;
+}
+
+
 /* THIẾT KẾ TƯƠNG THÍCH THIẾT BỊ DI ĐỘNG (RESPONSIVE) */
 @media (max-width: 900px) {
     .kpi-grid, .cf-kpi-grid { grid-template-columns: repeat(2, 1fr); }

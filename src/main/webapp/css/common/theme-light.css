@@ -2161,6 +2161,126 @@ html[data-theme="light"].cf-css-admin-distribution .cf-btn-save:hover {
     box-shadow: 0 6px 18px rgba(255, 40, 85, 0.45);
 }
 
+html[data-theme="light"].cf-css-admin-distribution .cf-modal-backdrop {
+    background: rgba(0, 0, 0, 0.75);
+}
+
+html[data-theme="light"].cf-css-admin-distribution .cf-modal-risk {
+    border-radius: 14px;
+    box-shadow: 0 25px 60px rgba(15, 23, 42, 0.245);
+    background: #f1f5f9;
+    border: 1px solid rgba(239, 68, 68, 0.5);
+    color: #0f172a;
+}
+
+html[data-theme="light"].cf-css-admin-distribution .cf-modal-risk-header {
+    background: #ffffff;
+    border-bottom: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+html[data-theme="light"].cf-css-admin-distribution .cf-modal-risk-title {
+    color: #fca5a5;
+}
+
+html[data-theme="light"].cf-css-admin-distribution .cf-modal-risk-close {
+    background: none;
+    border: none;
+    color: #1e293b;
+}
+
+html[data-theme="light"].cf-css-admin-distribution .cf-modal-risk-close:hover {
+    color: #0f172a;
+}
+
+html[data-theme="light"].cf-css-admin-distribution .cf-modal-risk-body {
+    background: #f1f5f9;
+    color: #0f172a;
+}
+
+html[data-theme="light"].cf-css-admin-distribution .cf-risk-data-card {
+    background: #ffffff;
+    border: 1px solid rgba(15, 23, 42, 0.12);
+    border-radius: 10px;
+}
+
+html[data-theme="light"].cf-css-admin-distribution .cf-risk-card-label {
+    color: #0f172a !important;
+}
+
+html[data-theme="light"].cf-css-admin-distribution .cf-risk-centre-name {
+    color: #38bdf8 !important;
+}
+
+html[data-theme="light"].cf-css-admin-distribution .cf-risk-stat-box {
+    background: #ffffff;
+    border-radius: 8px;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+html[data-theme="light"].cf-css-admin-distribution .cf-risk-stat-title {
+    color: #1e293b !important;
+}
+
+html[data-theme="light"].cf-css-admin-distribution .cf-risk-stat-number {
+    color: #ff4d6d !important;
+}
+
+html[data-theme="light"].cf-css-admin-distribution .cf-risk-notice-callout {
+    background: rgba(225, 29, 72, 0.18);
+    border: 1px solid rgba(225, 29, 72, 0.4);
+    border-left: 4px solid #f43f5e;
+    border-radius: 0 8px 8px 0;
+}
+
+html[data-theme="light"].cf-css-admin-distribution .cf-risk-notice-text {
+    color: #0f172a !important;
+}
+
+html[data-theme="light"].cf-css-admin-distribution .cf-risk-notice-text strong {
+    color: #1e293b !important;
+}
+
+html[data-theme="light"].cf-css-admin-distribution .cf-risk-question {
+    color: #0f172a !important;
+}
+
+html[data-theme="light"].cf-css-admin-distribution .cf-modal-risk-footer {
+    background: #ffffff;
+    border-top: 1px solid rgba(15, 23, 42, 0.1);
+}
+
+html[data-theme="light"].cf-css-admin-distribution .cf-btn-risk-cancel {
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    color: #0f172a;
+    border-radius: 8px;
+}
+
+html[data-theme="light"].cf-css-admin-distribution .cf-btn-risk-cancel:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+
+html[data-theme="light"].cf-css-admin-distribution .cf-btn-risk-confirm {
+    background: #e11d48;
+    border: none;
+    color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 4px 14px rgba(225, 29, 72, 0.4);
+}
+
+html[data-theme="light"].cf-css-admin-distribution .cf-btn-risk-confirm:hover {
+    background: #be123c;
+    box-shadow: 0 6px 18px rgba(225, 29, 72, 0.6);
+}
+
+html[data-theme="light"].cf-css-admin-distribution .cf-stat-tag {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 6px;
+}
+
 /* ---- admin/history.css ---- */
 html[data-theme="light"].cf-css-admin-history .cf-page-icon {
     border-radius: 10px;
@@ -3160,8 +3280,8 @@ html[data-theme="light"].cf-css-admin-transfers .kpi-unassigned {
 }
 
 html[data-theme="light"].cf-css-admin-transfers .kpi-unassigned-card {
-    border-color: rgba(245, 158, 11, 0.4) !important;
-    background: rgba(245, 158, 11, 0.06) !important;
+    border-color: var(--cf-border, rgba(15, 23, 42, 0.08)) !important;
+    background: #ffffff !important;
 }
 
 html[data-theme="light"].cf-css-admin-transfers .kpi-available {
@@ -9047,8 +9167,9 @@ html[data-theme="light"] [style*="color: #d97706"] { color: #334155 !important; 
 html[data-theme="light"] [style*="color: #edf2f9"] { color: #0f172a !important; }
 html[data-theme="light"] [style*="color: #F59E0B"] { color: #334155 !important; }
 html[data-theme="light"] [style*="color: #cbd5e1"] { color: #1e293b !important; }
-html[data-theme="light"] [style*="background: #0B0F17"] { background: #ffffff !important; }
 html[data-theme="light"] [style*="color: #fff"] { color: #0f172a !important; }
+html[data-theme="light"] [style*="box-shadow: 0 2px 8px rgba(0,0,0,0.3)"] { box-shadow: 0 2px 8px rgba(15, 23, 42, 0.105) !important; }
+html[data-theme="light"] [style*="background: #0B0F17"] { background: #ffffff !important; }
 html[data-theme="light"] [style*="color: #d1d5db"] { color: #1e293b !important; }
 html[data-theme="light"] [style*="color:#fbbf24"] { color: #334155 !important; }
 html[data-theme="light"] [style*="color:#94a3b8"] { color: #64748b !important; }

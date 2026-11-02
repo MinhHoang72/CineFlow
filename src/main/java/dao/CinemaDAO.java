@@ -271,7 +271,14 @@ public class CinemaDAO {
                 + "CAST(CASE WHEN bm.IsActive = 1 THEN 1 ELSE 0 END AS bit) AS [Distributed], "
                 + "COALESCE((SELECT COUNT(*) FROM Showtimes s JOIN Halls h ON s.HallID = h.HallID "
                 + "          WHERE s.MovieID = ? AND h.CentreID = b.CentreID AND s.StartTime > GETDATE() "
-                + "          AND UPPER(s.Status) = 'SCHEDULED'), 0) AS [FutureShowtimeCount] "
+                + "          AND UPPER(s.Status) = 'SCHEDULED'), 0) AS [FutureShowtimeCount], "
+                + "COALESCE((SELECT COUNT(t.TicketID) FROM Tickets t "
+                + "          JOIN BookingSeats bs ON t.BookingSeatID = bs.BookingSeatID "
+                + "          JOIN Bookings bk ON bs.BookingID = bk.BookingID "
+                + "          JOIN Showtimes s ON bk.ShowtimeID = s.ShowtimeID "
+                + "          JOIN Halls h ON s.HallID = h.HallID "
+                + "          WHERE s.MovieID = ? AND h.CentreID = b.CentreID AND s.StartTime > GETDATE() "
+                + "          AND UPPER(s.Status) = 'SCHEDULED' AND UPPER(t.TicketStatus) <> 'CANCELLED'), 0) AS [SoldTicketCount] "
                 + "FROM Centres b LEFT JOIN CentreMovies bm ON bm.CentreID = b.CentreID AND bm.MovieID = ? "
                 + "ORDER BY b.City, b.CentreName";
         List<Centre> centres = new ArrayList<>();
@@ -279,6 +286,7 @@ public class CinemaDAO {
              PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, movieId);
             ps.setInt(2, movieId);
+            ps.setInt(3, movieId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Centre centre = new Centre();
@@ -290,6 +298,7 @@ public class CinemaDAO {
                     centre.setStatus(rs.getString("Status"));
                     centre.setDistributed(rs.getBoolean("Distributed"));
                     centre.setFutureShowtimeCount(rs.getInt("FutureShowtimeCount"));
+                    centre.setSoldTicketCount(rs.getInt("SoldTicketCount"));
                     centres.add(centre);
                 }
             }

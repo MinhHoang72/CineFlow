@@ -383,16 +383,23 @@
                                     <span class="booking-meta">
                                         <%= esc(item.getCentreName()) %> · <%= item.getStartTime() == null ? "Chưa có lịch" : dateTime.format(item.getStartTime()) %>
                                     </span>
+                                    <% if ("CANCELLED".equalsIgnoreCase(item.getBookingStatus())) { %>
+                                        <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; color: #ef4444; margin-top: 5px; font-weight: 600;">
+                                            ⚠️ Suất chiếu đã huỷ · Bấm "Xem vé" để xem hướng dẫn hỗ trợ
+                                        </span>
+                                    <% } %>
                                 </div>
                             </div>
                             <div class="history-right">
                                 <span class="total-price"><%= money(item.getTotalAmount()) %></span>
                                 <%
                                     String st = item.getBookingStatus();
+                                    boolean isCancelled = "CANCELLED".equalsIgnoreCase(st);
                                     String tagClass = item.isPayable() ? " is-pending"
+                                            : isCancelled ? " is-cancelled"
                                             : ("CONFIRMED".equals(st) || "COMPLETED".equals(st)) ? "" : " is-muted";
                                 %>
-                                <span class="booking-status-tag<%= tagClass %>">
+                                <span class="booking-status-tag<%= tagClass %>"<%= isCancelled ? " style=\"background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.35); font-weight: 700;\"" : "" %>>
                                     ● <%= esc(item.getStatusLabel()) %>
                                 </span>
                                 <div class="history-actions">

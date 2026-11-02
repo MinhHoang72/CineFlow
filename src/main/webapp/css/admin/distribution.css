@@ -765,3 +765,322 @@
     background: #e11d48;
     box-shadow: 0 6px 18px rgba(255, 40, 85, 0.45);
 }
+
+
+
+
+/* ==========================================================================
+   High Risk Confirmation Modal - High Contrast & Dual Theme Support
+   ========================================================================== */
+.cf-modal-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(5px);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.cf-modal-backdrop.active {
+    display: flex;
+}
+
+.cf-modal-risk {
+    width: 100%;
+    max-width: 520px;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7);
+    animation: cfModalFadeIn 0.2s ease-out;
+    background: #1e293b;
+    border: 1px solid rgba(239, 68, 68, 0.5);
+    color: #f8fafc;
+}
+
+@keyframes cfModalFadeIn {
+    from { opacity: 0; transform: translateY(-14px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.cf-modal-risk-header {
+    background: #2a151b;
+    border-bottom: 1px solid rgba(239, 68, 68, 0.35);
+    padding: 18px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.cf-modal-risk-title {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 700;
+    color: #fca5a5;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.cf-modal-risk-close {
+    background: none;
+    border: none;
+    color: #cbd5e1;
+    font-size: 26px;
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.15s;
+}
+
+.cf-modal-risk-close:hover {
+    color: #ffffff;
+}
+
+.cf-modal-risk-body {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    background: #1e293b;
+    color: #f8fafc;
+}
+
+.cf-risk-data-card {
+    background: #0f172a;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    padding: 16px 18px;
+}
+
+.cf-risk-card-label {
+    margin: 0 0 14px 0;
+    font-size: 14.5px;
+    color: #f1f5f9 !important;
+    line-height: 1.5;
+}
+
+.cf-risk-centre-name {
+    color: #38bdf8 !important;
+    font-size: 16px;
+    font-weight: 800;
+    padding: 0 4px;
+}
+
+.cf-risk-stats-grid {
+    display: flex;
+    gap: 14px;
+}
+
+.cf-risk-stat-box {
+    flex: 1;
+    background: #161e2e;
+    padding: 14px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    text-align: center;
+}
+
+.cf-risk-stat-title {
+    font-size: 12px;
+    color: #cbd5e1 !important;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.cf-risk-stat-number {
+    font-size: 30px;
+    font-weight: 800;
+    color: #ff4d6d !important;
+    margin-top: 6px;
+    line-height: 1;
+}
+
+.cf-risk-notice-callout {
+    background: rgba(225, 29, 72, 0.18);
+    border: 1px solid rgba(225, 29, 72, 0.4);
+    border-left: 4px solid #f43f5e;
+    border-radius: 0 8px 8px 0;
+    padding: 12px 16px;
+}
+
+.cf-risk-notice-text {
+    margin: 0;
+    font-size: 13.5px;
+    color: #ffffff !important;
+    line-height: 1.6;
+}
+
+.cf-risk-notice-text strong {
+    color: #fecdd3 !important;
+    font-weight: 700;
+}
+
+.cf-risk-question {
+    margin: 4px 0 0 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: #ffffff !important;
+    text-align: center;
+}
+
+.cf-modal-risk-footer {
+    padding: 16px 24px;
+    background: #0f172a;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.cf-btn-risk-cancel {
+    background: #334155;
+    border: 1px solid #475569;
+    color: #f8fafc;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.cf-btn-risk-cancel:hover {
+    background: #475569;
+    color: #ffffff;
+}
+
+.cf-btn-risk-confirm {
+    background: #e11d48;
+    border: none;
+    color: #ffffff;
+    padding: 10px 22px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(225, 29, 72, 0.4);
+    transition: all 0.15s ease;
+}
+
+.cf-btn-risk-confirm:hover {
+    background: #be123c;
+    box-shadow: 0 6px 18px rgba(225, 29, 72, 0.6);
+}
+
+.cf-stat-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 8px;
+    font-size: 11.5px;
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 6px;
+    padding: 2px 7px;
+    font-weight: 600;
+}
+
+/* ==========================================================================
+   Light Theme Override (Ensuring 100% High Contrast)
+   ========================================================================== */
+html[data-theme="light"] .cf-modal-risk {
+    background: #ffffff !important;
+    border: 1px solid #fca5a5 !important;
+    color: #0f172a !important;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25) !important;
+}
+
+html[data-theme="light"] .cf-modal-risk-header {
+    background: #fef2f2 !important;
+    border-bottom: 1px solid #fecdd3 !important;
+}
+
+html[data-theme="light"] .cf-modal-risk-title {
+    color: #dc2626 !important;
+}
+
+html[data-theme="light"] .cf-modal-risk-close {
+    color: #64748b !important;
+}
+
+html[data-theme="light"] .cf-modal-risk-close:hover {
+    color: #0f172a !important;
+}
+
+html[data-theme="light"] .cf-modal-risk-body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+}
+
+html[data-theme="light"] .cf-risk-data-card {
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+html[data-theme="light"] .cf-risk-card-label {
+    color: #334155 !important;
+}
+
+html[data-theme="light"] .cf-risk-centre-name {
+    color: #0284c7 !important;
+}
+
+html[data-theme="light"] .cf-risk-stat-box {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+html[data-theme="light"] .cf-risk-stat-title {
+    color: #475569 !important;
+}
+
+html[data-theme="light"] .cf-risk-stat-number {
+    color: #dc2626 !important;
+}
+
+html[data-theme="light"] .cf-risk-notice-callout {
+    background: #fff1f2 !important;
+    border: 1px solid #fecdd3 !important;
+    border-left: 4px solid #e11d48 !important;
+}
+
+html[data-theme="light"] .cf-risk-notice-text {
+    color: #881337 !important;
+}
+
+html[data-theme="light"] .cf-risk-notice-text strong {
+    color: #9f1239 !important;
+}
+
+html[data-theme="light"] .cf-risk-question {
+    color: #0f172a !important;
+}
+
+html[data-theme="light"] .cf-modal-risk-footer {
+    background: #f8fafc !important;
+    border-top: 1px solid #e2e8f0 !important;
+}
+
+html[data-theme="light"] .cf-btn-risk-cancel {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #334155 !important;
+}
+
+html[data-theme="light"] .cf-btn-risk-cancel:hover {
+    background: #f1f5f9 !important;
+    color: #0f172a !important;
+}
+
+html[data-theme="light"] .cf-btn-risk-confirm {
+    background: #dc2626 !important;
+    color: #ffffff !important;
+}
+
+html[data-theme="light"] .cf-btn-risk-confirm:hover {
+    background: #b91c1c !important;
+}

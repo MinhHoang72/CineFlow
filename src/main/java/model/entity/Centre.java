@@ -16,6 +16,7 @@ public class Centre {
     private String status;
     private boolean distributed;
     private int futureShowtimeCount;
+    private int soldTicketCount;
     private int hallCount;
     private int seatCount;
     private Integer managerId;
@@ -50,6 +51,14 @@ public class Centre {
 
     public void setFutureShowtimeCount(int futureShowtimeCount) {
         this.futureShowtimeCount = futureShowtimeCount;
+    }
+
+    public int getSoldTicketCount() {
+        return soldTicketCount;
+    }
+
+    public void setSoldTicketCount(int soldTicketCount) {
+        this.soldTicketCount = soldTicketCount;
     }
 
     public Centre() {

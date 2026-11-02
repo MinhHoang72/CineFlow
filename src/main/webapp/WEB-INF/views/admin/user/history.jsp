@@ -67,17 +67,14 @@
                 <div class="cf-kpi-card">
                     <span class="cf-kpi-label">Tổng lượt bổ nhiệm Quản lý</span>
                     <div class="cf-kpi-value"><%= request.getAttribute("kpiTotalAssignments") != null ? request.getAttribute("kpiTotalAssignments") : 0 %></div>
-                    <span class="cf-kpi-sub">Tổng số bản ghi</span>
                 </div>
                 <div class="cf-kpi-card">
                     <span class="cf-kpi-label kpi-active">Phân công hiện tại</span>
                     <div class="cf-kpi-value kpi-active"><%= request.getAttribute("kpiActiveAssignments") != null ? request.getAttribute("kpiActiveAssignments") : 0 %></div>
-                    <span class="cf-kpi-sub">Đang có hiệu lực</span>
                 </div>
                 <div class="cf-kpi-card">
                     <span class="cf-kpi-label kpi-transfer">Lượt điều chuyển</span>
                     <div class="cf-kpi-value kpi-transfer"><%= request.getAttribute("kpiTotalTransfers") != null ? request.getAttribute("kpiTotalTransfers") : 0 %></div>
-                    <span class="cf-kpi-sub">Tổng số bản ghi</span>
                 </div>
             </div>
 
@@ -110,13 +107,26 @@
 
                     </div>
 
-                    <div>
-                        <input type="text" id="liveSearchInput" placeholder="Tìm theo mã, tên hoặc tài khoản..." class="history-search-input">
+                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                        <div style="position: relative; display: inline-flex; align-items: center;">
+                            <input type="text" id="liveSearchInput" placeholder="Tìm theo mã, tên hoặc tài khoản..." class="history-search-input">
+                            <button type="button" id="historySearchClearBtn" class="cf-search-clear-btn" style="display: none;" title="Xóa tìm kiếm">✕</button>
+                        </div>
                         <select id="transferRoleFilter" onchange="filterTransferHistory()" class="history-role-select">
                             <option value="">Tất cả chức vụ</option>
                             <option value="TICKET_SALES_STAFF">Bán vé</option>
                             <option value="TICKET_CHECKER_STAFF">Soát vé</option>
                         </select>
+
+                        <div class="cf-page-size-wrap">
+                            <span>Hiển thị:</span>
+                            <select id="historyPageSizeSelect" class="cf-select-sm">
+                                <option value="10" selected>10 bản ghi</option>
+                                <option value="20">20 bản ghi</option>
+                                <option value="50">50 bản ghi</option>
+                                <option value="ALL">Tất cả</option>
+                            </select>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -158,6 +168,9 @@
                                     </tr>
                                 </thead>
                                 <tbody id="tbody-assignment">
+                                    <tr class="empty-row" id="assignmentEmptyRow" style="display: none;">
+                                        <td colspan="9" class="cf-empty">Không tìm thấy bản ghi bổ nhiệm nào phù hợp.</td>
+                                    </tr>
                                     <% if (managerAssignments == null || managerAssignments.isEmpty()) { %>
                                         <tr><td colspan="9" class="cf-empty">Chưa có lịch sử bổ nhiệm nào được ghi nhận.</td></tr>
                                     <% } else for (ManagerAssignment ma : managerAssignments) { 
@@ -195,6 +208,16 @@
                             </table>
                         </div>
                     </div>
+
+                    <!-- THANH PHÂN TRANG TAB 1 -->
+                    <div class="cf-pagination-bar">
+                        <div class="cf-pagination-info" id="assignmentPaginationInfo">
+                            Đang nạp nhật ký bổ nhiệm...
+                        </div>
+                        <div class="cf-pagination-controls" id="assignmentPaginationControls">
+                            <!-- Các nút phân trang được sinh động bởi JS -->
+                        </div>
+                    </div>
                 </section>
             </div>
 
@@ -227,6 +250,9 @@
                                     </tr>
                                 </thead>
                                 <tbody id="tbody-transfer">
+                                    <tr class="empty-row" id="transferEmptyRow" style="display: none;">
+                                        <td colspan="11" class="cf-empty">Không tìm thấy bản ghi điều chuyển nào phù hợp.</td>
+                                    </tr>
                                     <% if (transferHistory == null || transferHistory.isEmpty()) { %>
                                         <tr><td colspan="11" class="cf-empty">Chưa có lịch sử điều chuyển nào được ghi nhận.</td></tr>
                                     <% } else for (StaffTransfer t : transferHistory) { 
@@ -272,13 +298,27 @@
                             </table>
                         </div>
                     </div>
+
+                    <!-- THANH PHÂN TRANG TAB 2 -->
+                    <div class="cf-pagination-bar">
+                        <div class="cf-pagination-info" id="transferPaginationInfo">
+                            Đang nạp nhật ký điều chuyển...
+                        </div>
+                        <div class="cf-pagination-controls" id="transferPaginationControls">
+                            <!-- Các nút phân trang được sinh động bởi JS -->
+                        </div>
+                    </div>
                 </section>
             </div>
         </main>
     </div>
 </div>
 
+<script src="${pageContext.request.contextPath}/js/admin-pagination.js?v=<%= System.currentTimeMillis() %>"></script>
 <script>
+    var assignmentPager = null;
+    var transferPager = null;
+
     function switchHistoryTab(tabId, tabName) {
         document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
         document.querySelectorAll('.tab-pane').forEach(function(p) { p.classList.remove('active'); });
@@ -294,6 +334,12 @@
             var url = new URL(window.location);
             url.searchParams.set('tab', tabName);
             window.history.replaceState({}, '', url);
+        }
+
+        if (tabName === 'assignment' && assignmentPager) {
+            assignmentPager.render();
+        } else if (tabName === 'transfer' && transferPager) {
+            transferPager.render();
         }
     }
 
@@ -326,6 +372,8 @@
         });
 
         rows.forEach(function(r) { tbody.appendChild(r); });
+        if (assignmentPager) assignmentPager.refreshRows();
+        if (transferPager) transferPager.refreshRows();
 
         // Cập nhật mũi tên hiển thị
         table.querySelectorAll('.sort-arrow').forEach(function(ar) {
@@ -363,28 +411,53 @@
         }
     }
 
-    // Live search lọc client-side
+    // Khởi tạo phân trang & tìm kiếm client-side
     document.addEventListener('DOMContentLoaded', function() {
-        var input = document.getElementById('liveSearchInput');
         var roleFilter = document.getElementById('transferRoleFilter');
         if (roleFilter) roleFilter.style.display = '<%= "transfer".equals(activeTab) ? "" : "none" %>';
-        function applyHistoryFilters() {
-            var q = input ? input.value.toLowerCase().trim() : '';
-            var role = roleFilter ? roleFilter.value.toLowerCase() : '';
-            document.querySelectorAll('#tbody-transfer .history-row').forEach(function(row) {
-                var matchesSearch = !q || (row.getAttribute('data-search') || '').indexOf(q) !== -1;
+
+        assignmentPager = initTablePagination({
+            tableBodyId: 'tbody-assignment',
+            rowSelector: 'tr.history-row',
+            emptyRowId: 'assignmentEmptyRow',
+            paginationId: 'assignmentPaginationControls',
+            infoDisplayId: 'assignmentPaginationInfo',
+            pageSizeSelectId: 'historyPageSizeSelect',
+            searchInputId: 'liveSearchInput',
+            searchClearBtnId: 'historySearchClearBtn',
+            itemLabel: 'bản ghi',
+            defaultPageSize: 10
+        });
+
+        transferPager = initTablePagination({
+            tableBodyId: 'tbody-transfer',
+            rowSelector: 'tr.history-row',
+            emptyRowId: 'transferEmptyRow',
+            paginationId: 'transferPaginationControls',
+            infoDisplayId: 'transferPaginationInfo',
+            pageSizeSelectId: 'historyPageSizeSelect',
+            searchInputId: 'liveSearchInput',
+            searchClearBtnId: 'historySearchClearBtn',
+            itemLabel: 'bản ghi',
+            defaultPageSize: 10,
+            customFilter: function(row) {
+                var rf = document.getElementById('transferRoleFilter');
+                var role = rf ? rf.value.toLowerCase() : '';
+                if (!role) return true;
                 var rowRole = (row.getAttribute('data-role') || '').toLowerCase();
-                var matchesRole = !role || rowRole === role;
-                row.style.display = matchesSearch && matchesRole ? '' : 'none';
+                return rowRole === role;
+            }
+        });
+
+        window.filterTransferHistory = function() {
+            if (transferPager) transferPager.render();
+        };
+
+        if (roleFilter) {
+            roleFilter.addEventListener('change', function() {
+                if (transferPager) transferPager.render();
             });
         }
-        window.filterTransferHistory = applyHistoryFilters;
-        if (input) {
-            input.addEventListener('input', function() {
-                applyHistoryFilters();
-            });
-        }
-        if (roleFilter) roleFilter.addEventListener('change', applyHistoryFilters);
     });
 </script>
 </body>

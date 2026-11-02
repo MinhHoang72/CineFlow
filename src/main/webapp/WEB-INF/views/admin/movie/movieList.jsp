@@ -110,31 +110,26 @@
                 <div class="cf-kpi-card">
                     <span class="cf-kpi-label">Tổng số phim</span>
                     <div class="cf-kpi-value"><%= totalMovies %></div>
-                    <span class="cf-kpi-sub">Tất cả phim trong hệ thống</span>
                 </div>
 
                 <div class="cf-kpi-card">
                     <span class="cf-kpi-label" style="color: #0284c7;">Sắp khởi chiếu</span>
                     <div class="cf-kpi-value"><%= comingSoonCount %></div>
-                    <span class="cf-kpi-sub">Phim đang chờ phát hành</span>
                 </div>
 
                 <div class="cf-kpi-card">
                     <span class="cf-kpi-label" style="color: #059669;">Đang chiếu</span>
                     <div class="cf-kpi-value"><%= nowShowingCount %></div>
-                    <span class="cf-kpi-sub">Phim có trạng thái đang chiếu</span>
                 </div>
 
                 <div class="cf-kpi-card">
                     <span class="cf-kpi-label" style="color: #d97706;">Đã kết thúc</span>
                     <div class="cf-kpi-value"><%= endedCount %></div>
-                    <span class="cf-kpi-sub">Phim đã dừng chiếu nhưng chưa lưu trữ</span>
                 </div>
 
                 <div class="cf-kpi-card">
                     <span class="cf-kpi-label" style="color: #64748b;">Lưu trữ</span>
                     <div class="cf-kpi-value"><%= archivedCount %></div>
-                    <span class="cf-kpi-sub">Phim đã được lưu (Admin)</span>
                 </div>
             </div>
 
