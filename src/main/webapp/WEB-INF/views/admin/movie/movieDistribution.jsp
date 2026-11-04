@@ -271,14 +271,6 @@
                                         id="btnSelectAll"
                                         data-is-all="<%= isAllDistributed ? "1" : "0" %>"
                                         title="<%= isAllDistributed ? "Hủy phân phối toàn bộ các cụm rạp đang hoạt động" : "Phân phối cho tất cả cụm rạp đang hoạt động" %>">
-                                    <svg class="cf-btn-dist-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                    <% if (isAllDistributed) { %>
-                                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                                    <% } else { %>
-                                        <polyline points="20 6 9 17 4 12"></polyline>
-                                    <% } %>
-                                    </svg>
                                     <span class="cf-btn-dist-text"><%= isAllDistributed ? "Hủy phân phối toàn bộ" : "Phân phối toàn bộ" %></span>
                                 </button>
 
@@ -585,22 +577,15 @@
                     btnSelectAll.dataset.isAll = isAllSelected ? "1" : "0";
 
                     const textSpan = btnSelectAll.querySelector('.cf-btn-dist-text');
-                    const iconSvg = btnSelectAll.querySelector('.cf-btn-dist-icon');
 
                     if (isAllSelected) {
                         btnSelectAll.classList.add('is-cancel');
                         btnSelectAll.title = "Hủy phân phối toàn bộ các cụm rạp đang hoạt động";
                         if (textSpan) textSpan.textContent = "Hủy phân phối toàn bộ";
-                        if (iconSvg) {
-                            iconSvg.innerHTML = '<line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>';
-                        }
                     } else {
                         btnSelectAll.classList.remove('is-cancel');
                         btnSelectAll.title = "Phân phối cho tất cả cụm rạp đang hoạt động";
                         if (textSpan) textSpan.textContent = "Phân phối toàn bộ";
-                        if (iconSvg) {
-                            iconSvg.innerHTML = '<polyline points="20 6 9 17 4 12"></polyline>';
-                        }
                     }
                 }
 

@@ -460,14 +460,14 @@
     background: rgba(16, 185, 129, 0.15);
     border: 1px solid rgba(16, 185, 129, 0.35);
     border-radius: 8px;
-    padding: 0 16px;
+    padding: 0 18px;
     color: #34d399;
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    justify-content: center;
     transition: all 0.15s ease;
     white-space: nowrap;
     flex-shrink: 0;
