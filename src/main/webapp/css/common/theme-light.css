@@ -1152,6 +1152,34 @@ html[data-theme="light"].cf-css-admin-centres .cf-btn-sm {
     border-radius: 6px;
 }
 
+html[data-theme="light"].cf-css-admin-centres .cf-status-action-select {
+    background-color: #ffffff;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    border: 1px solid rgba(15, 23, 42, 0.16);
+    color: #1e293b;
+}
+
+html[data-theme="light"].cf-css-admin-centres .cf-status-action-select:hover {
+    background-color: #f8fafc;
+    border-color: rgba(15, 23, 42, 0.28);
+    color: #0f172a;
+}
+
+html[data-theme="light"].cf-css-admin-centres .cf-status-action-select:focus {
+    border-color: #FF2855;
+    box-shadow: 0 0 0 2px rgba(255, 40, 85, 0.2);
+}
+
+html[data-theme="light"].cf-css-admin-centres .cf-status-action-select option {
+    background: #ffffff;
+    color: #0f172a;
+}
+
+html[data-theme="light"].cf-css-admin-centres .cf-status-action-select option:disabled {
+    color: #94a3b8;
+    background: #f1f5f9;
+}
+
 html[data-theme="light"].cf-css-admin-centres .cf-modal-backdrop {
     background: rgba(0, 0, 0, 0.75);
 }

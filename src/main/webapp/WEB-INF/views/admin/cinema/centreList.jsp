@@ -161,9 +161,9 @@
 
                     <select name="status" class="cf-select">
                         <option value="ALL" <%= "ALL".equalsIgnoreCase(currentStatus) ? "selected" : "" %>>Tất cả trạng thái</option>
-                        <option value="ACTIVE" <%= "ACTIVE".equalsIgnoreCase(currentStatus) ? "selected" : "" %>>Đang hoạt động (ACTIVE)</option>
-                        <option value="SUSPENDED" <%= "SUSPENDED".equalsIgnoreCase(currentStatus) ? "selected" : "" %>>Tạm ngưng (SUSPENDED)</option>
-                        <option value="INACTIVE" <%= "INACTIVE".equalsIgnoreCase(currentStatus) ? "selected" : "" %>>Ngừng hoạt động (INACTIVE)</option>
+                        <option value="ACTIVE" <%= "ACTIVE".equalsIgnoreCase(currentStatus) ? "selected" : "" %>>Đang hoạt động</option>
+                        <option value="SUSPENDED" <%= "SUSPENDED".equalsIgnoreCase(currentStatus) ? "selected" : "" %>>Tạm ngưng</option>
+                        <option value="INACTIVE" <%= "INACTIVE".equalsIgnoreCase(currentStatus) ? "selected" : "" %>>Ngừng hoạt động</option>
                     </select>
 
                     <button type="submit" class="cf-btn cf-btn-primary">Lọc</button>
@@ -227,47 +227,33 @@
                                 <% } else if ("SUSPENDED".equals(cStat) || "TEMPORARILY_CLOSED".equals(cStat)) { %>
                                     <span class="cf-badge cf-badge-suspended" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3);">● Tạm ngưng</span>
                                 <% } else { %>
-                                    <span class="cf-badge cf-badge-inactive">● Ngừng HĐ</span>
+                                    <span class="cf-badge cf-badge-inactive">● Ngừng hoạt động</span>
                                 <% } %>
                             </td>
                             <td style="text-align: right;">
-                                <div class="cf-actions" style="justify-content: flex-end; gap: 6px;">
+                                <div class="cf-actions" style="justify-content: flex-end; gap: 8px;">
                                     <!-- Nút Sửa -->
                                     <button type="button" class="cf-btn cf-btn-secondary cf-btn-sm"
                                             onclick="openEditCentreModal(<%= c.getCentreId() %>, '<%= c.getCentreName() != null ? c.getCentreName().replace("'", "\\'") : "" %>', '<%= c.getAddress() != null ? c.getAddress().replace("'", "\\'") : "" %>', '<%= c.getPhone() != null ? c.getPhone().replace("'", "\\'") : "" %>', '<%= c.getCity() != null ? c.getCity().replace("'", "\\'") : "" %>')">
                                         Sửa
                                     </button>
 
-                                    <!-- Nút Chuyển trạng thái theo quy chuẩn phân phối phim -->
-                                    <form method="POST" action="${pageContext.request.contextPath}/admin/centres" style="display: inline-flex; gap: 4px; margin: 0;">
+                                    <!-- Dropdown chuyển trạng thái: Kích hoạt, Tạm ngưng, Ngừng hoạt động -->
+                                    <form method="POST" action="${pageContext.request.contextPath}/admin/centres" style="display: inline-block; margin: 0;">
                                         <input type="hidden" name="action" value="changeStatus">
                                         <input type="hidden" name="centreId" value="<%= c.getCentreId() %>">
                                         <input type="hidden" name="search" value="<%= currentSearch != null ? currentSearch : "" %>">
                                         <input type="hidden" name="status" value="<%= currentStatus != null ? currentStatus : "ALL" %>">
                                         <input type="hidden" name="page" value="<%= currentPage %>">
 
-                                        <% if ("ACTIVE".equals(cStat)) { %>
-                                            <button type="submit" name="newStatus" value="SUSPENDED" class="cf-btn cf-btn-sm"
-                                                    style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4);"
-                                                    onclick="return confirm('Xác nhận chuyển rạp sang TẠM NGƯNG (SUSPENDED)?\nPhân phối phim đang hiệu lực sẽ tạm ngưng.');"
-                                                    title="Tạm ngưng hoạt động">Tạm ngưng</button>
-                                            <button type="submit" name="newStatus" value="INACTIVE" class="cf-btn cf-btn-danger cf-btn-sm"
-                                                    onclick="return confirm('CẢNH BÁO: Chuyển rạp sang NGỪNG HOẠT ĐỘNG (INACTIVE)?\nToàn bộ phân phối phim sẽ bị HỦY (CANCELLED).');"
-                                                    title="Ngừng hoạt động lâu dài">Ngừng HĐ</button>
-                                        <% } else if ("SUSPENDED".equals(cStat) || "TEMPORARILY_CLOSED".equals(cStat)) { %>
-                                            <button type="submit" name="newStatus" value="ACTIVE" class="cf-btn cf-btn-primary cf-btn-sm"
-                                                    style="background: #16A34A; border-color: #16A34A;"
-                                                    onclick="return confirm('Khôi phục rạp sang HOẠT ĐỘNG (ACTIVE)?\nCác phân phối phim chưa hết hạn chiếu sẽ được khôi phục.');"
-                                                    title="Mở lại hoạt động">Mở lại</button>
-                                            <button type="submit" name="newStatus" value="INACTIVE" class="cf-btn cf-btn-danger cf-btn-sm"
-                                                    onclick="return confirm('CẢNH BÁO: Chuyển rạp sang NGỪNG HOẠT ĐỘNG (INACTIVE)?\nToàn bộ phân phối phim sẽ bị HỦY (CANCELLED).');"
-                                                    title="Ngừng hoạt động lâu dài">Ngừng HĐ</button>
-                                        <% } else { %>
-                                            <button type="submit" name="newStatus" value="ACTIVE" class="cf-btn cf-btn-primary cf-btn-sm"
-                                                    style="background: #16A34A; border-color: #16A34A;"
-                                                    onclick="return confirm('Kích hoạt lại rạp sang HOẠT ĐỘNG (ACTIVE)?\nLưu ý: Phân phối đã hủy sẽ không tự khôi phục, Admin cần phân phối lại.');"
-                                                    title="Kích hoạt lại">Kích hoạt</button>
-                                        <% } %>
+                                        <select name="newStatus" class="cf-status-action-select"
+                                                onchange="handleCentreStatusChange(this, '<%= c.getCentreName() != null ? c.getCentreName().replace("'", "\\'") : "" %>', '<%= cStat %>')"
+                                                title="Chọn trạng thái để chuyển đổi">
+                                            <option value="" disabled selected hidden>Trạng thái ▾</option>
+                                            <option value="ACTIVE" <%= "ACTIVE".equals(cStat) ? "disabled" : "" %>>Kích hoạt<%= "ACTIVE".equals(cStat) ? " (Hiện tại)" : "" %></option>
+                                            <option value="SUSPENDED" <%= "SUSPENDED".equals(cStat) || "INACTIVE".equals(cStat) ? "disabled" : "" %>>Tạm ngưng<%= "SUSPENDED".equals(cStat) ? " (Hiện tại)" : ("INACTIVE".equals(cStat) ? " (Cần Active)" : "") %></option>
+                                            <option value="INACTIVE" <%= "INACTIVE".equals(cStat) ? "disabled" : "" %>>Ngừng hoạt động<%= "INACTIVE".equals(cStat) ? " (Hiện tại)" : "" %></option>
+                                        </select>
                                     </form>
                                 </div>
                             </td>
@@ -516,12 +502,31 @@
         document.getElementById('editCentreModal').classList.remove('active');
     }
 
-    // Xác nhận Toggle Status
-    function confirmToggleStatus(centreName, isCurrentlyActive) {
-        if (isCurrentlyActive) {
-            return confirm("CẢNH BÁO: Khi tạm ngưng cụm rạp \"" + centreName + "\", tất cả các phòng chiếu và suất chiếu của cụm rạp này sẽ tạm dừng hoạt động trên luồng đặt vé.\n\nBạn có chắc chắn muốn TẮT trạng thái hoạt động của cụm rạp này không?");
+    // Xử lý chuyển trạng thái cụm rạp từ dropdown (Tạm ngưng, Kích hoạt, Ngừng hoạt động)
+    function handleCentreStatusChange(selectElem, centreName, currentStatus) {
+        var newStatus = selectElem.value;
+        if (!newStatus || newStatus === currentStatus) {
+            selectElem.value = "";
+            return;
+        }
+
+        var message = "";
+        if (newStatus === 'ACTIVE') {
+            if (currentStatus === 'SUSPENDED' || currentStatus === 'TEMPORARILY_CLOSED') {
+                message = "Khôi phục cụm rạp \"" + centreName + "\" sang HOẠT ĐỘNG (ACTIVE)?\n\nCác phân phối phim chưa hết hạn chiếu sẽ được tự động khôi phục.";
+            } else {
+                message = "Kích hoạt lại cụm rạp \"" + centreName + "\" sang HOẠT ĐỘNG (ACTIVE)?\n\nLưu ý: Các phân phối phim đã bị hủy trước đó sẽ không tự khôi phục, bạn cần phân phối lại.";
+            }
+        } else if (newStatus === 'SUSPENDED') {
+            message = "Xác nhận chuyển cụm rạp \"" + centreName + "\" sang TẠM NGƯNG (SUSPENDED)?\n\nCác phân phối phim đang hiệu lực tại rạp sẽ tạm ngưng.";
+        } else if (newStatus === 'INACTIVE') {
+            message = "CẢNH BÁO: Chuyển cụm rạp \"" + centreName + "\" sang NGỪNG HOẠT ĐỘNG (INACTIVE)?\n\nToàn bộ phân phối phim của rạp sẽ bị HỦY (CANCELLED).";
+        }
+
+        if (confirm(message)) {
+            selectElem.form.submit();
         } else {
-            return confirm("Bạn có muốn KÍCH HOẠT lại cụm rạp \"" + centreName + "\" để cụm rạp hoạt động bình thường trên hệ thống?");
+            selectElem.value = "";
         }
     }
 
