@@ -130,21 +130,21 @@
                     <div class="cf-stat-icon warning" style="color: #fbbf24;">⏸</div>
                     <div class="cf-stat-info">
                         <h3><%= suspendedCentres != null ? suspendedCentres : 0 %></h3>
-                        <p>Tạm ngưng (SUSPENDED)</p>
+                        <p>Tạm ngưng</p>
                     </div>
                 </div>
                 <div class="cf-stat-card">
                     <div class="cf-stat-icon danger" style="color: #f87171;">⛔</div>
                     <div class="cf-stat-info">
                         <h3><%= inactiveCentres != null ? inactiveCentres : 0 %></h3>
-                        <p>Ngừng HĐ (INACTIVE)</p>
+                        <p>Ngừng HĐ</p>
                     </div>
                 </div>
                 <div class="cf-stat-card">
                     <div class="cf-stat-icon info">🎬</div>
                     <div class="cf-stat-info">
                         <h3><%= totalHalls != null ? totalHalls : 0 %></h3>
-                        <p>Tổng số Phòng chiếu (Halls)</p>
+                        <p>Tổng số phòng chiếu</p>
                     </div>
                 </div>
             </div>
@@ -161,9 +161,9 @@
 
                     <select name="status" class="cf-select">
                         <option value="ALL" <%= "ALL".equalsIgnoreCase(currentStatus) ? "selected" : "" %>>Tất cả trạng thái</option>
-                        <option value="ACTIVE" <%= "ACTIVE".equalsIgnoreCase(currentStatus) ? "selected" : "" %>>Đang hoạt động</option>
+                        <option value="ACTIVE" <%= "ACTIVE".equalsIgnoreCase(currentStatus) ? "selected" : "" %>>Hoạt động</option>
                         <option value="SUSPENDED" <%= "SUSPENDED".equalsIgnoreCase(currentStatus) ? "selected" : "" %>>Tạm ngưng</option>
-                        <option value="INACTIVE" <%= "INACTIVE".equalsIgnoreCase(currentStatus) ? "selected" : "" %>>Ngừng hoạt động</option>
+                        <option value="INACTIVE" <%= "INACTIVE".equalsIgnoreCase(currentStatus) ? "selected" : "" %>>Ngừng HĐ</option>
                     </select>
 
                     <button type="submit" class="cf-btn cf-btn-primary">Lọc</button>
@@ -178,13 +178,13 @@
                 <table class="cf-table">
                     <thead>
                         <tr>
-                            <th style="width: 70px;">STT</th>
-                            <th style="min-width: 180px;">Tên Cụm rạp</th>
-                            <th style="min-width: 240px;">Địa chỉ & Thành phố</th>
-                            <th style="min-width: 130px;">Hotline</th>
-                            <th style="min-width: 170px;">Phòng chiếu trực thuộc</th>
-                            <th style="min-width: 120px;">Trạng thái</th>
-                            <th style="min-width: 190px; text-align: right;">Thao tác</th>
+                            <th style="width: 48px; text-align: center;">STT</th>
+                            <th style="min-width: 140px;">Tên Cụm rạp</th>
+                            <th style="min-width: 190px;">Địa chỉ & Thành phố</th>
+                            <th style="min-width: 110px;">Hotline</th>
+                            <th style="min-width: 120px;">Phòng chiếu</th>
+                            <th style="min-width: 90px; text-align: center;">Trạng thái</th>
+                            <th style="min-width: 140px; text-align: right;">Thao tác</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -196,7 +196,7 @@
                                     boolean isActive = "ACTIVE".equalsIgnoreCase(c.getStatus());
                         %>
                         <tr>
-                            <td><strong>#<%= centreIndex %></strong></td>
+                            <td style="text-align: center; color: var(--cf-muted);"><%= centreIndex %></td>
                             <td>
                                 <strong style="color: #F8FAFC; font-size: 15px;"><%= c.getCentreName() %></strong>
                             </td>
@@ -214,24 +214,23 @@
                                 <button type="button" class="cf-badge cf-badge-halls"
                                         onclick="openViewHallsModal(<%= c.getCentreId() %>, '<%= c.getCentreName() != null ? c.getCentreName().replace("'", "\\'") : "" %>')"
                                         title="Bấm để xem danh sách phòng chiếu trực thuộc">
-                                    <span>🎬</span>
-                                    <span><%= c.getHallCount() %> Phòng (<%= c.getSeatCount() %> ghế)</span>
+                                    <%= c.getHallCount() %> phòng chiếu
                                 </button>
                             </td>
-                            <td>
+                            <td style="text-align: center;">
                                 <%
                                     String cStat = c.getStatus() != null ? c.getStatus().toUpperCase() : "ACTIVE";
                                     if ("ACTIVE".equals(cStat)) {
                                 %>
-                                    <span class="cf-badge cf-badge-active">● Hoạt động</span>
+                                    <span class="cf-badge cf-badge-active">Hoạt động</span>
                                 <% } else if ("SUSPENDED".equals(cStat) || "TEMPORARILY_CLOSED".equals(cStat)) { %>
-                                    <span class="cf-badge cf-badge-suspended" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3);">● Tạm ngưng</span>
+                                    <span class="cf-badge cf-badge-suspended">Tạm ngưng</span>
                                 <% } else { %>
-                                    <span class="cf-badge cf-badge-inactive">● Ngừng hoạt động</span>
+                                    <span class="cf-badge cf-badge-inactive">Ngừng HĐ</span>
                                 <% } %>
                             </td>
                             <td style="text-align: right;">
-                                <div class="cf-actions" style="justify-content: flex-end; gap: 8px;">
+                                <div class="cf-actions" style="justify-content: flex-end; gap: 6px;">
                                     <!-- Nút Sửa -->
                                     <button type="button" class="cf-btn cf-btn-secondary cf-btn-sm"
                                             onclick="openEditCentreModal(<%= c.getCentreId() %>, '<%= c.getCentreName() != null ? c.getCentreName().replace("'", "\\'") : "" %>', '<%= c.getAddress() != null ? c.getAddress().replace("'", "\\'") : "" %>', '<%= c.getPhone() != null ? c.getPhone().replace("'", "\\'") : "" %>', '<%= c.getCity() != null ? c.getCity().replace("'", "\\'") : "" %>')">
@@ -252,7 +251,7 @@
                                             <option value="" disabled selected hidden>Trạng thái ▾</option>
                                             <option value="ACTIVE" <%= "ACTIVE".equals(cStat) ? "disabled" : "" %>>Kích hoạt<%= "ACTIVE".equals(cStat) ? " (Hiện tại)" : "" %></option>
                                             <option value="SUSPENDED" <%= "SUSPENDED".equals(cStat) || "INACTIVE".equals(cStat) ? "disabled" : "" %>>Tạm ngưng<%= "SUSPENDED".equals(cStat) ? " (Hiện tại)" : ("INACTIVE".equals(cStat) ? " (Cần Active)" : "") %></option>
-                                            <option value="INACTIVE" <%= "INACTIVE".equals(cStat) ? "disabled" : "" %>>Ngừng hoạt động<%= "INACTIVE".equals(cStat) ? " (Hiện tại)" : "" %></option>
+                                            <option value="INACTIVE" <%= "INACTIVE".equals(cStat) ? "disabled" : "" %>>Ngừng HĐ<%= "INACTIVE".equals(cStat) ? " (Hiện tại)" : "" %></option>
                                         </select>
                                     </form>
                                 </div>
