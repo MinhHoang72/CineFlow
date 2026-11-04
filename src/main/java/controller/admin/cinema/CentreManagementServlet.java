@@ -1,6 +1,5 @@
 package controller.admin.cinema;
 
-import com.google.gson.Gson;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -9,14 +8,12 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import model.dto.common.PageDTO;
 import model.entity.Centre;
-import model.entity.Hall;
 import model.entity.User;
 import service.CinemaService;
 
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 
 /**
  * Controller: Quản lý Cụm rạp (Centres).
@@ -27,7 +24,6 @@ public class CentreManagementServlet extends HttpServlet {
 
     private static final int PAGE_SIZE = 6;
     private final CinemaService cinemaService = new CinemaService();
-    private final Gson gson = new Gson();
 
     private boolean isAdmin(HttpSession session) {
         if (session == null) return false;
@@ -41,8 +37,8 @@ public class CentreManagementServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-
-        HttpSession session = request.getSession(false);
+      //chưa có trạng thái đăng nhập 
+        HttpSession session = request.getSession(false);//=>trả về session null 
         if (session == null || session.getAttribute("userId") == null) {
             response.sendRedirect(request.getContextPath() + "/login?redirect="
                     + URLEncoder.encode("/admin/centres", StandardCharsets.UTF_8));
@@ -51,21 +47,6 @@ public class CentreManagementServlet extends HttpServlet {
         if (!isAdmin(session)) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN,
                     "Chỉ Quản trị viên (ADMIN) mới có quyền truy cập trang Quản lý Cụm rạp.");
-            return;
-        }
-
-        // AJAX: lấy danh sách Hall của một Centre (BR-HS-01)
-        String action = request.getParameter("action");
-        if ("getHalls".equalsIgnoreCase(action)) {
-            response.setContentType("application/json;charset=UTF-8");
-            try {
-                int centreId = Integer.parseInt(request.getParameter("centreId").trim());
-                List<Hall> halls = cinemaService.getHallsByCentreId(centreId);
-                response.getWriter().write(gson.toJson(halls));
-            } catch (Exception e) {
-                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                response.getWriter().write("[]");
-            }
             return;
         }
 

@@ -32,7 +32,7 @@ public class CentreDAO {
      */
     public PageDTO<Centre> search(String search, String status, int page, int size) {
         if (page < 1) page = 1;
-        if (size < 1) size = 6;
+        if (size < 1) size = 10;
 
         StringBuilder where = new StringBuilder("WHERE 1=1 ");
         List<Object> params = new ArrayList<>();

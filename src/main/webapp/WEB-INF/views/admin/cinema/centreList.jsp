@@ -147,11 +147,11 @@
                     </thead>
                     <tbody>
                         <c:choose>
-                            <c:when test="${not empty centres}">
-                                <c:forEach items="${centres}" var="c" varStatus="loop">
+                            <c:when test="${not empty result.items}">
+                                <c:forEach items="${result.items}" var="c" varStatus="loop">
                                     <c:set var="isActive" value="${c.status == 'ACTIVE'}" />
                                     <tr>
-                                        <td><strong>#${(page.page - 1) * page.size + loop.count}</strong></td>
+                                        <td><strong>#${result.from + loop.index}</strong></td>
                                         <td>
                                             <strong style="color: #F8FAFC; font-size: 15px;">${c.centreName}</strong>
                                         </td>
@@ -172,13 +172,10 @@
                                             </c:choose>
                                         </td>
                                         <td>
-                                            <!-- BR-HS-01: Một Centre quản lý danh sách các Hall trực thuộc -->
-                                            <button type="button" class="cf-badge cf-badge-halls"
-                                                    onclick="openViewHallsModal(${c.centreId}, '${c.centreName}')"
-                                                    title="Bấm để xem danh sách phòng chiếu trực thuộc">
+                                            <span class="cf-badge cf-badge-halls" style="cursor: default;">
                                                 <span>🎬</span>
                                                 <span>${c.hallCount} Phòng (${c.seatCount} ghế)</span>
-                                            </button>
+                                            </span>
                                         </td>
                                         <td>
                                             <c:choose>
@@ -206,7 +203,7 @@
                                                     <input type="hidden" name="back" value="${backQuery}">
                                                     <input type="hidden" name="search" value="${currentSearch}">
                                                     <input type="hidden" name="status" value="${currentStatus}">
-                                                    <input type="hidden" name="page" value="${page.page}">
+                                                    <input type="hidden" name="page" value="${result.page}">
 
                                                     <c:choose>
                                                         <c:when test="${isActive}">
@@ -237,52 +234,13 @@
                     </tbody>
                 </table>
 
-                <c:if test="${page.total > 0}">
+                <c:if test="${result.total > 0}">
                     <!-- THANH PHÂN TRANG (PAGINATION) -->
                     <div class="cf-pagination-bar">
                         <div class="cf-pagination-info">
-                            Hiển thị <strong>${page.from} - ${page.to}</strong> trên tổng số <strong>${page.total}</strong> cụm rạp
+                            Hiển thị <strong>${result.from} - ${result.to}</strong> trên tổng số <strong>${result.total}</strong> cụm rạp
                         </div>
-                        <c:if test="${page.totalPages > 1}">
-                            <div class="cf-pagination-controls">
-                                <!-- Nút trang trước (Previous) -->
-                                <c:choose>
-                                    <c:when test="${page.page > 1}">
-                                        <a href="${pagerBase}${page.page - 1}" class="cf-page-btn" title="Trang trước">«</a>
-                                    </c:when>
-                                    <c:otherwise>
-                                        <span class="cf-page-btn disabled" title="Trang trước">«</span>
-                                    </c:otherwise>
-                                </c:choose>
-
-                                <!-- Danh sách các số trang -->
-                                <c:forEach begin="1" end="${page.totalPages}" var="i">
-                                    <c:if test="${i == 1 || i == page.totalPages || (i >= page.page - 2 && i <= page.page + 2)}">
-                                        <c:choose>
-                                            <c:when test="${i == page.page}">
-                                                <span class="cf-page-btn active">${i}</span>
-                                            </c:when>
-                                            <c:otherwise>
-                                                <a href="${pagerBase}${i}" class="cf-page-btn">${i}</a>
-                                            </c:otherwise>
-                                        </c:choose>
-                                    </c:if>
-                                    <c:if test="${i == page.page - 3 || i == page.page + 3}">
-                                        <span class="cf-page-ellipsis">...</span>
-                                    </c:if>
-                                </c:forEach>
-
-                                <!-- Nút trang sau (Next) -->
-                                <c:choose>
-                                    <c:when test="${page.page < page.totalPages}">
-                                        <a href="${pagerBase}${page.page + 1}" class="cf-page-btn" title="Trang sau">»</a>
-                                    </c:when>
-                                    <c:otherwise>
-                                        <span class="cf-page-btn disabled" title="Trang sau">»</span>
-                                    </c:otherwise>
-                                </c:choose>
-                            </div>
-                        </c:if>
+                        ${result.renderPager(pagerBase)}
                     </div>
                 </c:if>
             </div>
@@ -352,7 +310,7 @@
             <input type="hidden" name="back" value="${backQuery}">
             <input type="hidden" name="search" value="${currentSearch}">
             <input type="hidden" name="status" value="${currentStatus}">
-            <input type="hidden" name="page" value="${page.page}">
+            <input type="hidden" name="page" value="${result.page}">
 
             <div class="cf-modal-body">
                 <div class="cf-form-group">
@@ -382,48 +340,6 @@
                 <button type="submit" class="cf-btn cf-btn-primary">Cập nhật thay đổi</button>
             </div>
         </form>
-    </div>
-</div>
-
-<!-- ============================================================== -->
-<!-- MODAL 3: XEM DANH SÁCH HALL TRỰC THUỘC (BR-HS-01) -->
-<!-- ============================================================== -->
-<div class="cf-modal-backdrop" id="viewHallsModal">
-    <div class="cf-modal cf-modal-lg">
-        <div class="cf-modal-header">
-            <div>
-                <h3 id="viewHallsTitle">Danh sách phòng chiếu</h3>
-                <small id="viewHallsSubtitle" style="color: #94A3B8; font-size: 13px;">Danh sách các phòng chiếu hiện có trực thuộc cụm rạp này</small>
-            </div>
-            <button type="button" class="cf-modal-close" onclick="closeViewHallsModal()">&times;</button>
-        </div>
-
-        <div class="cf-modal-body" style="padding: 0;">
-            <div id="hallsLoading" style="text-align: center; padding: 30px; color: #94A3B8;">
-                Đang tải danh sách phòng chiếu...
-            </div>
-
-            <div id="hallsContent" style="display: none;">
-                <table class="cf-halls-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 70px;">STT</th>
-                            <th>Tên phòng chiếu</th>
-                            <th>Loại phòng</th>
-                            <th>Sức chứa (Ghế)</th>
-                            <th>Trạng thái phòng</th>
-                        </tr>
-                    </thead>
-                    <tbody id="hallsTableBody">
-                        <!-- Render qua Javascript AJAX -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <div class="cf-modal-footer">
-            <button type="button" class="cf-btn cf-btn-secondary" onclick="closeViewHallsModal()">Đóng</button>
-        </div>
     </div>
 </div>
 
@@ -468,55 +384,6 @@
         } else {
             return confirm("Bạn có muốn KÍCH HOẠT lại cụm rạp \"" + centreName + "\" để cụm rạp hoạt động bình thường trên hệ thống?");
         }
-    }
-
-    // BR-HS-01: Mở Modal xem danh sách các Hall trực thuộc Centre
-    function openViewHallsModal(centreId, centreName) {
-        document.getElementById('viewHallsTitle').innerText = "Danh sách phòng chiếu - " + centreName;
-        document.getElementById('hallsLoading').style.display = 'block';
-        document.getElementById('hallsContent').style.display = 'none';
-        document.getElementById('viewHallsModal').classList.add('active');
-
-        // Gọi AJAX lấy danh sách Hall của Centre
-        fetch('${pageContext.request.contextPath}/admin/centres?action=getHalls&centreId=' + centreId)
-            .then(function(res) { return res.json(); })
-            .then(function(data) {
-                var tbody = document.getElementById('hallsTableBody');
-                tbody.innerHTML = '';
-
-                if (!data || data.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 24px; color: #94A3B8;">Cụm rạp này hiện chưa có phòng chiếu nào trực thuộc.</td></tr>';
-                } else {
-                    data.forEach(function(hall, index) {
-                        var statusBadge = '';
-                        if (hall.status === 'AVAILABLE') {
-                            statusBadge = '<span class="cf-badge cf-badge-active">Hoạt động</span>';
-                        } else if (hall.status === 'MAINTENANCE') {
-                            statusBadge = '<span class="cf-badge" style="background: rgba(245, 158, 11, 0.15); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.35);">Bảo trì</span>';
-                        } else {
-                            statusBadge = '<span class="cf-badge cf-badge-inactive">Tạm ngưng</span>';
-                        }
-
-                        var tr = document.createElement('tr');
-                        tr.innerHTML = '<td><strong>#' + (index + 1) + '</strong></td>'
-                                     + '<td><strong style="color: #F8FAFC;">' + hall.hallName + '</strong></td>'
-                                     + '<td><span class="cf-badge" style="background: rgba(56, 189, 248, 0.15); color: #38BDF8; border: 1px solid rgba(56, 189, 248, 0.3);">' + hall.hallType + '</span></td>'
-                                     + '<td><strong style="color: #F8FAFC;">' + hall.capacity + '</strong> ghế</td>'
-                                     + '<td>' + statusBadge + '</td>';
-                        tbody.appendChild(tr);
-                    });
-                }
-
-                document.getElementById('hallsLoading').style.display = 'none';
-                document.getElementById('hallsContent').style.display = 'block';
-            })
-            .catch(function(err) {
-                console.error(err);
-                document.getElementById('hallsLoading').innerHTML = '<span style="color: #DC2626;">Không thể tải danh sách phòng chiếu. Vui lòng thử lại sau!</span>';
-            });
-    }
-    function closeViewHallsModal() {
-        document.getElementById('viewHallsModal').classList.remove('active');
     }
 
     // Đóng modal khi click ra ngoài backdrop
