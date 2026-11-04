@@ -56,7 +56,8 @@ public class CustomerManagementServlet extends HttpServlet {
             status = "ALL";
         }
 
-        List<User> customers = userService.getCustomers(search, status);
+        // Nạp toàn bộ khách hàng để hỗ trợ bộ lọc dropdown/tab mượt mà phía client
+        List<User> customers = userService.getCustomers(search, "ALL");
         UserService.CustomerKpi kpi = userService.getCustomerKpi();
 
         request.setAttribute("customers", customers);

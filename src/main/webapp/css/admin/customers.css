@@ -775,3 +775,35 @@ html[data-theme="light"] .btn-filter-search:hover {
 .customer-filter-bar .btn-filter-search {
     flex-shrink: 0;
 }
+
+
+/* Dropdown trạng thái khách hàng */
+.customer-status-select {
+    height: 38px;
+    padding: 0 12px;
+    border: 1px solid var(--cf-border, #cbd5e1);
+    border-radius: 6px;
+    font-size: 13px;
+    background: var(--cf-surface-2, #f1f5f9);
+    color: var(--cf-text, #1e293b);
+    outline: none;
+    cursor: pointer;
+    min-width: 145px;
+    transition: border-color 0.2s, background 0.2s;
+    flex-shrink: 0;
+}
+
+.customer-status-select:focus {
+    border-color: var(--cf-primary, #6366f1);
+}
+
+html[data-theme="light"] .customer-status-select {
+    background: #ffffff !important;
+    color: #1e293b !important;
+    border-color: #cbd5e1 !important;
+}
+
+html[data-theme="light"] .customer-status-select option {
+    background: #ffffff !important;
+    color: #1e293b !important;
+}

@@ -205,6 +205,12 @@
                                 <button type="button" id="customerSearchClearBtn" class="cf-search-clear-btn" style="display: none;" title="Xóa tìm kiếm">✕</button>
                             </div>
 
+                            <select id="statusFilterSelect" class="customer-status-select cf-select-sm" title="Lọc theo trạng thái tài khoản">
+                                <option value="ALL" <%= "ALL".equalsIgnoreCase(currentStatus) ? "selected" : "" %>>Tất cả trạng thái</option>
+                                <option value="ACTIVE" <%= "ACTIVE".equalsIgnoreCase(currentStatus) ? "selected" : "" %>>Đang hoạt động</option>
+                                <option value="LOCKED" <%= "LOCKED".equalsIgnoreCase(currentStatus) ? "selected" : "" %>>Bị tạm khóa</option>
+                            </select>
+
                             <div class="cf-page-size-wrap">
                                 <span>Hiển thị:</span>
                                 <select id="customerPageSizeSelect" class="cf-select-sm">
@@ -429,6 +435,7 @@
                     pageSizeSelectId: 'customerPageSizeSelect',
                     searchInputId: 'customerSearchInput',
                     searchClearBtnId: 'customerSearchClearBtn',
+                    statusFilterSelectId: 'statusFilterSelect',
                     statusPillSelector: '.filter-tabs .filter-tab[data-status]',
                     defaultStatus: '<%= esc(currentStatus != null ? currentStatus : "ALL") %>',
                     itemLabel: 'khách hàng',

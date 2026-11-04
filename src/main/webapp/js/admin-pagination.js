@@ -746,6 +746,9 @@ function initTablePagination(options) {
                 statusPills.forEach(p => p.classList.remove('active'));
                 pill.classList.add('active');
                 currentStatus = pill.dataset.status || pill.dataset.tab || 'ALL';
+                if (statusSelect) {
+                    statusSelect.value = currentStatus;
+                }
                 currentPage = 1;
                 render();
             });
@@ -756,6 +759,16 @@ function initTablePagination(options) {
     if (statusSelect) {
         statusSelect.addEventListener('change', () => {
             currentStatus = statusSelect.value || 'ALL';
+            if (statusPills.length > 0) {
+                statusPills.forEach(p => {
+                    const st = (p.dataset.status || p.dataset.tab || 'ALL').toUpperCase();
+                    if (st === currentStatus.toUpperCase()) {
+                        p.classList.add('active');
+                    } else {
+                        p.classList.remove('active');
+                    }
+                });
+            }
             currentPage = 1;
             render();
         });
@@ -769,6 +782,11 @@ function initTablePagination(options) {
             currentPage = 1;
             render();
         });
+    }
+
+    // Set initial status in select if present
+    if (statusSelect && currentStatus) {
+        statusSelect.value = currentStatus;
     }
 
     // Initial render
