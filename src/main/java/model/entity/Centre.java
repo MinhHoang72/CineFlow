@@ -23,6 +23,8 @@ public class Centre {
     private String managerName;
     private String managerEmail;
     private String managerStatus;
+    private String managerPhone;
+    private java.sql.Timestamp assignmentStartDate;
     private List<Hall> halls = new ArrayList<>();
 
     public String getManagerStatus() {
@@ -166,6 +168,28 @@ public class Centre {
 
     public void setCentreID(int centreId) {
         this.centreId = centreId;
+    }
+
+    public String getManagerPhone() {
+        return managerPhone;
+    }
+
+    public void setManagerPhone(String managerPhone) {
+        this.managerPhone = managerPhone;
+    }
+
+    public java.sql.Timestamp getAssignmentStartDate() {
+        return assignmentStartDate;
+    }
+
+    public void setAssignmentStartDate(java.sql.Timestamp assignmentStartDate) {
+        this.assignmentStartDate = assignmentStartDate;
+    }
+
+    public String getFormattedStartDate() {
+        if (assignmentStartDate == null) return "";
+        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("dd/MM/yyyy");
+        return sdf.format(assignmentStartDate);
     }
 
     public List<Hall> getHalls() {

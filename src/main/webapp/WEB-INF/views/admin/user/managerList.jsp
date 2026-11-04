@@ -134,7 +134,7 @@
                 </div>
             <% } else if ("centre_has_manager".equals(errorParam) || "centre_already_has_manager".equals(errorParam)) { %>
                 <div class="cf-alert cf-alert-danger">
-                    <span>⚠</span> <strong>Cụm rạp đã có Quản lý:</strong> Cụm rạp được chọn hiện đã có Quản lý đang phụ trách (mỗi rạp chỉ có 1 Quản lý). Để thay thế hoặc luân chuyển Quản lý, vui lòng sử dụng chức năng Điều chuyển.
+                    <span>⚠</span> <strong>Cụm rạp đã có Quản lý:</strong> Cụm rạp được chọn hiện đã có Quản lý đang phụ trách (mỗi rạp chỉ có 1 Quản lý). Để thay thế hoặc phân công Quản lý, vui lòng sử dụng chức năng Bổ nhiệm & Miễn nhiệm tại mục Bổ nhiệm & Điều chuyển.
                 </div>
             <% } else if (errorParam != null) { %>
                 <div class="cf-alert cf-alert-danger">
@@ -162,7 +162,7 @@
             <section class="cf-card manager-card-section">
                 <div class="cf-card-header manager-card-header">
                     <div>
-                        <h2>Danh sách Quản lý (Manager Directory)</h2>
+                        <h2>Danh sách Quản lý </h2>
                         <p id="managerCountLabel"><%= totalManagers %> tài khoản trong hệ thống.</p>
                     </div>
                     <div class="manager-filter-toolbar">

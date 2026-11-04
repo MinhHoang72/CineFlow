@@ -1,6 +1,6 @@
 package controller.customer;
 
-import dao.CinemaDAO;
+import dao.MovieDAO;
 import dao.RatingDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -21,7 +21,7 @@ import java.util.Locale;
 @WebServlet(name = "MovieRatingServlet", urlPatterns = {"/movie/rate"})
 public class MovieRatingServlet extends HttpServlet {
 
-    private final CinemaDAO cinemaDAO = new CinemaDAO();
+    private final MovieDAO movieDAO = new MovieDAO();
     private final RatingDAO ratingDAO = new RatingDAO();
 
     /**
@@ -73,7 +73,7 @@ public class MovieRatingServlet extends HttpServlet {
         }
 
         // 3. Kiểm tra phim có tồn tại trong hệ thống hay không
-        Movie movie = cinemaDAO.getMovieById(movieId);
+        Movie movie = movieDAO.getMovieById(movieId);
         if (movie == null) {
             response.getWriter().write("{\"success\":false,\"message\":\"Không tìm thấy phim.\"}");
             return;
@@ -144,7 +144,7 @@ public class MovieRatingServlet extends HttpServlet {
         }
 
         // 4. Kiểm tra phim tồn tại
-        Movie movie = cinemaDAO.getMovieById(movieId);
+        Movie movie = movieDAO.getMovieById(movieId);
         if (movie == null) {
             response.setStatus(HttpServletResponse.SC_NOT_FOUND);
             response.getWriter().write("{\"success\":false,\"message\":\"Không tìm thấy phim.\"}");

@@ -55,7 +55,6 @@
                     <div class="cf-page-icon icon-transfers">👥</div>
                     <div>
                         <h1 class="cf-page-title">Bổ nhiệm &amp; Điều chuyển nhân sự</h1>
-                        <p class="cf-page-sub">Bổ nhiệm Quản lý và điều chuyển nhân sự giữa các chi nhánh.</p>
                     </div>
                 </div>
             </div>
@@ -100,10 +99,7 @@
                 <div class="cf-alert cf-alert-danger">
                     <span>⚠</span> <strong>Từ chối:</strong> Trung tâm này hiện đã có Quản lý phụ trách. Không được phép bổ nhiệm đè.
                 </div>
-            <% } else if ("dest_centre_has_manager".equals(errorParam)) { %>
-                <div class="cf-alert cf-alert-danger">
-                    <span>⚠</span> <strong>Từ chối điều chuyển Quản lý:</strong> Trung tâm đích đã có Quản lý phụ trách. Hệ thống chỉ cho phép điều chuyển Quản lý tới các trung tâm đang trống vị trí Quản lý.
-                </div>
+
             <% } else if ("manager_not_assigned".equals(errorParam)) { %>
                 <div class="cf-alert cf-alert-danger">
                     <span>⚠</span> <strong>Lỗi:</strong> Quản lý này chưa có phân công hiện hành, vui lòng sử dụng chức năng Bổ nhiệm.
@@ -122,7 +118,7 @@
                 </div>
             <% } else if ("manager_transfer_not_allowed".equals(errorParam)) { %>
                 <div class="cf-alert cf-alert-danger">
-                    <span>⚠</span> <strong>Lưu ý:</strong> Vị trí Quản lý trung tâm chỉ được thao tác qua <strong>Bổ nhiệm</strong> &amp; <strong>Miễn nhiệm</strong> tại Tab 1. Không áp dụng điều chuyển trực tiếp cho Quản lý.
+                    <span>⚠</span> <strong>Từ chối:</strong> Vị trí Quản lý không áp dụng điều chuyển. Quản lý chỉ được phân công qua chức năng <strong>Bổ nhiệm</strong> &amp; <strong>Miễn nhiệm</strong> tại Tab 1.
                 </div>
             <% } else if ("centre_inactive".equals(errorParam)) { %>
                 <div class="cf-alert cf-alert-danger">
@@ -160,27 +156,57 @@
                     🏛 Bổ nhiệm &amp; Miễn nhiệm Quản lý Trung tâm
                 </button>
                 <button type="button" class="tab-btn <%= "staff".equals(activeTabParam) ? "active" : "" %>" onclick="switchMainTab('tab-staff-transfer')">
-                    👥 Điều chuyển nhân sự
+                    👥 Điều chuyển nhân viên
                 </button>
             </div>
 
             <!-- ==================================================================== -->
             <!-- TAB 1: BỔ NHIỆM & BÃI NHIỆM QUẢN LÝ THEO TRUNG TÂM -->
             <!-- ==================================================================== -->
+            <%
+                java.util.Set<String> distinctCities = new java.util.TreeSet<String>();
+                if (centresWithManager != null) {
+                    for (Centre b : centresWithManager) {
+                        if (b.getCity() != null && !b.getCity().trim().isEmpty()) {
+                            distinctCities.add(b.getCity().trim());
+                        }
+                    }
+                }
+            %>
             <div class="tab-pane <%= "manager".equals(activeTabParam) ? "active" : "" %>" id="tab-manager-assignment">
                 <section class="cf-card">
-                    <div class="cf-card-header cf-card-header-flex">
-                        <div>
-                            <h2>Bổ nhiệm &amp; Miễn nhiệm Quản lý theo Trung tâm</h2>
-                        </div>
-                        <div class="cf-page-size-wrap">
-                            <span>Hiển thị:</span>
-                            <select id="centrePageSizeSelect" class="cf-select-sm">
-                                <option value="10" selected>10 cụm rạp</option>
-                                <option value="20">20 cụm rạp</option>
-                                <option value="50">50 cụm rạp</option>
-                                <option value="ALL">Tất cả</option>
+                    <div class="cf-card-header cf-card-header-flex centre-header-inline">
+                        <h2 class="centre-header-title">Bổ nhiệm &amp; Miễn nhiệm</h2>
+                        <div class="centre-filter-toolbar">
+                            <div class="centre-search-wrap">
+                                <input type="text" id="centreFilterInput"
+                                       placeholder="Tìm kiếm rạp, quản lý..." 
+                                       class="input-dark centre-search-input">
+                                <button type="button" id="centreSearchClearBtn" class="cf-search-clear-btn" style="display: none;" title="Xóa tìm kiếm">✕</button>
+                            </div>
+
+                            <select id="centreStatusFilterSelect" class="select-dark" title="Lọc theo trạng thái phân công Quản lý">
+                                <option value="ALL">Tất cả phân công</option>
+                                <option value="ASSIGNED">Đã có Quản lý</option>
+                                <option value="UNASSIGNED">Chưa có Quản lý</option>
                             </select>
+
+                            <select id="centreCityFilterSelect" class="select-dark" title="Lọc theo khu vực/tỉnh thành">
+                                <option value="ALL">Tất cả khu vực</option>
+                                <% for (String city : distinctCities) { %>
+                                    <option value="<%= city %>"><%= city %></option>
+                                <% } %>
+                            </select>
+
+                            <div class="cf-page-size-wrap">
+                                <span>Hiển thị:</span>
+                                <select id="centrePageSizeSelect" class="cf-select-sm">
+                                    <option value="10" selected>10 cụm rạp</option>
+                                    <option value="20">20 cụm rạp</option>
+                                    <option value="50">50 cụm rạp</option>
+                                    <option value="ALL">Tất cả</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                     <div class="cf-card-body">
@@ -189,14 +215,12 @@
                                 <thead>
                                     <tr>
                                         <th>Trung tâm chiếu phim</th>
-                                        <th>Khu vực</th>
-                                        <th class="sortable-th" onclick="sortCentreByCol(2)" title="Sắp xếp theo Mã Quản lý (QLxxxxx)">
-                                            Mã nhân sự <span class="sort-arrow" id="arrow-centre-2">↕</span>
-                                        </th>
+                                        <th>Mã nhân sự</th>
                                         <th>Quản lý đương nhiệm</th>
+                                        <th>Thời gian phụ trách</th>
                                         <th>Trạng thái phân công</th>
                                         <th>Trạng thái rạp</th>
-                                        <th>Thao tác</th>
+                                        <th style="text-align: right;">Thao tác</th>
                                     </tr>
                                 </thead>
                                 <tbody id="centreTableBody">
@@ -208,13 +232,27 @@
                                     <% } else for (Centre b : centresWithManager) {
                                         boolean isActiveManager = b.hasActiveManager();
                                         boolean isCentreActive = "ACTIVE".equalsIgnoreCase(b.getStatus());
+                                        String mPhone = b.getManagerPhone();
+                                        String formattedStartDate = b.getFormattedStartDate();
                                     %>
-                                        <tr class="centre-row" data-mgr-id="<%= isActiveManager ? b.getManagerId() : 999999 %>" data-search="<%= (b.getCentreName() + " " + b.getCity() + " " + (isActiveManager ? "QL" + String.format("%05d", b.getManagerId()) + " " + b.getManagerName() : "")).toLowerCase() %>">
+                                        <tr class="centre-row"
+                                            data-status="<%= isActiveManager ? "ASSIGNED" : "UNASSIGNED" %>"
+                                            data-city="<%= b.getCity() != null ? b.getCity().trim() : "" %>"
+                                            data-mgr-id="<%= isActiveManager ? b.getManagerId() : 999999 %>"
+                                            data-search="<%= ((b.getCentreName() != null ? b.getCentreName() : "") + " " +
+                                                              (b.getCity() != null ? b.getCity() : "") + " " +
+                                                              (b.getAddress() != null ? b.getAddress() : "") + " " +
+                                                              (b.getPhone() != null ? b.getPhone() : "") + " " +
+                                                              (isActiveManager ? ("QL" + String.format("%05d", b.getManagerId()) + " " +
+                                                                                  (b.getManagerName() != null ? b.getManagerName() : "") + " " +
+                                                                                  (b.getManagerEmail() != null ? b.getManagerEmail() : "") + " " +
+                                                                                  (mPhone != null ? mPhone : "")) : "")).toLowerCase() %>">
                                             <td>
-                                                <strong class="centre-name"><%= b.getCentreName() %></strong>
-                                                <small class="centre-address"><%= b.getAddress() %></small>
+                                                <strong class="centre-name" title="<%= b.getAddress() != null ? b.getAddress() : "" %>"><%= b.getCentreName() %></strong>
+                                                <% if (b.getCity() != null && !b.getCity().trim().isEmpty()) { %>
+                                                    <small class="centre-city-sub"><%= b.getCity() %></small>
+                                                <% } %>
                                             </td>
-                                            <td><span class="cf-badge cf-badge-info"><%= b.getCity() %></span></td>
                                             <td>
                                                 <% if (isActiveManager) { %>
                                                     <code class="cf-badge cf-badge-primary cf-badge-mgr-code"><%= String.format("QL%05d", b.getManagerId()) %></code>
@@ -231,10 +269,21 @@
                                                 <% } %>
                                             </td>
                                             <td>
-                                                <% if (isActiveManager) { %>
-                                                    <span class="cf-badge cf-badge-success cf-badge-sm">Có Manager đang hoạt động</span>
+                                                <% if (isActiveManager && formattedStartDate != null && !formattedStartDate.isEmpty()) { %>
+                                                    <div class="manager-start-date">
+                                                        <span>📅 Từ <%= formattedStartDate %></span>
+                                                    </div>
+                                                <% } else if (isActiveManager) { %>
+                                                    <span class="text-muted-dash">Đang đương nhiệm</span>
                                                 <% } else { %>
-                                                    <span class="cf-badge cf-badge-warning cf-badge-sm">Chưa có Manager</span>
+                                                    <span class="text-muted-dash">—</span>
+                                                <% } %>
+                                            </td>
+                                            <td>
+                                                <% if (isActiveManager) { %>
+                                                    <span class="cf-badge cf-badge-success cf-badge-sm">Đã có Quản lý</span>
+                                                <% } else { %>
+                                                    <span class="cf-badge cf-badge-warning cf-badge-sm">Chưa có Quản lý</span>
                                                 <% } %>
                                             </td>
                                             <td>
@@ -286,8 +335,7 @@
                 <section class="cf-card">
                     <div class="cf-card-header cf-card-header-flex">
                         <div>
-                            <h2>Danh sách nhân sự</h2>
-                            <p class="card-subtitle-sm">Quản lý và nhân viên trong toàn hệ thống.</p>
+                            <h2>Danh sách nhân viên</h2>
                         </div>
                         <div class="staff-filter-toolbar">
                             <form method="get" action="${pageContext.request.contextPath}/admin/transfers" class="staff-filter-form">
@@ -313,7 +361,6 @@
                                            class="input-dark staff-search-input">
                                     <button type="button" id="staffSearchClearBtn" class="cf-search-clear-btn" style="display: none;" title="Xóa tìm kiếm">✕</button>
                                 </div>
-                                <button type="submit" class="cf-btn cf-btn-secondary cf-btn-sm">Tìm kiếm</button>
                                 <% if ((request.getAttribute("searchParam") != null && !((String)request.getAttribute("searchParam")).trim().isEmpty()) || (roleFilter != null && !"ALL".equalsIgnoreCase(roleFilter))) { %>
                                     <a href="${pageContext.request.contextPath}/admin/transfers?tab=staff" class="cf-btn cf-btn-secondary cf-btn-sm btn-clear-filter">Xóa lọc</a>
                                 <% } %>
@@ -321,9 +368,9 @@
                                 <div class="cf-page-size-wrap">
                                     <span>Hiển thị:</span>
                                     <select id="staffPageSizeSelect" class="cf-select-sm">
-                                        <option value="10" selected>10 nhân sự</option>
-                                        <option value="20">20 nhân sự</option>
-                                        <option value="50">50 nhân sự</option>
+                                        <option value="10" selected>10 nhân viên</option>
+                                        <option value="20">20 nhân viên</option>
+                                        <option value="50">50 nhân viên</option>
                                         <option value="ALL">Tất cả</option>
                                     </select>
                                 </div>
@@ -335,8 +382,8 @@
                             <table class="cf-table" id="table-staff-list">
                                 <thead>
                                     <tr>
-                                        <th>Mã nhân sự</th>
-                                        <th>Nhân sự</th>
+                                        <th>Mã nhân viên</th>
+                                        <th>Nhân viên</th>
                                         <th>Tên đăng nhập</th>
                                         <th>Vai trò</th>
                                         <th>Trung tâm hiện tại</th>
@@ -357,18 +404,14 @@
                                         String searchData = (item.getEmployeeCode() + " " + item.getUserId() + " nv" + item.getUserId() + " ql" + item.getUserId() + " " + item.getFullName() + " " + item.getEmail() + " " + item.getAccount() + " " + centreDisplay).toLowerCase();
                                     %>
                                         <tr class="staff-row" data-search="<%= searchData %>" data-emp-id="<%= item.getUserId() %>" data-emp-code="<%= item.getEmployeeCode() %>" data-emp-name="<%= item.getFullName() %>">
-                                            <td><code class="cf-badge <%= "MANAGER".equalsIgnoreCase(item.getRole()) ? "cf-badge-primary" : "cf-badge-info" %> cf-badge-emp-code"><%= item.getEmployeeCode() %></code></td>
+                                            <td><code class="cf-badge <%= "cf-badge-info" %> cf-badge-emp-code"><%= item.getEmployeeCode() %></code></td>
                                             <td>
                                                 <strong class="staff-name"><%= item.getFullName() %></strong>
                                                 <small class="staff-email"><%= item.getEmail() %></small>
                                             </td>
                                             <td><code><%= item.getAccount() %></code></td>
                                             <td>
-                                                <% if ("MANAGER".equalsIgnoreCase(item.getRole()) || item.isManager()) { %>
-                                                    <span class="cf-badge cf-badge-primary cf-badge-role-manager">
-                                                        Quản lý
-                                                    </span>
-                                                <% } else if (item.isTicketSalesStaff()) { %>
+                                                <% if (item.isTicketSalesStaff()) { %>
                                                     <span class="cf-badge cf-badge-role-sales">
                                                         🎫 Bán vé (Ticket Sales)
                                                     </span>
@@ -536,7 +579,7 @@
 <div class="cf-modal-backdrop" id="staffTransferModal">
     <div class="cf-modal">
         <div class="cf-modal-header">
-            <h3 id="modalTransferTitle">Điều chuyển nhân sự giữa các trung tâm</h3>
+            <h3 id="modalTransferTitle">Điều chuyển nhân viên giữa các trung tâm</h3>
             <button type="button" class="cf-modal-close" onclick="closeStaffTransferModal()">&times;</button>
         </div>
         <form method="post" action="${pageContext.request.contextPath}/admin/transfers">
@@ -711,7 +754,7 @@
 
         var titleEl = document.getElementById('modalTransferTitle');
         if (titleEl) {
-            titleEl.textContent = 'Điều chuyển nhân sự giữa các trung tâm';
+            titleEl.textContent = 'Điều chuyển nhân viên giữa các trung tâm';
         }
 
         var newRoleSelect = document.getElementById('transferStaffNewRole');
@@ -785,30 +828,7 @@
         }
     }
 
-    // Sắp xếp mã Quản lý ở Tab cụm rạp
-    var centreSortOrder = 'asc';
-    function sortCentreByCol(colIndex) {
-        var table = document.getElementById('table-centre-assignment');
-        if (!table) return;
-        var tbody = table.querySelector('tbody');
-        var rows = Array.from(tbody.querySelectorAll('tr.centre-row'));
-        if (rows.length === 0) return;
 
-        centreSortOrder = centreSortOrder === 'asc' ? 'desc' : 'asc';
-        rows.sort(function(a, b) {
-            var cellA = a.children[colIndex] ? a.children[colIndex].innerText.trim() : '';
-            var cellB = b.children[colIndex] ? b.children[colIndex].innerText.trim() : '';
-            return centreSortOrder === 'asc' ? cellA.localeCompare(cellB, 'vi', { numeric: true }) : cellB.localeCompare(cellA, 'vi', { numeric: true });
-        });
-        rows.forEach(function(r) { tbody.appendChild(r); });
-        if (centrePager) centrePager.refreshRows();
-
-        var arrow = document.getElementById('arrow-centre-2');
-        if (arrow) {
-            arrow.textContent = centreSortOrder === 'asc' ? '▲ (Thấp ➔ Cao)' : '▼ (Cao ➔ Thấp)';
-            arrow.classList.add('active');
-        }
-    }
 
     // Xử lý thông báo và bộ lọc nhân viên client-side
     document.addEventListener('DOMContentLoaded', function () {
@@ -830,6 +850,8 @@
             }, 2500);
         });
 
+        var citySelect = document.getElementById('centreCityFilterSelect');
+
         centrePager = initTablePagination({
             tableBodyId: 'centreTableBody',
             rowSelector: 'tr.centre-row',
@@ -837,9 +859,24 @@
             paginationId: 'centrePaginationControls',
             infoDisplayId: 'centrePaginationInfo',
             pageSizeSelectId: 'centrePageSizeSelect',
+            searchInputId: 'centreFilterInput',
+            searchClearBtnId: 'centreSearchClearBtn',
+            statusFilterSelectId: 'centreStatusFilterSelect',
+            customFilter: function(row) {
+                if (!citySelect) return true;
+                var selectedCity = citySelect.value;
+                if (!selectedCity || selectedCity === 'ALL') return true;
+                return (row.getAttribute('data-city') || '').trim() === selectedCity.trim();
+            },
             itemLabel: 'cụm rạp',
             defaultPageSize: 10
         });
+
+        if (citySelect && centrePager) {
+            citySelect.addEventListener('change', function() {
+                centrePager.setPage(1);
+            });
+        }
 
         staffPager = initTablePagination({
             tableBodyId: 'staffTableBody',
@@ -850,7 +887,7 @@
             pageSizeSelectId: 'staffPageSizeSelect',
             searchInputId: 'staffFilterInput',
             searchClearBtnId: 'staffSearchClearBtn',
-            itemLabel: 'nhân sự',
+            itemLabel: 'nhân viên',
             defaultPageSize: 10
         });
     });

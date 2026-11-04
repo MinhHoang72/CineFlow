@@ -19,6 +19,9 @@ GO
 
 USE CineFlowDB;
 GO
+SET QUOTED_IDENTIFIER ON;
+SET ANSI_NULLS ON;
+GO
 
 
 /* =========================================================
@@ -706,6 +709,8 @@ CREATE TABLE BookingSeats (
 
     SeatID INT NOT NULL,
 
+    ShowtimeID INT NOT NULL,
+
     Price DECIMAL(12,2) NOT NULL,
 
     SeatStatus VARCHAR(20) NOT NULL
@@ -721,6 +726,10 @@ CREATE TABLE BookingSeats (
         FOREIGN KEY (SeatID)
         REFERENCES Seats(SeatID),
 
+    CONSTRAINT FK_BookingSeats_Showtime
+        FOREIGN KEY (ShowtimeID)
+        REFERENCES Showtimes(ShowtimeID),
+
     CONSTRAINT CK_BookingSeats_Price
         CHECK (Price >= 0),
 
@@ -732,6 +741,16 @@ CREATE TABLE BookingSeats (
             'RELEASED'
         ))
 );
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'UX_BookingSeats_ActiveSeat')
+    CREATE UNIQUE INDEX UX_BookingSeats_ActiveSeat
+        ON BookingSeats(ShowtimeID, SeatID)
+        WHERE SeatStatus IN ('HELD', 'CONFIRMED');
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_BookingSeats_BookingID')
+    CREATE INDEX IX_BookingSeats_BookingID ON BookingSeats(BookingID);
 GO
 
 
@@ -916,6 +935,8 @@ CREATE TABLE Payments (
 
     PaidAt DATETIME2 NULL,
 
+    CashReceived DECIMAL(12,2) NULL,
+
     CreatedAt DATETIME2 NOT NULL
         DEFAULT GETDATE(),
 
@@ -958,6 +979,10 @@ CREATE TABLE Payments (
             )
         )
 );
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Payments_BookingID')
+    CREATE INDEX IX_Payments_BookingID ON Payments(BookingID);
 GO
 
 
@@ -1266,7 +1291,9 @@ INSERT INTO Users (UserID, FullName, Account, Email, Password, Phone, Avatar, Ro
 (120, N'Thùy Chi', N'cust_41', N'thuychi@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000041', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-04 20:10:06', '2026-10-15 20:10:06'),
 (121, N'Văn Mai Hương', N'cust_42', N'vanmaihuong@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000042', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-03 20:10:06', '2026-10-15 20:10:06'),
 (122, N'Uyên Linh', N'cust_43', N'uyenlinh@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000043', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-02 20:10:06', '2026-10-15 20:10:06'),
-(123, N'Trung Quân Idol', N'cust_44', N'trungquan@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000044', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-01 20:10:06', '2026-10-15 20:10:06');
+(123, N'Trung Quân Idol', N'cust_44', N'trungquan@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000044', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-01 20:10:06', '2026-10-15 20:10:06'),
+(127, N'Dương quyết thái', N'quyetthai', N'quyetthaix22@gmail.com', N'$2a$10$SXAro67oi3IuXv8s.LO6tuSi/zg8XeB0mp/jiTbcOcKU7JQwCDgOu', N'0972049598', NULL, N'MANAGER', N'ACTIVE', 24, NULL, NULL, 1, 0, NULL, '2026-10-26 18:39:48', NULL),
+(128, N'Trần Thị Cúc', N'customer1', N'customer1@gmail.com', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0900000011', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 0, NULL, '2026-10-24 15:00:00', NULL);
 GO
 SET IDENTITY_INSERT Users OFF;
 GO
@@ -24087,53 +24114,53 @@ GO
 -- ====================================================================================
 SET IDENTITY_INSERT BookingSeats ON;
 GO
-INSERT INTO BookingSeats (BookingSeatID, BookingID, SeatID, Price, SeatStatus, HoldUntil) VALUES
-(1, 1, 1, 80000.00, N'CONFIRMED', NULL),
-(2, 2, 4641, 110000.00, N'CONFIRMED', NULL),
-(3, 3, 4591, 110000.00, N'CONFIRMED', NULL),
-(4, 4, 4491, 110000.00, N'CONFIRMED', NULL),
-(5, 5, 4491, 110000.00, N'CONFIRMED', NULL),
-(6, 6, 4441, 110000.00, N'CONFIRMED', NULL),
-(7, 7, 4441, 110000.00, N'CONFIRMED', NULL),
-(8, 8, 4341, 110000.00, N'CONFIRMED', NULL),
-(9, 9, 4191, 110000.00, N'CONFIRMED', NULL),
-(10, 10, 4141, 110000.00, N'CONFIRMED', NULL),
-(11, 11, 3991, 110000.00, N'CONFIRMED', NULL),
-(12, 12, 3991, 110000.00, N'CONFIRMED', NULL),
-(13, 13, 3891, 110000.00, N'CONFIRMED', NULL),
-(14, 14, 3841, 110000.00, N'CONFIRMED', NULL),
-(15, 15, 1891, 110000.00, N'CONFIRMED', NULL),
-(16, 16, 481, 110000.00, N'CONFIRMED', NULL),
-(17, 17, 841, 110000.00, N'CONFIRMED', NULL),
-(18, 18, 361, 110000.00, N'CONFIRMED', NULL),
-(19, 19, 301, 110000.00, N'CONFIRMED', NULL),
-(20, 20, 241, 110000.00, N'CONFIRMED', NULL),
-(21, 21, 15, 110000.00, N'CONFIRMED', NULL),
-(22, 22, 7, 110000.00, N'CONFIRMED', NULL),
-(23, 23, 7, 110000.00, N'CONFIRMED', NULL),
-(24, 24, 1, 110000.00, N'CONFIRMED', NULL),
-(25, 25, 1, 110000.00, N'CONFIRMED', NULL),
-(26, 26, 4641, 110000.00, N'CONFIRMED', NULL),
-(27, 2, 4591, 110000.00, N'CONFIRMED', NULL),
-(28, 3, 4491, 110000.00, N'CONFIRMED', NULL),
-(29, 5, 4441, 110000.00, N'CONFIRMED', NULL),
-(30, 7, 4341, 110000.00, N'CONFIRMED', NULL),
-(31, 8, 4191, 110000.00, N'CONFIRMED', NULL),
-(32, 9, 4141, 110000.00, N'CONFIRMED', NULL),
-(33, 10, 3991, 110000.00, N'CONFIRMED', NULL),
-(34, 12, 3891, 110000.00, N'CONFIRMED', NULL),
-(35, 13, 3841, 110000.00, N'CONFIRMED', NULL),
-(36, 14, 1891, 110000.00, N'CONFIRMED', NULL),
-(37, 15, 481, 110000.00, N'CONFIRMED', NULL),
-(38, 16, 841, 110000.00, N'CONFIRMED', NULL),
-(39, 17, 361, 110000.00, N'CONFIRMED', NULL),
-(40, 18, 301, 110000.00, N'CONFIRMED', NULL),
-(41, 19, 241, 110000.00, N'CONFIRMED', NULL),
-(42, 20, 15, 110000.00, N'CONFIRMED', NULL),
-(43, 21, 7, 110000.00, N'CONFIRMED', NULL),
-(44, 23, 1, 110000.00, N'CONFIRMED', NULL),
-(45, 25, 4641, 110000.00, N'CONFIRMED', NULL),
-(46, 26, 4591, 110000.00, N'CONFIRMED', NULL);
+INSERT INTO BookingSeats (BookingSeatID, BookingID, SeatID, ShowtimeID, Price, SeatStatus, HoldUntil) VALUES
+(1, 1, 1, 1, 80000.00, N'CONFIRMED', NULL),
+(2, 2, 4641, 941, 110000.00, N'CONFIRMED', NULL),
+(3, 3, 4591, 940, 110000.00, N'CONFIRMED', NULL),
+(4, 4, 4491, 939, 110000.00, N'CONFIRMED', NULL),
+(5, 5, 4491, 938, 110000.00, N'CONFIRMED', NULL),
+(6, 6, 4441, 937, 110000.00, N'CONFIRMED', NULL),
+(7, 7, 4441, 936, 110000.00, N'CONFIRMED', NULL),
+(8, 8, 4341, 935, 110000.00, N'CONFIRMED', NULL),
+(9, 9, 4191, 934, 110000.00, N'CONFIRMED', NULL),
+(10, 10, 4141, 933, 110000.00, N'CONFIRMED', NULL),
+(11, 11, 3991, 932, 110000.00, N'CONFIRMED', NULL),
+(12, 12, 3991, 931, 110000.00, N'CONFIRMED', NULL),
+(13, 13, 3891, 930, 110000.00, N'CONFIRMED', NULL),
+(14, 14, 3841, 929, 110000.00, N'CONFIRMED', NULL),
+(15, 15, 1891, 928, 110000.00, N'CONFIRMED', NULL),
+(16, 16, 481, 927, 110000.00, N'CONFIRMED', NULL),
+(17, 17, 841, 926, 110000.00, N'CONFIRMED', NULL),
+(18, 18, 361, 925, 110000.00, N'CONFIRMED', NULL),
+(19, 19, 301, 924, 110000.00, N'CONFIRMED', NULL),
+(20, 20, 241, 923, 110000.00, N'CONFIRMED', NULL),
+(21, 21, 15, 922, 110000.00, N'CONFIRMED', NULL),
+(22, 22, 7, 921, 110000.00, N'CONFIRMED', NULL),
+(23, 23, 7, 920, 110000.00, N'CONFIRMED', NULL),
+(24, 24, 1, 919, 110000.00, N'CONFIRMED', NULL),
+(25, 25, 1, 918, 110000.00, N'CONFIRMED', NULL),
+(26, 26, 4641, 917, 110000.00, N'CONFIRMED', NULL),
+(27, 2, 4591, 941, 110000.00, N'CONFIRMED', NULL),
+(28, 3, 4491, 940, 110000.00, N'CONFIRMED', NULL),
+(29, 5, 4441, 938, 110000.00, N'CONFIRMED', NULL),
+(30, 7, 4341, 936, 110000.00, N'CONFIRMED', NULL),
+(31, 8, 4191, 935, 110000.00, N'CONFIRMED', NULL),
+(32, 9, 4141, 934, 110000.00, N'CONFIRMED', NULL),
+(33, 10, 3991, 933, 110000.00, N'CONFIRMED', NULL),
+(34, 12, 3891, 931, 110000.00, N'CONFIRMED', NULL),
+(35, 13, 3841, 930, 110000.00, N'CONFIRMED', NULL),
+(36, 14, 1891, 929, 110000.00, N'CONFIRMED', NULL),
+(37, 15, 481, 928, 110000.00, N'CONFIRMED', NULL),
+(38, 16, 841, 927, 110000.00, N'CONFIRMED', NULL),
+(39, 17, 361, 926, 110000.00, N'CONFIRMED', NULL),
+(40, 18, 301, 925, 110000.00, N'CONFIRMED', NULL),
+(41, 19, 241, 924, 110000.00, N'CONFIRMED', NULL),
+(42, 20, 15, 923, 110000.00, N'CONFIRMED', NULL),
+(43, 21, 7, 922, 110000.00, N'CONFIRMED', NULL),
+(44, 23, 1, 920, 110000.00, N'CONFIRMED', NULL),
+(45, 25, 4641, 918, 110000.00, N'CONFIRMED', NULL),
+(46, 26, 4591, 917, 110000.00, N'CONFIRMED', NULL);
 GO
 SET IDENTITY_INSERT BookingSeats OFF;
 GO
@@ -24480,4 +24507,238 @@ SELECT c.CentreID, c.CentreName,
        (SELECT COUNT(*) FROM FnbCombos co WHERE co.CentreID = c.CentreID) AS SoCombo
 FROM Centres c
 ORDER BY c.CentreID;
+GO
+
+/* =====================================================================================
+   DỮ LIỆU BỔ SUNG: 200 VOUCHERS (ADMIN TOÀN CHUỖI & 4 CHI NHÁNH)
+   ===================================================================================== */
+PRINT N'Bắt đầu nạp 200 voucher mẫu...';
+
+-- Phần 1: 80 Voucher toàn hệ thống cho Admin (CentreID = NULL)
+DECLARE @i INT = 1;
+WHILE @i <= 80
+BEGIN
+    DECLARE @code VARCHAR(50) = 'GLB' + RIGHT('0' + CAST(@i AS VARCHAR(2)), 2);
+    
+    IF NOT EXISTS (SELECT 1 FROM Vouchers WHERE VoucherCode = @code)
+    BEGIN
+        DECLARE @name NVARCHAR(150);
+        DECLARE @desc NVARCHAR(500);
+        DECLARE @type VARCHAR(20);
+        DECLARE @val DECIMAL(12,2);
+        DECLARE @minOrder DECIMAL(12,2);
+        DECLARE @maxDisc DECIMAL(12,2);
+        DECLARE @startDate DATETIME2 = '2026-01-01 00:00:00';
+        DECLARE @endDate DATETIME2 = '2026-12-31 23:59:59';
+        DECLARE @limit INT = 500;
+        DECLARE @used INT = 0;
+        DECLARE @status VARCHAR(20) = 'ACTIVE';
+
+        IF @i <= 20 
+        BEGIN
+            SET @type = 'PERCENT';
+            SET @val = 10.00 + ((@i - 1) * 2);
+            SET @name = N'Voucher Toàn Chuỗi Giảm ' + CAST(CAST(@val AS INT) AS NVARCHAR) + N'%';
+            SET @desc = N'Áp dụng cho mọi cụm rạp CineFlow toàn quốc';
+            SET @minOrder = 100000;
+            SET @maxDisc = 60000;
+        END
+        ELSE IF @i <= 40
+        BEGIN
+            SET @type = 'FIXED';
+            SET @val = 20000.00 + ((@i - 21) * 6500);
+            SET @name = N'Voucher Toàn Chuỗi Giảm ' + CAST(CAST(@val AS INT) AS NVARCHAR) + N'đ';
+            SET @desc = N'Giảm trực tiếp vào tổng hóa đơn vé xem phim';
+            SET @minOrder = 120000;
+            SET @maxDisc = @val;
+        END
+        ELSE IF @i <= 56
+        BEGIN
+            SET @type = CASE WHEN @i % 2 = 0 THEN 'PERCENT' ELSE 'FIXED' END;
+            SET @val = CASE WHEN @type = 'PERCENT' THEN 25.00 ELSE 30000.00 END;
+            SET @name = N'Ưu Đãi Mùa Lễ Toàn Chuỗi #' + CAST(@i AS NVARCHAR);
+            SET @desc = N'Chương trình khuyến mãi mùa trước đã kết thúc';
+            SET @minOrder = 80000;
+            SET @maxDisc = 50000;
+            SET @startDate = '2026-01-01 00:00:00';
+            SET @endDate = '2026-02-15 23:59:59';
+            SET @status = 'ACTIVE';
+        END
+        ELSE IF @i <= 68
+        BEGIN
+            SET @type = 'PERCENT';
+            SET @val = 50.00;
+            SET @name = N'Flash Sale 50% Toàn Chuỗi #' + CAST(@i AS NVARCHAR);
+            SET @desc = N'Số lượng có hạn, đã phát hết sạch lượt dùng';
+            SET @minOrder = 150000;
+            SET @maxDisc = 100000;
+            SET @limit = 100;
+            SET @used = 100;
+            SET @status = 'ACTIVE';
+        END
+        ELSE
+        BEGIN
+            SET @type = 'FIXED';
+            SET @val = 50000.00;
+            SET @name = N'Voucher Tạm Ngừng Phát Hành #' + CAST(@i AS NVARCHAR);
+            SET @desc = N'Voucher đã tạm ngừng theo chính sách ban quản trị';
+            SET @minOrder = 200000;
+            SET @maxDisc = 50000;
+            SET @status = 'INACTIVE';
+        END
+
+        INSERT INTO Vouchers (
+            VoucherCode, VoucherName, Description, CentreID, CreatedBy,
+            DiscountType, DiscountValue, MinimumOrderValue, MaximumDiscount,
+            StartDate, EndDate, UsageLimit, UsedCount, PerCustomerLimit, Status
+        ) VALUES (
+            @code, @name, @desc, NULL, 4,
+            @type, @val, @minOrder, @maxDisc,
+            @startDate, @endDate, @limit, @used, 1, @status
+        );
+    END
+    SET @i += 1;
+END
+GO
+
+-- Phần 2: 120 Voucher cho 4 Chi nhánh (30 voucher / rạp)
+DECLARE @BranchList TABLE (CentreId INT, Prefix VARCHAR(10), BranchName NVARCHAR(100));
+INSERT INTO @BranchList VALUES 
+(1, 'CGY', N'Cầu Giấy'),
+(2, 'HDO', N'Hà Đông'),
+(3, 'HKI', N'Hoàn Kiếm'),
+(4, 'Q01', N'Quận 1');
+
+DECLARE @curCentre INT, @curPrefix VARCHAR(10), @curName NVARCHAR(100);
+DECLARE branch_cursor CURSOR LOCAL FAST_FORWARD FOR SELECT CentreId, Prefix, BranchName FROM @BranchList;
+
+OPEN branch_cursor;
+FETCH NEXT FROM branch_cursor INTO @curCentre, @curPrefix, @curName;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    DECLARE @j INT = 1;
+    WHILE @j <= 30
+    BEGIN
+        DECLARE @bCode VARCHAR(50) = @curPrefix + RIGHT('0' + CAST(@j AS VARCHAR(2)), 2);
+        
+        IF NOT EXISTS (SELECT 1 FROM Vouchers WHERE VoucherCode = @bCode)
+        BEGIN
+            DECLARE @bType VARCHAR(20) = CASE WHEN @j % 2 = 0 THEN 'PERCENT' ELSE 'FIXED' END;
+            DECLARE @bVal DECIMAL(12,2) = CASE WHEN @bType = 'PERCENT' THEN 10.00 + (@j * 1.5) ELSE 15000.00 + (@j * 2500) END;
+            DECLARE @bEndDate DATETIME2 = CASE WHEN @j <= 6 THEN '2026-02-01' ELSE '2026-12-31' END;
+            DECLARE @bLimit INT = CASE WHEN @j IN (7, 8) THEN 50 ELSE 200 END;
+            DECLARE @bUsed INT = CASE WHEN @j IN (7, 8) THEN 50 ELSE @j * 2 END;
+            DECLARE @bStatus VARCHAR(20) = CASE WHEN @j IN (9, 10) THEN 'INACTIVE' ELSE 'ACTIVE' END;
+            DECLARE @bTitle NVARCHAR(150) = N'Ưu Đãi Rạp ' + @curName + N' #' + RIGHT('0' + CAST(@j AS VARCHAR(2)), 2);
+            DECLARE @bDesc NVARCHAR(500) = N'Chỉ áp dụng khi xem phim trực tiếp tại CineFlow ' + @curName;
+
+            INSERT INTO Vouchers (
+                VoucherCode, VoucherName, Description, CentreID, CreatedBy,
+                DiscountType, DiscountValue, MinimumOrderValue, MaximumDiscount,
+                StartDate, EndDate, UsageLimit, UsedCount, PerCustomerLimit, Status
+            ) VALUES (
+                @bCode, @bTitle, @bDesc, @curCentre, 4,
+                @bType, @bVal, 80000, 50000,
+                '2026-01-01', @bEndDate, @bLimit, @bUsed, 1, @bStatus
+            );
+        END
+        SET @j += 1;
+    END
+    FETCH NEXT FROM branch_cursor INTO @curCentre, @curPrefix, @curName;
+END
+
+CLOSE branch_cursor;
+DEALLOCATE branch_cursor;
+GO
+
+
+/* =====================================================================================
+   DỮ LIỆU BỔ SUNG: TỒN KHO F&B VÀ NHẬT KÝ SOÁT VÉ DEMO
+   ===================================================================================== */
+-- Cập nhật tồn kho bắp nước chi nhánh (Centre 1 và Centre 2) để luôn sẵn sàng bán
+UPDATE CentreFnbInventory
+SET IsAvailable = 1, StockQuantity = 150
+WHERE CentreID IN (1, 2);
+GO
+
+-- Thêm các bản ghi nhật ký soát vé (CheckInLogs) mẫu
+INSERT INTO CheckInLogs (TicketID, CheckedBy, CheckInTime, Result, Note)
+VALUES
+    (20, 6, DATEADD(minute, -30, GETDATE()), 'SUCCESS', N'Quét mã QR qua cổng soát vé thành công'),
+    (NULL, 6, DATEADD(minute, -25, GETDATE()), 'REJECTED', N'Không tìm thấy vé với mã này.'),
+    (20, 6, DATEADD(minute, -20, GETDATE()), 'REJECTED', N'Vé đã được sử dụng trước đó.'),
+    (1, 6, DATEADD(minute, -15, GETDATE()), 'REJECTED', N'Vé thuộc Centre khác (CineFlow Cẩm Lệ).'),
+    (20, 6, DATEADD(minute, -10, GETDATE()), 'SUCCESS', N'Nhân viên xác thực vé thủ công'),
+    (NULL, 6, DATEADD(minute, -5, GETDATE()), 'REJECTED', N'Không tìm thấy vé với mã này.'),
+    (20, 6, DATEADD(minute, -2, GETDATE()), 'SUCCESS', N'Quét mã vé thành công'),
+    (NULL, 25, DATEADD(minute, -40, GETDATE()), 'REJECTED', N'Không tìm thấy vé với mã này.'),
+    (NULL, 25, DATEADD(minute, -35, GETDATE()), 'REJECTED', N'Mã vé không đúng định dạng.'),
+    (1, 25, DATEADD(minute, -18, GETDATE()), 'REJECTED', N'Vé thuộc Centre khác.'),
+    (NULL, 25, DATEADD(minute, -5, GETDATE()), 'REJECTED', N'Không tìm thấy vé với mã này.');
+GO
+
+
+/* =====================================================================================
+   DỮ LIỆU BỔ SUNG: DEMO ĐẶT GHẾ SƠ ĐỒ PHÒNG CHIẾU
+   ===================================================================================== */
+DECLARE @Now datetime2 = SYSDATETIME();
+DECLARE @StartDate date = DATEADD(day, 1, CAST(@Now AS date));
+DECLARE @Days int = 3;
+DECLARE @Created TABLE (BookingID int, BookingCode varchar(30), ShowtimeID int, Seats int);
+
+DECLARE @Shows TABLE (ShowtimeID int PRIMARY KEY, CentreID int, HallID int, HallType varchar(30), StartTime datetime2);
+;WITH candidates AS (
+    SELECT s.ShowtimeID, h.CentreID, s.HallID, h.HallType, s.StartTime,
+           ROW_NUMBER() OVER(PARTITION BY h.CentreID, CAST(s.StartTime AS date) ORDER BY s.StartTime, s.ShowtimeID) rn
+    FROM dbo.Showtimes s
+    JOIN dbo.Halls h ON h.HallID = s.HallID
+    JOIN dbo.Centres ce ON ce.CentreID = h.CentreID
+    JOIN dbo.Movies m ON m.MovieID = s.MovieID
+    WHERE s.Status = 'SCHEDULED' AND s.StartTime >= @StartDate AND s.StartTime < DATEADD(day, @Days, @StartDate)
+      AND ce.Status = 'ACTIVE' AND m.Status = 'NOW_SHOWING'
+      AND CAST(s.StartTime AS time) >= '09:00' AND CAST(s.StartTime AS time) <= '22:00'
+      AND h.Status = 'AVAILABLE'
+      AND (SELECT COUNT(*) FROM dbo.Seats se WHERE se.HallID = s.HallID AND se.Status = 'AVAILABLE') >= 6
+)
+INSERT INTO @Shows SELECT ShowtimeID, CentreID, HallID, HallType, StartTime FROM candidates WHERE rn <= 3;
+
+DECLARE @Show int, @Centre int, @Hall int, @HallType varchar(30), @Start datetime2, @Booking int, @Code varchar(30);
+DECLARE @Seats TABLE (SeatID int PRIMARY KEY, Price decimal(12,2));
+DECLARE show_cursor CURSOR LOCAL FAST_FORWARD FOR SELECT ShowtimeID, CentreID, HallID, HallType, StartTime FROM @Shows ORDER BY CentreID, StartTime;
+OPEN show_cursor;
+FETCH NEXT FROM show_cursor INTO @Show, @Centre, @Hall, @HallType, @Start;
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    SET @Code = CONCAT('DEMOSEAT-', @Show);
+    IF NOT EXISTS(SELECT 1 FROM dbo.Bookings WHERE BookingCode = @Code)
+    BEGIN
+        DELETE FROM @Seats;
+        INSERT INTO @Seats
+        SELECT TOP 6 se.SeatID, base.BasePrice + ISNULL(ts.Surcharge, 0) + ISNULL(ss.Amount, 0) + ISNULL(hs.Amount, 0)
+        FROM dbo.Seats se
+        CROSS APPLY(SELECT TOP 1 BasePrice FROM dbo.CentrePricing WHERE CentreID = @Centre AND EffectiveFrom <= @Start AND (EffectiveTo IS NULL OR EffectiveTo > @Start) ORDER BY EffectiveFrom DESC, CentrePricingID DESC) base
+        OUTER APPLY(SELECT TOP 1 Surcharge FROM dbo.TimeSlotPricing WHERE CentreID = @Centre AND EffectiveFrom <= @Start AND (EffectiveTo IS NULL OR EffectiveTo > @Start) AND CAST(@Start AS time) BETWEEN StartTime AND EndTime ORDER BY StartTime DESC) ts
+        OUTER APPLY(SELECT SUM(Amount) Amount FROM dbo.Surcharges WHERE SurchargeType = 'SEAT' AND TargetValue = se.SeatType AND EffectiveFrom <= @Start AND (EffectiveTo IS NULL OR EffectiveTo > @Start)) ss
+        OUTER APPLY(SELECT SUM(Amount) Amount FROM dbo.Surcharges WHERE SurchargeType = 'HALL' AND TargetValue = @HallType AND EffectiveFrom <= @Start AND (EffectiveTo IS NULL OR EffectiveTo > @Start)) hs
+        WHERE se.HallID = @Hall AND se.Status = 'AVAILABLE'
+          AND NOT EXISTS (SELECT 1 FROM dbo.BookingSeats bs WHERE bs.ShowtimeID = @Show AND bs.SeatID = se.SeatID AND bs.SeatStatus IN ('HELD', 'CONFIRMED'))
+        ORDER BY CASE WHEN se.SeatRow IN ('D', 'E') THEN 0 ELSE 1 END, CASE WHEN se.SeatNumber BETWEEN 4 AND 9 THEN 0 ELSE 1 END, se.SeatRow, se.SeatNumber;
+        
+        IF (SELECT COUNT(*) FROM @Seats) = 6
+        BEGIN
+            INSERT INTO dbo.Bookings(BookingCode, UserID, ShowtimeID, BookingType, BookingStatus, SubTotal, DiscountAmount, TotalAmount)
+            SELECT @Code, NULL, @Show, 'COUNTER', 'CONFIRMED', SUM(Price), 0, SUM(Price) FROM @Seats;
+            SET @Booking = CAST(SCOPE_IDENTITY() AS int);
+            INSERT INTO dbo.BookingSeats(BookingID, ShowtimeID, SeatID, Price, SeatStatus, HoldUntil)
+            SELECT @Booking, @Show, SeatID, Price, 'CONFIRMED', NULL FROM @Seats;
+        END;
+    END;
+    FETCH NEXT FROM show_cursor INTO @Show, @Centre, @Hall, @HallType, @Start;
+END;
+CLOSE show_cursor;
+DEALLOCATE show_cursor;
+GO
+
+PRINT N'Hoàn tất nạp toàn bộ cấu trúc và dữ liệu CineFlow!';
 GO

@@ -369,21 +369,6 @@
                                 </table>
                             </div>
 
-                            <!-- THÔNG BÁO GHI CHÚ NGUYÊN TẮC NGHIỆP VỤ -->
-                            <div class="cf-dist-note-box">
-                                <div class="cf-dist-note-icon">
-                                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <circle cx="12" cy="12" r="10"></circle>
-                                    <line x1="12" y1="16" x2="12" y2="12"></line>
-                                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                                    </svg>
-                                </div>
-                                <div>
-                                    <strong>Lưu ý nghiệp vụ:</strong> Hệ thống cho phép phân phối phim tới tất cả cụm rạp (bao gồm cả các rạp đang tạm hoãn hoặc bảo trì) để chuẩn bị sẵn sàng khi rạp mở lại.
-                                    Nếu bỏ chọn cụm rạp đã có lịch chiếu trong tương lai, hệ thống sẽ yêu cầu xác nhận để đảm bảo an toàn cho các suất chiếu và vé đã bán.
-                                </div>
-                            </div>
-
                             <!-- KHỐI NÚT HÀNH ĐỘNG HỦY VÀ LƯU PHÂN PHỐI -->
                             <div class="cf-dist-actions-bar">
                                 <button type="button" class="cf-btn-cancel" onclick="location.reload();">

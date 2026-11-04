@@ -1,6 +1,7 @@
 package model.entity;
 
 import java.sql.Date;
+import java.sql.Timestamp;
 
 /**
  * Đại diện cho thông tin một bộ phim trong danh mục phim của CineFlow.
@@ -21,6 +22,8 @@ public class Movie {
     private String trailerUrl;
     private String status;
     private String ageRating;
+    private Timestamp createdAt;
+    private Timestamp updatedAt;
     private int distributedCentres;
     private int totalCentres;
 
@@ -149,6 +152,22 @@ public class Movie {
 
     public void setAgeRating(String ageRating) {
         this.ageRating = ageRating;
+    }
+
+    public Timestamp getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Timestamp createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public Timestamp getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(Timestamp updatedAt) {
+        this.updatedAt = updatedAt;
     }
 
     public boolean isComingSoon() {

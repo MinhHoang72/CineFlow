@@ -3,7 +3,7 @@
 <%@ page import="model.entity.User" %>
 <%@ page import="model.entity.Centre" %>
 <%@ page import="model.dto.showtime.ShowtimeDetailDTO" %>
-<%@ page import="dao.CinemaDAO" %>
+<%@ page import="dao.CinemaDAO, dao.MovieDAO" %>
 <%@ page import="dao.RatingDAO" %>
 <%@ page import="dao.RatingDAO.MovieRatingSummary" %>
 <%@ page import="java.text.SimpleDateFormat" %>
@@ -95,7 +95,7 @@
         try {
             movieId = Integer.parseInt(request.getParameter("movieId"));
         } catch (Exception ignored) {}
-        movie = new CinemaDAO().getMovieById(movieId);
+        movie = new MovieDAO().getMovieById(movieId);
     }
 
     if (movie == null) {

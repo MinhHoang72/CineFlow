@@ -603,3 +603,123 @@ html[data-theme="light"] .cf-manager-main .cf-page-title {
 .staff-current-centre-preview {
     color: #d97706;
 }
+
+/* ---------- Bổ sung cho Toolbar & Meta fields của Tab 1 (Cụm rạp) ---------- */
+.centre-header-inline {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    flex-wrap: nowrap !important;
+    gap: 16px;
+    padding: 16px 20px;
+}
+
+.centre-header-title {
+    margin: 0 !important;
+    font-size: 18px !important;
+    font-weight: 700 !important;
+    white-space: nowrap !important;
+    flex-shrink: 0;
+    color: #ffffff;
+}
+
+.centre-filter-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: nowrap;
+    margin-left: auto;
+}
+
+.centre-search-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+.centre-search-input {
+    width: 200px;
+    min-width: 150px;
+    padding: 7px 12px;
+    font-size: 13px;
+}
+
+.centre-filter-toolbar .select-dark {
+    padding: 7px 10px;
+    font-size: 13px;
+}
+
+.centre-filter-toolbar .cf-page-size-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    font-size: 13px;
+    color: var(--cf-muted, #94a3b8);
+}
+
+.manager-start-date {
+    color: #38bdf8;
+    font-size: 12.5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Light mode overrides */
+html[data-theme="light"] .centre-header-title {
+    color: #0f172a !important;
+}
+
+html[data-theme="light"] .centre-name {
+    color: #0f172a !important;
+}
+
+html[data-theme="light"] .manager-start-date {
+    color: #0284c7 !important;
+}
+
+html[data-theme="light"] .centre-filter-toolbar .cf-page-size-wrap {
+    color: #64748b !important;
+}
+
+@media (max-width: 1200px) {
+    .centre-header-inline {
+        flex-wrap: wrap !important;
+    }
+    .centre-filter-toolbar {
+        margin-left: 0;
+        flex-wrap: wrap;
+    }
+}
+
+/* ---------- Tối ưu hóa bảng cụm rạp để hiển thị trọn vẹn nút Thao tác ---------- */
+#table-centre-assignment {
+    width: 100%;
+}
+
+#table-centre-assignment th,
+#table-centre-assignment td {
+    padding: 12px 10px;
+}
+
+#table-centre-assignment th:last-child,
+#table-centre-assignment td:last-child {
+    text-align: right;
+    width: 110px;
+}
+
+#table-centre-assignment .assignment-actions {
+    justify-content: flex-end;
+}
+
+.centre-city-sub {
+    display: block;
+    font-size: 11.5px;
+    color: var(--cf-muted, #94a3b8);
+    margin-top: 2px;
+}
+
+html[data-theme="light"] .centre-city-sub {
+    color: #64748b !important;
+}

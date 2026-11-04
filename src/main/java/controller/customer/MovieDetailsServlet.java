@@ -1,6 +1,7 @@
 package controller.customer;
 
 import dao.CinemaDAO;
+import dao.MovieDAO;
 import dao.RatingDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -21,6 +22,7 @@ import java.io.IOException;
 @WebServlet(name = "MovieDetailsServlet", urlPatterns = {"/movie/details"})
 public class MovieDetailsServlet extends HttpServlet {
 
+    private final MovieDAO movieDAO = new MovieDAO();
     private final CinemaDAO cinemaDAO = new CinemaDAO();
     private final RatingDAO ratingDAO = new RatingDAO();
 
@@ -58,8 +60,8 @@ public class MovieDetailsServlet extends HttpServlet {
             return;
         }
 
-        // 2. Truy vấn thông tin chi tiết phim từ cơ sở dữ liệu qua CinemaDAO
-        Movie movie = cinemaDAO.getMovieById(movieId);
+        // 2. Truy vấn thông tin chi tiết phim từ cơ sở dữ liệu qua MovieDAO
+        Movie movie = movieDAO.getMovieById(movieId);
         if (movie == null) {
             response.sendError(HttpServletResponse.SC_NOT_FOUND, "Movie not found.");
             return;
@@ -86,7 +88,7 @@ public class MovieDetailsServlet extends HttpServlet {
         request.setAttribute("movie", movie);
         request.setAttribute("ratingSummary", ratingSummary);
         request.setAttribute("showtimes", cinemaDAO.getScheduledShowtimesByMovieId(movieId));
-        request.setAttribute("nowShowingMovies", cinemaDAO.getNowShowingMovies());
+        request.setAttribute("nowShowingMovies", movieDAO.getNowShowingMovies());
 
         // 6. Chuyển tiếp tới giao diện chi tiết phim movieDetail.jsp trong customer
         request.getRequestDispatcher("/WEB-INF/views/customer/movieDetail.jsp").forward(request, response);

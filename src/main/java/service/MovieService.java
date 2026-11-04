@@ -1,6 +1,6 @@
 package service;
 
-import dao.CinemaDAO;
+import dao.MovieDAO;
 import model.entity.Centre;
 import model.entity.Movie;
 
@@ -17,14 +17,14 @@ import java.util.Set;
  */
 public class MovieService {
 
-    private final CinemaDAO cinemaDAO;
+    private final MovieDAO movieDAO;
 
     public MovieService() {
-        this(new CinemaDAO());
+        this(new MovieDAO());
     }
 
-    public MovieService(CinemaDAO cinemaDAO) {
-        this.cinemaDAO = cinemaDAO;
+    public MovieService(MovieDAO movieDAO) {
+        this.movieDAO = movieDAO;
     }
 
     /**
@@ -33,7 +33,21 @@ public class MovieService {
      * @return danh sách các phim sắp xếp mới nhất lên đầu
      */
     public List<Movie> getAllMovies() {
-        return cinemaDAO.getAllMovies();
+        return movieDAO.getAllMovies();
+    }
+
+    /**
+     * Lấy danh sách phim đang chiếu tại các rạp.
+     */
+    public List<Movie> getNowShowingMovies() {
+        return movieDAO.getNowShowingMovies();
+    }
+
+    /**
+     * Lấy danh sách phim sắp chiếu.
+     */
+    public List<Movie> getComingSoonMovies() {
+        return movieDAO.getComingSoonMovies();
     }
 
     /**
@@ -46,7 +60,7 @@ public class MovieService {
         if (movieId <= 0) {
             return null;
         }
-        return cinemaDAO.getMovieById(movieId);
+        return movieDAO.getMovieById(movieId);
     }
 
     /**
@@ -96,9 +110,9 @@ public class MovieService {
             return 0;
         }
         if (movie.getMovieId() == 0) {
-            return cinemaDAO.createMovie(movie);
+            return movieDAO.createMovie(movie);
         } else {
-            boolean updated = cinemaDAO.updateMovie(movie);
+            boolean updated = movieDAO.updateMovie(movie);
             return updated ? movie.getMovieId() : 0;
         }
     }
@@ -117,9 +131,9 @@ public class MovieService {
         }
         String targetStatus = status.trim().toUpperCase();
         if ("ENDED".equals(targetStatus)) {
-            return cinemaDAO.endMovie(movieId);
+            return movieDAO.endMovie(movieId);
         } else {
-            return cinemaDAO.updateMovieStatus(movieId, targetStatus);
+            return movieDAO.updateMovieStatus(movieId, targetStatus);
         }
     }
 
@@ -133,10 +147,10 @@ public class MovieService {
         if (movieId <= 0) {
             return Collections.emptyList();
         }
-        List<Centre> centres = cinemaDAO.getDistributionCentres(movieId);
+        List<Centre> centres = movieDAO.getDistributionCentres(movieId);
         // Quy tắc Opt-out thông minh: Phim mới chưa từng cấu hình phân phối trong CSDL
         // sẽ mặc định phân phối cho toàn bộ các cụm rạp trong chuỗi (kể cả rạp đang bảo trì/tạm hoãn).
-        if (!cinemaDAO.hasDistributionConfig(movieId)) {
+        if (!movieDAO.hasDistributionConfig(movieId)) {
             for (Centre c : centres) {
                 c.setDistributed(true);
             }
@@ -155,6 +169,6 @@ public class MovieService {
         if (movieId <= 0) {
             return false;
         }
-        return cinemaDAO.saveMovieDistribution(movieId, selectedCentreIds);
+        return movieDAO.saveMovieDistribution(movieId, selectedCentreIds);
     }
 }

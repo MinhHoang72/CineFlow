@@ -289,7 +289,7 @@ public class UserDAO {
      * @return true nếu lưu thành công, ngược lại false
      */
     public boolean saveResetToken(int userId, String token, Timestamp expiry) {
-        String sql = "UPDATE Users SET ResetToken = ?, ResetTokenExpiry = ? WHERE UserID = ?";
+        String sql = "UPDATE Users SET ResetToken = ?, ResetTokenExpiry = ?, UpdatedAt = GETDATE() WHERE UserID = ?";
 
         try (Connection connection = DBContext.getConnection();
              PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -922,8 +922,9 @@ public class UserDAO {
         if (u == null) {
             return false;
         }
-        if ("MANAGER".equalsIgnoreCase(u.getRole())) {
-            return "SUCCESS".equals(transferManager(userId, toCentreId, adminId, reason, notes));
+        if ("MANAGER".equalsIgnoreCase(u.getRole()) || u.isManager()) {
+            // Nghiệp vụ: Vị trí Quản lý chỉ được phân công qua Bổ nhiệm & Miễn nhiệm, không áp dụng điều chuyển
+            return false;
         } else {
             return "SUCCESS".equals(transferRegularStaff(userId, toCentreId, adminId, reason, notes, effectiveDate));
         }
@@ -1338,6 +1339,12 @@ public class UserDAO {
      * - Thực hiện trong Transaction với khóa UPDLOCK, HOLDLOCK chống xung đột đồng thời.
      */
     public String transferManager(int managerId, int toCentreId, int adminId, String reason, String notes) {
+        // Quy tắc nghiệp vụ hệ thống: Vị trí Quản lý trung tâm không áp dụng điều chuyển,
+        // chỉ thao tác thông qua Bổ nhiệm & Miễn nhiệm Quản lý tại Tab 1.
+        return "MANAGER_TRANSFER_NOT_ALLOWED";
+    }
+
+    private String _deprecated_transferManager(int managerId, int toCentreId, int adminId, String reason, String notes) {
         Connection connection = null;
         try {
             connection = DBContext.getConnection();

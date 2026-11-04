@@ -9,104 +9,156 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 /**
- * Xử lý truy vấn dữ liệu liên quan đến phim, rạp chiếu (trung tâm) và lịch chiếu.
+ * Xử lý truy vấn dữ liệu liên quan đến rạp chiếu (trung tâm) và lịch chiếu.
+ * Các thao tác truy vấn, tạo, cập nhật phim và phân phối phim được ủy quyền (delegate) sang MovieDAO.
  */
 public class CinemaDAO {
 
+    private final MovieDAO movieDAO = new MovieDAO();
+
+    // =========================================================================
+    // PHƯƠNG THỨC ỦY QUYỀN SANG MovieDAO (Backward Compatibility & Delegation)
+    // =========================================================================
+
     /**
-     * Lấy danh sách phim đang chiếu tại các rạp.
+     * Lấy danh sách phim đang chiếu tại các rạp (ủy quyền sang MovieDAO).
      *
      * @return danh sách phim có trạng thái NOW_SHOWING
      */
     public List<Movie> getNowShowingMovies() {
-        return getMoviesByStatus("NOW_SHOWING");
+        return movieDAO.getNowShowingMovies();
     }
 
     /**
-     * Lấy danh sách phim sắp chiếu.
+     * Lấy danh sách phim sắp chiếu (ủy quyền sang MovieDAO).
      *
      * @return danh sách phim có trạng thái COMING_SOON
      */
     public List<Movie> getComingSoonMovies() {
-        return getMoviesByStatus("COMING_SOON");
+        return movieDAO.getComingSoonMovies();
     }
 
     /**
-     * Lấy danh sách phim theo trạng thái phát hành.
+     * Lấy danh sách phim theo trạng thái phát hành (ủy quyền sang MovieDAO).
      *
      * @param status trạng thái của phim
      * @return danh sách phim thỏa mãn điều kiện
      */
-    private List<Movie> getMoviesByStatus(String status) {
-        String sql = "SELECT MovieID, Title, Description, Duration, Genre, Director, Cast, Language, "
-                + "ReleaseDate, EndDate, PosterURL, TrailerURL, AgeRating, Status FROM Movies WHERE Status = ? "
-                // MovieID is generated when an admin adds a movie, so newest additions lead each home catalog.
-                + "ORDER BY MovieID DESC, ReleaseDate DESC";
-        List<Movie> movies = new ArrayList<>();
-
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, status);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
-                    movies.add(mapMovie(resultSet));
-                }
-            }
-        } catch (Exception exception) {
-            exception.printStackTrace();
-        }
-
-        return movies;
+    public List<Movie> getMoviesByStatus(String status) {
+        return movieDAO.getMoviesByStatus(status);
     }
 
     /**
-     * Lấy thông tin chi tiết của một bộ phim theo mã phim.
+     * Lấy thông tin chi tiết của một bộ phim theo mã phim (ủy quyền sang MovieDAO).
      *
      * @param movieId mã định danh phim
      * @return đối tượng Movie nếu tìm thấy, ngược lại null
      */
     public Movie getMovieById(int movieId) {
-        String sql = "SELECT MovieID, Title, Description, Duration, Genre, Director, Cast, Language, "
-                + "ReleaseDate, EndDate, PosterURL, TrailerURL, AgeRating, Status "
-                + "FROM Movies WHERE MovieID = ?";
-
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setInt(1, movieId);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                if (resultSet.next()) {
-                    Movie movie = new Movie();
-                    movie.setMovieId(resultSet.getInt("MovieID"));
-                    movie.setTitle(resultSet.getString("Title"));
-                    movie.setDescription(resultSet.getString("Description"));
-                    movie.setDuration(resultSet.getInt("Duration"));
-                    movie.setGenre(resultSet.getString("Genre"));
-                    movie.setDirector(resultSet.getString("Director"));
-                    movie.setCast(resultSet.getString("Cast"));
-                    movie.setLanguage(resultSet.getString("Language"));
-                    movie.setReleaseDate(resultSet.getDate("ReleaseDate"));
-                    movie.setEndDate(resultSet.getDate("EndDate"));
-                    movie.setPosterUrl(resultSet.getString("PosterURL"));
-                    movie.setTrailerUrl(resultSet.getString("TrailerURL"));
-                    movie.setAgeRating(resultSet.getString("AgeRating"));
-                    movie.setStatus(resultSet.getString("Status"));
-                    return movie;
-                }
-            }
-        } catch (Exception exception) {
-            exception.printStackTrace();
-        }
-        return null;
+        return movieDAO.getMovieById(movieId);
     }
+
+    /**
+     * Lấy toàn bộ danh sách phim phục vụ quản trị (ủy quyền sang MovieDAO).
+     */
+    public List<Movie> getAllMovies() {
+        return movieDAO.getAllMovies();
+    }
+
+    /**
+     * Tạo mới một bộ phim trong cơ sở dữ liệu (ủy quyền sang MovieDAO).
+     */
+    public int createMovie(Movie movie) {
+        return movieDAO.createMovie(movie);
+    }
+
+    /**
+     * Cập nhật thông tin của một bộ phim (ủy quyền sang MovieDAO).
+     */
+    public boolean updateMovie(Movie movie) {
+        return movieDAO.updateMovie(movie);
+    }
+
+    /**
+     * Lưu trữ (lưu kho) phim thay vì xóa cứng (ủy quyền sang MovieDAO).
+     */
+    public boolean archiveMovie(int movieId) {
+        return movieDAO.archiveMovie(movieId);
+    }
+
+    /**
+     * Cập nhật trạng thái của phim (ủy quyền sang MovieDAO).
+     */
+    public boolean updateMovieStatus(int movieId, String status) {
+        return movieDAO.updateMovieStatus(movieId, status);
+    }
+
+    /**
+     * Kết thúc chiếu phim ngay thời điểm hiện tại (ủy quyền sang MovieDAO).
+     */
+    public boolean endMovie(int movieId) {
+        return movieDAO.endMovie(movieId);
+    }
+
+    /**
+     * Xóa hoàn toàn một bộ phim theo mã định danh (ủy quyền sang MovieDAO).
+     */
+    public boolean deleteMovie(int movieId) {
+        return movieDAO.deleteMovie(movieId);
+    }
+
+    /**
+     * Lấy danh sách các trung tâm kèm trạng thái phân phối của phim (ủy quyền sang MovieDAO).
+     */
+    public List<Centre> getDistributionCentres(int movieId) {
+        return movieDAO.getDistributionCentres(movieId);
+    }
+
+    /**
+     * Lấy thông tin phân phối của phim tại một trung tâm cụ thể (ủy quyền sang MovieDAO).
+     */
+    public List<Centre> getDistributionCentres(int movieId, int centreId) {
+        return movieDAO.getDistributionCentres(movieId, centreId);
+    }
+
+    /**
+     * Đếm số lượng suất chiếu trong tương lai của phim tại cụm rạp (ủy quyền sang MovieDAO).
+     */
+    public int countFutureShowtimes(int movieId, int centreId) {
+        return movieDAO.countFutureShowtimes(movieId, centreId);
+    }
+
+    /**
+     * Kiểm tra xem phim đã có cấu hình phân phối hay chưa (ủy quyền sang MovieDAO).
+     */
+    public boolean hasDistributionConfig(int movieId) {
+        return movieDAO.hasDistributionConfig(movieId);
+    }
+
+    /**
+     * Lưu trạng thái phân phối phim cho một cụm rạp (ủy quyền sang MovieDAO).
+     */
+    public boolean saveMovieDistributionForCentre(int movieId, int centreId, boolean enabled) {
+        return movieDAO.saveMovieDistributionForCentre(movieId, centreId, enabled);
+    }
+
+    /**
+     * Lưu cấu hình phân phối phim cho danh sách rạp được chọn (ủy quyền sang MovieDAO).
+     */
+    public boolean saveMovieDistribution(int movieId, Set<Integer> selectedCentreIDs) {
+        return movieDAO.saveMovieDistribution(movieId, selectedCentreIDs);
+    }
+
+    // =========================================================================
+    // QUẢN LÝ TRUNG TÂM / CỤM RẠP (Centres)
+    // =========================================================================
 
     /**
      * Lấy danh sách tất cả các trung tâm chiếu phim đang hoạt động.
@@ -220,13 +272,13 @@ public class CinemaDAO {
         String sql = "SELECT b.CentreID, b.CentreName, b.Address, b.City, b.Phone, b.Status, "
                 + "COUNT(DISTINCT h.HallID) AS HallCount, "
                 + "COALESCE(SUM(h.Capacity), 0) AS SeatCount, "
-                + "cma.ManagerID, u.FullName AS ManagerName, u.Email AS ManagerEmail, u.Status AS ManagerStatus "
+                + "cma.ManagerID, cma.StartDate AS AssignmentStartDate, u.FullName AS ManagerName, u.Email AS ManagerEmail, u.Phone AS ManagerPhone, u.Status AS ManagerStatus "
                 + "FROM Centres b "
                 + "LEFT JOIN Halls h ON h.CentreID = b.CentreID "
                 + "LEFT JOIN CentreManagerAssignments cma ON cma.CentreID = b.CentreID AND cma.Status = 'ACTIVE' AND cma.EndDate IS NULL "
                 + "LEFT JOIN Users u ON u.UserID = cma.ManagerID "
                 + "WHERE b.CentreID = ? "
-                + "GROUP BY b.CentreID, b.CentreName, b.Address, b.City, b.Phone, b.Status, cma.ManagerID, u.FullName, u.Email, u.Status";
+                + "GROUP BY b.CentreID, b.CentreName, b.Address, b.City, b.Phone, b.Status, cma.ManagerID, cma.StartDate, u.FullName, u.Email, u.Phone, u.Status";
 
         try (Connection connection = DBContext.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -248,6 +300,8 @@ public class CinemaDAO {
                         centre.setManagerName(resultSet.getString("ManagerName"));
                         centre.setManagerEmail(resultSet.getString("ManagerEmail"));
                         centre.setManagerStatus(resultSet.getString("ManagerStatus"));
+                        centre.setManagerPhone(resultSet.getString("ManagerPhone"));
+                        centre.setAssignmentStartDate(resultSet.getTimestamp("AssignmentStartDate"));
                     }
                     return centre;
                 }
@@ -259,218 +313,9 @@ public class CinemaDAO {
         return null;
     }
 
-    /**
-     * Lấy danh sách các trung tâm kèm trạng thái đã được phân phối một bộ phim cụ thể hay chưa,
-     * đồng thời đếm số lượng suất chiếu sắp tới của phim tại từng trung tâm.
-     *
-     * @param movieId mã định danh phim
-     * @return danh sách trung tâm kèm cờ distributed và số suất chiếu tương lai
-     */
-    public List<Centre> getDistributionCentres(int movieId) {
-        String sql = "SELECT b.CentreID, b.CentreName, b.Address, b.City, b.Phone, b.Status, "
-                + "CAST(CASE WHEN bm.IsActive = 1 THEN 1 ELSE 0 END AS bit) AS [Distributed], "
-                + "COALESCE((SELECT COUNT(*) FROM Showtimes s JOIN Halls h ON s.HallID = h.HallID "
-                + "          WHERE s.MovieID = ? AND h.CentreID = b.CentreID AND s.StartTime > GETDATE() "
-                + "          AND UPPER(s.Status) = 'SCHEDULED'), 0) AS [FutureShowtimeCount], "
-                + "COALESCE((SELECT COUNT(t.TicketID) FROM Tickets t "
-                + "          JOIN BookingSeats bs ON t.BookingSeatID = bs.BookingSeatID "
-                + "          JOIN Bookings bk ON bs.BookingID = bk.BookingID "
-                + "          JOIN Showtimes s ON bk.ShowtimeID = s.ShowtimeID "
-                + "          JOIN Halls h ON s.HallID = h.HallID "
-                + "          WHERE s.MovieID = ? AND h.CentreID = b.CentreID AND s.StartTime > GETDATE() "
-                + "          AND UPPER(s.Status) = 'SCHEDULED' AND UPPER(t.TicketStatus) <> 'CANCELLED'), 0) AS [SoldTicketCount] "
-                + "FROM Centres b LEFT JOIN CentreMovies bm ON bm.CentreID = b.CentreID AND bm.MovieID = ? "
-                + "ORDER BY b.City, b.CentreName";
-        List<Centre> centres = new ArrayList<>();
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setInt(1, movieId);
-            ps.setInt(2, movieId);
-            ps.setInt(3, movieId);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    Centre centre = new Centre();
-                    centre.setCentreId(rs.getInt("CentreID"));
-                    centre.setCentreName(rs.getString("CentreName"));
-                    centre.setAddress(rs.getString("Address"));
-                    centre.setCity(rs.getString("City"));
-                    centre.setPhone(rs.getString("Phone"));
-                    centre.setStatus(rs.getString("Status"));
-                    centre.setDistributed(rs.getBoolean("Distributed"));
-                    centre.setFutureShowtimeCount(rs.getInt("FutureShowtimeCount"));
-                    centre.setSoldTicketCount(rs.getInt("SoldTicketCount"));
-                    centres.add(centre);
-                }
-            }
-        } catch (Exception exception) {
-            exception.printStackTrace();
-        }
-        return centres;
-    }
-
-    /**
-     * Đếm số lượng suất chiếu trong tương lai của một bộ phim tại một trung tâm cụ thể.
-     */
-    public int countFutureShowtimes(int movieId, int centreId) {
-        String sql = "SELECT COUNT(*) FROM Showtimes s JOIN Halls h ON s.HallID = h.HallID "
-                + "WHERE s.MovieID = ? AND h.CentreID = ? AND s.StartTime > GETDATE() "
-                + "AND UPPER(s.Status) = 'SCHEDULED'";
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setInt(1, movieId);
-            ps.setInt(2, centreId);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt(1);
-                }
-            }
-        } catch (Exception exception) {
-            exception.printStackTrace();
-        }
-        return 0;
-    }
-
-    /**
-     * Lấy thông tin phân phối của một phim tại một trung tâm cụ thể.
-     *
-     * @param movieId  mã định danh phim
-     * @param centreId mã định danh trung tâm
-     * @return danh sách trung tâm kèm cờ distributed
-     */
-    public List<Centre> getDistributionCentres(int movieId, int centreId) {
-        List<Centre> centres = new ArrayList<>();
-        String sql = "SELECT b.CentreID, b.CentreName, b.Address, b.City, b.Phone, b.Status, "
-                + "CAST(CASE WHEN bm.IsActive = 1 THEN 1 ELSE 0 END AS bit) AS [Distributed] "
-                + "FROM Centres b LEFT JOIN CentreMovies bm ON bm.CentreID = b.CentreID AND bm.MovieID = ? "
-                + "WHERE b.CentreID = ?";
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setInt(1, movieId);
-            ps.setInt(2, centreId);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    Centre centre = new Centre();
-                    centre.setCentreId(rs.getInt("CentreID"));
-                    centre.setCentreName(rs.getString("CentreName"));
-                    centre.setAddress(rs.getString("Address"));
-                    centre.setCity(rs.getString("City"));
-                    centre.setPhone(rs.getString("Phone"));
-                    centre.setStatus(rs.getString("Status"));
-                    centre.setDistributed(rs.getBoolean("Distributed"));
-                    centres.add(centre);
-                }
-            }
-        } catch (Exception exception) {
-            exception.printStackTrace();
-        }
-        return centres;
-    }
-
-    /**
-     * Bật hoặc tắt trạng thái phân phối của một bộ phim tại một trung tâm cụ thể.
-     *
-     * @param movieId  mã định danh phim
-     * @param centreId mã định danh trung tâm
-     * @param enabled  trạng thái kích hoạt phân phối
-     * @return true nếu lưu thành công, ngược lại false
-     */
-    /**
-     * Kiểm tra xem bộ phim đã từng được cấu hình phân phối trong CSDL hay chưa.
-     *
-     * @param movieId mã định danh phim
-     * @return true nếu đã có ít nhất một bản ghi phân phối trong CentreMovies, ngược lại false
-     */
-    public boolean hasDistributionConfig(int movieId) {
-        String sql = "SELECT COUNT(*) FROM CentreMovies WHERE MovieID = ?";
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setInt(1, movieId);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt(1) > 0;
-                }
-            }
-        } catch (Exception exception) {
-            exception.printStackTrace();
-        }
-        return false;
-    }
-
-    public boolean saveMovieDistributionForCentre(int movieId, int centreId, boolean enabled) {
-        String sql = "MERGE CentreMovies AS target USING (SELECT ? AS CentreID, ? AS MovieID) AS source "
-                + "ON target.CentreID = source.CentreID AND target.MovieID = source.MovieID "
-                + "WHEN MATCHED THEN UPDATE SET IsActive = ?, UpdatedAt = GETDATE() "
-                + "WHEN NOT MATCHED THEN INSERT (CentreID, MovieID, IsActive) VALUES (source.CentreID, source.MovieID, ?);";
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setInt(1, centreId);
-            ps.setInt(2, movieId);
-            ps.setBoolean(3, enabled);
-            ps.setBoolean(4, enabled);
-            ps.executeUpdate();
-            return true;
-        } catch (Exception exception) {
-            exception.printStackTrace();
-            return false;
-        }
-    }
-
-    /**
-     * Cập nhật danh sách trung tâm được phân phối phim trong một giao dịch.
-     *
-     * @param movieId           mã định danh phim
-     * @param selectedCentreIDs tập hợp mã các trung tâm được chọn phân phối
-     * @return true nếu lưu thành công, ngược lại false
-     */
-    public boolean saveMovieDistribution(int movieId, Set<Integer> selectedCentreIDs) {
-
-
-
-        String disableAllSql = "UPDATE CentreMovies SET IsActive = 0, UpdatedAt = GETDATE() WHERE MovieID = ?";
-        String mergeSql = "MERGE CentreMovies AS target "
-                + "USING (SELECT ? AS CentreID, ? AS MovieID WHERE EXISTS ("
-                + "SELECT 1 FROM Centres b WHERE b.CentreID = ?)) AS source "
-                + "ON target.CentreID = source.CentreID AND target.MovieID = source.MovieID "
-                + "WHEN MATCHED THEN UPDATE SET IsActive = 1, UpdatedAt = GETDATE() "
-                + "WHEN NOT MATCHED THEN INSERT (CentreID, MovieID, IsActive) VALUES (source.CentreID, source.MovieID, 1);";
-
-        // 1. Mở kết nối và bắt đầu khối Transaction
-        try (Connection connection = DBContext.getConnection()) {
-            connection.setAutoCommit(false);
-            try {
-                // 2. Tạm thời vô hiệu hóa tất cả phân phối cũ của bộ phim này
-                try (PreparedStatement disable = connection.prepareStatement(disableAllSql)) {
-                    disable.setInt(1, movieId);
-                    disable.executeUpdate();
-                }
-
-                // 3. Thực thi câu lệnh MERGE theo Batch để cập nhật/thêm mới các rạp được chọn (kể cả rạp đang bảo trì/tạm hoãn)
-                if (selectedCentreIDs != null && !selectedCentreIDs.isEmpty()) {
-                    try (PreparedStatement merge = connection.prepareStatement(mergeSql)) {
-                        for (Integer centreId : selectedCentreIDs) {
-                            merge.setInt(1, centreId);
-                            merge.setInt(2, movieId);
-                            merge.setInt(3, centreId);
-                            merge.addBatch();
-                        }
-                        merge.executeBatch();
-                    }
-                }
-
-                // 5. Xác nhận thành công (Commit Transaction)
-                connection.commit();
-                return true;
-            } catch (Exception exception) {
-                // 6. Hoàn tác thay đổi nếu xảy ra lỗi trong Transaction
-                connection.rollback();
-                throw exception;
-            }
-        } catch (Exception exception) {
-            exception.printStackTrace();
-            return false;
-        }
-    }
-
+    // =========================================================================
+    // QUẢN LÝ SUẤT CHIẾU VÀ GIÁ VÉ TỰ ĐỘNG (Showtimes & Dynamic Pricing)
+    // =========================================================================
 
     private static final String DYNAMIC_PRICE_SELECT = "(COALESCE(bp.BasePrice, 80000) + COALESCE(tsp.Surcharge, 0) + COALESCE(sur.Amount, 0)) AS BaseTicketPrice ";
     private static final String DYNAMIC_PRICE_APPLY = "OUTER APPLY ( "
@@ -629,199 +474,9 @@ public class CinemaDAO {
         return showtimes;
     }
 
-    /**
-     * Lấy toàn bộ danh sách phim để phục vụ trang quản trị,
-     * bao gồm số lượng trung tâm đang phân phối phim và tổng số trung tâm hoạt động.
-     *
-     * @return danh sách tất cả các phim
-     */
-    public List<Movie> getAllMovies() {
-        String sql = "SELECT m.MovieID, m.Title, m.Description, m.Duration, m.Genre, m.Director, m.Cast, m.Language, "
-                + "m.ReleaseDate, m.EndDate, m.PosterURL, m.TrailerURL, m.AgeRating, m.Status, "
-                + "(SELECT COUNT(*) FROM Centres) AS TotalCentres, "
-                + "COALESCE((SELECT COUNT(DISTINCT cm.CentreID) FROM CentreMovies cm "
-                + "          JOIN Centres c ON c.CentreID = cm.CentreID "
-                + "          WHERE cm.MovieID = m.MovieID AND cm.IsActive = 1), 0) AS DistributedCentres "
-                + "FROM Movies m ORDER BY m.MovieID DESC";
-        List<Movie> movies = new ArrayList<>();
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql);
-             ResultSet rs = statement.executeQuery()) {
-            while (rs.next()) {
-                movies.add(mapMovie(rs));
-            }
-        } catch (Exception exception) {
-            exception.printStackTrace();
-        }
-        return movies;
-    }
-
-    /**
-     * Tạo mới một bộ phim trong cơ sở dữ liệu.
-     *
-     * @param movie đối tượng thông tin phim cần tạo
-     * @return mã định danh phim tự sinh nếu thành công, ngược lại 0
-     */
-    public int createMovie(Movie movie) {
-        String sql = "INSERT INTO Movies (Title, Description, Duration, Genre, Director, Cast, Language, "
-                + "ReleaseDate, EndDate, PosterURL, TrailerURL, AgeRating, Status) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        // 1. Mở kết nối và chuẩn bị PreparedStatement với cờ trả về khóa tự sinh
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            // 2. Thiết lập các tham số thông tin phim vào câu lệnh SQL
-            setMovieParams(ps, movie, false);
-            ps.executeUpdate();
-
-            // 3. Lấy mã MovieID mới sinh từ cơ sở dữ liệu
-            try (ResultSet keys = ps.getGeneratedKeys()) {
-                if (keys.next()) {
-                    return keys.getInt(1);
-                }
-            }
-        } catch (Exception exception) {
-            exception.printStackTrace();
-        }
-        return 0;
-    }
-
-    /**
-     * Cập nhật thông tin của một bộ phim.
-     *
-     * @param movie đối tượng phim đã thay đổi thông tin
-     * @return true nếu cập nhật thành công, ngược lại false
-     */
-    public boolean updateMovie(Movie movie) {
-        String sql = "UPDATE Movies SET Title = ?, Description = ?, Duration = ?, Genre = ?, Director = ?, "
-                + "Cast = ?, Language = ?, ReleaseDate = ?, EndDate = ?, PosterURL = ?, TrailerURL = ?, "
-                + "AgeRating = ?, Status = ?, UpdatedAt = GETDATE() WHERE MovieID = ?";
-        // 1. Mở kết nối và chuẩn bị câu lệnh cập nhật phim
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
-            // 2. Điền các tham số và cập nhật thông tin
-            setMovieParams(ps, movie, true);
-            return ps.executeUpdate() > 0;
-        } catch (Exception exception) {
-            exception.printStackTrace();
-            return false;
-        }
-    }
-
-    /**
-     * Lưu trữ (lưu kho) phim thay vì xóa cứng.
-     *
-     * @param movieId mã định danh phim
-     * @return true nếu cập nhật thành công, ngược lại false
-     */
-    public boolean archiveMovie(int movieId) {
-        return updateMovieStatus(movieId, "ARCHIVED");
-    }
-
-    /**
-     * Cập nhật trạng thái của phim (COMING_SOON, NOW_SHOWING, ENDED, ARCHIVED).
-     *
-     * @param movieId mã định danh phim
-     * @param status trạng thái mới
-     * @return true nếu cập nhật thành công, ngược lại false
-     */
-    public boolean updateMovieStatus(int movieId, String status) {
-        String sql = "UPDATE Movies SET Status = ?, UpdatedAt = GETDATE() WHERE MovieID = ?";
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setString(1, status);
-            ps.setInt(2, movieId);
-            return ps.executeUpdate() > 0;
-        } catch (Exception exception) {
-            exception.printStackTrace();
-            return false;
-        }
-    }
-
-    /**
-     * Kết thúc chiếu phim ngay thời điểm hiện tại: Cập nhật Status = 'ENDED' và gán EndDate = ngày hôm nay.
-     *
-     * @param movieId mã định danh phim
-     * @return true nếu cập nhật thành công, ngược lại false
-     */
-    public boolean endMovie(int movieId) {
-        String sql = "UPDATE Movies SET Status = 'ENDED', EndDate = CASE WHEN EndDate IS NULL OR EndDate > CAST(GETDATE() AS DATE) THEN CAST(GETDATE() AS DATE) ELSE EndDate END, UpdatedAt = GETDATE() WHERE MovieID = ?";
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setInt(1, movieId);
-            return ps.executeUpdate() > 0;
-        } catch (Exception exception) {
-            exception.printStackTrace();
-            return false;
-        }
-    }
-
-    /**
-     * Xóa hoàn toàn một bộ phim theo mã định danh.
-     *
-     * @param movieId mã định danh phim
-     * @return true nếu xóa thành công, ngược lại false
-     */
-    public boolean deleteMovie(int movieId) {
-        String sql = "DELETE FROM Movies WHERE MovieID = ?";
-        // 1. Mở kết nối và thực thi lệnh xóa phim theo MovieID
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setInt(1, movieId);
-            return ps.executeUpdate() > 0;
-        } catch (Exception exception) {
-            exception.printStackTrace();
-            return false;
-        }
-    }
-
-    /**
-     * Chuyển đổi dữ liệu từ dòng ResultSet sang đối tượng Movie.
-     */
-    private Movie mapMovie(ResultSet rs) throws SQLException {
-        Movie movie = new Movie();
-        movie.setMovieId(rs.getInt("MovieID"));
-        movie.setTitle(rs.getString("Title"));
-        movie.setDescription(rs.getString("Description"));
-        movie.setDuration(rs.getInt("Duration"));
-        movie.setGenre(rs.getString("Genre"));
-        movie.setDirector(rs.getString("Director"));
-        movie.setCast(rs.getString("Cast"));
-        movie.setLanguage(rs.getString("Language"));
-        movie.setReleaseDate(rs.getDate("ReleaseDate"));
-        movie.setEndDate(rs.getDate("EndDate"));
-        movie.setPosterUrl(rs.getString("PosterURL"));
-        movie.setTrailerUrl(rs.getString("TrailerURL"));
-        movie.setAgeRating(rs.getString("AgeRating"));
-        movie.setStatus(rs.getString("Status"));
-        try {
-            movie.setDistributedCentres(rs.getInt("DistributedCentres"));
-            movie.setTotalCentres(rs.getInt("TotalCentres"));
-        } catch (SQLException ignored) {
-        }
-        return movie;
-    }
-
-    /**
-     * Thiết lập các tham số vào PreparedStatement cho thao tác tạo hoặc cập nhật phim.
-     */
-    private void setMovieParams(PreparedStatement ps, Movie movie, boolean update) throws SQLException {
-        ps.setString(1, movie.getTitle());
-        ps.setString(2, movie.getDescription());
-        ps.setInt(3, movie.getDuration());
-        ps.setString(4, movie.getGenre());
-        ps.setString(5, movie.getDirector());
-        ps.setString(6, movie.getCast());
-        ps.setString(7, movie.getLanguage());
-        ps.setDate(8, movie.getReleaseDate());
-        ps.setDate(9, movie.getEndDate());
-        ps.setString(10, movie.getPosterUrl());
-        ps.setString(11, movie.getTrailerUrl());
-        ps.setString(12, movie.getAgeRating());
-        ps.setString(13, movie.getStatus());
-        if (update) {
-            ps.setInt(14, movie.getMovieId());
-        }
-    }
+    // =========================================================================
+    // QUẢN LÝ GÁN QUẢN LÝ CHO CỤM RẠP (Centre Manager Assignments)
+    // =========================================================================
 
     /**
      * Lấy toàn bộ danh sách trung tâm cùng thông tin Quản lý phụ trách tương ứng.
@@ -832,12 +487,12 @@ public class CinemaDAO {
         String sql = "SELECT b.CentreID, b.CentreName, b.Address, b.City, b.Phone, b.Status, "
                 + "COUNT(DISTINCT h.HallID) AS HallCount, "
                 + "COALESCE(SUM(h.Capacity), 0) AS SeatCount, "
-                + "cma.ManagerID, u.FullName AS ManagerName, u.Email AS ManagerEmail, u.Status AS ManagerStatus "
+                + "cma.ManagerID, cma.StartDate AS AssignmentStartDate, u.FullName AS ManagerName, u.Email AS ManagerEmail, u.Phone AS ManagerPhone, u.Status AS ManagerStatus "
                 + "FROM Centres b "
                 + "LEFT JOIN Halls h ON h.CentreID = b.CentreID "
                 + "LEFT JOIN CentreManagerAssignments cma ON cma.CentreID = b.CentreID AND cma.Status = 'ACTIVE' AND cma.EndDate IS NULL "
                 + "LEFT JOIN Users u ON u.UserID = cma.ManagerID "
-                + "GROUP BY b.CentreID, b.CentreName, b.Address, b.City, b.Phone, b.Status, cma.ManagerID, u.FullName, u.Email, u.Status "
+                + "GROUP BY b.CentreID, b.CentreName, b.Address, b.City, b.Phone, b.Status, cma.ManagerID, cma.StartDate, u.FullName, u.Email, u.Phone, u.Status "
                 + "ORDER BY b.CentreID DESC";
         List<Centre> list = new ArrayList<>();
         try (Connection connection = DBContext.getConnection();
@@ -860,6 +515,8 @@ public class CinemaDAO {
                     centre.setManagerName(rs.getString("ManagerName"));
                     centre.setManagerEmail(rs.getString("ManagerEmail"));
                     centre.setManagerStatus(rs.getString("ManagerStatus"));
+                    centre.setManagerPhone(rs.getString("ManagerPhone"));
+                    centre.setAssignmentStartDate(rs.getTimestamp("AssignmentStartDate"));
                 }
                 list.add(centre);
             }
@@ -921,4 +578,3 @@ public class CinemaDAO {
         }
     }
 }
-

@@ -63,8 +63,6 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        <title>Quản lý Tài khoản Khách hàng | CineFlow Admin</title>
-
         <link rel="stylesheet"
               href="${pageContext.request.contextPath}/css/common/reset.css">
 

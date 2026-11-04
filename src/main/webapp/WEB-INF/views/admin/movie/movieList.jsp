@@ -331,7 +331,7 @@
                 setTimeout(function() {
                     if (alert.parentNode) alert.parentNode.removeChild(alert);
                 }, 400);
-            }, 3000);
+            }, 1000);
         });
     });
 

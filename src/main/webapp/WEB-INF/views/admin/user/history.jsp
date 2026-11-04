@@ -54,10 +54,8 @@
             <!-- TIÊU ĐỀ TRANG -->
             <div class="cf-page-header cf-page-header-wrap">
                 <div class="cf-page-header-info">
-                    <div class="cf-page-icon icon-history">📜</div>
                     <div>
                         <h1 class="cf-page-title">Nhật ký nhân sự</h1>
-                        <p class="cf-page-sub">Lịch sử bổ nhiệm và điều chuyển trong hệ thống.</p>
                     </div>
                 </div>
             </div>
@@ -73,71 +71,18 @@
                     <div class="cf-kpi-value kpi-active"><%= request.getAttribute("kpiActiveAssignments") != null ? request.getAttribute("kpiActiveAssignments") : 0 %></div>
                 </div>
                 <div class="cf-kpi-card">
-                    <span class="cf-kpi-label kpi-transfer">Lượt điều chuyển</span>
+                    <span class="cf-kpi-label kpi-transfer">Lượt điều chuyển nhân viên</span>
                     <div class="cf-kpi-value kpi-transfer"><%= request.getAttribute("kpiTotalTransfers") != null ? request.getAttribute("kpiTotalTransfers") : 0 %></div>
                 </div>
             </div>
 
-            <!-- THANH BỘ LỌC CƠ SỞ RẠP, SẮP XẾP MÃ & TÌM KIẾM -->
-            <div class="cf-card history-filter-card">
-                <form method="get" action="${pageContext.request.contextPath}/admin/transfers/history" class="history-filter-form">
-                    <input type="hidden" name="tab" id="filterTabInput" value="<%= activeTab %>">
-                    
-                    <div class="history-filter-group">
-                        <span class="history-filter-label">Chi nhánh</span>
-                        <select name="centreId" onchange="this.form.submit()" class="history-filter-select centre-select">
-                            <option value="">Tất cả chi nhánh</option>
-                            <% if (activeCentres != null) for (Centre c : activeCentres) { %>
-                                <option value="<%= c.getCentreId() %>" <%= (selectedCentreId != null && selectedCentreId == c.getCentreId()) ? "selected" : "" %>>
-                                    <%= c.getCentreName() %> (<%= c.getCity() %>)
-                                </option>
-                            <% } %>
-                        </select>
-                        <% if (selectedCentreId != null) { %>
-                            <a href="${pageContext.request.contextPath}/admin/transfers/history?tab=<%= activeTab %>" class="cf-btn cf-btn-secondary cf-btn-sm btn-clear-filter">Xóa lọc</a>
-                        <% } %>
-
-                        <span class="history-filter-label sort-label">Sắp xếp</span>
-                        <select id="historySortDropdown" onchange="applyHistorySort(this.value)" class="history-filter-select">
-                            <option value="id_desc">Mã mới nhất</option>
-                            <option value="id_asc">Mã cũ nhất</option>
-                            <option value="emp_asc">Mã nhân sự tăng dần</option>
-                            <option value="emp_desc">Mã nhân sự giảm dần</option>
-                        </select>
-
-                    </div>
-
-                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                        <div style="position: relative; display: inline-flex; align-items: center;">
-                            <input type="text" id="liveSearchInput" placeholder="Tìm theo mã, tên hoặc tài khoản..." class="history-search-input">
-                            <button type="button" id="historySearchClearBtn" class="cf-search-clear-btn" style="display: none;" title="Xóa tìm kiếm">✕</button>
-                        </div>
-                        <select id="transferRoleFilter" onchange="filterTransferHistory()" class="history-role-select">
-                            <option value="">Tất cả chức vụ</option>
-                            <option value="TICKET_SALES_STAFF">Bán vé</option>
-                            <option value="TICKET_CHECKER_STAFF">Soát vé</option>
-                        </select>
-
-                        <div class="cf-page-size-wrap">
-                            <span>Hiển thị:</span>
-                            <select id="historyPageSizeSelect" class="cf-select-sm">
-                                <option value="10" selected>10 bản ghi</option>
-                                <option value="20">20 bản ghi</option>
-                                <option value="50">50 bản ghi</option>
-                                <option value="ALL">Tất cả</option>
-                            </select>
-                        </div>
-                    </div>
-                </form>
-            </div>
-
-            <!-- THANH ĐIỀU HƯỚNG TAB LỊCH SỬ CHUYÊN BIỆT -->
+            <!-- THANH ĐIỀU HƯỚNG TAB LỊCH SỬ CHUYÊN BIỆT (GIỐNG TRANSFERS.JSP) -->
             <div class="tab-nav">
                 <button type="button" class="tab-btn <%= "assignment".equals(activeTab) ? "active" : "" %>" onclick="switchHistoryTab('tab-assignment-history', 'assignment')">
-                    Bổ nhiệm &amp; miễn nhiệm
+                    🏛 Bổ nhiệm &amp; Miễn nhiệm
                 </button>
                 <button type="button" class="tab-btn <%= "transfer".equals(activeTab) ? "active" : "" %>" onclick="switchHistoryTab('tab-transfer-history', 'transfer')">
-                    Điều chuyển
+                    👥 Điều chuyển nhân viên
                 </button>
             </div>
 
@@ -146,9 +91,54 @@
             <!-- ==================================================================== -->
             <div class="tab-pane <%= "assignment".equals(activeTab) ? "active" : "" %>" id="tab-assignment-history">
                 <section class="cf-card">
-                    <div class="cf-card-header">
-                        <div>
-                            <h2>Lịch sử Bổ nhiệm &amp; Miễn nhiệm Quản lý Trung tâm</h2>
+                    <div class="cf-card-header cf-card-header-flex">
+                        <h2>Lịch sử Bổ nhiệm &amp; Miễn nhiệm</h2>
+                        <div class="staff-filter-toolbar">
+                            <form method="get" action="${pageContext.request.contextPath}/admin/transfers/history" class="staff-filter-form">
+                                <input type="hidden" name="tab" value="assignment">
+                                
+                                <span class="history-filter-label">Chi nhánh</span>
+                                <select name="centreId" onchange="this.form.submit()" class="history-filter-select centre-select">
+                                    <option value="">Tất cả chi nhánh</option>
+                                    <% if (activeCentres != null) for (Centre c : activeCentres) { %>
+                                        <option value="<%= c.getCentreId() %>" <%= (selectedCentreId != null && selectedCentreId == c.getCentreId()) ? "selected" : "" %>>
+                                            <%= c.getCentreName() %> (<%= c.getCity() %>)
+                                        </option>
+                                    <% } %>
+                                </select>
+                                <% if (selectedCentreId != null) { %>
+                                    <a href="${pageContext.request.contextPath}/admin/transfers/history?tab=assignment" class="cf-btn cf-btn-secondary cf-btn-sm btn-clear-filter" title="Xóa lọc chi nhánh">✕</a>
+                                <% } %>
+
+                                <span class="history-filter-label">Sắp xếp</span>
+                                <select id="assignmentSortDropdown" onchange="applyHistorySort(this.value, 'table-assignment')" class="history-filter-select sort-select">
+                                    <option value="id_desc">Mã mới nhất</option>
+                                    <option value="id_asc">Mã cũ nhất</option>
+                                    <option value="emp_asc">Mã nhân sự tăng dần</option>
+                                    <option value="emp_desc">Mã nhân sự giảm dần</option>
+                                </select>
+
+                                <div class="history-search-wrap">
+                                    <span class="history-search-icon">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <circle cx="11" cy="11" r="8"></circle>
+                                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                        </svg>
+                                    </span>
+                                    <input type="text" id="assignmentSearchInput" placeholder="Tìm kiếm..." class="history-search-input">
+                                    <button type="button" id="assignmentSearchClearBtn" class="cf-search-clear-btn" style="display: none;" title="Xóa tìm kiếm">✕</button>
+                                </div>
+
+                                <div class="cf-page-size-wrap">
+                                    <span class="history-filter-label">Hiển thị:</span>
+                                    <select id="assignmentPageSizeSelect" class="cf-select-sm history-filter-select">
+                                        <option value="10" selected>10 bản ghi</option>
+                                        <option value="20">20 bản ghi</option>
+                                        <option value="50">50 bản ghi</option>
+                                        <option value="ALL">Tất cả</option>
+                                    </select>
+                                </div>
+                            </form>
                         </div>
                     </div>
                     <div class="cf-card-body">
@@ -218,17 +208,69 @@
                             <!-- Các nút phân trang được sinh động bởi JS -->
                         </div>
                     </div>
+                
                 </section>
             </div>
 
             <!-- ==================================================================== -->
-            <!-- TAB 2: LỊCH SỬ ĐIỀU CHUYỂN NHÂN SỰ (STAFF TRANSFER) -->
+            <!-- TAB 2: LỊCH SỬ ĐIỀU CHUYỂN NHÂN SỰ TOÀN HỆ THỐNG (STAFF TRANSFERS) -->
             <!-- ==================================================================== -->
             <div class="tab-pane <%= "transfer".equals(activeTab) ? "active" : "" %>" id="tab-transfer-history">
                 <section class="cf-card">
-                    <div class="cf-card-header">
-                        <div>
-                            <h2>Điều chuyển nhân sự</h2>
+                    <div class="cf-card-header cf-card-header-flex">
+                        <h2>Điều chuyển nhân viên</h2>
+                        <div class="staff-filter-toolbar">
+                            <form method="get" action="${pageContext.request.contextPath}/admin/transfers/history" class="staff-filter-form">
+                                <input type="hidden" name="tab" value="transfer">
+                                
+                                <span class="history-filter-label">Chi nhánh</span>
+                                <select name="centreId" onchange="this.form.submit()" class="history-filter-select centre-select">
+                                    <option value="">Tất cả chi nhánh</option>
+                                    <% if (activeCentres != null) for (Centre c : activeCentres) { %>
+                                        <option value="<%= c.getCentreId() %>" <%= (selectedCentreId != null && selectedCentreId == c.getCentreId()) ? "selected" : "" %>>
+                                            <%= c.getCentreName() %> (<%= c.getCity() %>)
+                                        </option>
+                                    <% } %>
+                                </select>
+                                <% if (selectedCentreId != null) { %>
+                                    <a href="${pageContext.request.contextPath}/admin/transfers/history?tab=transfer" class="cf-btn cf-btn-secondary cf-btn-sm btn-clear-filter" title="Xóa lọc chi nhánh">✕</a>
+                                <% } %>
+
+                                <span class="history-filter-label">Sắp xếp</span>
+                                <select id="transferSortDropdown" onchange="applyHistorySort(this.value, 'table-transfer')" class="history-filter-select sort-select">
+                                    <option value="id_desc">Mã mới nhất</option>
+                                    <option value="id_asc">Mã cũ nhất</option>
+                                    <option value="emp_asc">Mã nhân sự tăng dần</option>
+                                    <option value="emp_desc">Mã nhân sự giảm dần</option>
+                                </select>
+
+                                <select id="transferRoleFilter" onchange="filterTransferHistory()" class="history-filter-select history-role-select">
+                                    <option value="">Tất cả chức vụ</option>
+                                    <option value="TICKET_SALES_STAFF">Bán vé</option>
+                                    <option value="TICKET_CHECKER_STAFF">Soát vé</option>
+                                </select>
+
+                                <div class="history-search-wrap">
+                                    <span class="history-search-icon">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <circle cx="11" cy="11" r="8"></circle>
+                                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                        </svg>
+                                    </span>
+                                    <input type="text" id="transferSearchInput" placeholder="Tìm kiếm..." class="history-search-input">
+                                    <button type="button" id="transferSearchClearBtn" class="cf-search-clear-btn" style="display: none;" title="Xóa tìm kiếm">✕</button>
+                                </div>
+
+                                <div class="cf-page-size-wrap">
+                                    <span class="history-filter-label">Hiển thị:</span>
+                                    <select id="transferPageSizeSelect" class="cf-select-sm history-filter-select">
+                                        <option value="10" selected>10 bản ghi</option>
+                                        <option value="20">20 bản ghi</option>
+                                        <option value="50">50 bản ghi</option>
+                                        <option value="ALL">Tất cả</option>
+                                    </select>
+                                </div>
+                            </form>
                         </div>
                     </div>
                     <div class="cf-card-body">
@@ -239,8 +281,8 @@
                                         <th>Mã</th>
                                         <th>Thời điểm</th>
                                         <th>Ngày hiệu lực</th>
-                                        <th>Mã nhân sự</th>
-                                        <th>Nhân sự</th>
+                                        <th>Mã nhân viên</th>
+                                        <th>Nhân viên</th>
                                         <th>Chức vụ</th>
                                         <th>Từ trung tâm</th>
                                         <th>Đến trung tâm</th>
@@ -271,7 +313,7 @@
                                                     <span class="history-date-sub"><%= t.getTransferDate() != null ? sdfDate.format(t.getTransferDate()) : "—" %></span>
                                                 <% } %>
                                             </td>
-                                            <td><code class="cf-badge <%= "MANAGER".equalsIgnoreCase(t.getUserRole()) ? "cf-badge-primary" : "cf-badge-info" %> cf-badge-emp"><%= t.getEmployeeCode() %></code></td>
+                                            <td><code class="cf-badge <%= "cf-badge-info" %> cf-badge-emp"><%= t.getEmployeeCode() %></code></td>
                                             <td>
                                                 <strong class="history-cell-title"><%= t.getUserName() %></strong>
                                                 <small class="history-cell-sub">@<%= t.getUserAccount() %></small>
@@ -308,6 +350,7 @@
                             <!-- Các nút phân trang được sinh động bởi JS -->
                         </div>
                     </div>
+                
                 </section>
             </div>
         </main>
@@ -322,13 +365,16 @@
     function switchHistoryTab(tabId, tabName) {
         document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
         document.querySelectorAll('.tab-pane').forEach(function(p) { p.classList.remove('active'); });
-        event.target.classList.add('active');
-        document.getElementById(tabId).classList.add('active');
-        var roleFilter = document.getElementById('transferRoleFilter');
-        if (roleFilter) roleFilter.style.display = tabName === 'transfer' ? '' : 'none';
+        
+        if (window.event && window.event.currentTarget) {
+            window.event.currentTarget.classList.add('active');
+        } else if (window.event && window.event.target) {
+            var btn = window.event.target.closest('.tab-btn');
+            if (btn) btn.classList.add('active');
+        }
 
-        var filterTab = document.getElementById('filterTabInput');
-        if (filterTab) filterTab.value = tabName;
+        var targetPane = document.getElementById(tabId);
+        if (targetPane) targetPane.classList.add('active');
 
         if (window.history.replaceState) {
             var url = new URL(window.location);
@@ -388,43 +434,44 @@
     }
 
     // Xử lý khi chọn dropdown sắp xếp
-    function applyHistorySort(sortVal) {
-        var activeTab = document.querySelector('.tab-pane.active');
-        if (!activeTab) return;
-        var table = activeTab.querySelector('table');
-        if (!table) return;
+    function applyHistorySort(sortVal, targetTableId) {
+        var tableId = targetTableId;
+        if (!tableId) {
+            var activeTab = document.querySelector('.tab-pane.active');
+            if (!activeTab) return;
+            var table = activeTab.querySelector('table');
+            if (!table) return;
+            tableId = table.id;
+        }
 
         if (sortVal === 'id_asc') {
-            sortTableByCol(table.id, 0, 'num');
-            if (sortStates[table.id + '_0'] !== 'asc') sortTableByCol(table.id, 0, 'num');
+            sortTableByCol(tableId, 0, 'num');
+            if (sortStates[tableId + '_0'] !== 'asc') sortTableByCol(tableId, 0, 'num');
         } else if (sortVal === 'id_desc') {
-            sortTableByCol(table.id, 0, 'num');
-            if (sortStates[table.id + '_0'] !== 'desc') sortTableByCol(table.id, 0, 'num');
+            sortTableByCol(tableId, 0, 'num');
+            if (sortStates[tableId + '_0'] !== 'desc') sortTableByCol(tableId, 0, 'num');
         } else if (sortVal === 'emp_asc') {
-            var empColIndex = table.id === 'table-assignment' ? 2 : 3;
-            sortTableByCol(table.id, empColIndex, 'str');
-            if (sortStates[table.id + '_' + empColIndex] !== 'asc') sortTableByCol(table.id, empColIndex, 'str');
+            var empColIndex = tableId === 'table-assignment' ? 2 : 3;
+            sortTableByCol(tableId, empColIndex, 'str');
+            if (sortStates[tableId + '_' + empColIndex] !== 'asc') sortTableByCol(tableId, empColIndex, 'str');
         } else if (sortVal === 'emp_desc') {
-            var empColIndex = table.id === 'table-assignment' ? 2 : 3;
-            sortTableByCol(table.id, empColIndex, 'str');
-            if (sortStates[table.id + '_' + empColIndex] !== 'desc') sortTableByCol(table.id, empColIndex, 'str');
+            var empColIndex = tableId === 'table-assignment' ? 2 : 3;
+            sortTableByCol(tableId, empColIndex, 'str');
+            if (sortStates[tableId + '_' + empColIndex] !== 'desc') sortTableByCol(tableId, empColIndex, 'str');
         }
     }
 
     // Khởi tạo phân trang & tìm kiếm client-side
     document.addEventListener('DOMContentLoaded', function() {
-        var roleFilter = document.getElementById('transferRoleFilter');
-        if (roleFilter) roleFilter.style.display = '<%= "transfer".equals(activeTab) ? "" : "none" %>';
-
         assignmentPager = initTablePagination({
             tableBodyId: 'tbody-assignment',
             rowSelector: 'tr.history-row',
             emptyRowId: 'assignmentEmptyRow',
             paginationId: 'assignmentPaginationControls',
             infoDisplayId: 'assignmentPaginationInfo',
-            pageSizeSelectId: 'historyPageSizeSelect',
-            searchInputId: 'liveSearchInput',
-            searchClearBtnId: 'historySearchClearBtn',
+            pageSizeSelectId: 'assignmentPageSizeSelect',
+            searchInputId: 'assignmentSearchInput',
+            searchClearBtnId: 'assignmentSearchClearBtn',
             itemLabel: 'bản ghi',
             defaultPageSize: 10
         });
@@ -435,9 +482,9 @@
             emptyRowId: 'transferEmptyRow',
             paginationId: 'transferPaginationControls',
             infoDisplayId: 'transferPaginationInfo',
-            pageSizeSelectId: 'historyPageSizeSelect',
-            searchInputId: 'liveSearchInput',
-            searchClearBtnId: 'historySearchClearBtn',
+            pageSizeSelectId: 'transferPageSizeSelect',
+            searchInputId: 'transferSearchInput',
+            searchClearBtnId: 'transferSearchClearBtn',
             itemLabel: 'bản ghi',
             defaultPageSize: 10,
             customFilter: function(row) {
@@ -453,8 +500,9 @@
             if (transferPager) transferPager.render();
         };
 
-        if (roleFilter) {
-            roleFilter.addEventListener('change', function() {
+        var rf = document.getElementById('transferRoleFilter');
+        if (rf) {
+            rf.addEventListener('change', function() {
                 if (transferPager) transferPager.render();
             });
         }

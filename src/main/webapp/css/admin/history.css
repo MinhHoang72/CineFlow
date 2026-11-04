@@ -83,74 +83,123 @@ html[data-theme="light"] .cf-manager-main .cf-page-title {
     color: #38bdf8 !important;
 }
 
-/* ---------- Bộ lọc & Thanh công cụ ---------- */
-.history-filter-card {
-    margin-bottom: 22px;
-    padding: 16px 20px;
-}
-
-.history-filter-form {
-    display: flex;
-    gap: 14px;
-    align-items: center;
-    flex-wrap: wrap;
-    justify-content: space-between;
-}
-
-.history-filter-group {
-    display: flex;
+/* ---------- Card Header & Toolbar (Liền vào khung lịch sử như transfers.jsp) ---------- */
+.cf-card-header-flex {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    flex-wrap: nowrap !important;
     gap: 12px;
+    padding: 14px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.cf-card-header-flex h2 {
+    margin: 0 !important;
+    font-size: 17px !important;
+    font-weight: 700 !important;
+    white-space: nowrap !important;
+    flex-shrink: 0;
+    color: #ffffff;
+}
+
+.staff-filter-toolbar {
+    display: flex;
+    gap: 8px;
     align-items: center;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+.staff-filter-form {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: nowrap;
 }
 
 .history-filter-label {
     font-size: 13px;
     font-weight: 600;
     color: #94a3b8;
-}
-
-.history-filter-label.sort-label {
-    margin-left: 8px;
+    white-space: nowrap;
 }
 
 .history-filter-select {
-    padding: 8px 14px;
+    height: 32px;
+    padding: 4px 10px;
     border: 1px solid #334155;
     border-radius: 6px;
-    font-size: 13px;
-    background: #1e293b;
+    font-size: 12.5px;
+    background: #0f172a;
     color: #f8fafc;
     outline: none;
-    transition: border-color 0.2s;
+    box-sizing: border-box;
+    transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .history-filter-select:focus {
     border-color: #38bdf8;
+    box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.15);
 }
 
 .history-filter-select.centre-select {
-    min-width: 200px;
+    min-width: 130px;
+    max-width: 160px;
+}
+
+.history-filter-select.sort-select {
+    min-width: 105px;
 }
 
 .btn-clear-filter {
     color: #94a3b8 !important;
+    height: 32px;
+    padding: 0 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    border-radius: 6px;
+    font-size: 12px;
+}
+
+.history-search-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+.history-search-icon {
+    position: absolute;
+    left: 8px;
+    color: #64748b;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .history-search-input {
-    padding: 8px 14px;
+    height: 32px;
+    padding: 4px 22px 4px 26px;
     border: 1px solid #334155;
     border-radius: 6px;
-    font-size: 13px;
-    min-width: 280px;
-    background: #1e293b;
+    font-size: 12.5px;
+    min-width: 130px;
+    width: 150px;
+    background: #0f172a;
     color: #f8fafc;
     outline: none;
-    transition: border-color 0.2s;
+    box-sizing: border-box;
+    transition: border-color 0.2s, width 0.2s ease, box-shadow 0.2s;
 }
 
 .history-search-input:focus {
     border-color: #38bdf8;
+    width: 175px;
+    box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.15);
 }
 
 .history-search-input::placeholder {
@@ -158,31 +207,29 @@ html[data-theme="light"] .cf-manager-main .cf-page-title {
 }
 
 .history-role-select {
-    padding: 8px 14px;
-    border: 1px solid #CBD5E1;
+    height: 32px;
+    padding: 4px 10px;
+    border: 1px solid #334155;
     border-radius: 6px;
-    font-size: 13px;
-    background: #F1F5F9;
-    color: #1E293B;
+    font-size: 12.5px;
+    background: #0f172a;
+    color: #f8fafc;
     outline: none;
+    box-sizing: border-box;
 }
 
-/* Giao diện sáng: các bộ lọc của nhật ký dùng nền trắng thống nhất. */
-html[data-theme="light"] .history-filter-select,
-html[data-theme="light"] .history-search-input,
-html[data-theme="light"] .history-role-select {
-    background: #ffffff !important;
-    color: #1e293b !important;
-    border-color: #cbd5e1 !important;
+.history-role-select:focus {
+    border-color: #38bdf8;
 }
 
-html[data-theme="light"] .history-filter-select option,
-html[data-theme="light"] .history-role-select option {
-    background: #ffffff !important;
-    color: #1e293b !important;
+.cf-page-size-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
 }
 
-/* ---------- Điều hướng Tabs ---------- */
+/* ---------- Điều hướng Tabs (Theo phong cách transfers.jsp) ---------- */
 .tab-nav {
     display: flex;
     gap: 12px;
@@ -201,6 +248,9 @@ html[data-theme="light"] .history-role-select option {
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .tab-btn:hover {
@@ -209,9 +259,10 @@ html[data-theme="light"] .history-role-select option {
 }
 
 .tab-btn.active {
-    color: #fff;
-    background: #FF2855;
+    color: #fff !important;
+    background: #FF2855 !important;
     border: 1px solid #FF2855;
+    box-shadow: 0 2px 8px rgba(255, 40, 85, 0.35);
 }
 
 .tab-pane {
@@ -220,6 +271,59 @@ html[data-theme="light"] .history-role-select option {
 
 .tab-pane.active {
     display: block;
+}
+
+/* ---------- Giao diện sáng (Light Mode) ---------- */
+html[data-theme="light"] .tab-nav {
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+html[data-theme="light"] .tab-btn {
+    color: #64748b;
+}
+
+html[data-theme="light"] .tab-btn:hover {
+    color: #0f172a;
+    background: rgba(15, 23, 42, 0.055);
+}
+
+html[data-theme="light"] .tab-btn.active {
+    color: #fff !important;
+    background: #FF2855 !important;
+    border: 1px solid #FF2855;
+}
+
+html[data-theme="light"] .cf-card-header-flex {
+    border-bottom: 1px solid #e2e8f0;
+}
+
+html[data-theme="light"] .history-filter-label {
+    color: #475569;
+}
+
+html[data-theme="light"] .history-filter-select,
+html[data-theme="light"] .history-search-input,
+html[data-theme="light"] .history-role-select {
+    background: #ffffff !important;
+    color: #1e293b !important;
+    border-color: #cbd5e1 !important;
+}
+
+html[data-theme="light"] .history-filter-select:focus,
+html[data-theme="light"] .history-search-input:focus,
+html[data-theme="light"] .history-role-select:focus {
+    border-color: #FF2855 !important;
+    box-shadow: 0 0 0 2px rgba(255, 40, 85, 0.15) !important;
+}
+
+html[data-theme="light"] .history-search-input::placeholder {
+    color: #94a3b8;
+}
+
+html[data-theme="light"] .history-filter-select option,
+html[data-theme="light"] .history-role-select option {
+    background: #ffffff !important;
+    color: #1e293b !important;
 }
 
 /* ---------- Tiêu đề bảng có thể sắp xếp ---------- */
@@ -317,4 +421,21 @@ html[data-theme="light"] .history-role-select option {
 
 .history-notes {
     color: #94a3b8;
+}
+
+html[data-theme="light"] .cf-card-header-flex h2 {
+    color: #0f172a !important;
+}
+
+@media (max-width: 1200px) {
+    .cf-card-header-flex {
+        flex-wrap: wrap !important;
+    }
+    .staff-filter-toolbar {
+        margin-left: 0;
+        flex-wrap: wrap;
+    }
+    .staff-filter-form {
+        flex-wrap: wrap;
+    }
 }
