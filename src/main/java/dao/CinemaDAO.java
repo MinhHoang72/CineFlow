@@ -1,7 +1,6 @@
 package dao;
 
 import model.entity.Centre;
-import model.entity.Movie;
 import model.dto.showtime.ShowtimeDetailDTO;
 import utils.DBContext;
 
@@ -13,155 +12,22 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
- * Xử lý truy vấn dữ liệu liên quan đến rạp chiếu (trung tâm) và lịch chiếu.
- * Các thao tác truy vấn, tạo, cập nhật phim và phân phối phim được ủy quyền (delegate) sang MovieDAO.
+ * Data Access Object: Xử lý toàn bộ các truy vấn liên quan đến Cụm rạp chiếu (Centres),
+ * phân công nhân sự quản lý cụm rạp, và lịch chiếu / giá vé theo từng rạp.
+ *
+ * Lưu ý kiến trúc: Các nghiệp vụ liên quan đến Phim (Movies) và Phân phối phim (CentreMovies)
+ * đã được quy hoạch độc lập sang MovieDAO.
  */
 public class CinemaDAO {
 
-    private final MovieDAO movieDAO = new MovieDAO();
-
     // =========================================================================
-    // PHƯƠNG THỨC ỦY QUYỀN SANG MovieDAO (Backward Compatibility & Delegation)
+    // 1. QUẢN LÝ THÔNG TIN CỤM RẠP CHIẾU (Centres)
     // =========================================================================
 
     /**
-     * Lấy danh sách phim đang chiếu tại các rạp (ủy quyền sang MovieDAO).
-     *
-     * @return danh sách phim có trạng thái NOW_SHOWING
-     */
-    public List<Movie> getNowShowingMovies() {
-        return movieDAO.getNowShowingMovies();
-    }
-
-    /**
-     * Lấy danh sách phim sắp chiếu (ủy quyền sang MovieDAO).
-     *
-     * @return danh sách phim có trạng thái COMING_SOON
-     */
-    public List<Movie> getComingSoonMovies() {
-        return movieDAO.getComingSoonMovies();
-    }
-
-    /**
-     * Lấy danh sách phim theo trạng thái phát hành (ủy quyền sang MovieDAO).
-     *
-     * @param status trạng thái của phim
-     * @return danh sách phim thỏa mãn điều kiện
-     */
-    public List<Movie> getMoviesByStatus(String status) {
-        return movieDAO.getMoviesByStatus(status);
-    }
-
-    /**
-     * Lấy thông tin chi tiết của một bộ phim theo mã phim (ủy quyền sang MovieDAO).
-     *
-     * @param movieId mã định danh phim
-     * @return đối tượng Movie nếu tìm thấy, ngược lại null
-     */
-    public Movie getMovieById(int movieId) {
-        return movieDAO.getMovieById(movieId);
-    }
-
-    /**
-     * Lấy toàn bộ danh sách phim phục vụ quản trị (ủy quyền sang MovieDAO).
-     */
-    public List<Movie> getAllMovies() {
-        return movieDAO.getAllMovies();
-    }
-
-    /**
-     * Tạo mới một bộ phim trong cơ sở dữ liệu (ủy quyền sang MovieDAO).
-     */
-    public int createMovie(Movie movie) {
-        return movieDAO.createMovie(movie);
-    }
-
-    /**
-     * Cập nhật thông tin của một bộ phim (ủy quyền sang MovieDAO).
-     */
-    public boolean updateMovie(Movie movie) {
-        return movieDAO.updateMovie(movie);
-    }
-
-    /**
-     * Lưu trữ (lưu kho) phim thay vì xóa cứng (ủy quyền sang MovieDAO).
-     */
-    public boolean archiveMovie(int movieId) {
-        return movieDAO.archiveMovie(movieId);
-    }
-
-    /**
-     * Cập nhật trạng thái của phim (ủy quyền sang MovieDAO).
-     */
-    public boolean updateMovieStatus(int movieId, String status) {
-        return movieDAO.updateMovieStatus(movieId, status);
-    }
-
-    /**
-     * Kết thúc chiếu phim ngay thời điểm hiện tại (ủy quyền sang MovieDAO).
-     */
-    public boolean endMovie(int movieId) {
-        return movieDAO.endMovie(movieId);
-    }
-
-    /**
-     * Xóa hoàn toàn một bộ phim theo mã định danh (ủy quyền sang MovieDAO).
-     */
-    public boolean deleteMovie(int movieId) {
-        return movieDAO.deleteMovie(movieId);
-    }
-
-    /**
-     * Lấy danh sách các trung tâm kèm trạng thái phân phối của phim (ủy quyền sang MovieDAO).
-     */
-    public List<Centre> getDistributionCentres(int movieId) {
-        return movieDAO.getDistributionCentres(movieId);
-    }
-
-    /**
-     * Lấy thông tin phân phối của phim tại một trung tâm cụ thể (ủy quyền sang MovieDAO).
-     */
-    public List<Centre> getDistributionCentres(int movieId, int centreId) {
-        return movieDAO.getDistributionCentres(movieId, centreId);
-    }
-
-    /**
-     * Đếm số lượng suất chiếu trong tương lai của phim tại cụm rạp (ủy quyền sang MovieDAO).
-     */
-    public int countFutureShowtimes(int movieId, int centreId) {
-        return movieDAO.countFutureShowtimes(movieId, centreId);
-    }
-
-    /**
-     * Kiểm tra xem phim đã có cấu hình phân phối hay chưa (ủy quyền sang MovieDAO).
-     */
-    public boolean hasDistributionConfig(int movieId) {
-        return movieDAO.hasDistributionConfig(movieId);
-    }
-
-    /**
-     * Lưu trạng thái phân phối phim cho một cụm rạp (ủy quyền sang MovieDAO).
-     */
-    public boolean saveMovieDistributionForCentre(int movieId, int centreId, boolean enabled) {
-        return movieDAO.saveMovieDistributionForCentre(movieId, centreId, enabled);
-    }
-
-    /**
-     * Lưu cấu hình phân phối phim cho danh sách rạp được chọn (ủy quyền sang MovieDAO).
-     */
-    public boolean saveMovieDistribution(int movieId, Set<Integer> selectedCentreIDs) {
-        return movieDAO.saveMovieDistribution(movieId, selectedCentreIDs);
-    }
-
-    // =========================================================================
-    // QUẢN LÝ TRUNG TÂM / CỤM RẠP (Centres)
-    // =========================================================================
-
-    /**
-     * Lấy danh sách tất cả các trung tâm chiếu phim đang hoạt động.
+     * Lấy danh sách tất cả các trung tâm / cụm rạp chiếu phim đang hoạt động.
      *
      * @return danh sách trung tâm đang hoạt động
      */
@@ -199,7 +65,7 @@ public class CinemaDAO {
     }
 
     /**
-     * Lấy danh sách các thành phố có rạp hoạt động kèm theo số lượng rạp.
+     * Lấy danh sách các tỉnh/thành phố có cụm rạp hoạt động kèm theo số lượng rạp tương ứng.
      *
      * @return bản đồ tên thành phố và số lượng rạp tương ứng
      */
@@ -224,7 +90,7 @@ public class CinemaDAO {
     }
 
     /**
-     * Lấy danh sách rạp đang hoạt động theo thành phố.
+     * Lấy danh sách các cụm rạp đang hoạt động lọc theo tỉnh/thành phố cụ thể.
      *
      * @param city tên thành phố cần lọc
      * @return danh sách các trung tâm chiếu phim tại thành phố
@@ -263,7 +129,7 @@ public class CinemaDAO {
     }
 
     /**
-     * Lấy thông tin chi tiết một trung tâm theo mã, bao gồm thông tin Quản lý hiện tại.
+     * Lấy thông tin chi tiết một trung tâm theo mã ID, bao gồm thông tin Quản lý hiện tại phụ trách.
      *
      * @param centreId mã định danh trung tâm
      * @return đối tượng Centre nếu tìm thấy, ngược lại null
@@ -314,168 +180,7 @@ public class CinemaDAO {
     }
 
     // =========================================================================
-    // QUẢN LÝ SUẤT CHIẾU VÀ GIÁ VÉ TỰ ĐỘNG (Showtimes & Dynamic Pricing)
-    // =========================================================================
-
-    private static final String DYNAMIC_PRICE_SELECT = "(COALESCE(bp.BasePrice, 80000) + COALESCE(tsp.Surcharge, 0) + COALESCE(sur.Amount, 0)) AS BaseTicketPrice ";
-    private static final String DYNAMIC_PRICE_APPLY = "OUTER APPLY ( "
-            + "    SELECT TOP 1 bp.BasePrice FROM CentrePricing bp "
-            + "    WHERE bp.CentreID = b.CentreID AND s.StartTime >= bp.EffectiveFrom "
-            + "      AND (bp.EffectiveTo IS NULL OR s.StartTime <= bp.EffectiveTo) "
-            + "    ORDER BY bp.EffectiveFrom DESC "
-            + ") bp "
-            + "OUTER APPLY ( "
-            + "    SELECT TOP 1 tsp.Surcharge FROM TimeSlotPricing tsp "
-            + "    WHERE tsp.CentreID = b.CentreID "
-            + "      AND CAST(s.StartTime AS TIME) >= tsp.StartTime "
-            + "      AND CAST(s.StartTime AS TIME) < tsp.EndTime "
-            + "      AND s.StartTime >= tsp.EffectiveFrom "
-            + "      AND (tsp.EffectiveTo IS NULL OR s.StartTime <= tsp.EffectiveTo) "
-            + "    ORDER BY tsp.EffectiveFrom DESC "
-            + ") tsp "
-            + "OUTER APPLY ( "
-            + "    SELECT TOP 1 sur.Amount FROM Surcharges sur "
-            + "    WHERE sur.SurchargeType = 'HALL' AND sur.TargetValue = h.HallType "
-            + "      AND s.StartTime >= sur.EffectiveFrom "
-            + "      AND (sur.EffectiveTo IS NULL OR s.StartTime <= sur.EffectiveTo) "
-            + "    ORDER BY sur.EffectiveFrom DESC "
-            + ") sur ";
-
-    /**
-     * Lấy tất cả các suất chiếu đã lên lịch của những phim đang chiếu hoặc sắp chiếu.
-     *
-     * @return danh sách các suất chiếu đã lên lịch
-     */
-    public List<ShowtimeDetailDTO> getScheduledShowtimes() {
-        String sql = "SELECT s.ShowtimeID, m.MovieID, b.CentreID, m.Title, "
-                + "b.CentreName, b.City, h.HallName, s.StartTime, "
-                + DYNAMIC_PRICE_SELECT
-                + "FROM Showtimes s "
-                + "JOIN Movies m ON m.MovieID = s.MovieID "
-                + "JOIN Halls h ON h.HallID = s.HallID "
-                + "JOIN Centres b ON b.CentreID = h.CentreID "
-                + DYNAMIC_PRICE_APPLY
-                + "WHERE s.Status = 'SCHEDULED' AND s.StartTime > SYSDATETIME() AND m.Status IN ('NOW_SHOWING', 'COMING_SOON') "
-                + "ORDER BY s.StartTime";
-        List<ShowtimeDetailDTO> showtimes = new ArrayList<>();
-
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql);
-             ResultSet resultSet = statement.executeQuery()) {
-            while (resultSet.next()) {
-                ShowtimeDetailDTO showtime = new ShowtimeDetailDTO();
-                showtime.setShowtimeId(resultSet.getInt("ShowtimeID"));
-                showtime.setMovieId(resultSet.getInt("MovieID"));
-                showtime.setCentreId(resultSet.getInt("CentreID"));
-                showtime.setMovieTitle(resultSet.getString("Title"));
-                showtime.setCentreName(resultSet.getString("CentreName"));
-                showtime.setCity(resultSet.getString("City"));
-                showtime.setHallName(resultSet.getString("HallName"));
-                showtime.setStartTime(resultSet.getTimestamp("StartTime"));
-                showtime.setBaseTicketPrice(resultSet.getBigDecimal("BaseTicketPrice"));
-                showtimes.add(showtime);
-            }
-        } catch (Exception exception) {
-            exception.printStackTrace();
-        }
-
-        return showtimes;
-    }
-
-    /**
-     * Lấy các suất chiếu đã lên lịch cho một phim cụ thể.
-     *
-     * @param movieId mã định danh phim
-     * @return danh sách các suất chiếu của phim
-     */
-    public List<ShowtimeDetailDTO> getScheduledShowtimesByMovieId(int movieId) {
-        String sql = "SELECT s.ShowtimeID, m.MovieID, b.CentreID, m.Title, "
-                + "b.CentreName, b.City, h.HallName, s.StartTime, "
-                + DYNAMIC_PRICE_SELECT
-                + "FROM Showtimes s "
-                + "JOIN Movies m ON m.MovieID = s.MovieID "
-                + "JOIN Halls h ON h.HallID = s.HallID "
-                + "JOIN Centres b ON b.CentreID = h.CentreID "
-                + DYNAMIC_PRICE_APPLY
-                + "WHERE s.Status = 'SCHEDULED' AND s.StartTime > SYSDATETIME() AND s.MovieID = ? "
-                + "ORDER BY s.StartTime";
-        List<ShowtimeDetailDTO> showtimes = new ArrayList<>();
-
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql);) {
-            statement.setInt(1, movieId);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
-                    ShowtimeDetailDTO showtime = new ShowtimeDetailDTO();
-                    showtime.setShowtimeId(resultSet.getInt("ShowtimeID"));
-                    showtime.setMovieId(resultSet.getInt("MovieID"));
-                    showtime.setCentreId(resultSet.getInt("CentreID"));
-                    showtime.setMovieTitle(resultSet.getString("Title"));
-                    showtime.setCentreName(resultSet.getString("CentreName"));
-                    showtime.setCity(resultSet.getString("City"));
-                    showtime.setHallName(resultSet.getString("HallName"));
-                    showtime.setStartTime(resultSet.getTimestamp("StartTime"));
-                    showtime.setBaseTicketPrice(resultSet.getBigDecimal("BaseTicketPrice"));
-                    showtimes.add(showtime);
-                }
-            }
-        } catch (Exception exception) {
-            exception.printStackTrace();
-        }
-
-        return showtimes;
-    }
-
-    /**
-     * Lấy các suất chiếu đã lên lịch theo từng trung tâm rạp.
-     *
-     * @param centreId mã định danh trung tâm
-     * @return danh sách suất chiếu tại trung tâm
-     */
-    public List<ShowtimeDetailDTO> getScheduledShowtimesByCentreId(int centreId) {
-        String sql = "SELECT s.ShowtimeID, m.MovieID, b.CentreID, m.Title, m.PosterURL, m.AgeRating, m.Duration, m.Genre, "
-                + "b.CentreName, b.City, h.HallName, s.StartTime, "
-                + DYNAMIC_PRICE_SELECT
-                + "FROM Showtimes s "
-                + "JOIN Movies m ON m.MovieID = s.MovieID "
-                + "JOIN Halls h ON h.HallID = s.HallID "
-                + "JOIN Centres b ON b.CentreID = h.CentreID "
-                + DYNAMIC_PRICE_APPLY
-                + "WHERE s.Status = 'SCHEDULED' AND s.StartTime > SYSDATETIME() AND m.Status IN ('NOW_SHOWING', 'COMING_SOON') AND b.CentreID = ? "
-                + "ORDER BY s.StartTime";
-        List<ShowtimeDetailDTO> showtimes = new ArrayList<>();
-
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setInt(1, centreId);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
-                    ShowtimeDetailDTO showtime = new ShowtimeDetailDTO();
-                    showtime.setShowtimeId(resultSet.getInt("ShowtimeID"));
-                    showtime.setMovieId(resultSet.getInt("MovieID"));
-                    showtime.setCentreId(resultSet.getInt("CentreID"));
-                    showtime.setMovieTitle(resultSet.getString("Title"));
-                    showtime.setPosterUrl(resultSet.getString("PosterURL"));
-                    showtime.setAgeRating(resultSet.getString("AgeRating"));
-                    showtime.setDuration(resultSet.getInt("Duration"));
-                    showtime.setGenre(resultSet.getString("Genre"));
-                    showtime.setCentreName(resultSet.getString("CentreName"));
-                    showtime.setCity(resultSet.getString("City"));
-                    showtime.setHallName(resultSet.getString("HallName"));
-                    showtime.setStartTime(resultSet.getTimestamp("StartTime"));
-                    showtime.setBaseTicketPrice(resultSet.getBigDecimal("BaseTicketPrice"));
-                    showtimes.add(showtime);
-                }
-            }
-        } catch (Exception exception) {
-            exception.printStackTrace();
-        }
-
-        return showtimes;
-    }
-
-    // =========================================================================
-    // QUẢN LÝ GÁN QUẢN LÝ CHO CỤM RẠP (Centre Manager Assignments)
+    // 2. QUẢN LÝ BỔ NHIỆM QUẢN LÝ CỤM RẠP (Centre Manager Assignments)
     // =========================================================================
 
     /**
@@ -576,5 +281,166 @@ public class CinemaDAO {
             e.printStackTrace();
             return true;
         }
+    }
+
+    // =========================================================================
+    // 3. QUẢN LÝ SUẤT CHIẾU VÀ GIÁ VÉ TỰ ĐỘNG THEO RẠP (Showtimes & Dynamic Pricing)
+    // =========================================================================
+
+    private static final String DYNAMIC_PRICE_SELECT = "(COALESCE(bp.BasePrice, 80000) + COALESCE(tsp.Surcharge, 0) + COALESCE(sur.Amount, 0)) AS BaseTicketPrice ";
+    private static final String DYNAMIC_PRICE_APPLY = "OUTER APPLY ( "
+            + "    SELECT TOP 1 bp.BasePrice FROM CentrePricing bp "
+            + "    WHERE bp.CentreID = b.CentreID AND s.StartTime >= bp.EffectiveFrom "
+            + "      AND (bp.EffectiveTo IS NULL OR s.StartTime <= bp.EffectiveTo) "
+            + "    ORDER BY bp.EffectiveFrom DESC "
+            + ") bp "
+            + "OUTER APPLY ( "
+            + "    SELECT TOP 1 tsp.Surcharge FROM TimeSlotPricing tsp "
+            + "    WHERE tsp.CentreID = b.CentreID "
+            + "      AND CAST(s.StartTime AS TIME) >= tsp.StartTime "
+            + "      AND CAST(s.StartTime AS TIME) < tsp.EndTime "
+            + "      AND s.StartTime >= tsp.EffectiveFrom "
+            + "      AND (tsp.EffectiveTo IS NULL OR s.StartTime <= tsp.EffectiveTo) "
+            + "    ORDER BY tsp.EffectiveFrom DESC "
+            + ") tsp "
+            + "OUTER APPLY ( "
+            + "    SELECT TOP 1 sur.Amount FROM Surcharges sur "
+            + "    WHERE sur.SurchargeType = 'HALL' AND sur.TargetValue = h.HallType "
+            + "      AND s.StartTime >= sur.EffectiveFrom "
+            + "      AND (sur.EffectiveTo IS NULL OR s.StartTime <= sur.EffectiveTo) "
+            + "    ORDER BY sur.EffectiveFrom DESC "
+            + ") sur ";
+
+    /**
+     * Lấy tất cả các suất chiếu đã lên lịch của những phim đang chiếu hoặc sắp chiếu.
+     *
+     * @return danh sách các suất chiếu đã lên lịch
+     */
+    public List<ShowtimeDetailDTO> getScheduledShowtimes() {
+        String sql = "SELECT s.ShowtimeID, m.MovieID, b.CentreID, m.Title, "
+                + "b.CentreName, b.City, h.HallName, s.StartTime, "
+                + DYNAMIC_PRICE_SELECT
+                + "FROM Showtimes s "
+                + "JOIN Movies m ON m.MovieID = s.MovieID "
+                + "JOIN Halls h ON h.HallID = s.HallID "
+                + "JOIN Centres b ON b.CentreID = h.CentreID "
+                + DYNAMIC_PRICE_APPLY
+                + "WHERE s.Status = 'SCHEDULED' AND s.StartTime > SYSDATETIME() AND m.Status IN ('NOW_SHOWING', 'COMING_SOON') "
+                + "ORDER BY s.StartTime";
+        List<ShowtimeDetailDTO> showtimes = new ArrayList<>();
+
+        try (Connection connection = DBContext.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql);
+             ResultSet resultSet = statement.executeQuery()) {
+            while (resultSet.next()) {
+                ShowtimeDetailDTO showtime = new ShowtimeDetailDTO();
+                showtime.setShowtimeId(resultSet.getInt("ShowtimeID"));
+                showtime.setMovieId(resultSet.getInt("MovieID"));
+                showtime.setCentreId(resultSet.getInt("CentreID"));
+                showtime.setMovieTitle(resultSet.getString("Title"));
+                showtime.setCentreName(resultSet.getString("CentreName"));
+                showtime.setCity(resultSet.getString("City"));
+                showtime.setHallName(resultSet.getString("HallName"));
+                showtime.setStartTime(resultSet.getTimestamp("StartTime"));
+                showtime.setBaseTicketPrice(resultSet.getBigDecimal("BaseTicketPrice"));
+                showtimes.add(showtime);
+            }
+        } catch (Exception exception) {
+            exception.printStackTrace();
+        }
+
+        return showtimes;
+    }
+
+    /**
+     * Lấy các suất chiếu đã lên lịch cho một phim cụ thể trên toàn bộ chuỗi rạp.
+     *
+     * @param movieId mã định danh phim
+     * @return danh sách các suất chiếu của phim
+     */
+    public List<ShowtimeDetailDTO> getScheduledShowtimesByMovieId(int movieId) {
+        String sql = "SELECT s.ShowtimeID, m.MovieID, b.CentreID, m.Title, "
+                + "b.CentreName, b.City, h.HallName, s.StartTime, "
+                + DYNAMIC_PRICE_SELECT
+                + "FROM Showtimes s "
+                + "JOIN Movies m ON m.MovieID = s.MovieID "
+                + "JOIN Halls h ON h.HallID = s.HallID "
+                + "JOIN Centres b ON b.CentreID = h.CentreID "
+                + DYNAMIC_PRICE_APPLY
+                + "WHERE s.Status = 'SCHEDULED' AND s.StartTime > SYSDATETIME() AND s.MovieID = ? "
+                + "ORDER BY s.StartTime";
+        List<ShowtimeDetailDTO> showtimes = new ArrayList<>();
+
+        try (Connection connection = DBContext.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql);) {
+            statement.setInt(1, movieId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    ShowtimeDetailDTO showtime = new ShowtimeDetailDTO();
+                    showtime.setShowtimeId(resultSet.getInt("ShowtimeID"));
+                    showtime.setMovieId(resultSet.getInt("MovieID"));
+                    showtime.setCentreId(resultSet.getInt("CentreID"));
+                    showtime.setMovieTitle(resultSet.getString("Title"));
+                    showtime.setCentreName(resultSet.getString("CentreName"));
+                    showtime.setCity(resultSet.getString("City"));
+                    showtime.setHallName(resultSet.getString("HallName"));
+                    showtime.setStartTime(resultSet.getTimestamp("StartTime"));
+                    showtime.setBaseTicketPrice(resultSet.getBigDecimal("BaseTicketPrice"));
+                    showtimes.add(showtime);
+                }
+            }
+        } catch (Exception exception) {
+            exception.printStackTrace();
+        }
+
+        return showtimes;
+    }
+
+    /**
+     * Lấy các suất chiếu đã lên lịch theo từng cụm rạp cụ thể.
+     *
+     * @param centreId mã định danh trung tâm
+     * @return danh sách suất chiếu tại trung tâm
+     */
+    public List<ShowtimeDetailDTO> getScheduledShowtimesByCentreId(int centreId) {
+        String sql = "SELECT s.ShowtimeID, m.MovieID, b.CentreID, m.Title, m.PosterURL, m.AgeRating, m.Duration, m.Genre, "
+                + "b.CentreName, b.City, h.HallName, s.StartTime, "
+                + DYNAMIC_PRICE_SELECT
+                + "FROM Showtimes s "
+                + "JOIN Movies m ON m.MovieID = s.MovieID "
+                + "JOIN Halls h ON h.HallID = s.HallID "
+                + "JOIN Centres b ON b.CentreID = h.CentreID "
+                + DYNAMIC_PRICE_APPLY
+                + "WHERE s.Status = 'SCHEDULED' AND s.StartTime > SYSDATETIME() AND m.Status IN ('NOW_SHOWING', 'COMING_SOON') AND b.CentreID = ? "
+                + "ORDER BY s.StartTime";
+        List<ShowtimeDetailDTO> showtimes = new ArrayList<>();
+
+        try (Connection connection = DBContext.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, centreId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    ShowtimeDetailDTO showtime = new ShowtimeDetailDTO();
+                    showtime.setShowtimeId(resultSet.getInt("ShowtimeID"));
+                    showtime.setMovieId(resultSet.getInt("MovieID"));
+                    showtime.setCentreId(resultSet.getInt("CentreID"));
+                    showtime.setMovieTitle(resultSet.getString("Title"));
+                    showtime.setPosterUrl(resultSet.getString("PosterURL"));
+                    showtime.setAgeRating(resultSet.getString("AgeRating"));
+                    showtime.setDuration(resultSet.getInt("Duration"));
+                    showtime.setGenre(resultSet.getString("Genre"));
+                    showtime.setCentreName(resultSet.getString("CentreName"));
+                    showtime.setCity(resultSet.getString("City"));
+                    showtime.setHallName(resultSet.getString("HallName"));
+                    showtime.setStartTime(resultSet.getTimestamp("StartTime"));
+                    showtime.setBaseTicketPrice(resultSet.getBigDecimal("BaseTicketPrice"));
+                    showtimes.add(showtime);
+                }
+            }
+        } catch (Exception exception) {
+            exception.printStackTrace();
+        }
+
+        return showtimes;
     }
 }

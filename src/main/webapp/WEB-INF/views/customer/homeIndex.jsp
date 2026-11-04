@@ -3,7 +3,7 @@
 <%@ page import="model.entity.Movie" %>
 <%@ page import="model.entity.Centre" %>
 <%@ page import="model.entity.Voucher" %>
-<%@ page import="dao.CinemaDAO" %>
+<%@ page import="dao.CinemaDAO, dao.MovieDAO" %>
 <%@ page import="java.text.SimpleDateFormat" %>
 <%@ page import="java.util.List" %>
 <%!
@@ -71,8 +71,8 @@
         memberName = signedInUser == null ? "" : signedInUser.getAccount();
     }
     CinemaDAO cinemaDAO = new CinemaDAO();
-    List<Movie> movies = cinemaDAO.getNowShowingMovies();
-    List<Movie> comingSoonMovies = cinemaDAO.getComingSoonMovies();
+    MovieDAO movieDAO = new MovieDAO(); List<Movie> movies = movieDAO.getNowShowingMovies();
+    List<Movie> comingSoonMovies = movieDAO.getComingSoonMovies();
     List<Centre> centres = cinemaDAO.getActiveCentres();
 %>
 <!DOCTYPE html>
