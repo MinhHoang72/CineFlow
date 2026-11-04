@@ -183,8 +183,8 @@
                             <th style="min-width: 190px;">Địa chỉ & Thành phố</th>
                             <th style="min-width: 110px;">Hotline</th>
                             <th style="min-width: 120px;">Phòng chiếu</th>
-                            <th style="min-width: 90px; text-align: center;">Trạng thái</th>
-                            <th style="min-width: 140px; text-align: right;">Thao tác</th>
+                            <th style="width: 125px; text-align: center;">Trạng thái</th>
+                            <th style="width: 80px; text-align: center;">Thao tác</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -220,40 +220,32 @@
                             <td style="text-align: center;">
                                 <%
                                     String cStat = c.getStatus() != null ? c.getStatus().toUpperCase() : "ACTIVE";
-                                    if ("ACTIVE".equals(cStat)) {
+                                    String badgeStatusClass = "ACTIVE".equals(cStat) ? "status-active" :
+                                                              ("SUSPENDED".equals(cStat) || "TEMPORARILY_CLOSED".equals(cStat)) ? "status-suspended" : "status-inactive";
                                 %>
-                                    <span class="cf-badge cf-badge-active">Hoạt động</span>
-                                <% } else if ("SUSPENDED".equals(cStat) || "TEMPORARILY_CLOSED".equals(cStat)) { %>
-                                    <span class="cf-badge cf-badge-suspended">Tạm ngưng</span>
-                                <% } else { %>
-                                    <span class="cf-badge cf-badge-inactive">Ngừng HĐ</span>
-                                <% } %>
+                                <form method="POST" action="${pageContext.request.contextPath}/admin/centres" style="display: inline-block; margin: 0;">
+                                    <input type="hidden" name="action" value="changeStatus">
+                                    <input type="hidden" name="centreId" value="<%= c.getCentreId() %>">
+                                    <input type="hidden" name="search" value="<%= currentSearch != null ? currentSearch : "" %>">
+                                    <input type="hidden" name="status" value="<%= currentStatus != null ? currentStatus : "ALL" %>">
+                                    <input type="hidden" name="page" value="<%= currentPage %>">
+
+                                    <select name="newStatus" class="cf-status-badge-select <%= badgeStatusClass %>"
+                                            onchange="handleCentreStatusChange(this, '<%= c.getCentreName() != null ? c.getCentreName().replace("'", "\\'") : "" %>', '<%= cStat %>')"
+                                            title="Bấm để thay đổi trạng thái cụm rạp">
+                                        <option value="ACTIVE" <%= "ACTIVE".equals(cStat) ? "selected" : "" %>>Hoạt động</option>
+                                        <option value="SUSPENDED" <%= ("SUSPENDED".equals(cStat) || "TEMPORARILY_CLOSED".equals(cStat)) ? "selected" : "" %> <%= "INACTIVE".equals(cStat) ? "disabled" : "" %>>Tạm ngưng<%= "INACTIVE".equals(cStat) ? " (Cần Active)" : "" %></option>
+                                        <option value="INACTIVE" <%= "INACTIVE".equals(cStat) ? "selected" : "" %>>Ngừng HĐ</option>
+                                    </select>
+                                </form>
                             </td>
-                            <td style="text-align: right;">
-                                <div class="cf-actions" style="justify-content: flex-end; gap: 6px;">
+                            <td style="text-align: center;">
+                                <div class="cf-actions" style="justify-content: center;">
                                     <!-- Nút Sửa -->
                                     <button type="button" class="cf-btn cf-btn-secondary cf-btn-sm"
                                             onclick="openEditCentreModal(<%= c.getCentreId() %>, '<%= c.getCentreName() != null ? c.getCentreName().replace("'", "\\'") : "" %>', '<%= c.getAddress() != null ? c.getAddress().replace("'", "\\'") : "" %>', '<%= c.getPhone() != null ? c.getPhone().replace("'", "\\'") : "" %>', '<%= c.getCity() != null ? c.getCity().replace("'", "\\'") : "" %>')">
                                         Sửa
                                     </button>
-
-                                    <!-- Dropdown chuyển trạng thái: Kích hoạt, Tạm ngưng, Ngừng hoạt động -->
-                                    <form method="POST" action="${pageContext.request.contextPath}/admin/centres" style="display: inline-block; margin: 0;">
-                                        <input type="hidden" name="action" value="changeStatus">
-                                        <input type="hidden" name="centreId" value="<%= c.getCentreId() %>">
-                                        <input type="hidden" name="search" value="<%= currentSearch != null ? currentSearch : "" %>">
-                                        <input type="hidden" name="status" value="<%= currentStatus != null ? currentStatus : "ALL" %>">
-                                        <input type="hidden" name="page" value="<%= currentPage %>">
-
-                                        <select name="newStatus" class="cf-status-action-select"
-                                                onchange="handleCentreStatusChange(this, '<%= c.getCentreName() != null ? c.getCentreName().replace("'", "\\'") : "" %>', '<%= cStat %>')"
-                                                title="Chọn trạng thái để chuyển đổi">
-                                            <option value="" disabled selected hidden>Trạng thái ▾</option>
-                                            <option value="ACTIVE" <%= "ACTIVE".equals(cStat) ? "disabled" : "" %>>Kích hoạt<%= "ACTIVE".equals(cStat) ? " (Hiện tại)" : "" %></option>
-                                            <option value="SUSPENDED" <%= "SUSPENDED".equals(cStat) || "INACTIVE".equals(cStat) ? "disabled" : "" %>>Tạm ngưng<%= "SUSPENDED".equals(cStat) ? " (Hiện tại)" : ("INACTIVE".equals(cStat) ? " (Cần Active)" : "") %></option>
-                                            <option value="INACTIVE" <%= "INACTIVE".equals(cStat) ? "disabled" : "" %>>Ngừng HĐ<%= "INACTIVE".equals(cStat) ? " (Hiện tại)" : "" %></option>
-                                        </select>
-                                    </form>
                                 </div>
                             </td>
                         </tr>
@@ -501,11 +493,12 @@
         document.getElementById('editCentreModal').classList.remove('active');
     }
 
-    // Xử lý chuyển trạng thái cụm rạp từ dropdown (Tạm ngưng, Kích hoạt, Ngừng hoạt động)
+    // Xử lý chuyển trạng thái cụm rạp từ dropdown trực tiếp ở cột Trạng thái
     function handleCentreStatusChange(selectElem, centreName, currentStatus) {
         var newStatus = selectElem.value;
-        if (!newStatus || newStatus === currentStatus) {
-            selectElem.value = "";
+        var originalVal = (currentStatus === 'TEMPORARILY_CLOSED') ? 'SUSPENDED' : currentStatus;
+        if (!newStatus || newStatus === originalVal) {
+            selectElem.value = originalVal;
             return;
         }
 
@@ -525,7 +518,7 @@
         if (confirm(message)) {
             selectElem.form.submit();
         } else {
-            selectElem.value = "";
+            selectElem.value = originalVal;
         }
     }
 
