@@ -22,7 +22,7 @@ import java.nio.charset.StandardCharsets;
 @WebServlet(name = "CentreManagementServlet", urlPatterns = {"/admin/centres", "/admin/centre"})
 public class CentreManagementServlet extends HttpServlet {
 
-    private static final int PAGE_SIZE = 6;
+    private static final int PAGE_SIZE = 10;
     private final CinemaService cinemaService = new CinemaService();
 
     private boolean isAdmin(HttpSession session) {
@@ -37,13 +37,14 @@ public class CentreManagementServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-      //chưa có trạng thái đăng nhập 
+      //kiểm tra đăng nhập 
         HttpSession session = request.getSession(false);//=>trả về session null 
         if (session == null || session.getAttribute("userId") == null) {
             response.sendRedirect(request.getContextPath() + "/login?redirect="
                     + URLEncoder.encode("/admin/centres", StandardCharsets.UTF_8));
             return;
         }
+        //kiểm tra phân quyền => nếu đăng nhập bỏ qua test 1 sang nhập url admin/center=> đẩy lỗi 403
         if (!isAdmin(session)) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN,
                     "Chỉ Quản trị viên (ADMIN) mới có quyền truy cập trang Quản lý Cụm rạp.");
@@ -69,8 +70,6 @@ public class CentreManagementServlet extends HttpServlet {
                 + "&status=" + URLEncoder.encode(status, StandardCharsets.UTF_8);
 
         request.setAttribute("result", pageResult);
-        request.setAttribute("page", pageResult);
-        request.setAttribute("centres", pageResult.getItems());
         request.setAttribute("totalCentres", kpi.totalCentres());
         request.setAttribute("activeCentres", kpi.activeCentres());
         request.setAttribute("inactiveCentres", kpi.inactiveCentres());
