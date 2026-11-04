@@ -317,7 +317,8 @@ public class MovieDAO {
      */
     public List<Centre> getDistributionCentres(int movieId) {
         String sql = "SELECT b.CentreID, b.CentreName, b.Address, b.City, b.Phone, b.Status, "
-                + "CAST(CASE WHEN bm.IsActive = 1 THEN 1 ELSE 0 END AS bit) AS [Distributed], "
+                + "CAST(CASE WHEN UPPER(bm.Status) = 'ACTIVE' OR (bm.Status IS NULL AND bm.IsActive = 1) THEN 1 ELSE 0 END AS bit) AS [Distributed], "
+                + "COALESCE(bm.Status, CASE WHEN bm.IsActive = 1 THEN 'ACTIVE' ELSE 'CANCELLED' END) AS [DistributionStatus], "
                 + "COALESCE((SELECT COUNT(*) FROM Showtimes s JOIN Halls h ON s.HallID = h.HallID "
                 + "          WHERE s.MovieID = ? AND h.CentreID = b.CentreID AND s.StartTime > GETDATE() "
                 + "          AND UPPER(s.Status) = 'SCHEDULED'), 0) AS [FutureShowtimeCount], "
@@ -346,6 +347,7 @@ public class MovieDAO {
                     centre.setPhone(rs.getString("Phone"));
                     centre.setStatus(rs.getString("Status"));
                     centre.setDistributed(rs.getBoolean("Distributed"));
+                    centre.setDistributionStatus(rs.getString("DistributionStatus"));
                     centre.setFutureShowtimeCount(rs.getInt("FutureShowtimeCount"));
                     centre.setSoldTicketCount(rs.getInt("SoldTicketCount"));
                     centres.add(centre);
@@ -456,13 +458,16 @@ public class MovieDAO {
      * Cập nhật danh sách trung tâm được phân phối phim trong một Transaction an toàn.
      */
     public boolean saveMovieDistribution(int movieId, Set<Integer> selectedCentreIDs) {
-        String disableAllSql = "UPDATE CentreMovies SET IsActive = 0, UpdatedAt = GETDATE() WHERE MovieID = ?";
+        // Quy tắc 4 & 5: Hủy phân phối khi bỏ chọn: chuyển Status = 'CANCELLED', IsActive = 0 (không xóa bản ghi)
+        String disableAllSql = "UPDATE CentreMovies SET Status = 'CANCELLED', IsActive = 0, UpdatedAt = GETDATE() "
+                + "WHERE MovieID = ? AND Status IN ('ACTIVE', 'SUSPENDED')";
+        // Quy tắc: Chỉ được phân phối phim cho cụm rạp có trạng thái ACTIVE
         String mergeSql = "MERGE CentreMovies AS target "
                 + "USING (SELECT ? AS CentreID, ? AS MovieID WHERE EXISTS ("
                 + "SELECT 1 FROM Centres b WHERE b.CentreID = ? AND UPPER(b.Status) = 'ACTIVE')) AS source "
                 + "ON target.CentreID = source.CentreID AND target.MovieID = source.MovieID "
-                + "WHEN MATCHED THEN UPDATE SET IsActive = 1, UpdatedAt = GETDATE() "
-                + "WHEN NOT MATCHED THEN INSERT (CentreID, MovieID, IsActive) VALUES (source.CentreID, source.MovieID, 1);";
+                + "WHEN MATCHED THEN UPDATE SET Status = 'ACTIVE', IsActive = 1, UpdatedAt = GETDATE() "
+                + "WHEN NOT MATCHED THEN INSERT (CentreID, MovieID, Status, IsActive, CreatedAt) VALUES (source.CentreID, source.MovieID, 'ACTIVE', 1, GETDATE());";
 
         try (Connection connection = DBContext.getConnection()) {
             connection.setAutoCommit(false);

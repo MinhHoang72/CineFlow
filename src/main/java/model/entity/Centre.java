@@ -8,6 +8,10 @@ import java.util.List;
  */
 public class Centre {
 
+    public static final String STATUS_ACTIVE = "ACTIVE";
+    public static final String STATUS_SUSPENDED = "SUSPENDED";
+    public static final String STATUS_INACTIVE = "INACTIVE";
+
     private int centreId;
     private String centreName;
     private String address;
@@ -15,6 +19,7 @@ public class Centre {
     private String phone;
     private String status;
     private boolean distributed;
+    private String distributionStatus;
     private int futureShowtimeCount;
     private int soldTicketCount;
     private int hallCount;
@@ -120,6 +125,14 @@ public class Centre {
 
     public void setDistributed(boolean distributed) {
         this.distributed = distributed;
+    }
+
+    public String getDistributionStatus() {
+        return distributionStatus;
+    }
+
+    public void setDistributionStatus(String distributionStatus) {
+        this.distributionStatus = distributionStatus;
     }
 
     public int getHallCount() {

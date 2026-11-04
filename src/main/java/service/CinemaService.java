@@ -75,7 +75,7 @@ public class CinemaService {
         }
     }
 
-    public record CentreKpi(int totalCentres, int activeCentres, int inactiveCentres, int totalHalls) {}
+    public record CentreKpi(int totalCentres, int activeCentres, int suspendedCentres, int inactiveCentres, int totalHalls) {}
 
     public record HallKpi(int totalHalls, int activeHalls, int inactiveHalls, int totalCapacity) {}
 
@@ -90,9 +90,10 @@ public class CinemaService {
     public CentreKpi getCentresKpi() {
         int totalCentres = centreDAO.countCentresByStatus("ALL");
         int activeCentres = centreDAO.countCentresByStatus("ACTIVE");
+        int suspendedCentres = centreDAO.countCentresByStatus("SUSPENDED");
         int inactiveCentres = centreDAO.countCentresByStatus("INACTIVE");
         int totalHalls = centreDAO.countTotalHalls();
-        return new CentreKpi(totalCentres, activeCentres, inactiveCentres, totalHalls);
+        return new CentreKpi(totalCentres, activeCentres, suspendedCentres, inactiveCentres, totalHalls);
     }
 
     public Centre getCentreById(int centreId) {
@@ -177,6 +178,50 @@ public class CinemaService {
     public boolean toggleCentreStatus(int centreId) {
         if (centreId <= 0) return false;
         return centreDAO.toggleStatus(centreId);
+    }
+
+    /**
+     * Chuyển đổi trạng thái Cụm rạp (Theater.changeStatus) theo quy chuẩn nghiệp vụ:
+     * 1. Kiểm tra luồng chuyển trạng thái hợp lệ.
+     * 2. Cập nhật Status của Cụm rạp.
+     * 3. Cập nhật hàng loạt trạng thái phân phối (MovieDistribution / CentreMovies) theo nghiệp vụ.
+     * 4. Ghi log kiểm toán.
+     * 5. Toàn bộ trong 1 transaction an toàn.
+     */
+    public Result<Centre> changeCentreStatus(int centreId, String targetStatus, String adminUser, String reason) {
+        if (centreId <= 0) {
+            return new Result<>(Status.INVALID_ID, "Mã cụm rạp không hợp lệ.");
+        }
+        if (targetStatus == null || targetStatus.trim().isEmpty()) {
+            return new Result<>(Status.MISSING_FIELDS, "Vui lòng chọn trạng thái mới cho cụm rạp.");
+        }
+
+        Centre current = centreDAO.getCentreById(centreId);
+        if (current == null) {
+            return new Result<>(Status.INVALID_ID, "Cụm rạp không tồn tại trong hệ thống.");
+        }
+
+        String from = current.getStatus();
+        String to = targetStatus.trim().toUpperCase();
+
+        if (!centreDAO.isValidStatusTransition(from, to)) {
+            if ("INACTIVE".equalsIgnoreCase(from) && "SUSPENDED".equalsIgnoreCase(to)) {
+                return new Result<>(Status.FAILED, "Cụm rạp đang ngừng hoạt động (INACTIVE) không thể chuyển trực tiếp sang tạm ngưng (SUSPENDED). Phải chuyển về ACTIVE trước.");
+            }
+            return new Result<>(Status.FAILED, "Luồng chuyển trạng thái không hợp lệ: Từ " + from + " sang " + to);
+        }
+
+        try {
+            boolean ok = centreDAO.changeStatus(centreId, from, to, adminUser, reason);
+            if (ok) {
+                current.setStatus(to);
+                return new Result<>(Status.SUCCESS, "Chuyển trạng thái cụm rạp sang " + to + " thành công.", current);
+            } else {
+                return new Result<>(Status.FAILED, "Không thể chuyển trạng thái cụm rạp.");
+            }
+        } catch (Exception e) {
+            return new Result<>(Status.FAILED, "Lỗi cơ sở dữ liệu khi đổi trạng thái cụm rạp: " + e.getMessage());
+        }
     }
 
     // ==============================================================

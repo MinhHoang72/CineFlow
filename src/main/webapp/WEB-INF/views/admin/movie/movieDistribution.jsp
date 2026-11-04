@@ -263,7 +263,8 @@
                                 <select id="statusFilterSelect" class="cf-filter-select">
                                     <option value="ALL">Tất cả trạng thái</option>
                                     <option value="ACTIVE">Đang hoạt động</option>
-                                    <option value="INACTIVE">Tạm ngừng</option>
+                                    <option value="SUSPENDED">Tạm ngưng (SUSPENDED)</option>
+                                    <option value="INACTIVE">Ngừng hoạt động (INACTIVE)</option>
                                 </select>
 
                                 <button type="button"
@@ -294,14 +295,16 @@
                                         <% for (Centre c : centres) {
                                             String rawStatus = c.getStatus() != null ? c.getStatus().trim().toUpperCase() : "ACTIVE";
                                             boolean isActive = "ACTIVE".equals(rawStatus);
+                                            boolean isSuspended = "SUSPENDED".equals(rawStatus) || "TEMPORARILY_CLOSED".equals(rawStatus);
                                             boolean isDistributed = c.isDistributed();
                                             int futureCount = c.getFutureShowtimeCount();
                                             int soldCount = c.getSoldTicketCount();
                                             String cCity = c.getCity() != null ? c.getCity() : "";
 
-                                            String badgeText = isActive ? "Hoạt động" : "Tạm ngừng";
+                                            String badgeText = isActive ? "Hoạt động" : (isSuspended ? "Tạm ngưng (SUSPENDED)" : "Ngừng HĐ (INACTIVE)");
                                             String switchTitle = isActive ? "Bật/Tắt phân phối chiếu" :
-                                                                 "Cụm rạp đang " + badgeText.toLowerCase() + ", không thể phân phối";
+                                                                 (isSuspended ? "Cụm rạp đang tạm ngưng (SUSPENDED), phân phối tạm mất hiệu lực và không thể tạo mới" :
+                                                                 "Cụm rạp đang ngừng hoạt động (INACTIVE), phân phối đã bị hủy");
                                         %>
                                         <tr class="cf-centre-row <%= !isActive ? "is-disabled" : "" %>"
                                             data-id="<%= c.getCentreId() %>"
@@ -344,8 +347,10 @@
                                             <td>
                                                 <% if (isActive) { %>
                                                 <span class="cf-badge-active">Hoạt động</span>
-                                                <% }else { %>
-                                                <span class="cf-badge-maintenance" title="Rạp tạm ngừng/bảo trì">Tạm ngừng</span>
+                                                <% } else if (isSuspended) { %>
+                                                <span class="cf-badge-maintenance" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3);" title="Cụm rạp tạm ngừng hoạt động">Tạm ngưng</span>
+                                                <% } else { %>
+                                                <span class="cf-badge-maintenance" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3);" title="Cụm rạp ngừng hoạt động lâu dài">Ngừng HĐ</span>
                                                 <% } %>
                                             </td>
                                             <td>
@@ -773,8 +778,9 @@
                         let matchesSearch = !query || rName.includes(query) || rCity.includes(query);
                         let matchesCity = (city === 'ALL') || (rCityRaw.toLowerCase() === city.toLowerCase());
                         let matchesStatus = (status === 'ALL') || (rStatus === status) ||
-                                (status === 'MAINTENANCE' && (rStatus === 'TEMPORARILY_CLOSED' || rStatus === 'INACTIVE')) ||
-                                (status === 'TEMPORARILY_CLOSED' && (rStatus === 'TEMPORARILY_CLOSED' || rStatus === 'MAINTENANCE'));
+                                (status === 'SUSPENDED' && (rStatus === 'SUSPENDED' || rStatus === 'TEMPORARILY_CLOSED')) ||
+                                (status === 'INACTIVE' && rStatus === 'INACTIVE') ||
+                                (status === 'ACTIVE' && rStatus === 'ACTIVE');
 
                         if (matchesSearch && matchesCity && matchesStatus) {
                             row.style.display = '';

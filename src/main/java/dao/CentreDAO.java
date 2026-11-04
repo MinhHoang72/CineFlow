@@ -484,17 +484,147 @@ public class CentreDAO {
      * @param centreId mã định danh rạp cần bật/tắt trạng thái
      * @return true nếu đổi trạng thái thành công, ngược lại false
      */
+    private static final java.util.logging.Logger LOGGER = java.util.logging.Logger.getLogger(CentreDAO.class.getName());
+
+    /**
+     * Kiểm tra tính hợp lệ của luồng chuyển đổi trạng thái Cụm rạp (Theater status transition).
+     * Bảng quy tắc chuyển trạng thái hợp lệ:
+     * - ACTIVE -> SUSPENDED: Hợp lệ
+     * - SUSPENDED -> ACTIVE: Hợp lệ
+     * - ACTIVE -> INACTIVE: Hợp lệ
+     * - SUSPENDED -> INACTIVE: Hợp lệ
+     * - INACTIVE -> ACTIVE: Hợp lệ
+     * - INACTIVE -> SUSPENDED: KHÔNG HỢP LỆ (Phải về ACTIVE trước)
+     */
+    public boolean isValidStatusTransition(String fromStatus, String toStatus) {
+        if (fromStatus == null || toStatus == null) return false;
+        String from = fromStatus.trim().toUpperCase();
+        String to = toStatus.trim().toUpperCase();
+        if (from.equals(to)) return true;
+
+        if ("ACTIVE".equals(from)) {
+            return "SUSPENDED".equals(to) || "INACTIVE".equals(to);
+        } else if ("SUSPENDED".equals(from) || "TEMPORARILY_CLOSED".equals(from)) {
+            return "ACTIVE".equals(to) || "INACTIVE".equals(to);
+        } else if ("INACTIVE".equals(from)) {
+            return "ACTIVE".equals(to);
+        }
+        return false;
+    }
+
+    /**
+     * Thực hiện chuyển trạng thái Cụm rạp (Theater.changeStatus) theo quy chuẩn phân phối phim CineFlow.
+     * Thứ tự xử lý trong 1 Transaction duy nhất:
+     * 1. Kiểm tra quyền Admin và luồng chuyển trạng thái hợp lệ.
+     * 2. Cập nhật Status của Cụm rạp (Centres.Status).
+     * 3. Cập nhật hàng loạt MovieDistribution (CentreMovies):
+     *    - Rạp sang SUSPENDED: Cập nhật các bản ghi phân phối ACTIVE -> SUSPENDED (IsActive = 0, giữ cấu hình, tạm mất hiệu lực).
+     *    - Rạp sang INACTIVE: Cập nhật các bản ghi ACTIVE và SUSPENDED -> CANCELLED (IsActive = 0).
+     *    - Rạp sang ACTIVE từ SUSPENDED: Khôi phục các bản ghi SUSPENDED -> ACTIVE (IsActive = 1) CHỈ NẾU CHƯA QUÁ endDate của phim.
+     *      Các phim đã quá endDate giữ nguyên hoặc chuyển CANCELLED.
+     *    - Rạp sang ACTIVE từ INACTIVE: CANCELLED giữ nguyên (Không tự khôi phục; Admin phải tạo bản ghi mới).
+     * 4. Ghi log kiểm toán (ai đổi, khi nào, lý do).
+     * 5. Commit hoặc Rollback toàn bộ transaction.
+     */
+    public boolean changeStatus(int centreId, String currentStatus, String targetStatus, String adminUser, String reason) throws SQLException {
+        if (currentStatus == null || targetStatus == null) return false;
+        String from = currentStatus.trim().toUpperCase();
+        String to = targetStatus.trim().toUpperCase();
+
+        if (!isValidStatusTransition(from, to)) {
+            LOGGER.warning("[AUDIT REJECT] Chuyển trạng thái rạp không hợp lệ: Từ " + from + " sang " + to);
+            return false;
+        }
+
+        if (from.equals(to)) {
+            return true;
+        }
+
+        // TODO: Xử lý suất chiếu tương lai và vé đã bán khi rạp SUSPENDED hoặc INACTIVE (Quy tắc nghiệp vụ chưa chốt theo tài liệu)
+
+        try (Connection conn = DBContext.getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                // Bước 2: Cập nhật Status của Cụm rạp
+                String updateCentreSql = "UPDATE Centres SET Status = ?, UpdatedAt = GETDATE() WHERE CentreID = ?";
+                try (PreparedStatement ps = conn.prepareStatement(updateCentreSql)) {
+                    ps.setString(1, to);
+                    ps.setInt(2, centreId);
+                    int affected = ps.executeUpdate();
+                    if (affected <= 0) {
+                        conn.rollback();
+                        return false;
+                    }
+                }
+
+                // Bước 3: Cập nhật hàng loạt trạng thái phân phối (MovieDistribution / CentreMovies)
+                if ("SUSPENDED".equals(to)) {
+                    // Rạp chuyển sang SUSPENDED: ACTIVE -> SUSPENDED
+                    String sql = "UPDATE CentreMovies SET Status = 'SUSPENDED', IsActive = 0, UpdatedAt = GETDATE() "
+                               + "WHERE CentreID = ? AND Status = 'ACTIVE'";
+                    try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                        ps.setInt(1, centreId);
+                        ps.executeUpdate();
+                    }
+                } else if ("INACTIVE".equals(to)) {
+                    // Rạp chuyển sang INACTIVE: ACTIVE hoặc SUSPENDED -> CANCELLED
+                    String sql = "UPDATE CentreMovies SET Status = 'CANCELLED', IsActive = 0, UpdatedAt = GETDATE() "
+                               + "WHERE CentreID = ? AND Status IN ('ACTIVE', 'SUSPENDED')";
+                    try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                        ps.setInt(1, centreId);
+                        ps.executeUpdate();
+                    }
+                } else if ("ACTIVE".equals(to)) {
+                    if ("SUSPENDED".equals(from) || "TEMPORARILY_CLOSED".equals(from)) {
+                        // Khôi phục các bản ghi SUSPENDED -> ACTIVE, CHỈ KHÔI PHỤC NẾU CHƯA QUÁ endDate của phim!
+                        String restoreActiveSql = "UPDATE cm SET cm.Status = 'ACTIVE', cm.IsActive = 1, cm.UpdatedAt = GETDATE() "
+                                                + "FROM CentreMovies cm JOIN Movies m ON cm.MovieID = m.MovieID "
+                                                + "WHERE cm.CentreID = ? AND cm.Status = 'SUSPENDED' "
+                                                + "AND (m.EndDate IS NULL OR m.EndDate >= CAST(GETDATE() AS DATE))";
+                        try (PreparedStatement ps = conn.prepareStatement(restoreActiveSql)) {
+                            ps.setInt(1, centreId);
+                            ps.executeUpdate();
+                        }
+
+                        // Những phim đã hết hạn chiếu (quá endDate) thì chuyển thành CANCELLED
+                        String expirePastEndSql = "UPDATE cm SET cm.Status = 'CANCELLED', cm.IsActive = 0, cm.UpdatedAt = GETDATE() "
+                                                + "FROM CentreMovies cm JOIN Movies m ON cm.MovieID = m.MovieID "
+                                                + "WHERE cm.CentreID = ? AND cm.Status = 'SUSPENDED' "
+                                                + "AND (m.EndDate IS NOT NULL AND m.EndDate < CAST(GETDATE() AS DATE))";
+                        try (PreparedStatement ps = conn.prepareStatement(expirePastEndSql)) {
+                            ps.setInt(1, centreId);
+                            ps.executeUpdate();
+                        }
+                    } else if ("INACTIVE".equals(from)) {
+                        // ACTIVE (từ INACTIVE): CANCELLED giữ nguyên (Không tự khôi phục)
+                    }
+                }
+
+                // Bước 4: Ghi log kiểm toán (ai đổi, khi nào, lý do)
+                LOGGER.info(String.format("[AUDIT] Admin '%s' đã đổi trạng thái cụm rạp ID %d từ '%s' sang '%s'. Lý do: %s",
+                        (adminUser != null ? adminUser : "SYSTEM"), centreId, from, to, (reason != null ? reason : "N/A")));
+
+                // Bước 5: Toàn bộ trong một transaction: cùng thành công hoặc cùng rollback
+                conn.commit();
+                return true;
+            } catch (Exception e) {
+                conn.rollback();
+                LOGGER.log(java.util.logging.Level.SEVERE, "Lỗi khi thực hiện giao dịch chuyển trạng thái rạp ID: " + centreId, e);
+                throw e;
+            }
+        }
+    }
+
+    /**
+     * Bật/tắt nhanh trạng thái (tương thích ngược với các lời gọi cũ).
+     */
     public boolean toggleStatus(int centreId) {
-        String sql = "UPDATE Centres "
-                   + "SET Status = CASE WHEN UPPER(Status) = 'ACTIVE' THEN 'INACTIVE' ELSE 'ACTIVE' END, "
-                   + "    UpdatedAt = GETDATE() "
-                   + "WHERE CentreID = ?";
-
-        try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setInt(1, centreId);
-            return ps.executeUpdate() > 0;
+        Centre centre = getCentreById(centreId);
+        if (centre == null) return false;
+        String current = centre.getStatus();
+        String target = "ACTIVE".equalsIgnoreCase(current) ? "SUSPENDED" : "ACTIVE";
+        try {
+            return changeStatus(centreId, current, target, "Admin", "Toggle status qua giao diện");
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
@@ -511,6 +641,8 @@ public class CentreDAO {
         String sql;
         if ("ALL".equalsIgnoreCase(status) || status == null) {
             sql = "SELECT COUNT(*) FROM Centres";
+        } else if ("SUSPENDED".equalsIgnoreCase(status)) {
+            sql = "SELECT COUNT(*) FROM Centres WHERE UPPER(Status) IN ('SUSPENDED', 'TEMPORARILY_CLOSED')";
         } else {
             sql = "SELECT COUNT(*) FROM Centres WHERE UPPER(Status) = ?";
         }
@@ -518,7 +650,7 @@ public class CentreDAO {
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            if (!"ALL".equalsIgnoreCase(status) && status != null) {
+            if (!"ALL".equalsIgnoreCase(status) && status != null && !"SUSPENDED".equalsIgnoreCase(status)) {
                 ps.setString(1, status.trim().toUpperCase());
             }
 

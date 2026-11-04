@@ -87,6 +87,7 @@ public class CentreManagementServlet extends HttpServlet {
         request.setAttribute("centres", pageResult.getItems());
         request.setAttribute("totalCentres", kpi.totalCentres());
         request.setAttribute("activeCentres", kpi.activeCentres());
+        request.setAttribute("suspendedCentres", kpi.suspendedCentres());
         request.setAttribute("inactiveCentres", kpi.inactiveCentres());
         request.setAttribute("totalHalls", kpi.totalHalls());
         request.setAttribute("currentSearch", search != null ? search.trim() : "");
@@ -169,7 +170,36 @@ public class CentreManagementServlet extends HttpServlet {
             return;
         }
 
-        // Toggle Status
+        // Chuyển trạng thái Cụm rạp (Theater.changeStatus) theo quy chuẩn nghiệp vụ phân phối phim
+        if ("changeStatus".equalsIgnoreCase(action)) {
+            String centreIdParam = request.getParameter("centreId");
+            String newStatus     = request.getParameter("newStatus");
+            String reason        = request.getParameter("reason");
+
+            int centreId;
+            try {
+                centreId = Integer.parseInt(centreIdParam.trim());
+            } catch (Exception e) {
+                redirectUrl.append("error=invalid_id");
+                response.sendRedirect(redirectUrl.toString());
+                return;
+            }
+
+            String adminUser = (session.getAttribute("user") instanceof User)
+                    ? ((User) session.getAttribute("user")).getAccount()
+                    : "Admin";
+
+            CinemaService.Result<Centre> result = cinemaService.changeCentreStatus(centreId, newStatus, adminUser, reason);
+            if (result.isSuccess()) {
+                redirectUrl.append("success=status_changed");
+            } else {
+                redirectUrl.append("error=invalid_transition");
+            }
+            response.sendRedirect(redirectUrl.toString());
+            return;
+        }
+
+        // Toggle Status (Tương thích ngược)
         if ("toggleStatus".equalsIgnoreCase(action)) {
             try {
                 int centreId = Integer.parseInt(request.getParameter("centreId").trim());
