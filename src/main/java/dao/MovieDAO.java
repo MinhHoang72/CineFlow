@@ -549,17 +549,6 @@ public class MovieDAO {
      * Cập nhật danh sách trung tâm được phân phối phim trong một Transaction an toàn.
      */
     public boolean saveMovieDistribution(int movieId, Set<Integer> selectedCentreIDs) {
-        // Quy tắc nghiệp vụ: Phim ở trạng thái ARCHIVED hoặc ENDED không còn được phân phối nữa ở các rạp
-        Movie targetMovie = getMovieById(movieId);
-        if (targetMovie != null) {
-            String mStatus = targetMovie.getStatus() != null ? targetMovie.getStatus().trim().toUpperCase() : "";
-            if ("ARCHIVED".equals(mStatus) || "ENDED".equals(mStatus)) {
-                if (selectedCentreIDs != null && !selectedCentreIDs.isEmpty()) {
-                    return false; // Chặn phân phối phim đã kết thúc hoặc lưu kho
-                }
-            }
-        }
-
         // Quy tắc 4 & 5: Hủy phân phối khi bỏ chọn: chuyển Status = 'CANCELLED', IsActive = 0 (không xóa bản ghi)
         String disableAllSql = "UPDATE CentreMovies SET Status = 'CANCELLED', IsActive = 0, UpdatedAt = GETDATE() "
                 + "WHERE MovieID = ? AND Status IN ('ACTIVE', 'SUSPENDED')";

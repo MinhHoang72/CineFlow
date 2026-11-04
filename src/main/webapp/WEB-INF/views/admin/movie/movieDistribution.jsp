@@ -106,6 +106,8 @@
                                     <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                                     </svg>
                                 </span>
+                                
+                                <%--Tìm kiếm phim--%>
                                 <input type="text"
                                        id="movieSearchInput"
                                        class="cf-movie-search-input"

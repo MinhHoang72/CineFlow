@@ -267,9 +267,7 @@
                                     </tr>
                                     <% } else {
                                         for (User c : customers) {
-                                            boolean isActive =
-                                                "ACTIVE".equalsIgnoreCase(c.getStatus());
-
+                                            boolean isActive ="ACTIVE".equalsIgnoreCase(c.getStatus());
                                             String initial =
                                                 c.getFullName() != null
                                                 && !c.getFullName().isBlank()
