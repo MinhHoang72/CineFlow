@@ -40,10 +40,10 @@
                     <h1>Quản lý Cụm rạp</h1>
                     <p>Danh sách các cụm rạp, thông tin liên hệ và trạng thái hoạt động trên toàn hệ thống</p>
                 </div>
-                <button type="button" class="cf-btn cf-btn-primary" onclick="openCreateCentreModal()" style="display: flex; align-items: center; gap: 8px;">
+                <a href="${baseUrl}?action=create" class="cf-btn cf-btn-primary" style="display: flex; align-items: center; gap: 8px;">
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                     Thêm Cụm rạp mới
-                </button>
+                </a>
             </div>
 
             <!-- Thông báo thành công / lỗi -->
@@ -62,14 +62,9 @@
                     <span>✓</span> <strong>Thành công!</strong> Đã cập nhật trạng thái hoạt động của cụm rạp.
                 </div>
             </c:if>
-            <c:if test="${param.error == 'duplicate_name'}">
+            <c:if test="${param.error == 'invalid_id'}">
                 <div class="cf-alert cf-alert-danger">
-                    <span>⚠</span> <strong>Lỗi:</strong> Tên cụm rạp đã tồn tại trong hệ thống. Vui lòng chọn tên khác!
-                </div>
-            </c:if>
-            <c:if test="${param.error == 'missing_fields'}">
-                <div class="cf-alert cf-alert-danger">
-                    <span>⚠</span> <strong>Lỗi:</strong> Vui lòng điền đầy đủ các thông tin bắt buộc (Tên cụm rạp, Địa chỉ, Hotline).
+                    <span>⚠</span> <strong>Lỗi:</strong> Cụm rạp không tồn tại hoặc mã định danh không hợp lệ!
                 </div>
             </c:if>
             <c:if test="${param.error == 'failed'}">
@@ -136,7 +131,6 @@
                 <table class="cf-table">
                     <thead>
                         <tr>
-                            <th style="width: 70px;">STT</th>
                             <th style="min-width: 180px;">Tên Cụm rạp</th>
                             <th style="min-width: 240px;">Địa chỉ & Thành phố</th>
                             <th style="min-width: 130px;">Hotline</th>
@@ -148,10 +142,9 @@
                     <tbody>
                         <c:choose>
                             <c:when test="${not empty result.items}">
-                                <c:forEach items="${result.items}" var="c" varStatus="loop">
+                                <c:forEach items="${result.items}" var="c">
                                     <c:set var="isActive" value="${c.status == 'ACTIVE'}" />
                                     <tr>
-                                        <td><strong>#${result.from + loop.index}</strong></td>
                                         <td>
                                             <strong style="color: #F8FAFC; font-size: 15px;">${c.centreName}</strong>
                                         </td>
@@ -190,16 +183,15 @@
                                         <td style="text-align: right;">
                                             <div class="cf-actions" style="justify-content: flex-end;">
                                                 <!-- Nút Sửa -->
-                                                <button type="button" class="cf-btn cf-btn-secondary cf-btn-sm"
-                                                        onclick="openEditCentreModal(${c.centreId}, '${c.centreName}', '${c.address}', '${c.phone}', '${c.city}')">
+                                                <a href="${baseUrl}?action=edit&centreId=${c.centreId}" class="cf-btn cf-btn-secondary cf-btn-sm">
                                                     Sửa
-                                                </button>
+                                                </a>
 
                                                 <!-- Nút Toggle Status (Bật / Tắt trạng thái) -->
-                                                <form method="POST" action="${baseUrl}" style="display: inline-block; margin: 0;"
-                                                      onsubmit="return confirmToggleStatus('${c.centreName}', ${isActive});">
+                                                <form method="POST" action="${baseUrl}" style="display: inline-block; margin: 0;">
                                                     <input type="hidden" name="action" value="toggleStatus">
                                                     <input type="hidden" name="centreId" value="${c.centreId}">
+                                                    <%-- gửi action và centrerid --%>
                                                     <input type="hidden" name="back" value="${backQuery}">
                                                     <input type="hidden" name="search" value="${currentSearch}">
                                                     <input type="hidden" name="status" value="${currentStatus}">
@@ -225,7 +217,7 @@
                             </c:when>
                             <c:otherwise>
                                 <tr>
-                                    <td colspan="7" style="text-align: center; padding: 40px; color: #94A3B8;">
+                                    <td colspan="6" style="text-align: center; padding: 40px; color: #94A3B8;">
                                         Không tìm thấy Cụm rạp nào phù hợp với điều kiện tìm kiếm.
                                     </td>
                                 </tr>
@@ -248,101 +240,6 @@
     </div>
 </div>
 
-<!-- ============================================================== -->
-<!-- MODAL 1: THÊM CỤM RẠP MỚI -->
-<!-- ============================================================== -->
-<div class="cf-modal-backdrop" id="createCentreModal">
-    <div class="cf-modal">
-        <div class="cf-modal-header">
-            <h3>Thêm Cụm rạp mới</h3>
-            <button type="button" class="cf-modal-close" onclick="closeCreateCentreModal()">&times;</button>
-        </div>
-        <form method="POST" action="${baseUrl}">
-            <input type="hidden" name="action" value="create">
-            <input type="hidden" name="back" value="${backQuery}">
-            <input type="hidden" name="search" value="${currentSearch}">
-            <input type="hidden" name="status" value="${currentStatus}">
-            <input type="hidden" name="page" value="1">
-
-            <div class="cf-modal-body">
-                <div class="cf-form-group">
-                    <label>Tên Cụm rạp *</label>
-                    <input type="text" name="centreName" placeholder="Ví dụ: CineFlow Cầu Giấy" required>
-                    <span class="cf-form-hint">Hệ thống sẽ kiểm tra đảm bảo không trùng tên với cụm rạp khác.</span>
-                </div>
-
-                <div class="cf-form-group">
-                    <label>Địa chỉ chi tiết *</label>
-                    <input type="text" name="address" placeholder="Ví dụ: 123 Cầu Giấy, Quan Hoa" required>
-                </div>
-
-                <div class="cf-form-group">
-                    <label>Hotline / Điện thoại liên hệ *</label>
-                    <input type="text" name="phone" placeholder="Ví dụ: 02411111111" required>
-                </div>
-
-                <div class="cf-form-group">
-                    <label>Thành phố / Tỉnh thành</label>
-                    <input type="text" name="city" placeholder="Ví dụ: Hà Nội, TP. Hồ Chí Minh, Đà Nẵng...">
-                </div>
-            </div>
-
-            <div class="cf-modal-footer">
-                <button type="button" class="cf-btn cf-btn-secondary" onclick="closeCreateCentreModal()">Hủy</button>
-                <button type="submit" class="cf-btn cf-btn-primary">Lưu Cụm rạp</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- ============================================================== -->
-<!-- MODAL 2: SỬA THÔNG TIN CỤM RẠP -->
-<!-- ============================================================== -->
-<div class="cf-modal-backdrop" id="editCentreModal">
-    <div class="cf-modal">
-        <div class="cf-modal-header">
-            <h3>Sửa thông tin Cụm rạp</h3>
-            <button type="button" class="cf-modal-close" onclick="closeEditCentreModal()">&times;</button>
-        </div>
-        <form method="POST" action="${baseUrl}">
-            <input type="hidden" name="action" value="update">
-            <input type="hidden" name="centreId" id="editCentreId">
-            <input type="hidden" name="back" value="${backQuery}">
-            <input type="hidden" name="search" value="${currentSearch}">
-            <input type="hidden" name="status" value="${currentStatus}">
-            <input type="hidden" name="page" value="${result.page}">
-
-            <div class="cf-modal-body">
-                <div class="cf-form-group">
-                    <label>Tên Cụm rạp *</label>
-                    <input type="text" name="centreName" id="editCentreName" required>
-                    <span class="cf-form-hint">Kiểm tra không trùng lặp với tên của cụm rạp khác.</span>
-                </div>
-
-                <div class="cf-form-group">
-                    <label>Địa chỉ chi tiết *</label>
-                    <input type="text" name="address" id="editAddress" required>
-                </div>
-
-                <div class="cf-form-group">
-                    <label>Hotline / Điện thoại liên hệ *</label>
-                    <input type="text" name="phone" id="editPhone" required>
-                </div>
-
-                <div class="cf-form-group">
-                    <label>Thành phố / Tỉnh thành</label>
-                    <input type="text" name="city" id="editCity">
-                </div>
-            </div>
-
-            <div class="cf-modal-footer">
-                <button type="button" class="cf-btn cf-btn-secondary" onclick="closeEditCentreModal()">Hủy</button>
-                <button type="submit" class="cf-btn cf-btn-primary">Cập nhật thay đổi</button>
-            </div>
-        </form>
-    </div>
-</div>
-
 <!-- JavaScript điều khiển giao diện -->
 <script>
     // Tự động ẩn thông báo Alert sau 3.5 giây
@@ -353,45 +250,6 @@
                 alert.style.opacity = "0";
                 setTimeout(function () { alert.remove(); }, 400);
             }, 3500);
-        });
-    });
-
-    // Mở / Đóng Modal Thêm Centre
-    function openCreateCentreModal() {
-        document.getElementById('createCentreModal').classList.add('active');
-    }
-    function closeCreateCentreModal() {
-        document.getElementById('createCentreModal').classList.remove('active');
-    }
-
-    // Mở / Đóng Modal Sửa Centre
-    function openEditCentreModal(id, name, address, phone, city) {
-        document.getElementById('editCentreId').value = id;
-        document.getElementById('editCentreName').value = name;
-        document.getElementById('editAddress').value = address;
-        document.getElementById('editPhone').value = phone;
-        document.getElementById('editCity').value = city;
-        document.getElementById('editCentreModal').classList.add('active');
-    }
-    function closeEditCentreModal() {
-        document.getElementById('editCentreModal').classList.remove('active');
-    }
-
-    // Xác nhận Toggle Status
-    function confirmToggleStatus(centreName, isCurrentlyActive) {
-        if (isCurrentlyActive) {
-            return confirm("CẢNH BÁO: Khi tạm ngưng cụm rạp \"" + centreName + "\", tất cả các phòng chiếu và suất chiếu của cụm rạp này sẽ tạm dừng hoạt động trên luồng đặt vé.\n\nBạn có chắc chắn muốn TẮT trạng thái hoạt động của cụm rạp này không?");
-        } else {
-            return confirm("Bạn có muốn KÍCH HOẠT lại cụm rạp \"" + centreName + "\" để cụm rạp hoạt động bình thường trên hệ thống?");
-        }
-    }
-
-    // Đóng modal khi click ra ngoài backdrop
-    document.querySelectorAll('.cf-modal-backdrop').forEach(function(modal) {
-        modal.addEventListener('click', function(e) {
-            if (e.target === this) {
-                this.classList.remove('active');
-            }
         });
     });
 </script>

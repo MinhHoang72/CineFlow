@@ -75,7 +75,7 @@ public class CinemaService {
         address = address.trim();
         phone = phone.trim();
         city = city != null ? city.trim() : "";
-
+//có giá trị trả về true , k có trả về false 
         if (centreDAO.isCentreNameExists(name, 0)) {
             return "duplicate_name";
         }
