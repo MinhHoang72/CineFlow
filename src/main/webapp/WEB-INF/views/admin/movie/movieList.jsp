@@ -99,6 +99,10 @@
                 <div class="cf-alert cf-alert-success" style="margin-bottom: 20px;">
                     ✓ Đã lưu thông tin phim thành công vào hệ thống.
                 </div>
+            <% } else if ("reissue_dates_required".equals(request.getParameter("error"))) { %>
+                <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
+                    ⚠ <strong>Lỗi đổi trạng thái:</strong> Phim đang ở trạng thái Lưu trữ (ARCHIVED) hoặc Đã kết thúc (ENDED). Để chuyển sang "Sắp khởi chiếu" (COMING SOON), bạn vui lòng bấm <strong>Sửa</strong> để thiết lập lại <strong>Ngày khởi chiếu</strong> và <strong>Ngày kết thúc</strong> mới trong tương lai.
+                </div>
             <% } else if ("invalid_status".equals(request.getParameter("error"))) { %>
                 <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
                     ⚠ Trạng thái cập nhật không hợp lệ.

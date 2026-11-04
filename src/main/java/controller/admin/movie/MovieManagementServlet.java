@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Date;
+import java.time.LocalDate;
 import java.util.UUID;
 
 /**
@@ -178,12 +179,31 @@ public class MovieManagementServlet extends HttpServlet {
             // 2.7. Kiểm tra khoảng thời gian chiếu (Ngày kết thúc phải lớn hơn hoặc bằng ngày khởi chiếu)
             Date releaseDate = parseDate(releaseDateStr);
             Date endDate = parseDate(endDateStr);
-            Date today = new Date(System.currentTimeMillis());
+            Date today = Date.valueOf(LocalDate.now());
 
-            // Nghiệp vụ: Nếu trạng thái được set là ENDED, tự động gán ngày kết thúc (EndDate) là hôm nay nếu chưa có hoặc đang ở tương lai
-            if ("ENDED".equals(status)) {
-                if (endDate == null || endDate.after(today)) {
-                    endDate = today;
+            // Nghiệp vụ 1: Khi ấn archive hoặc end phim thì ngày kết thúc sẽ ngay lập tức kích hoạt lúc đó
+            if ("ARCHIVED".equals(status) || "ENDED".equals(status)) {
+                endDate = today;
+            }
+
+            // Nghiệp vụ 2: Khi phim chuyển từ ARCHIVED hoặc ENDED sang COMING_SOON, bắt buộc phải validation ngày phát hành và kết thúc không được lưu thay đổi khi chưa set lại ngày tháng
+            if (movieId > 0) {
+                Movie existing = movieService.getMovieById(movieId);
+                if (existing != null) {
+                    String oldStatus = existing.getStatus() != null ? existing.getStatus().toUpperCase() : "";
+                    String dateErr = ValidationUtil.validateTransitionToComingSoon(oldStatus, status, releaseDate, endDate);
+                    if (dateErr != null) {
+                        response.sendRedirect(redirectTarget + sep + "error=" + dateErr);
+                        return;
+                    }
+                    if (("ARCHIVED".equals(oldStatus) || "ENDED".equals(oldStatus)) && "COMING_SOON".equals(status)) {
+                        if (existing.getEndDate() != null && !existing.getEndDate().toLocalDate().isAfter(LocalDate.now())) {
+                            if (endDate != null && endDate.equals(existing.getEndDate())) {
+                                response.sendRedirect(redirectTarget + sep + "error=reissue_dates_required");
+                                return;
+                            }
+                        }
+                    }
                 }
             }
 
@@ -237,9 +257,23 @@ public class MovieManagementServlet extends HttpServlet {
                     int movieId = Integer.parseInt(movieIdParam.trim());
                     String targetStatus = newStatus.trim().toUpperCase();
                     if (ValidationUtil.isValidMovieStatus(targetStatus)) {
-                        movieService.updateMovieStatus(movieId, targetStatus);
-                        response.sendRedirect(request.getContextPath() + "/admin/movies?success=statusUpdated");
-                        return;
+                        Movie curr = movieService.getMovieById(movieId);
+                        if (curr != null) {
+                            String currStatus = curr.getStatus() != null ? curr.getStatus().toUpperCase() : "";
+                            // Chặn đổi nhanh sang COMING_SOON nếu phim đang là ARCHIVED hoặc ENDED (phải set lại ngày tháng mới)
+                            if (("ARCHIVED".equals(currStatus) || "ENDED".equals(currStatus)) && "COMING_SOON".equals(targetStatus)) {
+                                response.sendRedirect(request.getContextPath() + "/admin/movies?error=reissue_dates_required");
+                                return;
+                            }
+                        }
+                        boolean ok = movieService.updateMovieStatus(movieId, targetStatus);
+                        if (ok) {
+                            response.sendRedirect(request.getContextPath() + "/admin/movies?success=statusUpdated");
+                            return;
+                        } else {
+                            response.sendRedirect(request.getContextPath() + "/admin/movies?error=reissue_dates_required");
+                            return;
+                        }
                     }
                 } catch (NumberFormatException ignored) {
                 }

@@ -102,6 +102,10 @@
                 <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
                     <span>⚠</span> <strong>Lỗi tệp:</strong> Trailer phải là tệp video (.mp4, .webm, .ogg).
                 </div>
+            <% } else if ("reissue_dates_required".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
+                    <span>⚠</span> <strong>Lỗi ngày phát hành:</strong> Phim đang ở trạng thái <%= editing && "ARCHIVED".equalsIgnoreCase(movie.getStatus()) ? "Lưu trữ (ARCHIVED)" : "Đã kết thúc (ENDED)" %>. Khi chuyển sang "Sắp khởi chiếu" (COMING SOON), bạn bắt buộc phải thiết lập lại <strong>Ngày khởi chiếu</strong> (trong tương lai) và <strong>Ngày kết thúc</strong> mới trước khi lưu thay đổi.
+                </div>
             <% } else if (errorParam != null) { %>
                 <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
                     <span>⚠</span> Thao tác lưu phim thất bại. Vui lòng kiểm tra lại thông tin.
@@ -471,16 +475,24 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Tự động gán ngày kết thúc khi chọn trạng thái "Đã kết thúc" (ENDED)
+    // Nghiệp vụ: Tự động gán ngày kết thúc khi chọn trạng thái "Đã kết thúc" (ENDED) hoặc "Lưu trữ" (ARCHIVED)
     const statusSelect = document.querySelector('select[name="status"]');
     const releaseDateInput = document.querySelector('input[name="releaseDate"]');
     const endDateInput = document.querySelector('input[name="endDate"]');
+    const originalStatus = '<%= editing && movie.getStatus() != null ? movie.getStatus() : "" %>';
+
     if (statusSelect && endDateInput) {
         statusSelect.addEventListener('change', function() {
-            if (this.value === 'ENDED') {
-                const todayStr = new Date().toISOString().split('T')[0];
-                if (!endDateInput.value || endDateInput.value > todayStr) {
-                    endDateInput.value = todayStr;
+            const todayStr = new Date().toISOString().split('T')[0];
+            if (this.value === 'ENDED' || this.value === 'ARCHIVED') {
+                endDateInput.value = todayStr;
+            } else if ((originalStatus === 'ARCHIVED' || originalStatus === 'ENDED') && this.value === 'COMING_SOON') {
+                // Nhắc nhở người dùng cần cập nhật lại ngày khởi chiếu và ngày kết thúc
+                if (releaseDateInput && releaseDateInput.value <= todayStr) {
+                    releaseDateInput.value = '';
+                }
+                if (endDateInput && endDateInput.value <= todayStr) {
+                    endDateInput.value = '';
                 }
             }
         });
@@ -492,6 +504,16 @@ document.addEventListener('DOMContentLoaded', function() {
             const relVal = releaseDateInput ? releaseDateInput.value : '';
             const endVal = endDateInput ? endDateInput.value : '';
             const todayStr = new Date().toISOString().split('T')[0];
+
+            // Nghiệp vụ: Chuyển từ ARCHIVED hoặc ENDED sang COMING_SOON phải validation ngày tháng
+            if ((originalStatus === 'ARCHIVED' || originalStatus === 'ENDED') && status === 'COMING_SOON') {
+                if (!relVal || !endVal || relVal < todayStr || endVal < relVal || endVal <= todayStr) {
+                    alert('Phim đang ở trạng thái ' + (originalStatus === 'ARCHIVED' ? 'Lưu trữ (ARCHIVED)' : 'Đã kết thúc (ENDED)') + '. Khi chuyển sang "Sắp khởi chiếu" (COMING SOON), bạn bắt buộc phải thiết lập lại Ngày khởi chiếu (trong tương lai) và Ngày kết thúc mới trước khi lưu.');
+                    if (releaseDateInput) releaseDateInput.focus();
+                    e.preventDefault();
+                    return;
+                }
+            }
 
             if (relVal && endVal && endVal < relVal) {
                 alert('Ngày kết thúc phải lớn hơn hoặc bằng ngày khởi chiếu.');

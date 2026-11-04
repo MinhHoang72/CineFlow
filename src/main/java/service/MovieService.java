@@ -132,6 +132,8 @@ public class MovieService {
         String targetStatus = status.trim().toUpperCase();
         if ("ENDED".equals(targetStatus)) {
             return movieDAO.endMovie(movieId);
+        } else if ("ARCHIVED".equals(targetStatus)) {
+            return movieDAO.archiveMovie(movieId);
         } else {
             return movieDAO.updateMovieStatus(movieId, targetStatus);
         }
@@ -163,6 +165,16 @@ public class MovieService {
     public boolean saveMovieDistribution(int movieId, Set<Integer> selectedCentreIds) {
         if (movieId <= 0) {
             return false;
+        }
+        // Nghiệp vụ: Phim ở trạng thái archive hoặc end không còn được phân phối nữa ở các rạp nữa
+        Movie targetMovie = movieDAO.getMovieById(movieId);
+        if (targetMovie != null) {
+            String st = targetMovie.getStatus() != null ? targetMovie.getStatus().toUpperCase() : "";
+            if ("ARCHIVED".equals(st) || "ENDED".equals(st)) {
+                if (selectedCentreIds != null && !selectedCentreIds.isEmpty()) {
+                    return false;
+                }
+            }
         }
         return movieDAO.saveMovieDistribution(movieId, selectedCentreIds);
     }

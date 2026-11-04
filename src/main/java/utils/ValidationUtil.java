@@ -1,6 +1,7 @@
 package utils;
 
 import java.sql.Date;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -192,11 +193,52 @@ public final class ValidationUtil {
             return null;
         }
         String st = status.trim().toUpperCase();
-        if ("COMING_SOON".equals(st) && releaseDate.before(today)) {
+        LocalDate rel = releaseDate.toLocalDate();
+        LocalDate tod = today.toLocalDate();
+        if ("COMING_SOON".equals(st) && rel.isBefore(tod)) {
             return "coming_soon_in_past";
         }
-        if ("NOW_SHOWING".equals(st) && releaseDate.after(today)) {
+        if ("NOW_SHOWING".equals(st) && rel.isAfter(tod)) {
             return "now_showing_in_future";
+        }
+        return null;
+    }
+
+    /**
+     * Kiểm tra tính hợp lệ khi chuyển đổi trạng thái phim từ ARCHIVED hoặc ENDED sang COMING_SOON.
+     * Quy tắc nghiệp vụ: Bắt buộc phải thiết lập lại ngày khởi chiếu (releaseDate) và ngày kết thúc (endDate)
+     * mới trong tương lai trước khi lưu thay đổi.
+     *
+     * @param currentStatus trạng thái hiện tại của phim trong CSDL
+     * @param targetStatus trạng thái mới
+     * @param releaseDate ngày khởi chiếu mới
+     * @param endDate ngày kết thúc mới
+     * @return null nếu hợp lệ, hoặc mã lỗi ("reissue_dates_required", "coming_soon_in_past", "invalid_date_range")
+     */
+    public static String validateTransitionToComingSoon(String currentStatus, String targetStatus, Date releaseDate, Date endDate) {
+        if (currentStatus == null || targetStatus == null) {
+            return null;
+        }
+        String curr = currentStatus.trim().toUpperCase();
+        String target = targetStatus.trim().toUpperCase();
+
+        if (("ARCHIVED".equals(curr) || "ENDED".equals(curr)) && "COMING_SOON".equals(target)) {
+            if (releaseDate == null || endDate == null) {
+                return "reissue_dates_required";
+            }
+            LocalDate today = LocalDate.now();
+            LocalDate rel = releaseDate.toLocalDate();
+            LocalDate end = endDate.toLocalDate();
+
+            if (rel.isBefore(today)) {
+                return "coming_soon_in_past";
+            }
+            if (end.isBefore(rel)) {
+                return "invalid_date_range";
+            }
+            if (!end.isAfter(today)) {
+                return "reissue_dates_required";
+            }
         }
         return null;
     }

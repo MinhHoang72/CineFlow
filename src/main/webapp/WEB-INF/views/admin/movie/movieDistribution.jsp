@@ -82,6 +82,10 @@
                     <div id="saveSuccessAlert" class="cf-alert cf-alert-success" style="margin-bottom: 20px;">
                         Cập nhật cấu hình phân phối rạp chiếu thành công.
                     </div>
+                    <% } else if ("movie_ended_or_archived".equals(request.getParameter("error"))) { %>
+                    <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
+                        Phim ở trạng thái Lưu trữ (ARCHIVED) hoặc Đã kết thúc (ENDED) không thể phân phối tại các rạp chiếu.
+                    </div>
                     <script>
                         setTimeout(function () {
                             const alert = document.getElementById('saveSuccessAlert');
@@ -224,6 +228,15 @@
                                 </a>
                             </div>
                         </div>
+                        <% boolean isEndedOrArchived = ("ARCHIVED".equalsIgnoreCase(movie.getStatus()) || "ENDED".equalsIgnoreCase(movie.getStatus()));
+                           if (isEndedOrArchived) { %>
+                        <div class="cf-alert" style="margin-top: 14px; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.35); color: #f87171; display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-radius: 8px;">
+                            <span style="font-size: 18px;">⛔</span>
+                            <div>
+                                <strong>Phim không còn được phân phối:</strong> Phim đang ở trạng thái <strong><%= "ARCHIVED".equalsIgnoreCase(movie.getStatus()) ? "Lưu trữ (ARCHIVED)" : "Đã kết thúc (ENDED)" %></strong>. Toàn bộ phân phối tại các rạp đã ngừng hoạt động. Để tiếp tục phân phối lại, vui lòng kích hoạt lại phim trong mục Chỉnh sửa thông tin phim.
+                            </div>
+                        </div>
+                        <% } %>
                         <% } %>
                     </section>
 
@@ -271,7 +284,7 @@
                                         class="cf-btn-dist-all <%= isAllDistributed ? "is-cancel" : "" %>"
                                         id="btnSelectAll"
                                         data-is-all="<%= isAllDistributed ? "1" : "0" %>"
-                                        title="<%= isAllDistributed ? "Hủy phân phối toàn bộ các cụm rạp đang hoạt động" : "Phân phối cho tất cả cụm rạp đang hoạt động" %>">
+                                        <%= (movie != null && ("ARCHIVED".equalsIgnoreCase(movie.getStatus()) || "ENDED".equalsIgnoreCase(movie.getStatus()))) ? "disabled style='opacity: 0.4; cursor: not-allowed;' title='Phim đã kết thúc/lưu trữ, không thể phân phối'" : ("title=\"" + (isAllDistributed ? "Hủy phân phối toàn bộ các cụm rạp đang hoạt động" : "Phân phối cho tất cả cụm rạp đang hoạt động") + "\"") %>>
                                     <span class="cf-btn-dist-text"><%= isAllDistributed ? "Hủy phân phối toàn bộ" : "Phân phối toàn bộ" %></span>
                                 </button>
 
@@ -355,8 +368,10 @@
                                             </td>
                                             <td>
                                                 <div class="cf-switch-cell-wrap">
-                                                    <label class="cf-switch <%= !isActive ? "is-disabled" : "" %>"
-                                                           title="<%= switchTitle %>">
+                                                    <% boolean isMovieArchivedOrEnded = (movie != null && ("ARCHIVED".equalsIgnoreCase(movie.getStatus()) || "ENDED".equalsIgnoreCase(movie.getStatus())));
+                                                       boolean canToggleSwitch = isActive && !isMovieArchivedOrEnded; %>
+                                                    <label class="cf-switch <%= !canToggleSwitch ? "is-disabled" : "" %>"
+                                                           title="<%= isMovieArchivedOrEnded ? "Phim ở trạng thái ARCHIVED/ENDED, không thể phân phối" : switchTitle %>">
                                                         <input type="checkbox"
                                                                name="centreIds"
                                                                value="<%= c.getCentreId() %>"
@@ -364,8 +379,8 @@
                                                                data-future="<%= futureCount %>"
                                                                data-sold="<%= soldCount %>"
                                                                data-centre-name="<%= c.getCentreName() %>"
-                                                               <%= (isActive && isDistributed) ? "checked" : "" %>
-                                                               <%= !isActive ? "disabled" : "" %>>
+                                                               <%= (canToggleSwitch && isDistributed) ? "checked" : "" %>
+                                                               <%= !canToggleSwitch ? "disabled" : "" %>>
                                                         <span class="cf-switch-slider"></span>
                                                     </label>
                                                     <span class="cf-row-arrow">
@@ -386,7 +401,7 @@
                                 <button type="button" class="cf-btn-cancel" onclick="location.reload();">
                                     Hủy thay đổi
                                 </button>
-                                <button type="submit" class="cf-btn-save">
+                                <button type="submit" class="cf-btn-save" <%= (movie != null && ("ARCHIVED".equalsIgnoreCase(movie.getStatus()) || "ENDED".equalsIgnoreCase(movie.getStatus()))) ? "disabled style='opacity: 0.4; cursor: not-allowed;' title='Phim đã kết thúc/lưu trữ, không thể lưu phân phối'" : "" %>>
                                     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
                                     <polyline points="17 21 17 13 7 13 7 21"></polyline>

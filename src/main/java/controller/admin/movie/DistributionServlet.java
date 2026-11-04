@@ -107,6 +107,17 @@ public class DistributionServlet extends HttpServlet {
 
             // 3. Đọc mã phim và danh sách mã cụm rạp được tích chọn (checkbox centreIds)
             int movieId = Integer.parseInt(request.getParameter("movieId"));
+
+            // Nghiệp vụ: Phim ở trạng thái archive hoặc end không còn được phân phối nữa ở các rạp
+            Movie targetMovie = movieService.getMovieById(movieId);
+            if (targetMovie != null) {
+                String mStatus = targetMovie.getStatus() != null ? targetMovie.getStatus().toUpperCase() : "";
+                if ("ARCHIVED".equals(mStatus) || "ENDED".equals(mStatus)) {
+                    response.sendRedirect(request.getContextPath() + "/admin/distribution?movieId=" + movieId + "&error=movie_ended_or_archived");
+                    return;
+                }
+            }
+
             String[] ids = request.getParameterValues("centreIds");
             Set<Integer> selectedCentreIds = new HashSet<>();
             if (ids != null) {
