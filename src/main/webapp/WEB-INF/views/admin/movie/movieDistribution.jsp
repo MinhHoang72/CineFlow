@@ -24,7 +24,7 @@
         if (c.getCity() != null && !c.getCity().isBlank()) {
             cities.add(c.getCity().trim());
         }
-        if (c.isDistributed()) {
+        if (c.isDistributed() && "ACTIVE".equalsIgnoreCase(c.getStatus())) {
             totalDistributed++;
         }
     }
@@ -261,11 +261,11 @@
                                     <option value="INACTIVE">Tạm ngừng</option>
                                 </select>
 
-                                <button type="button" class="cf-btn-reset-filter" id="btnResetFilters" title="Đặt lại bộ lọc">
-                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <polyline points="23 4 23 10 17 10"></polyline>
-                                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                                <button type="button" class="cf-btn-dist-all" id="btnSelectAll" title="Phân phối cho tất cả cụm rạp đang hoạt động">
+                                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
                                     </svg>
+                                    Phân phối tất cả
                                 </button>
 
                             </div>
@@ -295,9 +295,9 @@
 
                                             String badgeText = isActive ? "Hoạt động" : "Tạm ngừng";
                                             String switchTitle = isActive ? "Bật/Tắt phân phối chiếu" :
-                                                                 "Rạp đang " + badgeText.toLowerCase() + " (vẫn cho phép phân phối trước)";
+                                                                 "Cụm rạp đang " + badgeText.toLowerCase() + ", không thể phân phối";
                                         %>
-                                        <tr class="cf-centre-row"
+                                        <tr class="cf-centre-row <%= !isActive ? "is-disabled" : "" %>"
                                             data-id="<%= c.getCentreId() %>"
                                             data-active="<%= isActive ? "1" : "0" %>"
                                             data-name="<%= c.getCentreName().toLowerCase() %>"
@@ -344,7 +344,7 @@
                                             </td>
                                             <td>
                                                 <div class="cf-switch-cell-wrap">
-                                                    <label class="cf-switch"
+                                                    <label class="cf-switch <%= !isActive ? "is-disabled" : "" %>"
                                                            title="<%= switchTitle %>">
                                                         <input type="checkbox"
                                                                name="centreIds"
@@ -353,7 +353,8 @@
                                                                data-future="<%= futureCount %>"
                                                                data-sold="<%= soldCount %>"
                                                                data-centre-name="<%= c.getCentreName() %>"
-                                                               <%= isDistributed ? "checked" : "" %>>
+                                                               <%= (isActive && isDistributed) ? "checked" : "" %>
+                                                               <%= !isActive ? "disabled" : "" %>>
                                                         <span class="cf-switch-slider"></span>
                                                     </label>
                                                     <span class="cf-row-arrow">
@@ -561,9 +562,7 @@
                 const searchInput = document.getElementById('centreSearchInput');
                 const cityFilter = document.getElementById('cityFilterSelect');
                 const statusFilter = document.getElementById('statusFilterSelect');
-                const btnReset = document.getElementById('btnResetFilters');
                 const btnSelectAll = document.getElementById('btnSelectAll');
-                const btnUnselectAll = document.getElementById('btnUnselectAll');
                 const selectedCountNum = document.getElementById('selectedCountNum');
 
                 function updateCounter() {
@@ -657,15 +656,12 @@
                     }
                 });
 
-                // Nút "Phân phối tất cả"
+                // Nút "Phân phối tất cả" (chỉ bật tất cả cụm rạp đang hoạt động)
                 if (btnSelectAll) {
                     btnSelectAll.addEventListener('click', function () {
-                        const isFiltered = (searchInput && searchInput.value.trim() !== '') ||
-                                (cityFilter && cityFilter.value !== 'ALL') ||
-                                (statusFilter && statusFilter.value !== 'ALL');
-
                         rows.forEach(row => {
-                            if (!isFiltered || row.style.display !== 'none') {
+                            // Chỉ áp dụng cho các cụm rạp ĐANG HOẠT ĐỘNG
+                            if (row.dataset.active === '1') {
                                 const sw = row.querySelector('.cf-switch-input');
                                 if (sw && !sw.disabled) {
                                     sw.checked = true;
@@ -676,55 +672,7 @@
                     });
                 }
 
-                // Nút "Bỏ chọn tất cả"
-                if (btnUnselectAll) {
-                    btnUnselectAll.addEventListener('click', function () {
-                        const isFiltered = (searchInput && searchInput.value.trim() !== '') ||
-                                (cityFilter && cityFilter.value !== 'ALL') ||
-                                (statusFilter && statusFilter.value !== 'ALL');
-
-                        let totalFuture = 0;
-                        let totalSold = 0;
-                        rows.forEach(row => {
-                            if (!isFiltered || row.style.display !== 'none') {
-                                const sw = row.querySelector('.cf-switch-input');
-                                if (sw && sw.checked) {
-                                    totalFuture += parseInt(row.dataset.future || '0', 10);
-                                    totalSold += parseInt(row.dataset.sold || '0', 10);
-                                }
-                            }
-                        });
-
-                        if (totalFuture > 0 || totalSold > 0) {
-                            showRiskConfirmModal("các cụm rạp đã chọn", totalFuture, totalSold,
-                                function() {
-                                    rows.forEach(row => {
-                                        if (!isFiltered || row.style.display !== 'none') {
-                                            const sw = row.querySelector('.cf-switch-input');
-                                            if (sw && !sw.disabled) {
-                                                sw.checked = false;
-                                            }
-                                        }
-                                    });
-                                    updateCounter();
-                                },
-                                function() {
-                                    // Giữ nguyên
-                                }
-                            );
-                        } else {
-                            rows.forEach(row => {
-                                if (!isFiltered || row.style.display !== 'none') {
-                                    const sw = row.querySelector('.cf-switch-input');
-                                    if (sw && !sw.disabled) {
-                                        sw.checked = false;
-                                    }
-                                }
-                            });
-                            updateCounter();
-                        }
-                    });
-                }
+                
 
                 // Bộ lọc & Tìm kiếm rạp
                 function applyFilters() {
@@ -759,17 +707,7 @@
                 if (statusFilter)
                     statusFilter.addEventListener('change', applyFilters);
 
-                if (btnReset) {
-                    btnReset.addEventListener('click', function () {
-                        if (searchInput)
-                            searchInput.value = '';
-                        if (cityFilter)
-                            cityFilter.value = 'ALL';
-                        if (statusFilter)
-                            statusFilter.value = 'ALL';
-                        applyFilters();
-                    });
-                }
+                
             });
         </script>
     </body>

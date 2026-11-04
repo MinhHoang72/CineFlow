@@ -459,7 +459,7 @@ public class MovieDAO {
         String disableAllSql = "UPDATE CentreMovies SET IsActive = 0, UpdatedAt = GETDATE() WHERE MovieID = ?";
         String mergeSql = "MERGE CentreMovies AS target "
                 + "USING (SELECT ? AS CentreID, ? AS MovieID WHERE EXISTS ("
-                + "SELECT 1 FROM Centres b WHERE b.CentreID = ?)) AS source "
+                + "SELECT 1 FROM Centres b WHERE b.CentreID = ? AND UPPER(b.Status) = 'ACTIVE')) AS source "
                 + "ON target.CentreID = source.CentreID AND target.MovieID = source.MovieID "
                 + "WHEN MATCHED THEN UPDATE SET IsActive = 1, UpdatedAt = GETDATE() "
                 + "WHEN NOT MATCHED THEN INSERT (CentreID, MovieID, IsActive) VALUES (source.CentreID, source.MovieID, 1);";

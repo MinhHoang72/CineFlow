@@ -138,7 +138,10 @@ public class MovieService {
     }
 
     /**
-     * Lấy danh sách toàn bộ cụm rạp và trạng thái đã phân phối (Distributed) của một bộ phim.
+     * Lấy danh sách toàn bộ cụm rạp và trạng thái đã phân phối (Distributed) thực tế của một bộ phim từ CSDL.
+     * Quy tắc nghiệp vụ chuẩn:
+     * - Khi tạo phim mới hoặc chưa có cấu hình: trả về đúng trạng thái thực tế trong database (mặc định chưa phân phối = false).
+     * - Tuyệt đối không tự động đánh dấu tất cả cụm rạp là đã phân phối.
      *
      * @param movieId mã định danh phim
      * @return danh sách các cụm rạp kèm số lượng suất chiếu trong tương lai
@@ -147,15 +150,7 @@ public class MovieService {
         if (movieId <= 0) {
             return Collections.emptyList();
         }
-        List<Centre> centres = movieDAO.getDistributionCentres(movieId);
-        // Quy tắc Opt-out thông minh: Phim mới chưa từng cấu hình phân phối trong CSDL
-        // sẽ mặc định phân phối cho toàn bộ các cụm rạp trong chuỗi (kể cả rạp đang bảo trì/tạm hoãn).
-        if (!movieDAO.hasDistributionConfig(movieId)) {
-            for (Centre c : centres) {
-                c.setDistributed(true);
-            }
-        }
-        return centres;
+        return movieDAO.getDistributionCentres(movieId);
     }
 
     /**

@@ -454,6 +454,35 @@
     flex-shrink: 0;
 }
 
+
+.cf-btn-dist-all {
+    height: 38px;
+    background: rgba(16, 185, 129, 0.15);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    border-radius: 8px;
+    padding: 0 16px;
+    color: #34d399;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.cf-btn-dist-all:hover {
+    background: rgba(16, 185, 129, 0.25);
+    border-color: rgba(16, 185, 129, 0.55);
+    color: #6ee7b7;
+}
+
+.cf-btn-dist-all svg {
+    flex-shrink: 0;
+}
+
 .cf-btn-reset-filter:hover {
     background: #1e293b;
     color: #ffffff;
@@ -1083,4 +1112,16 @@ html[data-theme="light"] .cf-btn-risk-confirm {
 
 html[data-theme="light"] .cf-btn-risk-confirm:hover {
     background: #b91c1c !important;
+}
+
+html[data-theme="light"] .cf-btn-dist-all {
+    background: #ecfdf5 !important;
+    border: 1px solid #a7f3d0 !important;
+    color: #059669 !important;
+}
+
+html[data-theme="light"] .cf-btn-dist-all:hover {
+    background: #d1fae5 !important;
+    border-color: #6ee7b7 !important;
+    color: #047857 !important;
 }
