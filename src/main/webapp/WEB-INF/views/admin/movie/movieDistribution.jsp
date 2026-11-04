@@ -18,16 +18,21 @@
 
     int totalCentres = centres.size();
     int totalDistributed = 0;
+    int totalActiveCentres = 0;
     Set<String> cities = new LinkedHashSet<>();
 
     for (Centre c : centres) {
         if (c.getCity() != null && !c.getCity().isBlank()) {
             cities.add(c.getCity().trim());
         }
-        if (c.isDistributed() && "ACTIVE".equalsIgnoreCase(c.getStatus())) {
-            totalDistributed++;
+        if ("ACTIVE".equalsIgnoreCase(c.getStatus())) {
+            totalActiveCentres++;
+            if (c.isDistributed()) {
+                totalDistributed++;
+            }
         }
     }
+    boolean isAllDistributed = (totalActiveCentres > 0 && totalDistributed == totalActiveCentres);
 
     request.setAttribute("activeNav", "distribution");
 %>
@@ -261,11 +266,20 @@
                                     <option value="INACTIVE">Tạm ngừng</option>
                                 </select>
 
-                                <button type="button" class="cf-btn-dist-all" id="btnSelectAll" title="Phân phối cho tất cả cụm rạp đang hoạt động">
-                                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                <button type="button"
+                                        class="cf-btn-dist-all <%= isAllDistributed ? "is-cancel" : "" %>"
+                                        id="btnSelectAll"
+                                        data-is-all="<%= isAllDistributed ? "1" : "0" %>"
+                                        title="<%= isAllDistributed ? "Hủy phân phối toàn bộ các cụm rạp đang hoạt động" : "Phân phối cho tất cả cụm rạp đang hoạt động" %>">
+                                    <svg class="cf-btn-dist-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <% if (isAllDistributed) { %>
+                                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                                    <% } else { %>
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    <% } %>
                                     </svg>
-                                    Phân phối tất cả
+                                    <span class="cf-btn-dist-text"><%= isAllDistributed ? "Hủy phân phối toàn bộ" : "Phân phối toàn bộ" %></span>
                                 </button>
 
                             </div>
@@ -565,17 +579,55 @@
                 const btnSelectAll = document.getElementById('btnSelectAll');
                 const selectedCountNum = document.getElementById('selectedCountNum');
 
+                function updateDistributeAllButtonState(activeTotal, activeChecked) {
+                    if (!btnSelectAll) return;
+                    const isAllSelected = (activeTotal > 0 && activeChecked === activeTotal);
+                    btnSelectAll.dataset.isAll = isAllSelected ? "1" : "0";
+
+                    const textSpan = btnSelectAll.querySelector('.cf-btn-dist-text');
+                    const iconSvg = btnSelectAll.querySelector('.cf-btn-dist-icon');
+
+                    if (isAllSelected) {
+                        btnSelectAll.classList.add('is-cancel');
+                        btnSelectAll.title = "Hủy phân phối toàn bộ các cụm rạp đang hoạt động";
+                        if (textSpan) textSpan.textContent = "Hủy phân phối toàn bộ";
+                        if (iconSvg) {
+                            iconSvg.innerHTML = '<line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>';
+                        }
+                    } else {
+                        btnSelectAll.classList.remove('is-cancel');
+                        btnSelectAll.title = "Phân phối cho tất cả cụm rạp đang hoạt động";
+                        if (textSpan) textSpan.textContent = "Phân phối toàn bộ";
+                        if (iconSvg) {
+                            iconSvg.innerHTML = '<polyline points="20 6 9 17 4 12"></polyline>';
+                        }
+                    }
+                }
+
                 function updateCounter() {
                     let count = 0;
+                    let activeTotal = 0;
+                    let activeChecked = 0;
+
                     rows.forEach(row => {
+                        const isActive = row.dataset.active === '1';
                         const sw = row.querySelector('.cf-switch-input');
+                        if (isActive) {
+                            activeTotal++;
+                            if (sw && sw.checked) {
+                                activeChecked++;
+                            }
+                        }
                         if (sw && sw.checked) {
                             count++;
                         }
                     });
+
                     if (selectedCountNum) {
                         selectedCountNum.textContent = count;
                     }
+
+                    updateDistributeAllButtonState(activeTotal, activeChecked);
                 }
 
                 // Hàm hiển thị Pop-up Cảnh báo nghiệp vụ mức cao khi tắt phân phối
@@ -656,19 +708,66 @@
                     }
                 });
 
-                // Nút "Phân phối tất cả" (chỉ bật tất cả cụm rạp đang hoạt động)
+                // Nút "Phân phối toàn bộ" / "Hủy phân phối toàn bộ"
                 if (btnSelectAll) {
                     btnSelectAll.addEventListener('click', function () {
-                        rows.forEach(row => {
-                            // Chỉ áp dụng cho các cụm rạp ĐANG HOẠT ĐỘNG
-                            if (row.dataset.active === '1') {
-                                const sw = row.querySelector('.cf-switch-input');
-                                if (sw && !sw.disabled) {
-                                    sw.checked = true;
+                        const isCurrentlyAll = (btnSelectAll.dataset.isAll === '1');
+
+                        if (isCurrentlyAll) {
+                            // TRẠNG THÁI: HỦY PHÂN PHỐI TOÀN BỘ
+                            let totalFuture = 0;
+                            let totalSold = 0;
+
+                            rows.forEach(row => {
+                                if (row.dataset.active === '1') {
+                                    const sw = row.querySelector('.cf-switch-input');
+                                    if (sw && sw.checked) {
+                                        totalFuture += parseInt(row.dataset.future || '0', 10);
+                                        totalSold += parseInt(row.dataset.sold || '0', 10);
+                                    }
                                 }
+                            });
+
+                            if (totalFuture > 0 || totalSold > 0) {
+                                showRiskConfirmModal("toàn bộ các cụm rạp đang phân phối", totalFuture, totalSold,
+                                    function () {
+                                        rows.forEach(row => {
+                                            if (row.dataset.active === '1') {
+                                                const sw = row.querySelector('.cf-switch-input');
+                                                if (sw && !sw.disabled) {
+                                                    sw.checked = false;
+                                                }
+                                            }
+                                        });
+                                        updateCounter();
+                                    },
+                                    function () {
+                                        // Hủy bỏ: giữ nguyên trạng thái
+                                    }
+                                );
+                            } else {
+                                rows.forEach(row => {
+                                    if (row.dataset.active === '1') {
+                                        const sw = row.querySelector('.cf-switch-input');
+                                        if (sw && !sw.disabled) {
+                                            sw.checked = false;
+                                        }
+                                    }
+                                });
+                                updateCounter();
                             }
-                        });
-                        updateCounter();
+                        } else {
+                            // TRẠNG THÁI: PHÂN PHỐI TOÀN BỘ
+                            rows.forEach(row => {
+                                if (row.dataset.active === '1') {
+                                    const sw = row.querySelector('.cf-switch-input');
+                                    if (sw && !sw.disabled) {
+                                        sw.checked = true;
+                                    }
+                                }
+                            });
+                            updateCounter();
+                        }
                     });
                 }
 
