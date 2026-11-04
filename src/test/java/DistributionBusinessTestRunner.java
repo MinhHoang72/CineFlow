@@ -30,7 +30,7 @@ public class DistributionBusinessTestRunner {
             testMovie.setGenre("Hành Động");
             testMovie.setAgeRating("T16");
             testMovie.setStatus("COMING_SOON");
-            testMovieId = movieDAO.createMovie(testMovie);
+            testMovieId = movieDAO.insertMovie(testMovie);
 
             if (testMovieId <= 0) {
                 throw new RuntimeException("Không tạo được phim test!");

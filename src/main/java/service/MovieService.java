@@ -110,7 +110,7 @@ public class MovieService {
             return 0;
         }
         if (movie.getMovieId() == 0) {
-            return movieDAO.createMovie(movie);
+            return movieDAO.insertMovie(movie);
         } else {
             boolean updated = movieDAO.updateMovie(movie);
             return updated ? movie.getMovieId() : 0;

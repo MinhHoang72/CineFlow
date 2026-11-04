@@ -222,7 +222,7 @@
                                                            "T18".equalsIgnoreCase(age) ? "cf-badge-age-t18" : "cf-badge-muted";
                                     String genre = m.getGenre() != null ? m.getGenre() : "Chưa cập nhật";
                                     String director = m.getDirector() != null ? m.getDirector() : "";
-                                    String mCode = "CF-" + String.format("%04d", m.getMovieId());
+                                    int mCode =m.getMovieId();
                                     String releaseDateStr = m.getReleaseDate() != null ? m.getReleaseDate().toString() : "";
                             %>
                             <tr data-movie-id="<%= m.getMovieId() %>"

@@ -86,19 +86,6 @@
                     <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
                         Phim ở trạng thái Lưu trữ (ARCHIVED) hoặc Đã kết thúc (ENDED) không thể phân phối tại các rạp chiếu.
                     </div>
-                    <script>
-                        setTimeout(function () {
-                            const alert = document.getElementById('saveSuccessAlert');
-                            if (alert) {
-                                alert.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
-                                alert.style.opacity = '0';
-                                alert.style.transform = 'translateY(-6px)';
-                                setTimeout(function () {
-                                    alert.remove();
-                                }, 400);
-                            }
-                        }, 1000);
-                    </script>
                     <% } %>
 
                     <!-- BƯỚC 1: CHỌN PHIM -->
@@ -348,9 +335,9 @@
                                                     </span>
                                                     <span><%= c.getCentreName() %></span>
                                                     <% if (futureCount > 0 || soldCount > 0) { %>
-                                                        <span class="cf-stat-tag" title="Số lượng suất chiếu tương lai và vé đã bán">
-                                                            <%= futureCount %> suất · <%= soldCount %> vé
-                                                        </span>
+                                                    <span class="cf-stat-tag" title="Số lượng suất chiếu tương lai và vé đã bán">
+                                                        <%= futureCount %> suất · <%= soldCount %> vé
+                                                    </span>
                                                     <% } %>
                                                 </div>
                                             </td>
@@ -415,62 +402,77 @@
                     <% } %>
                 </main>
 
-        <!-- MODAL XÁC NHẬN CẢNH BÁO NGHIỆP VỤ MỨC CAO KHI TẮT PHÂN PHỐI -->
-        <div class="cf-modal-backdrop" id="highRiskConfirmModal">
-            <div class="cf-modal-risk">
-                <div class="cf-modal-risk-header">
-                    <h3 class="cf-modal-risk-title">
-                        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-                            <line x1="12" y1="9" x2="12" y2="13"></line>
-                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
-                        </svg>
-                        Xác nhận cảnh báo nghiệp vụ
-                    </h3>
-                    <button type="button" class="cf-modal-risk-close" id="btnRiskModalClose" aria-label="Đóng">&times;</button>
-                </div>
-                <div class="cf-modal-risk-body">
-                    <div class="cf-risk-data-card">
-                        <p class="cf-risk-card-label">
-                            Cụm rạp <strong id="riskCentreName" class="cf-risk-centre-name"></strong> đang có dữ liệu vận hành:
-                        </p>
-                        <div class="cf-risk-stats-grid">
-                            <div class="cf-risk-stat-box">
-                                <div class="cf-risk-stat-title">Suất chiếu tương lai</div>
-                                <div class="cf-risk-stat-number" id="riskFutureCount">0</div>
+                <!-- MODAL XÁC NHẬN CẢNH BÁO NGHIỆP VỤ MỨC CAO KHI TẮT PHÂN PHỐI -->
+                <div class="cf-modal-backdrop" id="highRiskConfirmModal">
+                    <div class="cf-modal-risk">
+                        <div class="cf-modal-risk-header">
+                            <h3 class="cf-modal-risk-title">
+                                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                                <line x1="12" y1="9" x2="12" y2="13"></line>
+                                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                                </svg>
+                                Xác nhận cảnh báo nghiệp vụ
+                            </h3>
+                            <button type="button" class="cf-modal-risk-close" id="btnRiskModalClose" aria-label="Đóng">&times;</button>
+                        </div>
+                        <div class="cf-modal-risk-body">
+                            <div class="cf-risk-data-card">
+                                <p class="cf-risk-card-label">
+                                    Cụm rạp <strong id="riskCentreName" class="cf-risk-centre-name"></strong> đang có dữ liệu vận hành:
+                                </p>
+                                <div class="cf-risk-stats-grid">
+                                    <div class="cf-risk-stat-box">
+                                        <div class="cf-risk-stat-title">Suất chiếu tương lai</div>
+                                        <div class="cf-risk-stat-number" id="riskFutureCount">0</div>
+                                    </div>
+                                    <div class="cf-risk-stat-box">
+                                        <div class="cf-risk-stat-title">Vé đã bán</div>
+                                        <div class="cf-risk-stat-number" id="riskSoldCount">0</div>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="cf-risk-stat-box">
-                                <div class="cf-risk-stat-title">Vé đã bán</div>
-                                <div class="cf-risk-stat-number" id="riskSoldCount">0</div>
+                            <div class="cf-risk-notice-callout">
+                                <p class="cf-risk-notice-text">
+                                    <strong>Lưu ý nghiệp vụ:</strong> Hệ thống cho phép tắt phân phối trong trường hợp khẩn cấp (thu hồi phim hoặc sự cố rạp). Khi tắt, rạp không thể tạo thêm suất chiếu mới và các suất chiếu tương lai có thể cần xử lý hủy.
+                                </p>
                             </div>
+                            <p class="cf-risk-question">
+                                Bạn có chắc chắn muốn tắt phân phối không?
+                            </p>
+                        </div>
+                        <div class="cf-modal-risk-footer">
+                            <button type="button" class="cf-btn-risk-cancel" id="btnRiskCancel">
+                                Hủy bỏ (Giữ nguyên)
+                            </button>
+                            <button type="button" class="cf-btn-risk-confirm" id="btnRiskConfirm">
+                                Xác nhận tắt phân phối
+                            </button>
                         </div>
                     </div>
-                    <div class="cf-risk-notice-callout">
-                        <p class="cf-risk-notice-text">
-                            <strong>Lưu ý nghiệp vụ:</strong> Hệ thống cho phép tắt phân phối trong trường hợp khẩn cấp (thu hồi phim hoặc sự cố rạp). Khi tắt, rạp không thể tạo thêm suất chiếu mới và các suất chiếu tương lai có thể cần xử lý hủy.
-                        </p>
-                    </div>
-                    <p class="cf-risk-question">
-                        Bạn có chắc chắn muốn tắt phân phối không?
-                    </p>
                 </div>
-                <div class="cf-modal-risk-footer">
-                    <button type="button" class="cf-btn-risk-cancel" id="btnRiskCancel">
-                        Hủy bỏ (Giữ nguyên)
-                    </button>
-                    <button type="button" class="cf-btn-risk-confirm" id="btnRiskConfirm">
-                        Xác nhận tắt phân phối
-                    </button>
-                </div>
-            </div>
-        </div>
             </div>
         </div>
 
         <!-- CLIENT JAVASCRIPT ĐIỀU KHIỂN TƯƠNG TÁC -->
         <script>
+            //xu ly thong bao
             document.addEventListener('DOMContentLoaded', function () {
-                // === 1. XỬ LÝ CHỌN PHIM COMBOBOX TÌM KIẾM THÔNG MINH ===
+               
+                const alert = document.getElementById('saveSuccessAlert');
+
+                if (alert) {
+                    setTimeout(function () {
+                        alert.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+                        alert.style.opacity = '0';
+                        alert.style.transform = 'translateY(-6px)';
+
+                        setTimeout(function () {
+                            alert.remove();
+                        }, 400);
+                    }, 1000);
+                }
+                 // === 1. XỬ LÝ CHỌN PHIM COMBOBOX TÌM KIẾM THÔNG MINH ===
                 const moviePickerContainer = document.getElementById('moviePickerContainer');
                 const movieInputBox = document.getElementById('movieInputBox');
                 const movieSearchInput = document.getElementById('movieSearchInput');
@@ -592,7 +594,8 @@
                 const selectedCountNum = document.getElementById('selectedCountNum');
 
                 function updateDistributeAllButtonState(activeTotal, activeChecked) {
-                    if (!btnSelectAll) return;
+                    if (!btnSelectAll)
+                        return;
                     const isAllSelected = (activeTotal > 0 && activeChecked === activeTotal);
                     btnSelectAll.dataset.isAll = isAllSelected ? "1" : "0";
 
@@ -601,11 +604,13 @@
                     if (isAllSelected) {
                         btnSelectAll.classList.add('is-cancel');
                         btnSelectAll.title = "Hủy phân phối toàn bộ các cụm rạp đang hoạt động";
-                        if (textSpan) textSpan.textContent = "Hủy phân phối toàn bộ";
+                        if (textSpan)
+                            textSpan.textContent = "Hủy phân phối toàn bộ";
                     } else {
                         btnSelectAll.classList.remove('is-cancel');
                         btnSelectAll.title = "Phân phối cho tất cả cụm rạp đang hoạt động";
-                        if (textSpan) textSpan.textContent = "Phân phối toàn bộ";
+                        if (textSpan)
+                            textSpan.textContent = "Phân phối toàn bộ";
                     }
                 }
 
@@ -641,8 +646,8 @@
                     if (!modal) {
                         // Fallback xác nhận chuẩn theo đúng yêu cầu
                         const confirmMsg = "CẢNH BÁO NGHIỆP VỤ MỨC CAO:\n\n"
-                            + "Rạp " + centreName + " đang có " + futureCount + " suất chiếu tương lai và " + soldCount + " vé đã bán.\n\n"
-                            + "Bạn có chắc chắn muốn tắt phân phối không?";
+                                + "Rạp " + centreName + " đang có " + futureCount + " suất chiếu tương lai và " + soldCount + " vé đã bán.\n\n"
+                                + "Bạn có chắc chắn muốn tắt phân phối không?";
                         if (confirm(confirmMsg)) {
                             onConfirm();
                         } else {
@@ -666,17 +671,17 @@
                         btnClose.onclick = null;
                     }
 
-                    btnConfirm.onclick = function() {
+                    btnConfirm.onclick = function () {
                         cleanup();
                         onConfirm();
                     };
 
-                    btnCancel.onclick = function() {
+                    btnCancel.onclick = function () {
                         cleanup();
                         onCancel();
                     };
 
-                    btnClose.onclick = function() {
+                    btnClose.onclick = function () {
                         cleanup();
                         onCancel();
                     };
@@ -696,15 +701,15 @@
                             if (!this.checked && (futureCount > 0 || soldCount > 0)) {
                                 const targetSw = this;
                                 showRiskConfirmModal(centreName, futureCount, soldCount,
-                                    function() {
-                                        // Đồng ý tắt
-                                        updateCounter();
-                                    },
-                                    function() {
-                                        // Hủy bỏ: phục hồi lại checked
-                                        targetSw.checked = true;
-                                        updateCounter();
-                                    }
+                                        function () {
+                                            // Đồng ý tắt
+                                            updateCounter();
+                                        },
+                                        function () {
+                                            // Hủy bỏ: phục hồi lại checked
+                                            targetSw.checked = true;
+                                            updateCounter();
+                                        }
                                 );
                             } else {
                                 updateCounter();
@@ -735,20 +740,20 @@
 
                             if (totalFuture > 0 || totalSold > 0) {
                                 showRiskConfirmModal("toàn bộ các cụm rạp đang phân phối", totalFuture, totalSold,
-                                    function () {
-                                        rows.forEach(row => {
-                                            if (row.dataset.active === '1') {
-                                                const sw = row.querySelector('.cf-switch-input');
-                                                if (sw && !sw.disabled) {
-                                                    sw.checked = false;
+                                        function () {
+                                            rows.forEach(row => {
+                                                if (row.dataset.active === '1') {
+                                                    const sw = row.querySelector('.cf-switch-input');
+                                                    if (sw && !sw.disabled) {
+                                                        sw.checked = false;
+                                                    }
                                                 }
-                                            }
-                                        });
-                                        updateCounter();
-                                    },
-                                    function () {
-                                        // Hủy bỏ: giữ nguyên trạng thái
-                                    }
+                                            });
+                                            updateCounter();
+                                        },
+                                        function () {
+                                            // Hủy bỏ: giữ nguyên trạng thái
+                                        }
                                 );
                             } else {
                                 rows.forEach(row => {
@@ -776,7 +781,7 @@
                     });
                 }
 
-                
+
 
                 // Bộ lọc & Tìm kiếm rạp
                 function applyFilters() {
@@ -812,7 +817,7 @@
                 if (statusFilter)
                     statusFilter.addEventListener('change', applyFilters);
 
-                
+
             });
         </script>
     </body>

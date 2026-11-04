@@ -118,12 +118,12 @@ public class MovieDAO {
     }
 
     /**
-     * Tạo mới một bộ phim trong cơ sở dữ liệu và trả về mã MovieID tự sinh.
+     * Thêm mới một bộ phim vào cơ sở dữ liệu và trả về mã MovieID tự sinh (IDENTITY).
      *
-     * @param movie đối tượng thông tin phim cần tạo
+     * @param movie đối tượng thông tin phim cần thêm
      * @return mã định danh phim tự sinh nếu thành công (> 0), ngược lại 0
      */
-    public int createMovie(Movie movie) {
+    public int insertMovie(Movie movie) {
         String sql = "INSERT INTO Movies (Title, Description, Duration, Genre, Director, Cast, Language, "
                 + "ReleaseDate, EndDate, PosterURL, TrailerURL, AgeRating, Status) "
                 + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
@@ -141,13 +141,6 @@ public class MovieDAO {
             exception.printStackTrace();
         }
         return 0;
-    }
-
-    /**
-     * Phương thức tương thích ngược thêm phim trả về boolean.
-     */
-    public boolean insertMovie(Movie movie) {
-        return createMovie(movie) > 0;
     }
 
     /**
