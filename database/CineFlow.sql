@@ -439,6 +439,8 @@ CREATE TABLE Vouchers (
 
     Description NVARCHAR(500) NULL,
 
+    ImageURL NVARCHAR(500) NULL,
+
     CentreID INT NULL,
 
     CreatedBy INT NULL,

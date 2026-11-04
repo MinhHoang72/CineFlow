@@ -143,6 +143,17 @@ public class SeatConfigurationServlet extends HttpServlet {
         }
 
         List<SeatConfigDTO> pagedSeats = cinemaService.getSeatsByHallPaged(hallId, search, seatType, seatStatus, page, pageSize);
+        model.dto.common.PageDTO<SeatConfigDTO> seatPageResult = new model.dto.common.PageDTO<>(pagedSeats, page, pageSize, totalFilteredSeats);
+        String base = request.getContextPath() + "/manager/seat-config";
+        String filters = "hallId=" + hallId
+                + "&search=" + URLEncoder.encode(search != null ? search.trim() : "", StandardCharsets.UTF_8)
+                + "&seatType=" + URLEncoder.encode(seatType, StandardCharsets.UTF_8)
+                + "&seatStatus=" + URLEncoder.encode(seatStatus, StandardCharsets.UTF_8);
+        request.setAttribute("result", seatPageResult);
+        request.setAttribute("page", seatPageResult);
+        request.setAttribute("pagerBase", base + "?" + filters + "&page=");
+        request.setAttribute("backQuery", filters + "&page=" + seatPageResult.getPage());
+        request.setAttribute("baseUrl", base);
 
         request.setAttribute("hall", hall);
         request.setAttribute("centre", centre);
@@ -205,19 +216,25 @@ public class SeatConfigurationServlet extends HttpServlet {
         String filterSeatType = request.getParameter("seatType");
         String filterSeatStatus = request.getParameter("seatStatus");
         String pageParam = request.getParameter("page");
+        String back = request.getParameter("back");
 
-        StringBuilder redirectUrl = new StringBuilder(request.getContextPath() + "/manager/seat-config?hallId=" + hallId + "&");
-        if (filterSearch != null && !filterSearch.trim().isEmpty()) {
-            redirectUrl.append("search=").append(URLEncoder.encode(filterSearch.trim(), StandardCharsets.UTF_8)).append("&");
-        }
-        if (filterSeatType != null && !filterSeatType.trim().isEmpty()) {
-            redirectUrl.append("seatType=").append(URLEncoder.encode(filterSeatType.trim(), StandardCharsets.UTF_8)).append("&");
-        }
-        if (filterSeatStatus != null && !filterSeatStatus.trim().isEmpty()) {
-            redirectUrl.append("seatStatus=").append(URLEncoder.encode(filterSeatStatus.trim(), StandardCharsets.UTF_8)).append("&");
-        }
-        if (pageParam != null && !pageParam.trim().isEmpty()) {
-            redirectUrl.append("page=").append(URLEncoder.encode(pageParam.trim(), StandardCharsets.UTF_8)).append("&");
+        StringBuilder redirectUrl;
+        if (back != null && !back.trim().isEmpty()) {
+            redirectUrl = new StringBuilder(request.getContextPath() + "/manager/seat-config?" + back.replaceAll("[^A-Za-z0-9%&=._~+-]", "") + "&");
+        } else {
+            redirectUrl = new StringBuilder(request.getContextPath() + "/manager/seat-config?hallId=" + hallId + "&");
+            if (filterSearch != null && !filterSearch.trim().isEmpty()) {
+                redirectUrl.append("search=").append(URLEncoder.encode(filterSearch.trim(), StandardCharsets.UTF_8)).append("&");
+            }
+            if (filterSeatType != null && !filterSeatType.trim().isEmpty()) {
+                redirectUrl.append("seatType=").append(URLEncoder.encode(filterSeatType.trim(), StandardCharsets.UTF_8)).append("&");
+            }
+            if (filterSeatStatus != null && !filterSeatStatus.trim().isEmpty()) {
+                redirectUrl.append("seatStatus=").append(URLEncoder.encode(filterSeatStatus.trim(), StandardCharsets.UTF_8)).append("&");
+            }
+            if (pageParam != null && !pageParam.trim().isEmpty()) {
+                redirectUrl.append("page=").append(URLEncoder.encode(pageParam.trim(), StandardCharsets.UTF_8)).append("&");
+            }
         }
 
         // Khóa / Mở bảo trì nhanh một ghế

@@ -192,7 +192,7 @@
 
                 <!-- Thanh tìm kiếm & bộ lọc phòng chiếu -->
                 <div class="cf-filter-card">
-                    <form class="cf-filter-form" method="GET" action="${pageContext.request.contextPath}/manager/halls">
+                    <form class="cf-filter-form" method="GET" action="${baseUrl}">
                         <% if (isAdmin && targetCentreId != null) { %>
                             <input type="hidden" name="centreId" value="<%= targetCentreId %>">
                         <% } %>
@@ -278,11 +278,12 @@
                                         </button>
 
                                         <!-- Nút Toggle Status (Bật/Tắt Active <-> Inactive) -->
-                                        <form method="POST" action="${pageContext.request.contextPath}/manager/halls" style="display: inline-block; margin: 0;"
+                                        <form method="POST" action="${baseUrl}" style="display: inline-block; margin: 0;"
                                               onsubmit="return confirmToggleHall('<%= h.getHallName() != null ? h.getHallName().replace("'", "\\'") : "" %>', <%= isActive %>);">
                                             <input type="hidden" name="action" value="toggleStatus">
                                             <input type="hidden" name="hallId" value="<%= h.getHallId() %>">
                                             <input type="hidden" name="centreId" value="<%= targetCentreId %>">
+                                            <input type="hidden" name="back" value="${backQuery}">
                                             <input type="hidden" name="search" value="<%= currentSearch != null ? currentSearch : "" %>">
                                             <input type="hidden" name="status" value="<%= currentStatus != null ? currentStatus : "ALL" %>">
                                             <input type="hidden" name="page" value="<%= currentPage %>">
@@ -313,31 +314,17 @@
                         </tbody>
                     </table>
 
-                    <% if (totalFilteredHalls > 0) {
-                        int startItem = (currentPage - 1) * pageSize + 1;
-                        int endItem = Math.min(currentPage * pageSize, totalFilteredHalls);
-
-                        String baseParams = "";
-                        if (isAdmin && targetCentreId != null) {
-                            baseParams += "&centreId=" + targetCentreId;
-                        }
-                        if (currentSearch != null && !currentSearch.trim().isEmpty()) {
-                            baseParams += "&search=" + java.net.URLEncoder.encode(currentSearch.trim(), "UTF-8");
-                        }
-                        if (currentStatus != null && !currentStatus.trim().isEmpty()) {
-                            baseParams += "&status=" + java.net.URLEncoder.encode(currentStatus.trim(), "UTF-8");
-                        }
-                    %>
+                    <% if (totalFilteredHalls > 0) { %>
                     <!-- THANH PHÂN TRANG (PAGINATION) -->
                     <div class="cf-pagination-bar">
                         <div class="cf-pagination-info">
-                            Hiển thị <strong><%= startItem %> - <%= endItem %></strong> trên tổng số <strong><%= totalFilteredHalls %></strong> phòng chiếu
+                            Hiển thị <strong>${result.from} - ${result.to}</strong> trên tổng số <strong>${result.total}</strong> phòng chiếu
                         </div>
                         <% if (totalPages > 1) { %>
                         <div class="cf-pagination-controls">
                             <!-- Nút trang trước (Previous) -->
                             <% if (currentPage > 1) { %>
-                                <a href="${pageContext.request.contextPath}/manager/halls?page=<%= currentPage - 1 %><%= baseParams %>" 
+                                <a href="${pagerBase}<%= currentPage - 1 %>" 
                                    class="cf-page-btn" title="Trang trước">«</a>
                             <% } else { %>
                                 <span class="cf-page-btn disabled" title="Trang trước">«</span>
@@ -350,7 +337,7 @@
                                 <% if (i == currentPage) { %>
                                     <span class="cf-page-btn active"><%= i %></span>
                                 <% } else { %>
-                                    <a href="${pageContext.request.contextPath}/manager/halls?page=<%= i %><%= baseParams %>" 
+                                    <a href="${pagerBase}<%= i %>" 
                                        class="cf-page-btn"><%= i %></a>
                                 <% } %>
                             <% 
@@ -364,7 +351,7 @@
 
                             <!-- Nút trang sau (Next) -->
                             <% if (currentPage < totalPages) { %>
-                                <a href="${pageContext.request.contextPath}/manager/halls?page=<%= currentPage + 1 %><%= baseParams %>" 
+                                <a href="${pagerBase}<%= currentPage + 1 %>" 
                                    class="cf-page-btn" title="Trang sau">»</a>
                             <% } else { %>
                                 <span class="cf-page-btn disabled" title="Trang sau">»</span>
