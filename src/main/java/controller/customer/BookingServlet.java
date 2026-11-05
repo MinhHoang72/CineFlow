@@ -237,7 +237,7 @@ public class BookingServlet extends HttpServlet {
             resp.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;
         }
-        if ("CONFIRMED".equals(booking.getStatus())) {
+        if (booking.isPaid()) {
             resp.sendRedirect(req.getContextPath() + "/booking?action=detail&bookingId=" + booking.getId());
             return;
         }

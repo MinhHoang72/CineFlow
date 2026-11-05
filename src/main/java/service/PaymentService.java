@@ -248,7 +248,7 @@ public class PaymentService {
      * PAYMENT_FAILED (giao dịch VNPay gần nhất thất bại); null nếu đơn vẫn thanh toán được bình thường.
      */
     public String getFailureReason(Booking booking) throws SQLException {
-        if ("CONFIRMED".equals(booking.getStatus())) return "CONFIRMED";
+        if (booking.isPaid()) return "CONFIRMED";
         if ("CANCELLED".equals(booking.getStatus())) return "CANCELLED";
         if (!booking.isHoldActive()) return "EXPIRED";
         if ("FAILED".equals(paymentDAO.latestQrStatus(booking.getId()))) return "PAYMENT_FAILED";

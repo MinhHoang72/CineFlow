@@ -157,7 +157,7 @@ public class CounterShowtimeServlet extends HttpServlet {
             return;
         }
         String ctx = req.getContextPath();
-        if ("CONFIRMED".equals(booking.getStatus())) {
+        if (booking.isPaid()) {
             resp.sendRedirect(ctx + "/staff/counter?action=ticket&bookingId=" + booking.getId());
             return;
         }
