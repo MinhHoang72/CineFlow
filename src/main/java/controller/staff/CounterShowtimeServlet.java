@@ -13,7 +13,6 @@ import service.BookingService.SeatLayout;
 import service.BookingService.SeatUnavailableException;
 import service.PaymentService;
 import service.PaymentService.Outcome;
-import utils.QrUtil;
 import utils.WebUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -295,7 +294,7 @@ public class CounterShowtimeServlet extends HttpServlet {
         req.setAttribute("booking", booking);
         req.setAttribute("tickets", tickets);
         req.setAttribute("paidTransaction", paymentService.getPaidTransaction(booking.getId()));
-        if (!tickets.isEmpty()) req.setAttribute("bookingQr", QrUtil.toDataUri(booking.getQrContent()));
+        req.setAttribute("ticketQrs", BookingServlet.ticketQrs(tickets));
         req.getRequestDispatcher(VIEW_BASE + "counterTicketPrint.jsp").forward(req, resp);
     }
 

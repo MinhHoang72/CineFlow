@@ -100,9 +100,6 @@ public class Booking {
         };
     }
 
-    /** Noi dung ma QR cua ca don (mot ma cho tat ca ghe; sau nay dung chung cho F&B). */
-    public String getQrContent() { return "CINEFLOW-BOOKING:" + code; }
-
     public boolean isHoldActive() {
         return isPending() && holdUntil != null && holdUntil.getTime() > System.currentTimeMillis();
     }
