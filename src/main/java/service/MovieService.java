@@ -94,7 +94,7 @@ public class MovieService {
                     return m;
                 }
             }
-            return allMovies.get(0);
+                return allMovies.get(0);
         }
         return null;
     }

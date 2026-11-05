@@ -385,10 +385,10 @@ public class UserService {
         if (target == null || !"MANAGER".equalsIgnoreCase(target.getRole())) {
             return false;
         }
-
+    // 1. Cập nhật Status trong bảng Users
         String newStatus = status.toUpperCase();
         userDAO.updateUserStatus(userId, newStatus);
-
+    // 2. NẾU BỊ TẠM NGƯNG -> TỰ ĐỘNG GỠ BỎ QUYỀN QUẢN LÝ KHỎI CỤM RẠP!
         if (!"ACTIVE".equalsIgnoreCase(newStatus)) {
             userDAO.unassignManagerByUserId(userId, sessionAdminId, "Tài khoản Quản lý bị khóa/tạm ngưng");
         }

@@ -59,7 +59,27 @@
     display: flex;
     gap: 10px;
     align-items: center;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    flex-shrink: 0;
+}
+
+.manager-filter-toolbar .cf-search-box-compact {
+    width: 240px;
+    flex-shrink: 0;
+}
+
+.manager-filter-toolbar .cf-search-box-compact:focus-within {
+    width: 270px;
+}
+
+.manager-filter-toolbar .manager-status-select {
+    min-width: 135px;
+    flex-shrink: 0;
+}
+
+.manager-filter-toolbar .cf-page-size-wrap {
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 .manager-search-form {

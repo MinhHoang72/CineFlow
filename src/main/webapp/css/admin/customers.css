@@ -48,8 +48,74 @@
             }
 
             /* =====================================================
-               THANH TÌM KIẾM VÀ LỌC
+               KHUNG NỘI DUNG BẢNG & THANH LỌC (GỘP VÀO CARD)
                ===================================================== */
+
+            .customer-card-section {
+                margin-top: 24px;
+            }
+
+            .customer-card-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 16px;
+                flex-wrap: wrap;
+                padding: 18px 22px;
+                border-bottom: 1px solid var(--cf-border, rgba(255, 255, 255, 0.08));
+            }
+
+            .customer-card-header h2 {
+                margin: 0 0 4px;
+                font-size: 17px;
+                font-weight: 700;
+                color: var(--cf-text, #f8fafc);
+            }
+
+            .customer-card-header p {
+                margin: 0;
+                color: var(--cf-muted, #94a3b8);
+                font-size: 12.5px;
+            }
+
+            .customer-filter-toolbar {
+                display: flex;
+                gap: 10px;
+                align-items: center;
+                flex-wrap: nowrap;
+                flex-shrink: 0;
+            }
+
+            .customer-filter-toolbar .cf-search-box-compact {
+                width: 240px;
+                flex-shrink: 0;
+            }
+
+            .customer-filter-toolbar .cf-search-box-compact:focus-within {
+                width: 270px;
+            }
+
+            .customer-filter-toolbar .customer-status-select {
+                min-width: 135px;
+                flex-shrink: 0;
+            }
+
+            .customer-filter-toolbar .cf-page-size-wrap {
+                flex-shrink: 0;
+                white-space: nowrap;
+            }
+
+            html[data-theme="light"] .customer-card-header {
+                border-bottom: 1px solid #e2e8f0;
+            }
+
+            html[data-theme="light"] .customer-card-header h2 {
+                color: #1e293b !important;
+            }
+
+            html[data-theme="light"] .customer-card-header p {
+                color: #64748b !important;
+            }
 
             .customer-filter-bar {
                 display: flex;

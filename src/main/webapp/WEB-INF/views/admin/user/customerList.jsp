@@ -171,61 +171,48 @@
                         </div>
                     </div>
 
-                    <!-- TÌM KIẾM VÀ LỌC -->
-                    <div class="customer-filter-bar">
-                        <div class="filter-tabs">
-                            <a href="${pageContext.request.contextPath}/admin/customers?status=ALL<%= currentSearch != null && !currentSearch.isBlank() ? "&search=" + esc(currentSearch) : "" %>"
-                               class="filter-tab <%= "ALL".equalsIgnoreCase(currentStatus) ? "active" : "" %>" data-status="ALL">
-                                Tất cả (<%= totalCustomers != null ? totalCustomers : 0 %>)
-                            </a>
-
-                            <a href="${pageContext.request.contextPath}/admin/customers?status=ACTIVE<%= currentSearch != null && !currentSearch.isBlank() ? "&search=" + esc(currentSearch) : "" %>"
-                               class="filter-tab <%= "ACTIVE".equalsIgnoreCase(currentStatus) ? "active" : "" %>" data-status="ACTIVE">
-                                Đang hoạt động (<%= activeCustomers != null ? activeCustomers : 0 %>)
-                            </a>
-
-                            <a href="${pageContext.request.contextPath}/admin/customers?status=LOCKED<%= currentSearch != null && !currentSearch.isBlank() ? "&search=" + esc(currentSearch) : "" %>"
-                               class="filter-tab <%= "LOCKED".equalsIgnoreCase(currentStatus) ? "active" : "" %>" data-status="LOCKED">
-                                Bị tạm khóa (<%= lockedCustomers != null ? lockedCustomers : 0 %>)
-                            </a>
-                        </div>
-
-                        <div class="cf-toolbar-right">
-                            <div class="cf-search-box cf-search-box-compact">
-                                <svg class="cf-search-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                    <circle cx="11" cy="11" r="8"></circle>
-                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                                </svg>
-                                <input type="text"
-                                       id="customerSearchInput"
-                                       placeholder="Tìm tên, username, email, SĐT..."
-                                       value="<%= esc(currentSearch) %>"
-                                       autocomplete="off"
-                                       spellcheck="false">
-                                <button type="button" id="customerSearchClearBtn" class="cf-search-clear-btn" style="display: none;" title="Xóa tìm kiếm">✕</button>
+                    <!-- BẢNG DANH SÁCH KHÁCH HÀNG -->
+                    <section class="cf-card customer-card-section">
+                        <div class="cf-card-header customer-card-header">
+                            <div>
+                                <h2>Danh sách Khách hàng</h2>
+                                <p id="customerCountLabel"><%= totalCustomers != null ? totalCustomers : 0 %> tài khoản trong hệ thống.</p>
                             </div>
+                            <div class="customer-filter-toolbar">
+                                <div class="cf-search-box cf-search-box-compact">
+                                    <svg class="cf-search-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="11" cy="11" r="8"></circle>
+                                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                    </svg>
+                                    <input type="text"
+                                           id="customerSearchInput"
+                                           placeholder="Tìm tên, username, email, SĐT..."
+                                           value="<%= esc(currentSearch) %>"
+                                           autocomplete="off"
+                                           spellcheck="false">
+                                    <button type="button" id="customerSearchClearBtn" class="cf-search-clear-btn" style="display: none;" title="Xóa tìm kiếm">✕</button>
+                                </div>
 
-                            <select id="statusFilterSelect" class="customer-status-select cf-select-sm" title="Lọc theo trạng thái tài khoản">
-                                <option value="ALL" <%= "ALL".equalsIgnoreCase(currentStatus) ? "selected" : "" %>>Tất cả trạng thái</option>
-                                <option value="ACTIVE" <%= "ACTIVE".equalsIgnoreCase(currentStatus) ? "selected" : "" %>>Đang hoạt động</option>
-                                <option value="LOCKED" <%= "LOCKED".equalsIgnoreCase(currentStatus) ? "selected" : "" %>>Bị tạm khóa</option>
-                            </select>
-
-                            <div class="cf-page-size-wrap">
-                                <span>Hiển thị:</span>
-                                <select id="customerPageSizeSelect" class="cf-select-sm">
-                                    <option value="10" selected>10 khách hàng</option>
-                                    <option value="20">20 khách hàng</option>
-                                    <option value="50">50 khách hàng</option>
-                                    <option value="ALL">Tất cả</option>
+                                <select id="statusFilterSelect" class="customer-status-select cf-select-sm" title="Lọc theo trạng thái tài khoản">
+                                    <option value="ALL" <%= "ALL".equalsIgnoreCase(currentStatus) ? "selected" : "" %>>Tất cả trạng thái</option>
+                                    <option value="ACTIVE" <%= "ACTIVE".equalsIgnoreCase(currentStatus) ? "selected" : "" %>>Đang hoạt động</option>
+                                    <option value="LOCKED" <%= "LOCKED".equalsIgnoreCase(currentStatus) ? "selected" : "" %>>Bị tạm khóa</option>
                                 </select>
+
+                                <div class="cf-page-size-wrap">
+                                    <span>Hiển thị:</span>
+                                    <select id="customerPageSizeSelect" class="cf-select-sm">
+                                        <option value="10" selected>10 khách hàng</option>
+                                        <option value="20">20 khách hàng</option>
+                                        <option value="50">50 khách hàng</option>
+                                        <option value="ALL">Tất cả</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- BẢNG KHÁCH HÀNG -->
-                    <div class="cf-card">
-                        <div class="cf-table-wrap search-form-clean">
+                        <div class="cf-card-body">
+                            <div class="cf-table-wrap search-form-clean">
 
                             <!-- Đã thêm customer-table để CSS cột được áp dụng -->
                             <table class="cf-table customer-table">
@@ -406,24 +393,26 @@
                                 </tbody>
                             </table>
                         </div>
+                    </div>
 
-                        <!-- THANH PHÂN TRANG -->
-                        <div class="cf-pagination-bar">
-                            <div class="cf-pagination-info" id="customerPaginationInfo">
-                                Đang nạp danh sách khách hàng...
-                            </div>
-                            <div class="cf-pagination-controls" id="customerPaginationControls">
-                                <!-- Các nút phân trang được sinh động bởi JS -->
-                            </div>
+                    <!-- THANH PHÂN TRANG -->
+                    <div class="cf-pagination-bar">
+                        <div class="cf-pagination-info" id="customerPaginationInfo">
+                            Đang nạp danh sách khách hàng...
+                        </div>
+                        <div class="cf-pagination-controls" id="customerPaginationControls">
+                            <!-- Các nút phân trang được sinh động bởi JS -->
                         </div>
                     </div>
-                </main>
+                </section>
+            </main>
             </div>
         </div>
 
         <script src="${pageContext.request.contextPath}/js/admin-pagination.js?v=<%= System.currentTimeMillis() %>"></script>
         <script>
             document.addEventListener('DOMContentLoaded', function () {
+                var countLabel = document.getElementById('customerCountLabel');
                 initTablePagination({
                     tableBodyId: 'customerTableBody',
                     rowSelector: 'tr.customer-row',
@@ -437,7 +426,12 @@
                     statusPillSelector: '.filter-tabs .filter-tab[data-status]',
                     defaultStatus: '<%= esc(currentStatus != null ? currentStatus : "ALL") %>',
                     itemLabel: 'khách hàng',
-                    defaultPageSize: 10
+                    defaultPageSize: 10,
+                    onPageChange: function (state) {
+                        if (countLabel) {
+                            countLabel.textContent = state.totalFiltered + ' tài khoản đang hiển thị.';
+                        }
+                    }
                 });
 
                 document.querySelectorAll(

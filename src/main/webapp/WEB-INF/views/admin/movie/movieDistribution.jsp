@@ -233,7 +233,6 @@
                     <% if (movie != null) { %>
                     <form id="distributionForm" action="${pageContext.request.contextPath}/admin/distribution" method="POST">
                         <input type="hidden" name="movieId" value="<%= movie.getMovieId() %>">
-
                         <section class="cf-dist-section">
                             <div class="cf-step-header">
                                 <div class="cf-step-title-wrap">
