@@ -87,6 +87,35 @@ public class HallManagementServlet extends HttpServlet {
         }
 
         Centre currentCentre = cinemaService.getCentreById(targetCentreId);
+        String base = request.getContextPath() + "/manager/halls";
+        String action = request.getParameter("action");
+
+        // Điều hướng sang Form dùng chung (Thêm mới: action=create, Sửa: action=edit)
+        if ("create".equalsIgnoreCase(action) || "edit".equalsIgnoreCase(action)) {
+            Hall hall = null;
+            if ("edit".equalsIgnoreCase(action)) {
+                try {
+                    int hallId = Integer.parseInt(request.getParameter("hallId"));
+                    hall = cinemaService.getHallById(hallId);
+                    if (hall == null || hall.getCentreId() != targetCentreId) {
+                        response.sendRedirect(base + "?error=invalid_hall");
+                        return;
+                    }
+                } catch (Exception e) {
+                    response.sendRedirect(base + "?error=invalid_id");
+                    return;
+                }
+            }
+
+            request.setAttribute("hall", hall);
+            request.setAttribute("currentCentre", currentCentre);
+            request.setAttribute("targetCentreId", targetCentreId);
+            request.setAttribute("baseUrl", base);
+            request.setAttribute("activeNav", "halls");
+            request.setAttribute("pageTitle", hall != null ? "Sửa Phòng chiếu" : "Thêm Phòng chiếu mới");
+            request.getRequestDispatcher("/WEB-INF/views/admin/cinema/hallForm.jsp").forward(request, response);
+            return;
+        }
 
         String search = request.getParameter("search");
         String status = request.getParameter("status");
@@ -104,7 +133,6 @@ public class HallManagementServlet extends HttpServlet {
         PageDTO<Hall> pageResult = cinemaService.searchHalls(targetCentreId, search, status, page, 6);
         CinemaService.HallKpi kpi = cinemaService.getHallKpi(targetCentreId);
 
-        String base = request.getContextPath() + "/manager/halls";
         String filters = "search=" + URLEncoder.encode(search != null ? search.trim() : "", StandardCharsets.UTF_8)
                 + "&status=" + URLEncoder.encode(status, StandardCharsets.UTF_8);
 
@@ -183,11 +211,10 @@ public class HallManagementServlet extends HttpServlet {
 
             String result = cinemaService.createHall(centreId, hallName, hallType, capacityParam, status);
             if ("success".equals(result)) {
-                redirectUrl.append("success=created");
+                response.sendRedirect(request.getContextPath() + "/manager/halls?success=created");
             } else {
-                redirectUrl.append("error=").append(result);
+                response.sendRedirect(request.getContextPath() + "/manager/halls?action=create&error=" + result);
             }
-            response.sendRedirect(redirectUrl.toString());
             return;
         }
 
@@ -203,18 +230,16 @@ public class HallManagementServlet extends HttpServlet {
             try {
                 hallId = Integer.parseInt(hallIdParam.trim());
             } catch (Exception e) {
-                redirectUrl.append("error=invalid_id");
-                response.sendRedirect(redirectUrl.toString());
+                response.sendRedirect(request.getContextPath() + "/manager/halls?error=invalid_id");
                 return;
             }
 
             String result = cinemaService.updateHall(centreId, hallId, hallName, hallType, capacityParam, newStatus);
             if ("success".equals(result)) {
-                redirectUrl.append("success=updated");
+                response.sendRedirect(request.getContextPath() + "/manager/halls?success=updated");
             } else {
-                redirectUrl.append("error=").append(result);
+                response.sendRedirect(request.getContextPath() + "/manager/halls?action=edit&hallId=" + hallId + "&error=" + result);
             }
-            response.sendRedirect(redirectUrl.toString());
             return;
         }
 
