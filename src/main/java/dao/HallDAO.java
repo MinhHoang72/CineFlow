@@ -19,7 +19,7 @@ public class HallDAO {
 
     public PageDTO<Hall> search(int centreId, String search, String status, int page, int size) {
         if (page < 1) page = 1;
-        if (size < 1) size = 6;
+        if (size < 1) size = 10;
         int total = countHallsByCentre(centreId, search, status);
         List<Hall> items = getHallsByCentrePaged(centreId, search, status, page, size);
         return new PageDTO<>(items, page, size, total);
