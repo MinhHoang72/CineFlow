@@ -29,22 +29,17 @@ public class HallDAO {
         List<Object> params = new ArrayList<>();
         params.add(centreId);
 
-        // Loc theo tu khoa tim kiem: Ten phong, Dinh dang (2D/3D), hoac Tong suc chua (so)
+        // Loc theo tu khoa: Ten phong, Dinh dang (2D/3D), hoac Suc chua (so)
         if (search != null && !search.trim().isEmpty()) {
-            String trimmed = search.trim();
-            String safeKey = trimmed.replace("[", "[[]").replace("%", "[%]").replace("_", "[_]");
+            String safeKey = search.trim().replace("[", "[[]").replace("%", "[%]").replace("_", "[_]");
             String kw = "%" + safeKey + "%";
-
-            // Neu nguoi dung nhap '50 ghe' hoac '50', boc tach so ra de tim dung suc chua
-            String digits = trimmed.replaceAll("(?i)\\s*(gh\u1EBF|ghe)\\b", "").trim();
-            String capacityKw = digits.matches("^\\d+$") ? "%" + digits + "%" : kw;
 
             where.append("AND (h.HallName COLLATE Latin1_General_100_CI_AI LIKE ? "
                     + "OR h.HallType COLLATE Latin1_General_100_CI_AI LIKE ? "
                     + "OR CAST(h.Capacity AS VARCHAR) LIKE ?) ");
             params.add(kw);
             params.add(kw);
-            params.add(capacityKw);
+            params.add(kw);
         }
 
         // Lọc theo trạng thái hoặc định dạng kỹ thuật

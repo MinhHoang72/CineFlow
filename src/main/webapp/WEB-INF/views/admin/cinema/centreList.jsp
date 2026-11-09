@@ -182,12 +182,11 @@
                                         </td>
                                         <td style="text-align: right;">
                                             <div class="cf-actions" style="justify-content: flex-end;">
-                                                <!-- Nút Sửa -->
+<%--------- SỬA--%>
                                                 <a href="${baseUrl}?action=edit&centreId=${c.centreId}" class="cf-btn cf-btn-secondary cf-btn-sm">
                                                     Sửa
                                                 </a>
-
-                                                <!-- Nút Toggle Status (Bật / Tắt trạng thái) -->
+<!-- Nút Toggle Status (Bật / Tắt trạng thái) -->                                           
                                                 <form method="POST" action="${baseUrl}" style="display: inline-block; margin: 0;">
                                                     <input type="hidden" name="action" value="toggleStatus">
                                                     <input type="hidden" name="centreId" value="${c.centreId}">
@@ -232,7 +231,7 @@
                         <div class="cf-pagination-info">
                             Hiển thị <strong>${result.from} - ${result.to}</strong> trên tổng số <strong>${result.total}</strong> cụm rạp
                         </div>
-                        ${result.renderPager(Base)}
+                        ${result.renderPager(pagerBase)}
                     </div>
                 </c:if>
             </div>
