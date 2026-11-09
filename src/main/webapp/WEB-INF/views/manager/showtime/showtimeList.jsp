@@ -16,9 +16,9 @@
 <!DOCTYPE html>
 <html lang="vi">
     <head>
-        <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Quản lý suất chiếu | CineFlow</title><link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin/dashboard.css"><link rel="stylesheet" href="${pageContext.request.contextPath}/css/showtime-pricing/showtimes.css?v=20261024-3"><script src="${pageContext.request.contextPath}/js/showtimes.js?v=20261027-1" defer></script>
+        <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Quản lý suất chiếu | CineFlow</title><link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin/dashboard.css"><link rel="stylesheet" href="${pageContext.request.contextPath}/css/showtime-pricing/showtimes.css?v=20261110-4"><script src="${pageContext.request.contextPath}/js/pricing.js?v=20261110-2" defer></script><script src="${pageContext.request.contextPath}/js/showtimes.js?v=20261110-4" defer></script>
     </head>
-    <body class="st-showtimes-page">
+    <body class="st-showtimes-page" data-list-state-key="${showtimeListStateKey}">
         <div class="cf-manager-shell">
             <jsp:include page='<%= showtimeAdmin ? "/WEB-INF/fragments/adminSidebar.jspf" : "/WEB-INF/fragments/managerSidebar.jspf" %>' />
             <div class="cf-manager-main">
@@ -28,7 +28,7 @@
                         <div>
                             <span class="st-eyebrow">ĐIỀU HÀNH RẠP CHIẾU</span>
                             <h1>Quản lý suất chiếu</h1>
-                            <p>Sắp xếp lịch chiếu, theo dõi phòng và quản lý từng suất phim.</p>
+
                         </div>
                         <% if (!showtimeAdmin) { %>
                         <button class="st-button st-button-primary" type="button" id="st-open-create">＋ Tạo suất chiếu</button>
@@ -43,7 +43,7 @@
                         <c:remove var="error" scope="session" />
                     </c:if>
                     <%@ include file="/WEB-INF/fragments/showtimePricingNav.jspf" %>
-                    <div class="st-stats" aria-label="Tổng quan lịch chiếu">
+<!--                    <div class="st-stats" aria-label="Tổng quan lịch chiếu">
                         <div>
                             <span>Tổng suất chiếu</span>
                             <strong>${fn:length(showtimes)}</strong>
@@ -59,13 +59,21 @@
                             <strong>${fn:length(movies)}</strong>
                             <small>Được phân phối tại cụm rạp</small>
                         </div>
-                    </div>
+                    </div>-->
+                    <section class="st-overview" aria-labelledby="st-overview-title">
+                        <div class="st-overview-heading"><h2 id="st-overview-title">Tổng quan lịch chiếu</h2><span id="st-overview-date" aria-live="polite"></span></div>
+                        <div class="st-overview-cards">
+                            <button type="button" class="st-overview-card" data-stat="ACTIVE" aria-pressed="false"><span>Tổng suất chiếu</span><strong data-stat-count="ACTIVE">0</strong></button>
+                            <button type="button" class="st-overview-card" data-stat="SCHEDULED" aria-pressed="false"><span>Sắp chiếu</span><strong data-stat-count="SCHEDULED">0</strong></button>
+                            <button type="button" class="st-overview-card" data-stat="ONGOING" aria-pressed="false"><span>Đang chiếu</span><strong data-stat-count="ONGOING">0</strong></button>
+                            <button type="button" class="st-overview-card" data-stat="COMPLETED" aria-pressed="false"><span>Đã hoàn thành</span><strong data-stat-count="COMPLETED">0</strong></button>
+                        </div>
+                    </section>
                     <% if (!showtimeAdmin) { %>
                     <dialog class="st-create-dialog" id="create-showtime" aria-labelledby="create-title">
                         <div class="st-panel-heading">
                             <div>
                                 <h2 id="create-title">Tạo suất chiếu mới</h2>
-                                <p>Chọn phim, phòng chiếu và thời gian bắt đầu.</p>
                             </div>
                             <button type="button" class="st-dialog-close" data-close-create aria-label="Đóng form tạo suất chiếu">×</button>
                         </div>
@@ -95,14 +103,14 @@
                                 </div>
                                 <div class="st-field">
                                     <label for="startTime">Thời gian bắt đầu <span>*</span></label>
-                                    <input id="startTime" name="startTime" type="datetime-local" required>
+                                    <input id="startTime" name="startTime" type="datetime-local" data-time-picker data-date-label="Ngày chiếu" required>
                                 </div>
                             </div>
                             <div id="st-availability" class="st-availability" role="status" aria-live="polite">
                                 Chọn phim, phòng và giờ bắt đầu để kiểm tra lịch trống.
                             </div>
                             <div class="st-form-footer">
-                                <p>Thời gian kết thúc được tính tự động theo thời lượng phim.</p>
+
                                 <button type="button" class="st-button st-button-muted" data-close-create>Hủy</button>
                                 <button
                                     id="st-create-submit"
@@ -122,7 +130,6 @@
                         <div class="st-panel-heading">
                             <div>
                                 <h2 id="schedule-title">Danh sách suất chiếu <span class="st-count">${fn:length(showtimes)}</span></h2>
-                                <p>Theo dõi lịch chiếu và thao tác trực tiếp trên từng suất.</p>
                             </div>
                             <span class="st-step">02 / QUẢN LÝ</span>
                         </div>
@@ -143,7 +150,7 @@
                                 <div class="st-field">
                                     <label for="st-status">Trạng thái</label>
                                     <select id="st-status">
-                                        <option value="">Tất cả trạng thái</option><option value="SCHEDULED">Sắp chiếu</option><option value="ONGOING">Đang chiếu</option><option value="COMPLETED">Đã hoàn thành</option><option value="CANCELLED">Đã hủy</option>
+                                        <option value="">Tất cả trạng thái</option><option value="ACTIVE">Chưa hủy</option><option value="SCHEDULED">Sắp chiếu</option><option value="ONGOING">Đang chiếu</option><option value="COMPLETED">Đã hoàn thành</option><option value="CANCELLED">Đã hủy</option>
                                     </select>
                                 </div>
                                 <button type="button" class="st-button st-button-muted" id="st-reset">Xóa lọc</button>
@@ -197,7 +204,8 @@
                                                 data-hall-id="${s.hallId}"
                                                 data-hall="<c:out value='${s.hallName}' />"
                                                 data-date="${fn:substring(s.startTimeInputFormatted, 0, 10)}"
-                                                data-status="<c:out value='${s.status}' />">
+                                                data-booked="${s.hasBookings}"
+                                                data-status="<c:out value='${s.displayStatus}' />">
                                                 <td>
                                                     <strong class="st-movie"><c:out value="${s.movieTitle}" /></strong><span class="st-id">#${s.showtimeId}</span>
                                                 </td>
@@ -208,15 +216,16 @@
                                                 <td class="st-time"><c:out value="${s.endTimeFormatted}" /></td>
                                                 <td class="st-buffer">${s.cleaningBufferMinutes} phút</td>
                                                 <td>
-                                                    <span class="st-status st-status-${fn:escapeXml(s.status)}">
+                                                    <span class="st-status st-status-${fn:escapeXml(s.displayStatus)}">
                                                         <c:choose>
-                                                            <c:when test="${s.status == 'SCHEDULED'}">Sắp chiếu</c:when>
+                                                            <c:when test="${s.displayStatus == 'SCHEDULED'}">Sắp chiếu</c:when>
                                                             <c:when test="${s.status == 'ONGOING'}">Đang chiếu</c:when>
                                                             <c:when test="${s.status == 'COMPLETED'}">Đã hoàn thành</c:when>
                                                             <c:when test="${s.status == 'CANCELLED'}">Đã hủy</c:when>
                                                             <c:otherwise><c:out value="${s.status}" /></c:otherwise>
                                                         </c:choose>
                                                     </span>
+                                                    <c:if test="${s.status == 'SCHEDULED' && s.saleState != 'OPEN'}"><small class="st-legacy-sale-note">Cần lưu cập nhật để mở bán</small></c:if>
                                                 </td>
                                                 <td>
                                                     <div class="st-row-actions">
@@ -227,7 +236,8 @@
                                                             href="${pageContext.request.contextPath}/showtimes/seats?id=${s.showtimeId}">
                                                             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
                                                         </a>
-                                                        <c:if test="${!showtimeAdmin && s.status == 'SCHEDULED'}">
+                                                        <c:if test="${s.hasBookings}"><span class="st-action-lock" title="Đã có đặt vé, không thể chỉnh sửa hoặc hủy" aria-label="Đã có đặt vé, suất chiếu đã khóa"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3m-4 5v2"/></svg></span></c:if>
+                                                        <c:if test="${!showtimeAdmin && s.editable}">
                                                             <a
                                                                 class="st-link st-icon-action"
                                                                 title="Sửa suất chiếu"
@@ -235,6 +245,8 @@
                                                                 href="${pageContext.request.contextPath}/showtimes/edit?id=${s.showtimeId}">
                                                                 <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m15 5 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15l-1 6Z"/></svg>
                                                             </a>
+                                                        </c:if>
+                                                        <c:if test="${!showtimeAdmin && s.editable}">
                                                             <form
                                                                 action="${pageContext.request.contextPath}/showtimes/cancel"
                                                                 method="post"

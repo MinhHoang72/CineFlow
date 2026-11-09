@@ -20,6 +20,7 @@ public class ShowtimeListServlet extends HttpServlet {
             throws ServletException, IOException {
 
         int centreId = ShowtimeService.requireCentreId(request);
+        request.setAttribute("showtimeListStateKey", ShowtimeService.requireUserId(request) + ":" + centreId);
 
         if ("availability".equals(request.getParameter("action"))) {
             previewAvailability(request, response, centreId);

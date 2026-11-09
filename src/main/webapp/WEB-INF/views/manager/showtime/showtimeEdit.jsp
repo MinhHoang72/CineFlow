@@ -1,7 +1,7 @@
 <%@ page pageEncoding="UTF-8" %>
 <%
     request.setAttribute("pageTitle", "Sửa suất chiếu");
-    request.setAttribute("pageDescription", "Điều chỉnh phim, phòng và thời gian của suất chiếu đã lên lịch.");
+    request.setAttribute("pageDescription", "");
     request.setAttribute("activeTab", "showtimes");
 %>
 <%@ include file="/WEB-INF/fragments/cinemaBegin.jspf" %>
@@ -11,7 +11,7 @@
             <div class="st-panel-heading">
                 <div>
                     <h2>Thông tin suất chiếu #${showtime.showtimeId}</h2>
-                    <p>Thời gian kết thúc được tính lại theo thời lượng phim.</p>
+
                 </div>
                 <a class="st-link" href="${pageContext.request.contextPath}/showtimes">← Danh sách suất chiếu</a>
             </div>

@@ -140,13 +140,10 @@ public class ManagerFilter implements Filter {
         boolean pricingRoute = "/pricing".equals(servletPath)
                 || (servletPath != null && servletPath.startsWith("/pricing/"));
         if (pricingRoute) {
-            if (isAdmin(session)) {
-                httpResponse.sendRedirect(httpRequest.getContextPath() + "/dashboard");
-                return;
-            }
-            if (!isManager(session)) {
-                httpResponse.sendError(HttpServletResponse.SC_FORBIDDEN,
-                        "Chức năng quản lý giá vé và phụ thu chỉ dành cho Quản lý cụm rạp.");
+            boolean base="/pricing".equals(servletPath)||"/pricing/update".equals(servletPath);
+            boolean legacy=servletPath.matches("/pricing/(time-slots|seat-surcharges)/(edit|update|delete|save)");
+            if (legacy || (!base && isAdmin(session)) || ("/pricing/update".equals(servletPath) && !isAdmin(session))) {
+                httpResponse.sendError(HttpServletResponse.SC_FORBIDDEN,"Admin chỉ đặt giá cơ bản; Manager chỉ quản lý phụ thu của rạp mình.");
                 return;
             }
         }
@@ -154,7 +151,8 @@ public class ManagerFilter implements Filter {
         boolean showtimeWriteRoute = "/showtimes/create".equals(servletPath)
                 || "/showtimes/edit".equals(servletPath)
                 || "/showtimes/update".equals(servletPath)
-                || "/showtimes/cancel".equals(servletPath);
+                || "/showtimes/cancel".equals(servletPath)
+                || "/showtimes/sales".equals(servletPath);
         if (showtimeWriteRoute && isAdmin(session)) {
             httpResponse.sendError(HttpServletResponse.SC_FORBIDDEN,
                     "Quản trị viên không có quyền tạo hoặc chỉnh sửa suất chiếu. Chức năng này thuộc quyền của Quản lý cụm rạp.");

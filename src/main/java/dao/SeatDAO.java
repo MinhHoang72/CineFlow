@@ -53,6 +53,14 @@ public class SeatDAO {
         return seats;
     }
 
+    public Map<String,BigDecimal> getLockedPrices(Connection conn,int showtimeId) throws SQLException {
+        Map<String,BigDecimal> prices=new HashMap<>();
+        try(PreparedStatement ps=conn.prepareStatement("SELECT p.SeatType,p.Total FROM ShowtimeSeatPrices p JOIN Showtimes s ON s.ShowtimeID=p.ShowtimeID WHERE p.ShowtimeID=? AND s.SaleState='OPEN' AND s.PriceLockedAt IS NOT NULL")){
+            ps.setInt(1,showtimeId);try(ResultSet rs=ps.executeQuery()){while(rs.next())prices.put(rs.getString(1),rs.getBigDecimal(2));}
+        }
+        return prices;
+    }
+
     /** Phụ thu theo loại ghế (Surcharges SEAT) đang hiệu lực tại thời điểm, theo SeatType. */
     public Map<String, BigDecimal> getSeatTypeSurcharges(Connection conn, Timestamp at) throws SQLException {
         Map<String, BigDecimal> map = new HashMap<>();
@@ -71,24 +79,9 @@ public class SeatDAO {
 
     /** Read-only breakdown using the same period boundaries and surcharge sums as booking. */
     public Map<Integer, model.dto.showtime.ShowtimeSeatMatrixDTO> getShowtimeSeatPrices(int showtimeId) throws SQLException {
-        String sql = "SELECT se.SeatID, bp.BasePrice, ISNULL(tp.Surcharge,0) TimeAmount, "
-                + "ISNULL(hp.Amount,0) HallAmount, ISNULL(sp.Amount,0) SeatAmount, saved.Price SavedPrice "
-                + "FROM Showtimes sh JOIN Halls h ON h.HallID=sh.HallID JOIN Seats se ON se.HallID=h.HallID "
-                + "OUTER APPLY (SELECT TOP 1 BasePrice FROM CentrePricing p WHERE p.CentreID=h.CentreID "
-                + "AND p.EffectiveFrom<=sh.StartTime AND (p.EffectiveTo IS NULL OR p.EffectiveTo>sh.StartTime) ORDER BY p.EffectiveFrom DESC) bp "
-                + "OUTER APPLY (SELECT TOP 1 Surcharge FROM TimeSlotPricing p WHERE p.CentreID=h.CentreID "
-                + "AND CAST(sh.StartTime AS TIME) BETWEEN p.StartTime AND p.EndTime "
-                + "AND p.EffectiveFrom<=sh.StartTime AND (p.EffectiveTo IS NULL OR p.EffectiveTo>sh.StartTime) ORDER BY p.StartTime DESC) tp "
-                + "OUTER APPLY (SELECT SUM(Amount) Amount FROM Surcharges p WHERE p.SurchargeType='HALL' AND p.TargetValue=h.HallType "
-                + "AND p.EffectiveFrom<=sh.StartTime AND (p.EffectiveTo IS NULL OR p.EffectiveTo>sh.StartTime)) hp "
-                + "OUTER APPLY (SELECT SUM(Amount) Amount FROM Surcharges p WHERE p.SurchargeType='SEAT' AND p.TargetValue=se.SeatType "
-                + "AND p.EffectiveFrom<=sh.StartTime AND (p.EffectiveTo IS NULL OR p.EffectiveTo>sh.StartTime)) sp "
-                + "OUTER APPLY (SELECT TOP 1 bs.Price FROM BookingSeats bs JOIN Bookings b ON b.BookingID=bs.BookingID "
-                + "WHERE b.ShowtimeID=sh.ShowtimeID AND bs.SeatID=se.SeatID AND "
-                + "((bs.SeatStatus='CONFIRMED' AND b.BookingStatus IN ('CONFIRMED','COMPLETED')) "
-                + "OR (bs.SeatStatus='HELD' AND b.BookingStatus='PENDING' AND bs.HoldUntil>SYSDATETIME())) "
-                + "ORDER BY CASE WHEN bs.SeatStatus='CONFIRMED' THEN 0 ELSE 1 END, bs.BookingSeatID DESC) saved "
-                + "WHERE sh.ShowtimeID=?";
+        String sql="SELECT se.SeatID,p.BasePrice,p.CentreAmount,p.MovieAmount,p.TimeAmount,p.HallAmount,p.SeatAmount,saved.Price SavedPrice "
+            +"FROM Showtimes sh JOIN Seats se ON se.HallID=sh.HallID LEFT JOIN ShowtimeEffectivePrices p ON p.ShowtimeID=sh.ShowtimeID AND p.SeatType=se.SeatType "
+            +"OUTER APPLY (SELECT TOP 1 bs.Price FROM BookingSeats bs JOIN Bookings b ON b.BookingID=bs.BookingID WHERE b.ShowtimeID=sh.ShowtimeID AND bs.SeatID=se.SeatID AND ((bs.SeatStatus='CONFIRMED' AND b.BookingStatus IN ('CONFIRMED','COMPLETED')) OR (bs.SeatStatus='HELD' AND b.BookingStatus='PENDING' AND bs.HoldUntil>SYSDATETIME())) ORDER BY bs.BookingSeatID DESC) saved WHERE sh.ShowtimeID=?";
         Map<Integer, model.dto.showtime.ShowtimeSeatMatrixDTO> prices = new HashMap<>();
         try (Connection c = DBContext.getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setInt(1,showtimeId);
@@ -96,11 +89,12 @@ public class SeatDAO {
                 while (rs.next()) {
                     model.dto.showtime.ShowtimeSeatMatrixDTO price = new model.dto.showtime.ShowtimeSeatMatrixDTO();
                     price.setBasePrice(rs.getBigDecimal("BasePrice"));
+                    price.setCentreSurcharge(rs.getBigDecimal("CentreAmount"));price.setMovieSurcharge(rs.getBigDecimal("MovieAmount"));
                     price.setTimeSurcharge(rs.getBigDecimal("TimeAmount"));
                     price.setHallSurcharge(rs.getBigDecimal("HallAmount"));
                     price.setSeatSurcharge(rs.getBigDecimal("SeatAmount"));
                     price.setStoredPrice(rs.getBigDecimal("SavedPrice"));
-                    if (price.getBasePrice()!=null) price.setPrice(price.getBasePrice().add(price.getTimeSurcharge()).add(price.getHallSurcharge()).add(price.getSeatSurcharge()));
+                    if (price.getBasePrice()!=null) price.setPrice(price.getBasePrice().add(price.getTimeSurcharge()).add(price.getHallSurcharge()).add(price.getSeatSurcharge()).add(price.getCentreSurcharge()).add(price.getMovieSurcharge()));
                     prices.put(rs.getInt("SeatID"),price);
                 }
             }
