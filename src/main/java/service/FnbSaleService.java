@@ -125,7 +125,7 @@ public class FnbSaleService {
     /** Giao dịch đã thanh toán gần nhất của đơn (in hoá đơn), null nếu chưa có. */
     public PaymentTransaction getPaidTransaction(int orderId) throws SQLException {
         PaymentTransaction paid = null;
-        for (PaymentTransaction p : paymentDAO.getFnbTransactions(orderId)) {
+        for (PaymentTransaction p : PaymentService.withChange(paymentDAO.getFnbTransactions(orderId))) {
             if ("PAID".equals(p.getStatus())) paid = p;
         }
         return paid;

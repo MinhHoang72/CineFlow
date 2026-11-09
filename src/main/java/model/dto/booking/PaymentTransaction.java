@@ -10,6 +10,7 @@ public class PaymentTransaction {
     private final String transactionCode, method, status;
     private final BigDecimal amount, cashReceived;
     private final Timestamp createdAt, paidAt;
+    private BigDecimal change;
 
     public PaymentTransaction(int id, String transactionCode, String method, BigDecimal amount, String status,
             Timestamp createdAt, Timestamp paidAt, BigDecimal cashReceived) {
@@ -32,8 +33,10 @@ public class PaymentTransaction {
     public Timestamp getPaidAt() { return paidAt; }
     public BigDecimal getCashReceived() { return cashReceived; }
 
-    /** Tien thoi lai cho khach (chi voi tien mat). */
+    public void setChange(BigDecimal change) { this.change = change; }
+
+    /** Tien thoi lai cho khach (chi voi tien mat), do PaymentService tinh. */
     public BigDecimal getChange() {
-        return cashReceived == null ? null : cashReceived.subtract(amount);
+        return change;
     }
 }
