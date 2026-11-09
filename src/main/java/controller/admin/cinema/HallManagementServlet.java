@@ -17,17 +17,12 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
-/**
- * Controller Quản lý Phòng chiếu (Hall Management).
- * Cấu trúc tinh gọn trực tiếp với DAO (tương tự Voucher):
- * - Kiểm tra phiên và quyền tập trung qua authorizedUser().
- * - Thao tác trực tiếp với HallDAO / CentreDAO, không qua tầng trung gian rườm rà.
- * - Phân tách rõ ràng: showList, showForm, save, toggleStatus.
- */
+
+
 @WebServlet(name = "HallManagementServlet", urlPatterns = {"/manager/halls", "/admin/halls"})
 public class HallManagementServlet extends HttpServlet {
 
-    private static final int PAGE_SIZE = 6;
+    private static final int PAGE_SIZE = 10;
     private final HallDAO hallDAO = new HallDAO();
     private final CentreDAO centreDAO = new CentreDAO();
 
@@ -37,7 +32,7 @@ public class HallManagementServlet extends HttpServlet {
 
     private User authorizedUser(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
-        //nếu người dùng chưa đăng nhập => session thành null 
+        //nếu người dùng chưa đăng nhập => session thành null => đã đăng nhập 
         HttpSession session = request.getSession(false);
         User user = (session == null) ? null : (User) session.getAttribute("user");
 
@@ -47,7 +42,7 @@ public class HallManagementServlet extends HttpServlet {
             response.sendRedirect(redirectUrl);
             return null;
         }
-        // phân role 
+        // phân role => đăng nhập phải có vai trò là manager
         if (!"MANAGER".equalsIgnoreCase(user.getRole()) && !user.isManager()) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN,
                     "Chức năng này chỉ dành cho Quản lý chi nhánh (Branch Manager). Quản trị viên (Admin) không trực tiếp quản lý phòng chiếu.");
@@ -74,6 +69,7 @@ public class HallManagementServlet extends HttpServlet {
         }
 
         int centreId = (user.getCentreId() != null) ? user.getCentreId() : 0;
+        //manager chưa được gán id 
         if (centreId <= 0) {
             request.setAttribute("noCentreAssigned", true);
             request.setAttribute("activeNav", "halls");
@@ -140,7 +136,7 @@ public class HallManagementServlet extends HttpServlet {
         } catch (NumberFormatException ignored) {}
 
         String base = baseUrl(request);
-        // Gọi thẳng HallDAO để tìm kiếm và phân trang
+       //sql=select*from hall => all hall of centrer 
         PageDTO<Hall> pageResult = hallDAO.search(centreId, search, status, page, PAGE_SIZE);
 
         // Gọi thẳng HallDAO đếm KPI

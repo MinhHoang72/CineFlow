@@ -62,6 +62,21 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/manager/shell.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin/dashboard.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/manager/seat-config.css?v=<%= System.currentTimeMillis() %>">
+    <style>
+        /* Nối đôi 2 ghế Sweetbox liền nhau thành 1 sofa đôi */
+        .cf-seat-box.SWEETBOX.sweetbox-left {
+            border-top-right-radius: 0 !important;
+            border-bottom-right-radius: 0 !important;
+            border-right: none !important;
+            margin-right: -8px !important;
+            z-index: 1;
+        }
+        .cf-seat-box.SWEETBOX.sweetbox-right {
+            border-top-left-radius: 0 !important;
+            border-bottom-left-radius: 0 !important;
+            border-left: 1px dashed rgba(236, 72, 153, 0.45) !important;
+        }
+    </style>
 </head>
 <body>
 <div class="cf-manager-shell">
@@ -394,7 +409,7 @@
                                         <span style="color: #64748B; font-size: 13px; font-style: italic;">Lối đi / Trống</span>
                                     <% } else { %>
                                         <form method="POST" action="${baseUrl}" style="display: inline-block; margin: 0;"
-                                              onsubmit="return confirm('<%= isAvailable ? ("Khóa bảo trì ghế " + s.getLabel() + "? Ghế này sẽ không thể đặt vé cho đến khi mở lại.") : ("Mở bảo trì lại ghế " + s.getLabel() + "?") %>');">
+                                              onsubmit="return true; // confirm('<%= isAvailable ? ("Khóa bảo trì ghế " + s.getLabel() + "? Ghế này sẽ không thể đặt vé cho đến khi mở lại.") : ("Mở bảo trì lại ghế " + s.getLabel() + "?") %>');">
                                             <input type="hidden" name="action" value="toggleMaintenance">
                                             <input type="hidden" name="hallId" value="<%= hall != null ? hall.getHallId() : 0 %>">
                                             <input type="hidden" name="seatId" value="<%= s.getSeatId() %>">
@@ -549,11 +564,7 @@
             return;
         }
 
-        if (existingSeatsData && existingSeatsData.length > 0) {
-            if (!confirm("Khởi tạo lại lưới sẽ thiết lập lại toàn bộ sơ đồ ghế hiện có của phòng. Bạn có chắc chắn muốn tạo lại lưới không?")) {
-                return;
-            }
-        }
+        // Bo confirm tao lai luoi
 
         var numRows = parseInt(document.getElementById('gridRowsInput').value) || 6;
         var numCols = parseInt(document.getElementById('gridColsInput').value) || 10;
@@ -616,10 +627,29 @@
             } else {
                 cell.status = 'MAINTENANCE';
             }
+        } else if (currentTool === 'SWEETBOX') {
+            // Ghế đôi theo block cố định: (1-2), (3-4), (5-6), (7-8), (9-10)...
+            var leftCol = (col % 2 === 1) ? col : (col - 1);
+            var rightCol = leftCol + 1;
+
+            if (rightCol <= maxCols) {
+                // Kiểm tra xem cặp này hiện tại đã là SWEETBOX chưa
+                var isCurrentSweet = seatMatrix[row][leftCol] && seatMatrix[row][leftCol].type === 'SWEETBOX'
+                                  && seatMatrix[row][rightCol] && seatMatrix[row][rightCol].type === 'SWEETBOX';
+
+                // Nếu đang là SWEETBOX mà bấm tiếp cọ SWEETBOX -> chuyển về STANDARD
+                var targetType = isCurrentSweet ? 'STANDARD' : 'SWEETBOX';
+
+                if (!seatMatrix[row][leftCol]) seatMatrix[row][leftCol] = { type: targetType, status: 'AVAILABLE' };
+                else { seatMatrix[row][leftCol].type = targetType; seatMatrix[row][leftCol].status = 'AVAILABLE'; }
+
+                if (!seatMatrix[row][rightCol]) seatMatrix[row][rightCol] = { type: targetType, status: 'AVAILABLE' };
+                else { seatMatrix[row][rightCol].type = targetType; seatMatrix[row][rightCol].status = 'AVAILABLE'; }
+            }
         } else {
-            // Gán phân loại ghế: STANDARD, VIP, SWEETBOX
+            // Gán phân loại ghế: STANDARD, VIP
             cell.type = currentTool;
-            cell.status = 'AVAILABLE'; // Luôn sẵn sàng khi chọn hạng ghế
+            cell.status = 'AVAILABLE';
         }
 
         renderGrid();
@@ -668,6 +698,20 @@
                 } else {
                     seatIndexInRow++;
                     var seatLabel = r + seatIndexInRow;
+
+                    if (cell.type === 'SWEETBOX') {
+                        var isLeftInPair = (c % 2 === 1);
+                        var partnerC = isLeftInPair ? (c + 1) : (c - 1);
+                        var partnerCell = (partnerC <= maxCols && seatMatrix[r]) ? seatMatrix[r][partnerC] : null;
+
+                        if (partnerCell && partnerCell.type === 'SWEETBOX' && partnerCell.status !== 'UNAVAILABLE') {
+                            if (isLeftInPair) {
+                                seatBox.classList.add('sweetbox-left');
+                            } else {
+                                seatBox.classList.add('sweetbox-right');
+                            }
+                        }
+                    }
 
                     if (cell.status === 'MAINTENANCE') {
                         seatBox.classList.add(cell.type, 'MAINTENANCE');

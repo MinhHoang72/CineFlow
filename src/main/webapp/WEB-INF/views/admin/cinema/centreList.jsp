@@ -126,7 +126,7 @@
                 </form>
             </div>
 
-            <!-- Bảng danh sách Cụm rạp -->
+            <!---------------------------------------------------- Bảng danh sách Cụm rạp ------------------------------------------------------>
             <div class="cf-table-container">
                 <table class="cf-table">
                     <thead>
@@ -232,7 +232,7 @@
                         <div class="cf-pagination-info">
                             Hiển thị <strong>${result.from} - ${result.to}</strong> trên tổng số <strong>${result.total}</strong> cụm rạp
                         </div>
-                        ${result.renderPager(pagerBase)}
+                        ${result.renderPager(Base)}
                     </div>
                 </c:if>
             </div>

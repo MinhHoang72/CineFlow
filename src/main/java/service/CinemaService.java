@@ -61,7 +61,7 @@ public class CinemaService {
 
     public List<Hall> getHallsByCentreId(int centreId) {
         if (centreId <= 0) return List.of();
-        return centreDAO.getHallsByCentreId(centreId);
+        return hallDAO.getHallsByCentre(centreId);
     }
 
     public String createCentre(String name, String address, String phone, String city) {

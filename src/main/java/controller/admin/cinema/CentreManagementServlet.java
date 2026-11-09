@@ -119,8 +119,8 @@ public class CentreManagementServlet extends HttpServlet {
                 page = Integer.parseInt(p.trim());
             }
         } catch (NumberFormatException ignored) {}
-
-        String base = baseUrl(request);
+     
+      
         // Gọi thẳng CentreDAO lấy dữ liệu phân trang
         PageDTO<Centre> pageResult = centreDAO.search(search, status, page, PAGE_SIZE);
 
@@ -129,7 +129,9 @@ public class CentreManagementServlet extends HttpServlet {
         int activeCentres = centreDAO.countCentresByStatus("ACTIVE");
         int inactiveCentres = centreDAO.countCentresByStatus("INACTIVE");
         int totalHalls = centreDAO.countTotalHalls();
-
+        //lấy đường dẫn để tiện gửi page phân trang 
+         String base = baseUrl(request);
+         //lấy lại search cũ để ấn trang chỉ cần điền page 
         String filters = "search=" + URLEncoder.encode(search != null ? search.trim() : "", StandardCharsets.UTF_8)
                 + "&status=" + URLEncoder.encode(status, StandardCharsets.UTF_8);
 
@@ -140,7 +142,8 @@ public class CentreManagementServlet extends HttpServlet {
         request.setAttribute("totalHalls", totalHalls);
         request.setAttribute("currentSearch", search != null ? search.trim() : "");
         request.setAttribute("currentStatus", status);
-        request.setAttribute("pagerBase", base + "?" + filters + "&page=");
+        //trả về cho cái phân trang lấy  filter để lấy cái giá trị cũ 
+        request.setAttribute("Base", base + "?" + filters + "&page=");
         request.setAttribute("backQuery", filters + "&page=" + pageResult.getPage());
         request.setAttribute("baseUrl", base);
         request.setAttribute("activeNav", "centres");
@@ -191,22 +194,49 @@ public class CentreManagementServlet extends HttpServlet {
         String address = request.getParameter("address");
         String phone = request.getParameter("phone");
         String city = request.getParameter("city");
+        String centreIdParam = request.getParameter("centreId");
 
-        // Validate cơ bản
+        String returnPrefix = "create".equalsIgnoreCase(action)
+                ? (base + "?action=create&error=")
+                : (base + "?action=edit&centreId=" + (centreIdParam != null ? centreIdParam.trim() : "") + "&error=");
+
+        // 1. Validate không được để trống
         if (centreName == null || centreName.trim().isEmpty()
                 || address == null || address.trim().isEmpty()
+                || phone == null || phone.trim().isEmpty()
                 || city == null || city.trim().isEmpty()) {
-            String errorUrl = "create".equalsIgnoreCase(action)
-                    ? (base + "?action=create&error=missing_fields")
-                    : (base + "?action=edit&centreId=" + request.getParameter("centreId") + "&error=missing_fields");
-            response.sendRedirect(errorUrl);
+            response.sendRedirect(returnPrefix + "missing_fields");
             return;
         }
 
         centreName = centreName.trim();
         address = address.trim();
+        phone = phone.trim();
         city = city.trim();
-        phone = (phone != null) ? phone.trim() : "";
+
+        // 2. Validate độ dài Tên cụm rạp (3 - 100 ký tự)
+        if (centreName.length() < 3 || centreName.length() > 100) {
+            response.sendRedirect(returnPrefix + "invalid_name");
+            return;
+        }
+
+        // 3. Validate độ dài Địa chỉ (5 - 200 ký tự)
+        if (address.length() < 5 || address.length() > 200) {
+            response.sendRedirect(returnPrefix + "invalid_address");
+            return;
+        }
+
+        // 4. Validate Số điện thoại Hotline: Phải bắt đầu bằng số 0, gồm 10 đến 11 chữ số
+        if (!phone.matches("^0[0-9]{9,10}$")) {
+            response.sendRedirect(returnPrefix + "invalid_phone");
+            return;
+        }
+
+        // 5. Validate Tên thành phố (2 - 50 ký tự)
+        if (city.length() < 2 || city.length() > 50) {
+            response.sendRedirect(returnPrefix + "invalid_city");
+            return;
+        }
 
         if ("create".equalsIgnoreCase(action)) {
             // Kiểm tra trùng tên cụm rạp
@@ -229,7 +259,7 @@ public class CentreManagementServlet extends HttpServlet {
             // Update
             int centreId;
             try {
-                centreId = Integer.parseInt(request.getParameter("centreId").trim());
+                centreId = Integer.parseInt(centreIdParam.trim());
             } catch (Exception e) {
                 response.sendRedirect(base + "?error=invalid_id");
                 return;

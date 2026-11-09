@@ -80,15 +80,17 @@ public class PageDTO<T> {
                 if (last != 0 && i - last > 1) {
                     html.append("<span class=\"cf-page-ellipsis\">...</span>");
                 }
+                //trang hiện tại đang đưnsg 
                 if (i == page) {
                     html.append("<span class=\"cf-page-btn active\">").append(i).append("</span>");
                 } else {
+                    // nút ấn ở đây 
                     html.append("<a href=\"").append(base).append(i).append("\" class=\"cf-page-btn\">").append(i).append("</a>");
                 }
                 last = i;
             }
         }
-
+ 
         // Nút trang sau
         if (page < totalPages) {
             html.append("<a href=\"").append(base).append(page + 1).append("\" class=\"cf-page-btn\" title=\"Trang sau\">»</a>");

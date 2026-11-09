@@ -72,7 +72,27 @@
             </c:if>
             <c:if test="${param.error == 'missing_fields'}">
                 <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
-                    <span>⚠</span> <strong>Lỗi:</strong> Vui lòng điền đầy đủ các thông tin bắt buộc (Tên cụm rạp, Địa chỉ, Hotline).
+                    <span>⚠</span> <strong>Lỗi:</strong> Vui lòng điền đầy đủ các thông tin bắt buộc (Tên cụm rạp, Địa chỉ, Hotline, Thành phố).
+                </div>
+            </c:if>
+            <c:if test="${param.error == 'invalid_name'}">
+                <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
+                    <span>⚠</span> <strong>Lỗi:</strong> Tên cụm rạp không hợp lệ! Độ dài tên rạp phải từ 3 đến 100 ký tự.
+                </div>
+            </c:if>
+            <c:if test="${param.error == 'invalid_address'}">
+                <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
+                    <span>⚠</span> <strong>Lỗi:</strong> Địa chỉ không hợp lệ! Vui lòng nhập địa chỉ chi tiết từ 5 đến 200 ký tự.
+                </div>
+            </c:if>
+            <c:if test="${param.error == 'invalid_phone'}">
+                <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
+                    <span>⚠</span> <strong>Lỗi:</strong> Số điện thoại hotline không hợp lệ! Vui lòng nhập số điện thoại bắt đầu bằng số 0 (gồm 10 - 11 chữ số, không chứa chữ cái).
+                </div>
+            </c:if>
+            <c:if test="${param.error == 'invalid_city'}">
+                <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
+                    <span>⚠</span> <strong>Lỗi:</strong> Tên thành phố không hợp lệ! Độ dài phải từ 2 đến 50 ký tự.
                 </div>
             </c:if>
             <c:if test="${param.error == 'failed'}">
@@ -94,26 +114,31 @@
                         <div class="cf-form-group">
                             <label>Tên Cụm rạp *</label>
                             <input type="text" name="centreName" value="${centre != null ? centre.centreName : ''}" 
+                                   minlength="3" maxlength="100"
                                    placeholder="Ví dụ: CineFlow Cầu Giấy" required>
-                            <span class="cf-form-hint">Hệ thống sẽ kiểm tra đảm bảo không trùng tên với cụm rạp khác.</span>
+                            <span class="cf-form-hint">Hệ thống sẽ kiểm tra đảm bảo không trùng tên với cụm rạp khác (3 - 100 ký tự).</span>
                         </div>
 
                         <div class="cf-form-group">
                             <label>Địa chỉ chi tiết *</label>
                             <input type="text" name="address" value="${centre != null ? centre.address : ''}" 
+                                   minlength="5" maxlength="200"
                                    placeholder="Ví dụ: 123 Cầu Giấy, Quan Hoa" required>
                         </div>
 
                         <div class="cf-form-group">
                             <label>Hotline / Điện thoại liên hệ *</label>
-                            <input type="text" name="phone" value="${centre != null ? centre.phone : ''}" 
-                                   placeholder="Ví dụ: 02411111111" required>
+                            <input type="tel" name="phone" value="${centre != null ? centre.phone : ''}" 
+                                   pattern="0[0-9]{9,10}" maxlength="11"
+                                   placeholder="Ví dụ: 02411111111 hoặc 0912345678" 
+                                   title="Số điện thoại phải bắt đầu bằng số 0 và gồm từ 10 đến 11 chữ số, không chứa chữ cái" required>
                         </div>
 
                         <div class="cf-form-group">
-                            <label>Thành phố / Tỉnh thành</label>
+                            <label>Thành phố / Tỉnh thành *</label>
                             <input type="text" name="city" value="${centre != null ? centre.city : ''}" 
-                                   placeholder="Ví dụ: Hà Nội, TP. Hồ Chí Minh, Đà Nẵng...">
+                                   minlength="2" maxlength="50"
+                                   placeholder="Ví dụ: Hà Nội, TP. Hồ Chí Minh, Đà Nẵng..." required>
                         </div>
                     </div>
 
