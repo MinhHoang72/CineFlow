@@ -82,7 +82,7 @@
             </c:if>
             <c:if test="${param.error == 'invalid_address'}">
                 <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
-                    <span>⚠</span> <strong>Lỗi:</strong> Địa chỉ không hợp lệ! Vui lòng nhập địa chỉ chi tiết từ 5 đến 200 ký tự.
+                    <span>⚠</span> <strong>Lỗi:</strong> Địa chỉ không hợp lệ! Vui lòng nhập địa chỉ chi tiết từ 3 đến 200 ký tự.
                 </div>
             </c:if>
             <c:if test="${param.error == 'invalid_phone'}">
@@ -122,7 +122,7 @@
                         <div class="cf-form-group">
                             <label>Địa chỉ chi tiết *</label>
                             <input type="text" name="address" value="${centre != null ? centre.address : ''}" 
-                                   minlength="5" maxlength="200"
+                                   minlength="3" maxlength="200"
                                    placeholder="Ví dụ: 123 Cầu Giấy, Quan Hoa" required>
                         </div>
 
@@ -137,7 +137,7 @@
                         <div class="cf-form-group">
                             <label>Thành phố / Tỉnh thành *</label>
                             <input type="text" name="city" value="${centre != null ? centre.city : ''}" 
-                                   minlength="2" maxlength="50"
+                                   minlength="3" maxlength="50"
                                    placeholder="Ví dụ: Hà Nội, TP. Hồ Chí Minh, Đà Nẵng..." required>
                         </div>
                     </div>

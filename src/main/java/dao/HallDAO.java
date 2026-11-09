@@ -29,11 +29,22 @@ public class HallDAO {
         List<Object> params = new ArrayList<>();
         params.add(centreId);
 
-        // Lọc theo từ khóa tìm kiếm tên phòng
+        // Loc theo tu khoa tim kiem: Ten phong, Dinh dang (2D/3D), hoac Tong suc chua (so)
         if (search != null && !search.trim().isEmpty()) {
-            where.append("AND (h.HallName COLLATE Latin1_General_100_CI_AI LIKE ?) ");
-            String safeKey = search.trim().replace("[", "[[]").replace("%", "[%]").replace("_", "[_]");
-            params.add("%" + safeKey + "%");
+            String trimmed = search.trim();
+            String safeKey = trimmed.replace("[", "[[]").replace("%", "[%]").replace("_", "[_]");
+            String kw = "%" + safeKey + "%";
+
+            // Neu nguoi dung nhap '50 ghe' hoac '50', boc tach so ra de tim dung suc chua
+            String digits = trimmed.replaceAll("(?i)\\s*(gh\u1EBF|ghe)\\b", "").trim();
+            String capacityKw = digits.matches("^\\d+$") ? "%" + digits + "%" : kw;
+
+            where.append("AND (h.HallName COLLATE Latin1_General_100_CI_AI LIKE ? "
+                    + "OR h.HallType COLLATE Latin1_General_100_CI_AI LIKE ? "
+                    + "OR CAST(h.Capacity AS VARCHAR) LIKE ?) ");
+            params.add(kw);
+            params.add(kw);
+            params.add(capacityKw);
         }
 
         // Lọc theo trạng thái hoặc định dạng kỹ thuật
@@ -219,38 +230,6 @@ public class HallDAO {
     }
 
     /**
-     * Alt 2 & Business Rule: Kiểm tra xem phòng chiếu có đang gắn với các suất chiếu tương lai đã bán vé hay không.
-     * Không thể chuyển phòng sang Inactive nếu phòng đang có suất chiếu tương lai đã mở bán và phát sinh vé đặt.
-     *
-     * @param hallId mã phòng chiếu
-     * @return true nếu có suất chiếu tương lai đã phát sinh vé đặt, ngược lại false
-     */
-    public boolean hasFutureBookedShowtimes(int hallId) {
-        String sql = "SELECT COUNT(*) "
-                   + "FROM Showtimes s "
-                   + "JOIN Bookings b ON b.ShowtimeID = s.ShowtimeID "
-                   + "WHERE s.HallID = ? "
-                   + "  AND s.StartTime > GETDATE() "
-                   + "  AND UPPER(s.Status) = 'SCHEDULED' "
-                   + "  AND UPPER(b.BookingStatus) IN ('CONFIRMED', 'COMPLETED')";
-
-        try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setInt(1, hallId);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt(1) > 0;
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-        return false;
-    }
-
-    /**
      * Thêm mới một phòng chiếu vào CSDL.
      * Trạng thái khởi tạo mặc định là Active (trong DB lưu là 'AVAILABLE' để tương thích với kiểm tra CK_Halls_Status).
      *
@@ -318,27 +297,15 @@ public class HallDAO {
     }
 
     /**
-     * Toggle Status: Bật/tắt trạng thái (Active <-> Inactive) của phòng chiếu.
-     * Kết quả trả về:
-     * - "SUCCESS": Đổi trạng thái thành công.
-     * - "HAS_FUTURE_BOOKINGS": Bị chặn do có suất chiếu tương lai đã bán vé (Alt 2).
-     * - "FAILED": Thao tác thất bại hoặc không tìm thấy phòng.
-     *
      * @param hallId mã phòng chiếu
      * @return chuỗi kết quả
      */
-    public String toggleStatus(int hallId) {
+    public boolean toggleStatus(int hallId) {
         Hall currentHall = getHallById(hallId);
         if (currentHall == null) {
-            return "FAILED";
+            return false;
         }
 
-        // Nếu phòng đang hoạt động (Active / AVAILABLE) và người dùng muốn tắt sang Inactive
-        if (currentHall.isActive()) {
-            if (hasFutureBookedShowtimes(hallId)) {
-                return "HAS_FUTURE_BOOKINGS";
-            }
-        }
 
         String newStatus = currentHall.isActive() ? "INACTIVE" : "AVAILABLE";
         String sql = "UPDATE Halls SET Status = ? WHERE HallID = ?";
@@ -349,10 +316,10 @@ public class HallDAO {
             ps.setString(1, newStatus);
             ps.setInt(2, hallId);
 
-            return ps.executeUpdate() > 0 ? "SUCCESS" : "FAILED";
+            return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
-            return "FAILED";
+            return false;
         }
     }
 

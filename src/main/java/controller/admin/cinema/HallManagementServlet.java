@@ -67,9 +67,9 @@ public class HallManagementServlet extends HttpServlet {
         if (user == null) {
             return;
         }
-
+  //khóa phạm vi hall
         int centreId = (user.getCentreId() != null) ? user.getCentreId() : 0;
-        //manager chưa được gán id 
+       
         if (centreId <= 0) {
             request.setAttribute("noCentreAssigned", true);
             request.setAttribute("activeNav", "halls");
@@ -98,8 +98,10 @@ public class HallManagementServlet extends HttpServlet {
         if (user == null) {
             return;
         }
-
+// khóa phạm vi hall 
         int centreId = (user.getCentreId() != null) ? user.getCentreId() : 0;
+        
+        
         if (centreId <= 0) {
             response.sendRedirect(baseUrl(request) + "?error=no_centre");
             return;
@@ -136,7 +138,7 @@ public class HallManagementServlet extends HttpServlet {
         } catch (NumberFormatException ignored) {}
 
         String base = baseUrl(request);
-       //sql=select*from hall => all hall of centrer 
+  
         PageDTO<Hall> pageResult = hallDAO.search(centreId, search, status, page, PAGE_SIZE);
 
         // Gọi thẳng HallDAO đếm KPI
@@ -268,13 +270,6 @@ public class HallManagementServlet extends HttpServlet {
                 return;
             }
 
-            // Chặn chuyển sang INACTIVE nếu có suất chiếu tương lai đã có khách đặt
-            boolean isDeactivating = existingHall.isActive() && ("INACTIVE".equalsIgnoreCase(status) || "MAINTENANCE".equalsIgnoreCase(status));
-            if (isDeactivating && hallDAO.hasFutureBookedShowtimes(hallId)) {
-                response.sendRedirect(base + "?action=edit&hallId=" + hallId + "&error=has_future_bookings");
-                return;
-            }
-
             // Kiểm tra trùng tên với phòng khác
             if (hallDAO.isHallNameExists(centreId, hallName, hallId)) {
                 response.sendRedirect(base + "?action=edit&hallId=" + hallId + "&error=duplicate_name");
@@ -321,13 +316,7 @@ public class HallManagementServlet extends HttpServlet {
         }
 
         // Gọi hàm toggleStatus trực tiếp của DAO
-        String result = hallDAO.toggleStatus(hallId);
-        if ("SUCCESS".equalsIgnoreCase(result)) {
-            response.sendRedirect(redirectBase + "success=status_updated");
-        } else if ("HAS_FUTURE_BOOKINGS".equalsIgnoreCase(result)) {
-            response.sendRedirect(redirectBase + "error=has_future_bookings");
-        } else {
-            response.sendRedirect(redirectBase + "error=failed");
-        }
+        boolean ok = hallDAO.toggleStatus(hallId);
+        response.sendRedirect(redirectBase + (ok ? "success=status_updated" : "error=failed"));
     }
 }

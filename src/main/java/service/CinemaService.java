@@ -218,12 +218,6 @@ public class CinemaService {
             }
         }
 
-        // Chặn chuyển sang INACTIVE nếu đang có suất chiếu tương lai có vé đặt
-        boolean isChangingToInactive = existingHall.isActive() && ("INACTIVE".equalsIgnoreCase(newStatus) || "MAINTENANCE".equalsIgnoreCase(newStatus));
-        if (isChangingToInactive && hallDAO.hasFutureBookedShowtimes(hallId)) {
-            return "has_future_bookings";
-        }
-
         if (hallDAO.isHallNameExists(centreId, hallName, hallId)) {
             return "duplicate_name";
         }
@@ -249,14 +243,8 @@ public class CinemaService {
             return "invalid_hall";
         }
 
-        String result = hallDAO.toggleStatus(hallId);
-        if ("SUCCESS".equalsIgnoreCase(result)) {
-            return "success";
-        } else if ("HAS_FUTURE_BOOKINGS".equalsIgnoreCase(result)) {
-            return "has_future_bookings";
-        } else {
-            return "failed";
-        }
+        boolean ok = hallDAO.toggleStatus(hallId);
+        return ok ? "success" : "failed";
     }
 
     // ==============================================================

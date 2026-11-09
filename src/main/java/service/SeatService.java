@@ -42,7 +42,7 @@ public class SeatService {
     }
 
     public boolean hasFutureBookedShowtimes(int hallId) {
-        return hallDAO.hasFutureBookedShowtimes(hallId);
+        return seatDAO.hasFutureBookedShowtimes(hallId);
     }
 
     /**
@@ -81,7 +81,7 @@ public class SeatService {
         if (hallId <= 0 || seatList == null || seatList.isEmpty()) {
             return false;
         }
-        if (isRegenerating && hallDAO.hasFutureBookedShowtimes(hallId)) {
+        if (isRegenerating && seatDAO.hasFutureBookedShowtimes(hallId)) {
             return false;
         }
         return seatDAO.saveSeatLayout(hallId, seatList, isRegenerating);

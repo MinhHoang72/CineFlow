@@ -84,11 +84,6 @@
                     <span>✓</span> <strong>Thành công!</strong> Đã cập nhật trạng thái hoạt động của phòng chiếu thành công.
                 </div>
             </c:if>
-            <c:if test="${param.error == 'has_future_bookings'}">
-                <div class="cf-alert cf-alert-danger">
-                    <span>⚠</span> <strong>Cảnh báo:</strong> Không thể vô hiệu hóa phòng chiếu vì đang có suất chiếu tương lai đã phát sinh vé đặt.
-                </div>
-            </c:if>
             <c:if test="${param.error == 'invalid_id' || param.error == 'invalid_hall'}">
                 <div class="cf-alert cf-alert-danger">
                     <span>⚠</span> <strong>Lỗi:</strong> Phòng chiếu không tồn tại hoặc không thuộc chi nhánh này!
@@ -183,14 +178,14 @@
                                 <span class="icon">
                                     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                                 </span>
-                                <input type="text" name="search" placeholder="Tìm theo tên phòng (VD: Hall 01)..." value="${currentSearch}">
+                                <input type="text" name="search" placeholder="Tìm theo tên phòng, định dạng (2D/3D), sức chứa (VD: 50)..." value="${currentSearch}">
                             </div>
 
                             <select name="status" class="cf-select">
                                 <option value="ALL" ${currentStatus == 'ALL' || empty currentStatus ? 'selected' : ''}>Tất cả trạng thái & định dạng</option>
                                 <option value="ACTIVE" ${currentStatus == 'ACTIVE' ? 'selected' : ''}>Đang hoạt động (Active)</option>
                                 <option value="INACTIVE" ${currentStatus == 'INACTIVE' ? 'selected' : ''}>Tạm ngưng (Inactive)</option>
-                                <option value="2D" ${currentStatus == '2D' ? 'selected' : ''}>Định dạng Standard 2D</option>
+                                <option value="2D" ${currentStatus == '2D' ? 'selected' : ''}>Định dạng 2D</option>
                                 <option value="3D" ${currentStatus == '3D' ? 'selected' : ''}>Định dạng 3D</option>
                             </select>
 
@@ -227,12 +222,12 @@
                                                             <span class="cf-badge cf-badge-3d">★ 3D</span>
                                                         </c:when>
                                                         <c:otherwise>
-                                                            <span class="cf-badge cf-badge-2d">Standard 2D</span>
+                                                            <span class="cf-badge cf-badge-2d">2D</span>
                                                         </c:otherwise>
                                                     </c:choose>
                                                 </td>
                                                 <td>
-                                                    <strong style="color: #F8FAFC;">${h.capacity}</strong> ghế
+                                                    <strong style="color: #F8FAFC;">${h.capacity}</strong>
                                                 </td>
                                                 <td>
                                                     <c:choose>
