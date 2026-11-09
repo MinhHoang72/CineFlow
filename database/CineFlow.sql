@@ -1,12 +1,5718 @@
-USE CineFlowDB;
-GO
-
 /* ====================================================================================
-   IMPORT TOÀN BỘ SUẤT CHIẾU (18.135 BẢN GHI - TỪ 15/10/2026 ĐẾN 30/11/2026)
-   Hệ thống: CineFlow - Multi-Centre Cinema Management System
-   Bao gồm: 16 Cụm rạp x 12 Phim đang chiếu x ít nhất 2 suất/ngày liên tục 47 ngày
+   CINEFLOW - MULTI-CENTRE CINEMA MANAGEMENT SYSTEM
+   DATABASE: MICROSOFT SQL SERVER
+   PHIÊN BẢN: 2.0 (MASTER ALL-IN-ONE CONSOLIDATED SCRIPT)
+   ====================================================================================
+   HƯỚNG DẪN SỬ DỤNG:
+   1. Mở file này bằng SQL Server Management Studio (SSMS) hoặc Azure Data Studio.
+   2. Nhấn phím F5 (Execute) để tự động khởi tạo toàn bộ CSDL CineFlowDB:
+      - Tự động xóa CSDL cũ nếu tồn tại và tạo mới CineFlowDB hoàn chỉnh.
+      - Tạo 30 bảng thực thể, quan hệ ràng buộc, khóa chính/ngoại và filtered unique indexes.
+      - Nạp đầy đủ dữ liệu mẫu (16 cụm rạp, 64 phòng chiếu, hàng ngàn ghế, 46 khối suất chiếu,
+        bảng giá theo chi nhánh & khung giờ, F&B, 204 Vouchers, 15 nhân viên Thanh Khê,
+        dữ liệu đặt vé, thanh toán, soát vé và trigger tự động).
    ==================================================================================== */
 
+USE master;
+GO
+
+IF DB_ID('CineFlowDB') IS NOT NULL
+BEGIN
+    ALTER DATABASE CineFlowDB SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+    DROP DATABASE CineFlowDB;
+END
+GO
+
+CREATE DATABASE CineFlowDB;
+GO
+
+USE CineFlowDB;
+GO
+SET QUOTED_IDENTIFIER ON;
+SET ANSI_NULLS ON;
+GO
+
+
+/* =========================================================
+   3. USERS - FE-01
+   ========================================================= */
+CREATE TABLE Users (
+    UserID INT IDENTITY(1,1) PRIMARY KEY,
+    FullName NVARCHAR(100) NOT NULL,
+    Account VARCHAR(50) NOT NULL UNIQUE,
+    Email VARCHAR(150) NOT NULL UNIQUE,
+    Password VARCHAR(255) NOT NULL,
+    Phone VARCHAR(20) NULL,
+    Avatar VARCHAR(500) NULL,
+    Role VARCHAR(30) NOT NULL
+        CONSTRAINT CK_Users_Role CHECK (Role IN ('CUSTOMER','STAFF','MANAGER','ADMIN','TICKET_SALES_STAFF','TICKET_CHECKER_STAFF')),
+    Status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
+    CentreID INT NULL,
+    ResetToken VARCHAR(255) NULL,
+    ResetTokenExpiry DATETIME2 NULL,
+    EmailVerified BIT NOT NULL DEFAULT 0,
+    PhoneVerified BIT NOT NULL DEFAULT 0,
+    LastLoginAt DATETIME2 NULL,
+    CreatedAt DATETIME2 NOT NULL DEFAULT GETDATE(),
+    UpdatedAt DATETIME2 NULL,
+    CONSTRAINT CK_Users_Status CHECK (Status IN ('ACTIVE','INACTIVE','LOCKED')),
+    CONSTRAINT CK_Users_Staff_Manager_Centre CHECK (
+        Role NOT IN ('STAFF','TICKET_SALES_STAFF','TICKET_CHECKER_STAFF')
+        OR CentreID IS NOT NULL
+    )
+);
+GO
+
+
+/* =========================================================
+   4. Centres - FE-01.1 / FE-03.1
+   ========================================================= */
+CREATE TABLE Centres (
+    CentreID INT IDENTITY(1,1) PRIMARY KEY,
+    CentreName NVARCHAR(150) NOT NULL,
+    Address NVARCHAR(300) NOT NULL,
+    City NVARCHAR(100) NULL,
+    Phone VARCHAR(20) NULL,
+    Status VARCHAR(30) NOT NULL DEFAULT 'ACTIVE',
+    CreatedAt DATETIME2 NOT NULL DEFAULT GETDATE(),
+    UpdatedAt DATETIME2 NULL,
+    CONSTRAINT CK_Centres_Status CHECK (Status IN ('ACTIVE','INACTIVE','TEMPORARILY_CLOSED'))
+);
+GO
+
+ALTER TABLE Users
+ADD CONSTRAINT FK_Users_Centre FOREIGN KEY (CentreID) REFERENCES Centres(CentreID);
+GO
+
+
+/* =========================================================
+   5. HALLS - FE-03.2
+   ========================================================= */
+CREATE TABLE Halls (
+    HallID INT IDENTITY(1,1) PRIMARY KEY,
+    CentreID INT NOT NULL,
+    HallName NVARCHAR(100) NOT NULL,
+    HallType VARCHAR(20) NOT NULL DEFAULT '2D',
+    Capacity INT NOT NULL,
+    Status VARCHAR(20) NOT NULL DEFAULT 'AVAILABLE',
+    CreatedAt DATETIME2 NOT NULL DEFAULT GETDATE(),
+    CONSTRAINT FK_Halls_Centres FOREIGN KEY (CentreID) REFERENCES Centres(CentreID),
+    CONSTRAINT CK_Halls_Type CHECK (HallType IN ('2D','3D')),
+    CONSTRAINT CK_Halls_Capacity CHECK (Capacity > 0),
+    CONSTRAINT CK_Halls_Status CHECK (Status IN ('AVAILABLE','MAINTENANCE','INACTIVE'))
+);
+GO
+
+
+/* =========================================================
+   6. SEATS - FE-03.3
+   ========================================================= */
+CREATE TABLE Seats (
+    SeatID INT IDENTITY(1,1) PRIMARY KEY,
+    HallID INT NOT NULL,
+    SeatRow VARCHAR(5) NOT NULL,
+    SeatNumber INT NOT NULL,
+    SeatType VARCHAR(20) NOT NULL DEFAULT 'STANDARD',
+    Status VARCHAR(20) NOT NULL DEFAULT 'AVAILABLE',
+    CONSTRAINT FK_Seats_Halls FOREIGN KEY (HallID) REFERENCES Halls(HallID),
+    CONSTRAINT CK_Seats_Type CHECK (SeatType IN ('STANDARD','VIP','SWEETBOX')),
+    CONSTRAINT CK_Seats_Status CHECK (Status IN ('AVAILABLE','MAINTENANCE','UNAVAILABLE')),
+    CONSTRAINT CK_Seats_Number CHECK (SeatNumber > 0),
+    CONSTRAINT UQ_Seat_Position UNIQUE (HallID,SeatRow,SeatNumber)
+);
+GO
+
+
+/* =========================================================
+   7. MOVIES - FE-01.1 / FE-02
+   ========================================================= */
+CREATE TABLE Movies (
+    MovieID INT IDENTITY(1,1) PRIMARY KEY,
+    Title NVARCHAR(200) NOT NULL,
+    Description NVARCHAR(MAX) NULL,
+    Duration INT NOT NULL,
+    Genre NVARCHAR(200) NULL,
+    Director NVARCHAR(150) NULL,
+    Cast NVARCHAR(1000) NULL,
+    Language NVARCHAR(100) NULL,
+    ReleaseDate DATE NULL,
+    EndDate DATE NULL,
+    PosterURL VARCHAR(500) NULL,
+    TrailerURL VARCHAR(500) NULL,
+    AgeRating VARCHAR(20) NOT NULL DEFAULT 'P',
+    Status VARCHAR(20) NOT NULL DEFAULT 'COMING_SOON',
+    CreatedAt DATETIME2 NOT NULL DEFAULT GETDATE(),
+    UpdatedAt DATETIME2 NULL,
+    CONSTRAINT CK_Movies_Duration CHECK (Duration > 0),
+    CONSTRAINT CK_Movies_AgeRating CHECK (AgeRating IN ('P','K','T13','T16','T18','C')),
+    CONSTRAINT CK_Movies_Status CHECK (Status IN ('COMING_SOON','NOW_SHOWING','ENDED','ARCHIVED')),
+    CONSTRAINT CK_Movies_Date CHECK (EndDate IS NULL OR ReleaseDate IS NULL OR EndDate >= ReleaseDate)
+);
+GO
+
+
+/* =========================================================
+   8. CENTRE MOVIES - FE-02.2
+   ========================================================= */
+CREATE TABLE CentreMovies (
+    CentreMovieID INT IDENTITY(1,1) PRIMARY KEY,
+    CentreID INT NOT NULL,
+    MovieID INT NOT NULL,
+    IsActive BIT NOT NULL DEFAULT 1,
+    CreatedAt DATETIME2 NOT NULL DEFAULT GETDATE(),
+    UpdatedAt DATETIME2 NULL,
+    CONSTRAINT FK_CentreMovies_Centre FOREIGN KEY (CentreID) REFERENCES Centres(CentreID),
+    CONSTRAINT FK_CentreMovies_Movie FOREIGN KEY (MovieID) REFERENCES Movies(MovieID),
+    CONSTRAINT UQ_Centre_Movie UNIQUE (CentreID,MovieID)
+);
+GO
+
+
+
+
+/* =========================================================
+   9. SHOWTIMES - FE-04
+   ========================================================= */
+CREATE TABLE Showtimes (
+    ShowtimeID INT IDENTITY(1,1) PRIMARY KEY,
+    MovieID INT NOT NULL,
+    HallID INT NOT NULL,
+    StartTime DATETIME2 NOT NULL,
+    EndTime DATETIME2 NOT NULL,
+    CleaningBufferMinutes INT NOT NULL DEFAULT 15,
+    Status VARCHAR(20) NOT NULL DEFAULT 'SCHEDULED',
+    CreatedBy INT NULL,
+    CreatedAt DATETIME2 NOT NULL DEFAULT GETDATE(),
+    UpdatedAt DATETIME2 NULL,
+    CONSTRAINT FK_Showtimes_Movies FOREIGN KEY (MovieID) REFERENCES Movies(MovieID),
+    CONSTRAINT FK_Showtimes_Halls FOREIGN KEY (HallID) REFERENCES Halls(HallID),
+    CONSTRAINT FK_Showtimes_CreatedBy FOREIGN KEY (CreatedBy) REFERENCES Users(UserID),
+    CONSTRAINT CK_Showtimes_Time CHECK (EndTime > StartTime),
+    CONSTRAINT CK_Showtimes_Buffer CHECK (CleaningBufferMinutes >= 0),
+    CONSTRAINT CK_Showtimes_Status CHECK (Status IN ('SCHEDULED','ONGOING','COMPLETED','CANCELLED'))
+);
+GO
+
+
+/* =========================================================
+   9.1. CENTRE PRICING (CENTRE PRICING)
+   ========================================================= */
+CREATE TABLE CentrePricing (
+    CentrePricingID INT IDENTITY(1,1) PRIMARY KEY,
+    CentreID INT NOT NULL,
+    BasePrice DECIMAL(12,2) NOT NULL,
+    EffectiveFrom DATETIME2 NOT NULL,
+    EffectiveTo DATETIME2 NULL,
+    UpdatedBy INT NULL,
+    CreatedAt DATETIME2 NOT NULL DEFAULT GETDATE(),
+    CONSTRAINT FK_CentrePricing_Centres FOREIGN KEY (CentreID) REFERENCES Centres(CentreID),
+    CONSTRAINT FK_CentrePricing_Users FOREIGN KEY (UpdatedBy) REFERENCES Users(UserID),
+    CONSTRAINT CK_CentrePricing_BasePrice CHECK (BasePrice >= 0),
+    CONSTRAINT CK_CentrePricing_Period CHECK (EffectiveTo IS NULL OR EffectiveTo > EffectiveFrom)
+);
+GO
+
+/* =========================================================
+   9.2. TIME SLOT PRICING
+   ========================================================= */
+CREATE TABLE TimeSlotPricing (
+    TimeSlotPricingID INT IDENTITY(1,1) PRIMARY KEY,
+    CentreID INT NOT NULL,
+    SlotName NVARCHAR(100) NOT NULL,
+    StartTime TIME NOT NULL,
+    EndTime TIME NOT NULL,
+    Surcharge DECIMAL(12,2) NOT NULL DEFAULT 0,
+    EffectiveFrom DATETIME2 NOT NULL,
+    EffectiveTo DATETIME2 NULL,
+    UpdatedBy INT NULL,
+    CreatedAt DATETIME2 NOT NULL DEFAULT GETDATE(),
+    CONSTRAINT FK_TimeSlotPricing_Centres FOREIGN KEY (CentreID) REFERENCES Centres(CentreID),
+    CONSTRAINT FK_TimeSlotPricing_Users FOREIGN KEY (UpdatedBy) REFERENCES Users(UserID),
+    CONSTRAINT CK_TimeSlotPricing_Surcharge CHECK (Surcharge >= 0),
+    CONSTRAINT CK_TimeSlotPricing_Period CHECK (EffectiveTo IS NULL OR EffectiveTo > EffectiveFrom)
+);
+GO
+
+
+/* =========================================================
+   10. SURCHARGES - FE-04.2
+   ========================================================= */
+CREATE TABLE Surcharges (
+    SurchargeID INT IDENTITY(1,1) PRIMARY KEY,
+    SurchargeName NVARCHAR(100) NOT NULL,
+    SurchargeType VARCHAR(20) NOT NULL,
+    TargetValue VARCHAR(30) NOT NULL,
+    Amount DECIMAL(12,2) NOT NULL,
+    EffectiveFrom DATETIME2 NOT NULL,
+    EffectiveTo DATETIME2 NULL,
+    UpdatedBy INT NULL,
+    CreatedAt DATETIME2 NOT NULL DEFAULT GETDATE(),
+    CONSTRAINT CK_Surcharges_Type CHECK (SurchargeType IN ('SEAT', 'HALL')),
+    CONSTRAINT CK_Surcharges_Amount CHECK (Amount >= 0),
+    CONSTRAINT CK_Surcharges_Period CHECK (EffectiveTo IS NULL OR EffectiveTo > EffectiveFrom),
+    CONSTRAINT FK_Surcharges_User FOREIGN KEY (UpdatedBy) REFERENCES Users(UserID)
+);
+GO
+
+
+/* =========================================================
+   13. F&B CATEGORIES
+   ========================================================= */
+
+CREATE TABLE FnbCategories (
+    CategoryID INT IDENTITY(1,1) PRIMARY KEY,
+
+    CategoryName NVARCHAR(100) NOT NULL,
+
+    Status VARCHAR(20) NOT NULL
+        DEFAULT 'ACTIVE',
+
+    CONSTRAINT CK_FnbCategories_Status
+        CHECK (Status IN (
+            'ACTIVE',
+            'INACTIVE'
+        ))
+);
+GO
+
+
+/* =========================================================
+   14. F&B ITEMS
+   ========================================================= */
+
+CREATE TABLE FnbItems (
+    FnbItemID INT IDENTITY(1,1) PRIMARY KEY,
+
+    CategoryID INT NOT NULL,
+
+    CentreID INT NULL,
+
+    ItemName NVARCHAR(150) NOT NULL,
+
+    Description NVARCHAR(500) NULL,
+
+    Price DECIMAL(12,2) NOT NULL,
+
+    ImageURL VARCHAR(500) NULL,
+
+    Status VARCHAR(20) NOT NULL
+        DEFAULT 'ACTIVE',
+
+    CreatedAt DATETIME2 NOT NULL
+        DEFAULT GETDATE(),
+
+    UpdatedAt DATETIME2 NULL,
+
+    CONSTRAINT FK_FnbItems_Category
+        FOREIGN KEY (CategoryID)
+        REFERENCES FnbCategories(CategoryID),
+
+    CONSTRAINT FK_FnbItems_Centres
+        FOREIGN KEY (CentreID)
+        REFERENCES Centres(CentreID),
+
+    CONSTRAINT CK_FnbItems_Price
+        CHECK (Price >= 0),
+
+    CONSTRAINT CK_FnbItems_Status
+        CHECK (Status IN (
+            'ACTIVE',
+            'INACTIVE'
+        ))
+);
+GO
+
+
+/* =========================================================
+   15. F&B COMBOS
+   ========================================================= */
+
+CREATE TABLE FnbCombos (
+    ComboID INT IDENTITY(1,1) PRIMARY KEY,
+
+    CentreID INT NULL,
+
+    ComboName NVARCHAR(150) NOT NULL,
+
+    Description NVARCHAR(500) NULL,
+
+    Price DECIMAL(12,2) NOT NULL,
+
+    ImageURL VARCHAR(500) NULL,
+
+    Status VARCHAR(20) NOT NULL
+        DEFAULT 'ACTIVE',
+
+    CreatedAt DATETIME2 NOT NULL
+        DEFAULT GETDATE(),
+
+    UpdatedAt DATETIME2 NULL,
+
+    CONSTRAINT FK_FnbCombos_Centres
+        FOREIGN KEY (CentreID)
+        REFERENCES Centres(CentreID),
+
+    CONSTRAINT CK_FnbCombos_Price
+        CHECK (Price >= 0),
+
+    CONSTRAINT CK_FnbCombos_Status
+        CHECK (Status IN (
+            'ACTIVE',
+            'INACTIVE'
+        ))
+);
+GO
+
+
+/* =========================================================
+   16. COMBO ITEMS
+   ========================================================= */
+
+CREATE TABLE ComboItems (
+    ComboItemID INT IDENTITY(1,1) PRIMARY KEY,
+
+    ComboID INT NOT NULL,
+
+    FnbItemID INT NOT NULL,
+
+    Quantity INT NOT NULL,
+
+    CONSTRAINT FK_ComboItems_Combo
+        FOREIGN KEY (ComboID)
+        REFERENCES FnbCombos(ComboID),
+
+    CONSTRAINT FK_ComboItems_Item
+        FOREIGN KEY (FnbItemID)
+        REFERENCES FnbItems(FnbItemID),
+
+    CONSTRAINT CK_ComboItems_Quantity
+        CHECK (Quantity > 0),
+
+    CONSTRAINT UQ_Combo_Item
+        UNIQUE (
+            ComboID,
+            FnbItemID
+        )
+);
+GO
+
+
+/* =========================================================
+   17. CENTRE F&B INVENTORY
+   ========================================================= */
+
+CREATE TABLE CentreFnbInventory (
+    InventoryID INT IDENTITY(1,1) PRIMARY KEY,
+
+    CentreID INT NOT NULL,
+
+    FnbItemID INT NOT NULL,
+
+    StockQuantity INT NOT NULL
+        DEFAULT 0,
+
+    IsAvailable BIT NOT NULL
+        DEFAULT 1,
+
+    UpdatedAt DATETIME2 NOT NULL
+        DEFAULT GETDATE(),
+
+    CONSTRAINT FK_Inventory_Centre
+        FOREIGN KEY (CentreID)
+        REFERENCES Centres(CentreID),
+
+    CONSTRAINT FK_Inventory_Item
+        FOREIGN KEY (FnbItemID)
+        REFERENCES FnbItems(FnbItemID),
+
+    CONSTRAINT CK_Inventory_Stock
+        CHECK (StockQuantity >= 0),
+
+    CONSTRAINT UQ_Centre_Fnb
+        UNIQUE (
+            CentreID,
+            FnbItemID
+        )
+);
+GO
+
+
+
+/* =========================================================
+   20. VOUCHERS
+   ========================================================= */
+
+CREATE TABLE Vouchers (
+    VoucherID INT IDENTITY(1,1) PRIMARY KEY,
+
+    VoucherCode VARCHAR(50) NOT NULL UNIQUE,
+
+    VoucherName NVARCHAR(150) NOT NULL,
+
+    Description NVARCHAR(500) NULL,
+
+    CentreID INT NULL,
+
+    CreatedBy INT NULL,
+
+    DiscountType VARCHAR(20) NOT NULL,
+
+    DiscountValue DECIMAL(12,2) NOT NULL,
+
+    MinimumOrderValue DECIMAL(12,2) NOT NULL
+        DEFAULT 0,
+
+    MaximumDiscount DECIMAL(12,2) NULL,
+
+    StartDate DATETIME2 NOT NULL,
+
+    EndDate DATETIME2 NOT NULL,
+
+    UsageLimit INT NULL,
+
+    UsedCount INT NOT NULL
+        DEFAULT 0,
+
+    PerCustomerLimit INT NOT NULL
+        DEFAULT 1,
+
+    Status VARCHAR(20) NOT NULL
+        DEFAULT 'ACTIVE',
+
+    CONSTRAINT FK_Vouchers_Centres
+        FOREIGN KEY (CentreID)
+        REFERENCES Centres(CentreID),
+
+    CONSTRAINT FK_Vouchers_Users
+        FOREIGN KEY (CreatedBy)
+        REFERENCES Users(UserID),
+
+    CONSTRAINT CK_Vouchers_Type
+        CHECK (DiscountType IN (
+            'FIXED',
+            'PERCENT'
+        )),
+
+    CONSTRAINT CK_Vouchers_Value
+        CHECK (DiscountValue >= 0),
+
+    CONSTRAINT CK_Vouchers_Minimum
+        CHECK (MinimumOrderValue >= 0),
+
+    CONSTRAINT CK_Vouchers_Maximum
+        CHECK (
+            MaximumDiscount IS NULL
+            OR MaximumDiscount >= 0
+        ),
+
+    CONSTRAINT CK_Vouchers_Date
+        CHECK (EndDate > StartDate),
+
+    CONSTRAINT CK_Vouchers_Usage
+        CHECK (
+            UsageLimit IS NULL
+            OR UsageLimit >= 0
+        ),
+
+    CONSTRAINT CK_Vouchers_Used
+        CHECK (UsedCount >= 0),
+
+    CONSTRAINT CK_Vouchers_PerCustomerLimit
+        CHECK (PerCustomerLimit >= 1),
+
+    CONSTRAINT CK_Vouchers_Status
+        CHECK (Status IN (
+            'ACTIVE',
+            'INACTIVE',
+            'EXPIRED'
+        ))
+);
+GO
+
+
+/* =========================================================
+   20.1 VOUCHER DAYS
+   ========================================================= */
+
+CREATE TABLE VoucherDays (
+    VoucherDayID INT IDENTITY(1,1) PRIMARY KEY,
+
+    VoucherID INT NOT NULL,
+
+    DayOfWeek VARCHAR(20) NOT NULL,
+
+    CreatedAt DATETIME2 NOT NULL
+        DEFAULT GETDATE(),
+
+    CONSTRAINT FK_VoucherDays_Vouchers
+        FOREIGN KEY (VoucherID)
+        REFERENCES Vouchers(VoucherID)
+        ON DELETE CASCADE,
+
+    CONSTRAINT CK_VoucherDays_DayOfWeek
+        CHECK (DayOfWeek IN (
+            'MONDAY',
+            'TUESDAY',
+            'WEDNESDAY',
+            'THURSDAY',
+            'FRIDAY',
+            'SATURDAY',
+            'SUNDAY'
+        )),
+
+    CONSTRAINT UQ_VoucherDays
+        UNIQUE (
+            VoucherID,
+            DayOfWeek
+        )
+);
+GO
+
+
+/* =========================================================
+   20.2 VOUCHER MOVIES
+   ========================================================= */
+
+CREATE TABLE VoucherMovies (
+    VoucherMovieID INT IDENTITY(1,1) PRIMARY KEY,
+
+    VoucherID INT NOT NULL,
+
+    MovieID INT NOT NULL,
+
+    CreatedAt DATETIME2 NOT NULL
+        DEFAULT GETDATE(),
+
+    CONSTRAINT FK_VoucherMovies_Vouchers
+        FOREIGN KEY (VoucherID)
+        REFERENCES Vouchers(VoucherID)
+        ON DELETE CASCADE,
+
+    CONSTRAINT FK_VoucherMovies_Movies
+        FOREIGN KEY (MovieID)
+        REFERENCES Movies(MovieID),
+
+    CONSTRAINT UQ_VoucherMovies
+        UNIQUE (
+            VoucherID,
+            MovieID
+        )
+);
+GO
+
+
+/* =========================================================
+   20.3 VOUCHER CENTRES
+   ========================================================= */
+
+CREATE TABLE VoucherCentres (
+    VoucherCentreID INT IDENTITY(1,1) PRIMARY KEY,
+
+    VoucherID INT NOT NULL,
+
+    CentreID INT NOT NULL,
+
+    CreatedAt DATETIME2 NOT NULL
+        DEFAULT GETDATE(),
+
+    CONSTRAINT FK_VoucherCentres_Vouchers
+        FOREIGN KEY (VoucherID)
+        REFERENCES Vouchers(VoucherID)
+        ON DELETE CASCADE,
+
+    CONSTRAINT FK_VoucherCentres_Centres
+        FOREIGN KEY (CentreID)
+        REFERENCES Centres(CentreID),
+
+    CONSTRAINT UQ_VoucherCentres
+        UNIQUE (
+            VoucherID,
+            CentreID
+        )
+);
+GO
+
+
+
+/* =========================================================
+   21. BOOKINGS
+   ========================================================= */
+
+CREATE TABLE Bookings (
+    BookingID INT IDENTITY(1,1) PRIMARY KEY,
+
+    BookingCode VARCHAR(30) NOT NULL UNIQUE,
+
+    UserID INT NULL,
+
+    ShowtimeID INT NOT NULL,
+
+    VoucherID INT NULL,
+
+    BookingType VARCHAR(20) NOT NULL
+        DEFAULT 'ONLINE',
+
+    BookingStatus VARCHAR(30) NOT NULL
+        DEFAULT 'PENDING',
+
+    SubTotal DECIMAL(12,2) NOT NULL
+        DEFAULT 0,
+
+    DiscountAmount DECIMAL(12,2) NOT NULL
+        DEFAULT 0,
+
+    TotalAmount DECIMAL(12,2) NOT NULL
+        DEFAULT 0,
+
+    CreatedAt DATETIME2 NOT NULL
+        DEFAULT GETDATE(),
+
+    UpdatedAt DATETIME2 NULL,
+
+    CONSTRAINT FK_Bookings_User
+        FOREIGN KEY (UserID)
+        REFERENCES Users(UserID),
+
+    CONSTRAINT FK_Bookings_Showtime
+        FOREIGN KEY (ShowtimeID)
+        REFERENCES Showtimes(ShowtimeID),
+
+    CONSTRAINT FK_Bookings_Voucher
+        FOREIGN KEY (VoucherID)
+        REFERENCES Vouchers(VoucherID),
+
+    CONSTRAINT CK_Bookings_Type
+        CHECK (BookingType IN (
+            'ONLINE',
+            'COUNTER'
+        )),
+
+    CONSTRAINT CK_Bookings_Status
+        CHECK (BookingStatus IN (
+            'PENDING',
+            'CONFIRMED',
+            'COMPLETED',
+            'CANCELLED',
+            'EXPIRED'
+        )),
+
+    CONSTRAINT CK_Bookings_Amount
+        CHECK (
+            SubTotal >= 0
+            AND DiscountAmount >= 0
+            AND TotalAmount >= 0
+        )
+);
+GO
+
+
+
+/* =========================================================
+   23. BOOKING SEATS
+   ========================================================= */
+
+CREATE TABLE BookingSeats (
+    BookingSeatID INT IDENTITY(1,1) PRIMARY KEY,
+
+    BookingID INT NOT NULL,
+
+    SeatID INT NOT NULL,
+
+    ShowtimeID INT NOT NULL,
+
+    Price DECIMAL(12,2) NOT NULL,
+
+    SeatStatus VARCHAR(20) NOT NULL
+        DEFAULT 'HELD',
+
+    HoldUntil DATETIME2 NULL,
+
+    CONSTRAINT FK_BookingSeats_Booking
+        FOREIGN KEY (BookingID)
+        REFERENCES Bookings(BookingID),
+
+    CONSTRAINT FK_BookingSeats_Seat
+        FOREIGN KEY (SeatID)
+        REFERENCES Seats(SeatID),
+
+    CONSTRAINT FK_BookingSeats_Showtime
+        FOREIGN KEY (ShowtimeID)
+        REFERENCES Showtimes(ShowtimeID),
+
+    CONSTRAINT CK_BookingSeats_Price
+        CHECK (Price >= 0),
+
+    CONSTRAINT CK_BookingSeats_Status
+        CHECK (SeatStatus IN (
+            'HELD',
+            'CONFIRMED',
+            'CANCELLED',
+            'RELEASED'
+        ))
+);
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'UX_BookingSeats_ActiveSeat')
+    CREATE UNIQUE INDEX UX_BookingSeats_ActiveSeat
+        ON BookingSeats(ShowtimeID, SeatID)
+        WHERE SeatStatus IN ('HELD', 'CONFIRMED');
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_BookingSeats_BookingID')
+    CREATE INDEX IX_BookingSeats_BookingID ON BookingSeats(BookingID);
+GO
+
+
+
+/* =========================================================
+   24. TICKETS
+   ========================================================= */
+
+CREATE TABLE Tickets (
+    TicketID INT IDENTITY(1,1) PRIMARY KEY,
+
+    BookingSeatID INT NOT NULL UNIQUE,
+
+    TicketCode VARCHAR(50) NOT NULL UNIQUE,
+
+    QRCode VARCHAR(500) NOT NULL UNIQUE,
+
+    TicketStatus VARCHAR(20) NOT NULL
+        DEFAULT 'VALID',
+
+    CheckedInAt DATETIME2 NULL,
+
+    CheckedInBy INT NULL,
+
+    CreatedAt DATETIME2 NOT NULL
+        DEFAULT GETDATE(),
+
+    CONSTRAINT FK_Tickets_BookingSeat
+        FOREIGN KEY (BookingSeatID)
+        REFERENCES BookingSeats(BookingSeatID),
+
+    CONSTRAINT FK_Tickets_CheckedInBy
+        FOREIGN KEY (CheckedInBy)
+        REFERENCES Users(UserID),
+
+    CONSTRAINT CK_Tickets_Status
+        CHECK (TicketStatus IN (
+            'VALID',
+            'USED',
+            'CANCELLED',
+            'EXPIRED'
+        ))
+);
+GO
+
+/* =====================================================================================
+   TRIGGER: TỰ ĐỘNG CHUYỂN TRẠNG THÁI BOOKING SANG 'COMPLETED' KHI ĐÃ SOÁT ĐỦ VÉ
+   ===================================================================================== */
+CREATE OR ALTER TRIGGER TR_Tickets_CompleteBooking ON Tickets
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    IF NOT UPDATE(TicketStatus) RETURN;
+
+    UPDATE b SET b.BookingStatus = 'COMPLETED', b.UpdatedAt = SYSDATETIME()
+    FROM Bookings b
+    WHERE b.BookingStatus = 'CONFIRMED'
+      AND b.BookingID IN (SELECT bs.BookingID FROM inserted i
+                          JOIN BookingSeats bs ON bs.BookingSeatID = i.BookingSeatID
+                          WHERE i.TicketStatus = 'USED')
+      AND NOT EXISTS (SELECT 1 FROM BookingSeats bs
+                      LEFT JOIN Tickets t ON t.BookingSeatID = bs.BookingSeatID
+                      WHERE bs.BookingID = b.BookingID AND bs.SeatStatus = 'CONFIRMED'
+                        AND (t.TicketID IS NULL OR t.TicketStatus <> 'USED'));
+END;
+GO
+
+
+
+
+/* =========================================================
+   25. F&B ORDERS
+   ========================================================= */
+
+CREATE TABLE FnbOrders (
+    FnbOrderID INT IDENTITY(1,1) PRIMARY KEY,
+
+    BookingID INT NULL,
+
+    CentreID INT NOT NULL,
+
+    UserID INT NULL,
+
+    OrderCode VARCHAR(30) NOT NULL UNIQUE,
+
+    OrderType VARCHAR(20) NOT NULL
+        DEFAULT 'ONLINE',
+
+    OrderStatus VARCHAR(20) NOT NULL
+        DEFAULT 'PENDING',
+
+    TotalAmount DECIMAL(12,2) NOT NULL
+        DEFAULT 0,
+
+    CreatedAt DATETIME2 NOT NULL
+        DEFAULT GETDATE(),
+
+    UpdatedAt DATETIME2 NULL,
+
+    CONSTRAINT FK_FnbOrders_Booking
+        FOREIGN KEY (BookingID)
+        REFERENCES Bookings(BookingID),
+
+    CONSTRAINT FK_FnbOrders_Centre
+        FOREIGN KEY (CentreID)
+        REFERENCES Centres(CentreID),
+
+    CONSTRAINT FK_FnbOrders_User
+        FOREIGN KEY (UserID)
+        REFERENCES Users(UserID),
+
+    CONSTRAINT CK_FnbOrders_Type
+        CHECK (OrderType IN (
+            'ONLINE',
+            'COUNTER'
+        )),
+
+    CONSTRAINT CK_FnbOrders_Status
+        CHECK (OrderStatus IN (
+            'PENDING',
+            'PREPARING',
+            'READY',
+            'DELIVERED',
+            'CANCELLED'
+        )),
+
+    CONSTRAINT CK_FnbOrders_Total
+        CHECK (TotalAmount >= 0)
+);
+GO
+
+
+
+/* =========================================================
+   26. F&B ORDER ITEMS
+   ========================================================= */
+
+CREATE TABLE FnbOrderItems (
+    FnbOrderItemID INT IDENTITY(1,1) PRIMARY KEY,
+
+    FnbOrderID INT NOT NULL,
+
+    FnbItemID INT NULL,
+
+    ComboID INT NULL,
+
+    Quantity INT NOT NULL,
+
+    UnitPrice DECIMAL(12,2) NOT NULL,
+
+    CONSTRAINT FK_FnbOrderItems_Order
+        FOREIGN KEY (FnbOrderID)
+        REFERENCES FnbOrders(FnbOrderID),
+
+    CONSTRAINT FK_FnbOrderItems_Item
+        FOREIGN KEY (FnbItemID)
+        REFERENCES FnbItems(FnbItemID),
+
+    CONSTRAINT FK_FnbOrderItems_Combo
+        FOREIGN KEY (ComboID)
+        REFERENCES FnbCombos(ComboID),
+
+    CONSTRAINT CK_FnbOrderItems_Quantity
+        CHECK (Quantity > 0),
+
+    CONSTRAINT CK_FnbOrderItems_Price
+        CHECK (UnitPrice >= 0),
+
+    CONSTRAINT CK_FnbOrderItems_Product
+        CHECK (
+            (
+                FnbItemID IS NOT NULL
+                AND ComboID IS NULL
+            )
+            OR
+            (
+                FnbItemID IS NULL
+                AND ComboID IS NOT NULL
+            )
+        )
+);
+GO
+
+
+
+/* =========================================================
+   27. PAYMENTS
+   ========================================================= */
+
+CREATE TABLE Payments (
+    PaymentID INT IDENTITY(1,1) PRIMARY KEY,
+
+    BookingID INT NULL,
+
+    FnbOrderID INT NULL,
+
+    TransactionCode VARCHAR(100) NOT NULL UNIQUE,
+
+    PaymentMethod VARCHAR(20) NOT NULL,
+
+    Amount DECIMAL(12,2) NOT NULL,
+
+    PaymentStatus VARCHAR(20) NOT NULL
+        DEFAULT 'PENDING',
+
+    PaidAt DATETIME2 NULL,
+
+    CashReceived DECIMAL(12,2) NULL,
+
+    CreatedAt DATETIME2 NOT NULL
+        DEFAULT GETDATE(),
+
+    CONSTRAINT FK_Payments_Booking
+        FOREIGN KEY (BookingID)
+        REFERENCES Bookings(BookingID),
+
+    CONSTRAINT FK_Payments_FnbOrder
+        FOREIGN KEY (FnbOrderID)
+        REFERENCES FnbOrders(FnbOrderID),
+
+    CONSTRAINT CK_Payments_Method
+        CHECK (PaymentMethod IN (
+            'CASH',
+            'QR'
+        )),
+
+    CONSTRAINT CK_Payments_Status
+        CHECK (PaymentStatus IN (
+            'PENDING',
+            'PAID',
+            'FAILED',
+            'CANCELLED',
+            'TIMEOUT'
+        )),
+
+    CONSTRAINT CK_Payments_Amount
+        CHECK (Amount >= 0),
+
+    CONSTRAINT CK_Payments_Target
+        CHECK (
+            (
+                BookingID IS NOT NULL
+                AND FnbOrderID IS NULL
+            )
+            OR
+            (
+                BookingID IS NULL
+                AND FnbOrderID IS NOT NULL
+            )
+        )
+);
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Payments_BookingID')
+    CREATE INDEX IX_Payments_BookingID ON Payments(BookingID);
+GO
+
+
+
+/* =========================================================
+   29. CHECK-IN LOGS
+   ========================================================= */
+
+CREATE TABLE CheckInLogs (
+    CheckInID INT IDENTITY(1,1) PRIMARY KEY,
+
+    TicketID INT NOT NULL,
+
+    CheckedBy INT NOT NULL,
+
+    CheckInTime DATETIME2 NOT NULL
+        DEFAULT GETDATE(),
+
+    Result VARCHAR(20) NOT NULL,
+
+    Note NVARCHAR(500) NULL,
+
+    CONSTRAINT FK_CheckInLogs_Ticket
+        FOREIGN KEY (TicketID)
+        REFERENCES Tickets(TicketID),
+
+    CONSTRAINT FK_CheckInLogs_User
+        FOREIGN KEY (CheckedBy)
+        REFERENCES Users(UserID),
+
+    CONSTRAINT CK_CheckInLogs_Result
+        CHECK (Result IN (
+            'SUCCESS',
+            'REJECTED'
+        ))
+);
+GO
+
+
+
+/* =========================================================
+   30. VOUCHER USAGES
+   ========================================================= */
+
+CREATE TABLE VoucherUsages (
+    VoucherUsageID INT IDENTITY(1,1) PRIMARY KEY,
+
+    VoucherID INT NOT NULL,
+
+    UserID INT NOT NULL,
+
+    BookingID INT NOT NULL,
+
+    UsedAt DATETIME2 NOT NULL
+        DEFAULT GETDATE(),
+
+    CONSTRAINT FK_VoucherUsage_Voucher
+        FOREIGN KEY (VoucherID)
+        REFERENCES Vouchers(VoucherID),
+
+    CONSTRAINT FK_VoucherUsage_User
+        FOREIGN KEY (UserID)
+        REFERENCES Users(UserID),
+
+    CONSTRAINT FK_VoucherUsage_Booking
+        FOREIGN KEY (BookingID)
+        REFERENCES Bookings(BookingID),
+
+    CONSTRAINT UQ_Voucher_Booking
+        UNIQUE (
+            VoucherID,
+            BookingID
+        )
+);
+GO
+
+/* =========================================================
+   31. MOVIE RATINGS
+   ========================================================= */
+CREATE TABLE MovieRatings (
+    RatingID INT IDENTITY(1,1) PRIMARY KEY,
+    MovieID INT NOT NULL,
+    UserID INT NOT NULL,
+    Score INT NOT NULL,
+    CreatedAt DATETIME2 NOT NULL DEFAULT GETDATE(),
+    UpdatedAt DATETIME2 NULL,
+    CONSTRAINT FK_MovieRatings_Movie FOREIGN KEY (MovieID) REFERENCES Movies(MovieID) ON DELETE CASCADE,
+    CONSTRAINT FK_MovieRatings_User FOREIGN KEY (UserID) REFERENCES Users(UserID) ON DELETE CASCADE,
+    CONSTRAINT CK_MovieRatings_Score CHECK (Score >= 1 AND Score <= 5),
+    CONSTRAINT UQ_MovieRatings_UserMovie UNIQUE (MovieID, UserID)
+);
+GO
+
+/* =========================================================
+   32. STAFF TRANSFER HISTORY - FE-01.2
+   ========================================================= */
+CREATE TABLE StaffTransferHistory (
+    TransferID INT IDENTITY(1,1) PRIMARY KEY,
+    UserID INT NOT NULL,
+    FromCentreID INT NULL,
+    ToCentreID INT NOT NULL,
+    TransferredBy INT NOT NULL,
+    TransferDate DATETIME2 NOT NULL DEFAULT GETDATE(),
+    EffectiveDate DATE NULL,
+    OldRole VARCHAR(30) NULL,
+    NewRole VARCHAR(30) NULL,
+    Reason NVARCHAR(500) NULL,
+    Notes NVARCHAR(500) NULL,
+    CONSTRAINT FK_Transfer_User FOREIGN KEY (UserID) REFERENCES Users(UserID),
+    CONSTRAINT FK_Transfer_FromCentre FOREIGN KEY (FromCentreID) REFERENCES Centres(CentreID),
+    CONSTRAINT FK_Transfer_ToCentre FOREIGN KEY (ToCentreID) REFERENCES Centres(CentreID),
+    CONSTRAINT FK_Transfer_Admin FOREIGN KEY (TransferredBy) REFERENCES Users(UserID)
+);
+GO
+
+/* =========================================================
+   33. CENTRE MANAGER ASSIGNMENTS - FE-01.3
+   ========================================================= */
+CREATE TABLE CentreManagerAssignments (
+    AssignmentID INT IDENTITY(1,1) PRIMARY KEY,
+    CentreID INT NOT NULL,
+    ManagerID INT NOT NULL,
+    AssignedBy INT NOT NULL,
+    StartDate DATETIME2 NOT NULL DEFAULT GETDATE(),
+    EndDate DATETIME2 NULL,
+    Status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
+    Notes NVARCHAR(500) NULL,
+    CreatedAt DATETIME2 NOT NULL DEFAULT GETDATE(),
+    CONSTRAINT FK_CMA_Centre FOREIGN KEY (CentreID) REFERENCES Centres(CentreID),
+    CONSTRAINT FK_BMA_Manager FOREIGN KEY (ManagerID) REFERENCES Users(UserID),
+    CONSTRAINT FK_BMA_Admin FOREIGN KEY (AssignedBy) REFERENCES Users(UserID),
+);
+GO
+
+-- Filtered Unique Indexes bảo đảm tại một thời điểm mỗi Manager chỉ có tối đa 1 phân công ACTIVE và mỗi Centre chỉ có 1 Manager ACTIVE
+CREATE UNIQUE NONCLUSTERED INDEX UQ_CMA_Active_Manager 
+ON CentreManagerAssignments(ManagerID) 
+WHERE Status = 'ACTIVE' AND EndDate IS NULL;
+GO
+
+CREATE UNIQUE NONCLUSTERED INDEX UQ_CMA_Active_Centre 
+ON CentreManagerAssignments(CentreID) 
+WHERE Status = 'ACTIVE' AND EndDate IS NULL;
+GO
+
+
+/* ====================================================================================
+   BỘ DỮ LIỆU MẪU CHUẨN HÓA TOÀN DIỆN (COMPREHENSIVE MASTER & SAMPLE SEED DATA)
+   Hệ thống: CineFlow - Multi-Centre Cinema Management System
+   Bao gồm: 16 Cụm rạp (4 rạp/thành phố), Bảng giá chi nhánh & khung giờ, Suất chiếu, Vé & F&B
+   Mật khẩu mặc định của tất cả tài khoản mẫu: 123456
+   ==================================================================================== */
+
+
+-- ====================================================================================
+-- Centres (16 bản ghi)
+-- ====================================================================================
+SET IDENTITY_INSERT Centres ON;
+GO
+INSERT INTO Centres (CentreID, CentreName, Address, City, Phone, Status, CreatedAt, UpdatedAt) VALUES
+(1, N'CineFlow Cầu Giấy', N'123 Cầu Giấy', N'Hà Nội', N'02411111111', N'ACTIVE', '2026-10-03 23:08:30', NULL),
+(2, N'CineFlow Hà Đông', N'456 Nguyễn Trãi', N'Hà Nội', N'02422222222', N'ACTIVE', '2026-10-03 23:08:30', NULL),
+(3, N'CineFlow Hoàn Kiếm', N'88 Hàng Bài, Hoàn Kiếm', N'Hà Nội', N'02433333333', N'ACTIVE', '2026-10-03 23:08:31', NULL),
+(4, N'CineFlow Quận 1', N'120 Nguyễn Huệ, Quận 1', N'TP. Hồ Chí Minh', N'02844444444', N'ACTIVE', '2026-10-03 23:08:31', NULL),
+(5, N'CineFlow Hải Châu', N'50 Bạch Đằng, Hải Châu', N'Đà Nẵng', N'02365555555', N'ACTIVE', '2026-10-03 23:08:31', NULL),
+(6, N'CineFlow Ngô Quyền', N'20 Lạch Tray, Ngô Quyền', N'Hải Phòng', N'02256666666', N'ACTIVE', '2026-10-03 23:08:31', NULL),
+(17, N'CineFlow Hai Bà Trưng', N'191 Bà Triệu, Hai Bà Trưng', N'Hà Nội', N'02437777777', N'ACTIVE', '2026-10-13 22:59:54', NULL),
+(18, N'CineFlow Sơn Trà', N'150 Võ Nguyên Giáp, Sơn Trà', N'Đà Nẵng', N'02438888888', N'ACTIVE', '2026-10-13 22:59:54', NULL),
+(19, N'CineFlow Landmark 81', N'Vinhomes Central Park, Bình Thạnh', N'TP. Hồ Chí Minh', N'02855555555', N'ACTIVE', '2026-10-13 22:59:54', NULL),
+(20, N'CineFlow Gò Vấp', N'304 Quang Trung, Gò Vấp', N'TP. Hồ Chí Minh', N'02866666666', N'ACTIVE', '2026-10-13 22:59:54', NULL),
+(21, N'CineFlow Thủ Đức', N'216 Võ Văn Ngân, TP. Thủ Đức', N'TP. Hồ Chí Minh', N'02877777777', N'ACTIVE', '2026-10-13 22:59:54', NULL),
+(22, N'CineFlow Cẩm Lệ', N'100 Cách Mạng Tháng 8, Cẩm Lệ', N'Đà Nẵng', N'02366666666', N'ACTIVE', '2026-10-13 22:59:54', NULL),
+(23, N'CineFlow Thanh Khê', N'250 Điện Biên Phủ, Thanh Khê', N'Đà Nẵng', N'02367777777', N'ACTIVE', '2026-10-17 21:58:18', NULL),
+(24, N'CineFlow Lê Chân', N'10 Võ Nguyên Giáp, Kênh Dương, Lê Chân', N'Hải Phòng', N'02257777777', N'ACTIVE', '2026-10-17 21:58:18', NULL),
+(25, N'CineFlow Hồng Bàng', N'88 Đinh Tiên Hoàng, Hoàng Văn Thụ, Hồng Bàng', N'Hải Phòng', N'02258888888', N'ACTIVE', '2026-10-17 21:58:18', NULL),
+(26, N'CineFlow Hải An', N'32 Lê Hồng Phong, Đằng Hải, Hải An', N'Hải Phòng', N'02259999999', N'ACTIVE', '2026-10-17 21:58:18', NULL);
+GO
+SET IDENTITY_INSERT Centres OFF;
+GO
+
+-- ====================================================================================
+-- Users (123 bản ghi)
+-- ====================================================================================
+SET IDENTITY_INSERT Users ON;
+GO
+INSERT INTO Users (UserID, FullName, Account, Email, Password, Phone, Avatar, Role, Status, CentreID, ResetToken, ResetTokenExpiry, EmailVerified, PhoneVerified, LastLoginAt, CreatedAt, UpdatedAt) VALUES
+(1, N'Dương Quyết Thái', N'customer', N'customer@gmail.com', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0972049598', N'/Cine_Flow/uploads/avatars/641b4853-e378-420f-8b2b-a9e53a8b7996.jpg', N'CUSTOMER', N'ACTIVE', NULL, N'058005', '2026-10-13 22:06:03', 1, 0, '2026-10-13 21:03:33', '2026-10-03 23:08:30', '2026-10-13 21:51:03'),
+(2, N'Nguyễn Văn Staff', N'staff', N'staff@gmail.com', N'$2a$10$DgDVtZ6KKKTSWbRb0.pxpeXhwgUYnnYsm7v0.gK5xKMxTYQwZzoLi', N'0900000002', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 1, NULL, NULL, 1, 0, '2026-10-12 22:52:03', '2026-10-03 23:08:30', '2026-10-12 22:52:06'),
+(3, N'Nguyễn Văn Manager', N'manager', N'manager@gmail.com', N'$2a$10$t0EGXUJ09K1EEHwVVXtNCuFG40Wpv0ILErFvqxdUYUi8uIiogfCM6', N'0900000003', NULL, N'MANAGER', N'ACTIVE', 21, NULL, NULL, 1, 0, '2026-10-17 21:28:30', '2026-10-03 23:08:30', '2026-10-17 21:28:30'),
+(4, N'Administrator', N'admin', N'admin@gmail.com', N'$2a$10$A1HeMkposFAqeqnLfimaR.AyagdCIo4z8WDsvp3yz2tnri6dL7JZu', N'0900000004', N'', N'ADMIN', N'ACTIVE', NULL, NULL, NULL, 1, 0, '2026-10-17 21:29:54', '2026-10-03 23:08:30', '2026-10-17 21:29:54'),
+(5, N'Lê Hoàng Nhân Viên', N'staff_caugiay', N'staff.caugiay@cineflow.vn', N'123456', N'0911000002', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 17, NULL, NULL, 1, 0, NULL, '2026-10-03 23:08:31', '2026-10-14 17:52:49'),
+(6, N'Phạm Ngọc Nhân Viên', N'staff_hadong', N'staff.hadong@cineflow.vn', N'123456', N'0911000003', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 2, NULL, NULL, 1, 0, NULL, '2026-10-03 23:08:31', '2026-10-14 16:48:15'),
+(7, N'Trần Minh Quản Lý', N'manager_hanoi', N'manager.hanoi@cineflow.vn', N'123456', N'0911000001', NULL, N'MANAGER', N'ACTIVE', 22, NULL, NULL, 1, 0, NULL, '2026-10-03 23:08:31', '2026-10-14 21:03:45'),
+(8, N'Nguyễn Thu Nhân Viên', N'staff_quan1', N'staff.quan1@cineflow.vn', N'123456', N'0911000004', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 4, NULL, NULL, 1, 0, NULL, '2026-10-03 23:08:31', NULL),
+(9, N'Dương quyết thái', N'quyetthaix2@gmail.com', N'quyetthaix2@gmail.com', N'$2a$10$R9pVSyewXfcSSYK8nBGIyOlJLmRbaq21W7iFgvh2RtX2nncVIEH9O', NULL, NULL, N'CUSTOMER', N'ACTIVE', NULL, N'429397', '2026-10-13 17:25:53', 0, 0, '2026-10-08 11:02:00', '2026-10-08 08:52:50', '2026-10-08 11:36:55'),
+(10, N'Dương quyết thái', N'quyetthaix1@gmail.com', N'quyetthaix1@gmail.com', N'$2a$10$lYTuc4U954e24qY2RQyav.C7FLGCj/OV/aTTbeh.qx4LOMeiOHH.G', NULL, NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 0, 0, NULL, '2026-10-08 09:00:25', NULL),
+(11, N'Dương Công An', N'quyetthaix12@gmail.com', N'quyetthaix12@gmail.com', N'$2a$10$sTQxHll1gC3/vJ0n8TlV1.2T7pCiomNZlV61cN4wGHRGz4sy8hDCy', N'0972049598', N'', N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 0, 0, '2026-10-08 10:31:54', '2026-10-08 10:31:42', '2026-10-08 10:33:28'),
+(12, N'Dương quyết thái', N'quyetthai@gmail.com', N'quyetthai@gmail.com', N'$2a$10$nmjqmLo60zsRRq0w79GAceNlPBfvIyfBXiKIhkSS2jN.Gkx6SZdcy', NULL, NULL, N'CUSTOMER', N'ACTIVE', NULL, N'866022', '2026-10-13 22:25:29', 0, 0, NULL, '2026-10-13 21:32:37', '2026-10-15 18:00:34'),
+(13, N'Dương quyết thái', N'duongquyetthai@gmail.com', N'duongquyetthai@gmail.com', N'$2a$10$IORqbveGOTFWsJAdvhUJhOssEaMBMP7UU1TTboeOBoyknhGf9sidO', N'0972049598', N'', N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 0, '2026-10-15 21:15:17', '2026-10-13 21:34:28', '2026-10-15 21:15:17'),
+(14, N'Trần Đình Trọng', N'manager_caugiay', N'manager.caugiay@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0911000001', NULL, N'MANAGER', N'ACTIVE', 1, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:21:53'),
+(15, N'Lê Minh Tuấn', N'manager_hadong', N'manager.hadong@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0911000002', NULL, N'MANAGER', N'ACTIVE', 2, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(16, N'Vũ Thị Bích Ngọc', N'manager_hoankiem', N'manager.hoankiem@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0911000003', NULL, N'MANAGER', N'ACTIVE', 3, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(17, N'Phan Thanh Tùng', N'manager_quan1', N'manager.quan1@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0911000004', NULL, N'MANAGER', N'ACTIVE', 4, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(18, N'Đặng Phương Nam', N'manager_haichau', N'manager.haichau@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0911000005', NULL, N'MANAGER', N'ACTIVE', 5, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(19, N'Bùi Quang Dũng', N'manager_ngoquyen', N'manager.ngoquyen@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0911000006', NULL, N'MANAGER', N'ACTIVE', 6, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 21:16:41'),
+(20, N'Đỗ Hoài Phương', N'manager_haibatrung', N'manager.haibatrung@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0911000017', NULL, N'MANAGER', N'ACTIVE', 17, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(21, N'Ngô Gia Khánh', N'manager_tayho', N'manager.tayho@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0911000018', NULL, N'MANAGER', N'ACTIVE', 18, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(22, N'Trương Mỹ Duyên', N'manager_landmark81', N'manager.landmark81@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0911000019', NULL, N'MANAGER', N'ACTIVE', 19, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(23, N'Hồ Quốc Bảo', N'manager_govap', N'manager.govap@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0911000020', NULL, N'MANAGER', N'ACTIVE', 20, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(24, N'Hoàng Thuỳ Linh', N'staff_cg_02', N'staff.cg02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921010002', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 1, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(25, N'Đỗ Quốc Hùng', N'staff_cg_03', N'staff.cg03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921010003', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 1, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(26, N'Lê Minh Trang', N'staff_cg_04', N'staff.cg04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921010004', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 1, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(27, N'Trần Bảo Nam', N'staff_cg_05', N'staff.cg05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921010005', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 1, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(28, N'Vũ Khánh Linh', N'staff_hd_02', N'staff.hd02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921020002', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 2, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(29, N'Nguyễn Đức Huy', N'staff_hd_03', N'staff.hd03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921020003', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 2, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(30, N'Đinh Lan Hương', N'staff_hd_04', N'staff.hd04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921020004', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 2, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(31, N'Bùi Thanh Tùng', N'staff_hd_05', N'staff.hd05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921020005', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 2, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(32, N'Ngô Mai Phương', N'staff_hk_01', N'staff.hk01@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921030001', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 3, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(33, N'Phan Tiến Đạt', N'staff_hk_02', N'staff.hk02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921030002', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 3, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(34, N'Trương Mỹ Hoa', N'staff_hk_03', N'staff.hk03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921030003', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 3, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(35, N'Hà Anh Tuấn', N'staff_hk_04', N'staff.hk04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921030004', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 3, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(36, N'Lương Thảo My', N'staff_hk_05', N'staff.hk05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921030005', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 3, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(37, N'Võ Hoàng Yến', N'staff_q1_02', N'staff.q102@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921040002', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 4, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(38, N'Đặng Khắc Tiệp', N'staff_q1_03', N'staff.q103@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921040003', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 4, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(39, N'Cao Thái Hà', N'staff_q1_04', N'staff.q104@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921040004', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 4, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(40, N'Lý Quí Khánh', N'staff_q1_05', N'staff.q105@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921040005', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 4, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(41, N'Dương Triệu Vũ', N'staff_hc_01', N'staff.hc01@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921050001', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 5, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(42, N'Tô Ngọc Vân', N'staff_hc_02', N'staff.hc02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921050002', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 5, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(43, N'Mai Phương Thúy', N'staff_hc_03', N'staff.hc03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921050003', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 5, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(44, N'Huỳnh Trọng Phát', N'staff_hc_04', N'staff.hc04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921050004', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 5, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(45, N'Lê Diệp Kiều', N'staff_hc_05', N'staff.hc05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921050005', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 5, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(46, N'Đoàn Văn Hậu', N'staff_nq_01', N'staff.nq01@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921060001', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 6, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(47, N'Nguyễn Quang Hải', N'staff_nq_02', N'staff.nq02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921060002', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 6, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(48, N'Bùi Tiến Dũng', N'staff_nq_03', N'staff.nq03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921060003', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 6, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(49, N'Phạm Hải Yến', N'staff_nq_04', N'staff.nq04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921060004', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 6, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(50, N'Chu Ngọc Hà', N'staff_nq_05', N'staff.nq05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921060005', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 6, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(51, N'Hà Kiều Anh', N'staff_hbt_02', N'staff.hbt02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921170002', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 17, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(52, N'Vũ Trọng Phụng', N'staff_hbt_03', N'staff.hbt03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921170003', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 17, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(53, N'Nguyễn Du', N'staff_hbt_04', N'staff.hbt04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921170004', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 17, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(54, N'Hồ Xuân Hương', N'staff_hbt_05', N'staff.hbt05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921170005', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 17, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(55, N'Trần Đăng Khoa', N'staff_th_01', N'staff.th01@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921180001', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 18, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(56, N'Xuân Diệu', N'staff_th_02', N'staff.th02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921180002', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 18, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(57, N'Huy Cận', N'staff_th_03', N'staff.th03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921180003', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 18, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(58, N'Hàn Mặc Tử', N'staff_th_04', N'staff.th04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921180004', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 18, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(59, N'Chế Lan Viên', N'staff_th_05', N'staff.th05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921180005', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 18, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(60, N'Lê Lợi', N'staff_lm_01', N'staff.lm01@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921190001', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 19, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(61, N'Trần Hưng Đạo', N'staff_lm_02', N'staff.lm02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921190002', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 19, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(62, N'Ngô Quyền', N'staff_lm_03', N'staff.lm03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921190003', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 19, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(63, N'Lý Thường Kiệt', N'staff_lm_04', N'staff.lm04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921190004', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 19, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(64, N'Quang Trung', N'staff_lm_05', N'staff.lm05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921190005', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 19, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(65, N'Võ Thị Sáu', N'staff_gv_01', N'staff.gv01@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921200001', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 20, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(66, N'Nguyễn Văn Trỗi', N'staff_gv_02', N'staff.gv02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921200002', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 20, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(67, N'Kim Đồng', N'staff_gv_03', N'staff.gv03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921200003', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 20, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(68, N'Lê Văn Tám', N'staff_gv_04', N'staff.gv04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921200004', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 20, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(69, N'Bế Văn Đàn', N'staff_gv_05', N'staff.gv05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921200005', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 20, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(70, N'Phan Bội Châu', N'staff_td_01', N'staff.td01@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921210001', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 21, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(71, N'Phan Châu Trinh', N'staff_td_02', N'staff.td02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921210002', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 21, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(72, N'Huỳnh Thúc Kháng', N'staff_td_03', N'staff.td03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921210003', NULL, N'TICKET_SALES_STAFF', N'INACTIVE', 21, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 21:17:51'),
+(73, N'Lương Văn Can', N'staff_td_04', N'staff.td04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921210004', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 21, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(74, N'Nguyễn An Ninh', N'staff_td_05', N'staff.td05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921210005', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 21, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(75, N'Hoàng Hoa Thám', N'staff_cl_01', N'staff.cl01@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921220001', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 22, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(76, N'Trương Định', N'staff_cl_02', N'staff.cl02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921220002', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 22, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(77, N'Nguyễn Trung Trực', N'staff_cl_03', N'staff.cl03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921220003', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 22, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(78, N'Võ Duy Dương', N'staff_cl_04', N'staff.cl04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921220004', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 22, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(79, N'Thủ Khoa Huân', N'staff_cl_05', N'staff.cl05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921220005', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 22, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(80, N'Trần Thị Mai', N'cust_01', N'tranthimai@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000001', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-10-14 20:10:06', '2026-10-15 20:10:06'),
+(81, N'Lê Văn Long', N'cust_02', N'levanlong@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000002', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-10-13 20:10:06', '2026-10-15 20:10:06'),
+(82, N'Phạm Thu Trang', N'cust_03', N'phamthutrang@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000003', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-10-12 20:10:06', '2026-10-15 20:10:06'),
+(83, N'Hoàng Minh Đức', N'cust_04', N'hoangminhduc@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000004', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-10-11 20:10:06', '2026-10-15 20:10:06'),
+(84, N'Vũ Khánh Linh', N'cust_05', N'vukhanhlinh@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000005', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-10-10 20:10:06', '2026-10-15 20:10:06'),
+(85, N'Đặng Quốc Huy', N'cust_06', N'dangquochuy@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000006', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-10-09 20:10:06', '2026-10-15 20:10:06'),
+(86, N'Bùi Thị Hạnh', N'cust_07', N'buithihanh@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000007', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-10-08 20:10:06', '2026-10-15 20:10:06'),
+(87, N'Ngô Tuấn Anh', N'cust_08', N'ngotuananh@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000008', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-10-07 20:10:06', '2026-10-15 20:10:06'),
+(88, N'Đỗ Lan Anh', N'cust_09', N'dolananh@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000009', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-10-06 20:10:06', '2026-10-15 20:10:06'),
+(89, N'Đinh Gia Bảo', N'cust_10', N'dinhgiabao@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000010', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-10-05 20:10:06', '2026-10-15 20:10:06'),
+(90, N'Mai Diệu Thảo', N'cust_11', N'maidieuthao@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000011', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-10-04 20:10:06', '2026-10-15 20:10:06'),
+(91, N'Lý Hải Nam', N'cust_12', N'lyhainam@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000012', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-10-03 20:10:06', '2026-10-15 20:10:06'),
+(92, N'Dương Thùy Chi', N'cust_13', N'duongthuychi@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000013', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-10-02 20:10:06', '2026-10-15 20:10:06'),
+(93, N'Phan Đình Phùng', N'cust_14', N'phandinhphung@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000014', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-10-01 20:10:06', '2026-10-15 20:10:06'),
+(94, N'Nguyễn Thanh Tùng', N'cust_15', N'nguyenthanhtung@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000015', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-30 20:10:06', '2026-10-15 20:10:06'),
+(95, N'Trịnh Thăng Bình', N'cust_16', N'trinhthangbinh@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000016', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-29 20:10:06', '2026-10-15 20:10:06'),
+(96, N'Hồ Ngọc Hà', N'cust_17', N'hongocha@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000017', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-28 20:10:06', '2026-10-15 20:10:06'),
+(97, N'Đàm Vĩnh Hưng', N'cust_18', N'damvinhhung@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000018', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-27 20:10:06', '2026-10-15 20:10:06'),
+(98, N'Mỹ Tâm', N'cust_19', N'mytam@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000019', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-26 20:10:06', '2026-10-15 20:10:06'),
+(99, N'Sơn Tùng M-TP', N'cust_20', N'sontungmtp@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000020', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-25 20:10:06', '2026-10-15 20:10:06'),
+(100, N'Soobin Hoàng Sơn', N'cust_21', N'soobinhoangson@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000021', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-24 20:10:06', '2026-10-15 20:10:06'),
+(101, N'Vũ Cát Tường', N'cust_22', N'vucattuong@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000022', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-23 20:10:06', '2026-10-15 20:10:06'),
+(102, N'Đen Vâu', N'cust_23', N'denvau@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000023', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-22 20:10:06', '2026-10-15 20:10:06'),
+(103, N'Bích Phương', N'cust_24', N'bichphuong@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000024', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-21 20:10:06', '2026-10-15 20:10:06'),
+(104, N'Đức Phúc', N'cust_25', N'ducphuc@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000025', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-20 20:10:06', '2026-10-15 20:10:06'),
+(105, N'Erik Lê', N'cust_26', N'erikle@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000026', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-19 20:10:06', '2026-10-15 20:10:06'),
+(106, N'Hòa Minzy', N'cust_27', N'hoaminzy@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000027', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-18 20:10:06', '2026-10-15 20:10:06'),
+(107, N'Trúc Nhân', N'cust_28', N'trucnhan@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000028', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-17 20:10:06', '2026-10-15 20:10:06'),
+(108, N'Noo Phước Thịnh', N'cust_29', N'noophuocthinh@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000029', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-16 20:10:06', '2026-10-15 20:10:06'),
+(109, N'Đông Nhi', N'cust_30', N'dongnhi@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000030', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-15 20:10:06', '2026-10-15 20:10:06'),
+(110, N'Tóc Tiên', N'cust_31', N'toctien@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000031', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-14 20:10:06', '2026-10-15 20:10:06'),
+(111, N'Bảo Anh', N'cust_32', N'baoanh@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000032', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-13 20:10:06', '2026-10-15 20:10:06'),
+(112, N'Chi Pu', N'cust_33', N'chipu@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000033', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-12 20:10:06', '2026-10-15 20:10:06'),
+(113, N'Isaac Phạm', N'cust_34', N'isaacpham@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000034', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-11 20:10:06', '2026-10-15 20:10:06'),
+(114, N'Min Nguyễn', N'cust_35', N'minnguyen@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000035', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-10 20:10:06', '2026-10-15 20:10:06'),
+(115, N'Karik Phạm', N'cust_36', N'karikpham@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000036', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-09 20:10:06', '2026-10-15 20:10:06'),
+(116, N'Suboi Hàng Huyên', N'cust_37', N'suboi@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000037', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-08 20:10:06', '2026-10-15 20:10:06'),
+(117, N'JustaTee Thanh', N'cust_38', N'justatee@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000038', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-07 20:10:06', '2026-10-15 20:10:06'),
+(118, N'Rhymastic Vũ', N'cust_39', N'rhymastic@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000039', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-06 20:10:06', '2026-10-15 20:10:06'),
+(119, N'Binz Lê', N'cust_40', N'binzle@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000040', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-05 20:10:06', '2026-10-15 20:10:06'),
+(120, N'Thùy Chi', N'cust_41', N'thuychi@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000041', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-04 20:10:06', '2026-10-15 20:10:06'),
+(121, N'Văn Mai Hương', N'cust_42', N'vanmaihuong@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000042', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-03 20:10:06', '2026-10-15 20:10:06'),
+(122, N'Uyên Linh', N'cust_43', N'uyenlinh@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000043', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-02 20:10:06', '2026-10-15 20:10:06'),
+(123, N'Trung Quân Idol', N'cust_44', N'trungquan@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000044', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-01 20:10:06', '2026-10-15 20:10:06'),
+(127, N'Dương quyết thái', N'quyetthai', N'quyetthaix22@gmail.com', N'$2a$10$SXAro67oi3IuXv8s.LO6tuSi/zg8XeB0mp/jiTbcOcKU7JQwCDgOu', N'0972049598', NULL, N'MANAGER', N'ACTIVE', 24, NULL, NULL, 1, 0, NULL, '2026-10-26 18:39:48', NULL),
+(128, N'Trần Thị Cúc', N'customer1', N'customer1@gmail.com', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0900000011', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 0, NULL, '2026-10-24 15:00:00', NULL),
+(136, N'Nguyễn Hoàng Nam', N'staff_tk_01', N'staff.tk01@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230001', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
+(137, N'Trần Thị Thùy Dung', N'staff_tk_02', N'staff.tk02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230002', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
+(138, N'Lê Quốc Bảo', N'staff_tk_03', N'staff.tk03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230003', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
+(139, N'Phạm Minh Thư', N'staff_tk_04', N'staff.tk04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230004', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
+(140, N'Đặng Tuấn Kiệt', N'staff_tk_05', N'staff.tk05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230005', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
+(141, N'Huỳnh Mai Phương', N'staff_tk_06', N'staff.tk06@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230006', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
+(142, N'Võ Thành Đạt', N'staff_tk_07', N'staff.tk07@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230007', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
+(143, N'Bùi Thảo Nhi', N'staff_tk_08', N'staff.tk08@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230008', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
+(144, N'Đỗ Gia Huy', N'staff_tk_09', N'staff.tk09@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230009', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
+(145, N'Trương Bảo Châu', N'staff_tk_10', N'staff.tk10@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230010', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
+(146, N'Ngô Đình Khang', N'staff_tk_11', N'staff.tk11@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230011', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
+(147, N'Hoàng Ngọc Ánh', N'staff_tk_12', N'staff.tk12@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230012', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
+(148, N'Phan Nhật Anh', N'staff_tk_13', N'staff.tk13@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230013', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
+(149, N'Lâm Quỳnh Như', N'staff_tk_14', N'staff.tk14@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230014', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
+(150, N'Vũ Đức Hải', N'staff_tk_15', N'staff.tk15@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230015', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00');
+GO
+SET IDENTITY_INSERT Users OFF;
+GO
+
+-- ====================================================================================
+-- Halls (75 bản ghi)
+-- ====================================================================================
+SET IDENTITY_INSERT Halls ON;
+GO
+INSERT INTO Halls (HallID, CentreID, HallName, HallType, Capacity, Status, CreatedAt) VALUES
+(1, 1, N'Phòng 01', N'2D', 60, N'AVAILABLE', '2026-10-03 23:08:30'),
+(2, 1, N'Phòng 02', N'2D', 50, N'AVAILABLE', '2026-10-03 23:08:30'),
+(3, 2, N'Phòng 01', N'2D', 60, N'AVAILABLE', '2026-10-03 23:08:30'),
+(4, 2, N'Phòng 02', N'3D', 70, N'AVAILABLE', '2026-10-03 23:08:30'),
+(5, 3, N'Phòng IMAX 01', N'3D', 120, N'AVAILABLE', '2026-10-03 23:08:31'),
+(6, 3, N'Phòng Premium 01', N'2D', 80, N'AVAILABLE', '2026-10-03 23:08:31'),
+(7, 4, N'Phòng Premium 01', N'2D', 90, N'AVAILABLE', '2026-10-03 23:08:31'),
+(8, 5, N'Phòng 01', N'2D', 70, N'AVAILABLE', '2026-10-03 23:08:31'),
+(9, 6, N'Phòng 01', N'2D', 70, N'AVAILABLE', '2026-10-03 23:08:31'),
+(19, 5, N'Phòng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:56:37'),
+(20, 5, N'Phòng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:56:37'),
+(21, 5, N'Phòng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:56:37'),
+(22, 1, N'Phòng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:56:37'),
+(23, 1, N'Phòng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:56:37'),
+(24, 1, N'Phòng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:56:37'),
+(25, 2, N'Phòng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:56:37'),
+(26, 2, N'Phòng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:56:37'),
+(27, 2, N'Phòng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:56:37'),
+(28, 3, N'Phòng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:56:37'),
+(29, 3, N'Phòng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:56:37'),
+(30, 3, N'Phòng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:56:37'),
+(40, 6, N'Phòng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:56:37'),
+(41, 6, N'Phòng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:56:37'),
+(42, 6, N'Phòng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:56:37'),
+(58, 4, N'Phòng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:56:37'),
+(59, 4, N'Phòng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:56:37'),
+(60, 4, N'Phòng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:56:37'),
+(61, 1, N'Phòng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:59:54'),
+(62, 1, N'Phòng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:59:54'),
+(63, 1, N'Phòng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:59:54'),
+(64, 2, N'Phòng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:59:54'),
+(65, 2, N'Phòng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:59:54'),
+(66, 2, N'Phòng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:59:54'),
+(67, 3, N'Phòng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:59:54'),
+(68, 3, N'Phòng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:59:54'),
+(69, 3, N'Phòng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:59:54'),
+(70, 4, N'Phòng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:59:54'),
+(71, 4, N'Phòng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:59:54'),
+(72, 4, N'Phòng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:59:54'),
+(73, 5, N'Phòng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:59:54'),
+(74, 5, N'Phòng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:59:54'),
+(75, 5, N'Phòng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:59:54'),
+(76, 6, N'Phòng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:59:54'),
+(77, 6, N'Phòng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:59:54'),
+(78, 6, N'Phòng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:59:54'),
+(79, 17, N'Phòng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:59:54'),
+(80, 17, N'Phòng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:59:54'),
+(81, 17, N'Phòng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:59:54'),
+(82, 18, N'Phòng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:59:54'),
+(83, 18, N'Phòng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:59:54'),
+(84, 18, N'Phòng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:59:54'),
+(85, 19, N'Phòng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:59:54'),
+(86, 19, N'Phòng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:59:54'),
+(87, 19, N'Phòng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:59:54'),
+(88, 20, N'Phòng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:59:54'),
+(89, 20, N'Phòng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:59:54'),
+(90, 20, N'Phòng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:59:54'),
+(91, 21, N'Phòng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:59:54'),
+(92, 21, N'Phòng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:59:54'),
+(93, 21, N'Phòng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:59:54'),
+(94, 22, N'Phòng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-13 22:59:54'),
+(95, 22, N'Phòng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-13 22:59:54'),
+(96, 22, N'Phòng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-13 22:59:54'),
+(97, 23, N'Phòng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-17 21:58:18'),
+(98, 23, N'Phòng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-17 21:58:18'),
+(99, 23, N'Phòng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-17 21:58:18'),
+(100, 24, N'Phòng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-17 21:58:18'),
+(101, 24, N'Phòng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-17 21:58:18'),
+(102, 24, N'Phòng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-17 21:58:18'),
+(103, 25, N'Phòng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-17 21:58:18'),
+(104, 25, N'Phòng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-17 21:58:18'),
+(105, 25, N'Phòng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-17 21:58:18'),
+(106, 26, N'Phòng 2D 01', N'2D', 60, N'AVAILABLE', '2026-10-17 21:58:18'),
+(107, 26, N'Phòng 2D 02', N'2D', 50, N'AVAILABLE', '2026-10-17 21:58:18'),
+(108, 26, N'Phòng 3D 01', N'3D', 80, N'AVAILABLE', '2026-10-17 21:58:18');
+GO
+SET IDENTITY_INSERT Halls OFF;
+GO
+
+-- ====================================================================================
+-- Seats (3840 bản ghi)
+-- ====================================================================================
+SET IDENTITY_INSERT Seats ON;
+GO
+INSERT INTO Seats (SeatID, HallID, SeatRow, SeatNumber, SeatType, Status) VALUES
+(1, 1, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(2, 1, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(3, 1, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(4, 1, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(5, 1, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(6, 1, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(7, 2, N'A', 1, N'VIP', N'AVAILABLE'),
+(8, 2, N'A', 2, N'VIP', N'AVAILABLE'),
+(9, 2, N'A', 3, N'VIP', N'AVAILABLE'),
+(10, 2, N'B', 1, N'SWEETBOX', N'AVAILABLE'),
+(11, 2, N'B', 2, N'SWEETBOX', N'AVAILABLE'),
+(12, 3, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(13, 3, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(14, 3, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(15, 4, N'A', 1, N'VIP', N'AVAILABLE'),
+(16, 4, N'A', 2, N'VIP', N'AVAILABLE'),
+(17, 4, N'A', 3, N'VIP', N'AVAILABLE'),
+(18, 1, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(19, 1, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(20, 1, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(21, 1, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(22, 1, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(23, 1, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(24, 1, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(25, 1, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(26, 1, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(27, 1, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(28, 1, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(29, 1, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(30, 1, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(31, 1, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(32, 1, N'C', 1, N'STANDARD', N'AVAILABLE'),
+(33, 1, N'C', 2, N'STANDARD', N'AVAILABLE'),
+(34, 1, N'C', 3, N'STANDARD', N'AVAILABLE'),
+(35, 1, N'C', 4, N'STANDARD', N'AVAILABLE'),
+(36, 1, N'C', 5, N'STANDARD', N'AVAILABLE'),
+(37, 1, N'C', 6, N'STANDARD', N'AVAILABLE'),
+(38, 1, N'C', 7, N'STANDARD', N'AVAILABLE'),
+(39, 1, N'C', 8, N'STANDARD', N'AVAILABLE'),
+(40, 1, N'C', 9, N'STANDARD', N'AVAILABLE'),
+(41, 1, N'C', 10, N'STANDARD', N'AVAILABLE'),
+(42, 1, N'D', 1, N'STANDARD', N'AVAILABLE'),
+(43, 1, N'D', 2, N'STANDARD', N'AVAILABLE'),
+(44, 1, N'D', 3, N'STANDARD', N'AVAILABLE'),
+(45, 1, N'D', 4, N'STANDARD', N'AVAILABLE'),
+(46, 1, N'D', 5, N'STANDARD', N'AVAILABLE'),
+(47, 1, N'D', 6, N'STANDARD', N'AVAILABLE'),
+(48, 1, N'D', 7, N'STANDARD', N'AVAILABLE'),
+(49, 1, N'D', 8, N'STANDARD', N'AVAILABLE'),
+(50, 1, N'D', 9, N'STANDARD', N'AVAILABLE'),
+(51, 1, N'D', 10, N'STANDARD', N'AVAILABLE'),
+(52, 1, N'E', 1, N'VIP', N'AVAILABLE'),
+(53, 1, N'E', 2, N'VIP', N'AVAILABLE'),
+(54, 1, N'E', 3, N'VIP', N'AVAILABLE'),
+(55, 1, N'E', 4, N'VIP', N'AVAILABLE'),
+(56, 1, N'E', 5, N'VIP', N'AVAILABLE'),
+(57, 1, N'E', 6, N'VIP', N'AVAILABLE'),
+(58, 1, N'E', 7, N'VIP', N'AVAILABLE'),
+(59, 1, N'E', 8, N'VIP', N'AVAILABLE'),
+(60, 1, N'E', 9, N'VIP', N'AVAILABLE'),
+(61, 1, N'E', 10, N'VIP', N'AVAILABLE'),
+(62, 1, N'F', 1, N'VIP', N'AVAILABLE'),
+(63, 1, N'F', 2, N'VIP', N'AVAILABLE'),
+(64, 1, N'F', 3, N'VIP', N'AVAILABLE'),
+(65, 1, N'F', 4, N'VIP', N'AVAILABLE'),
+(66, 1, N'F', 5, N'VIP', N'AVAILABLE'),
+(67, 1, N'F', 6, N'VIP', N'AVAILABLE'),
+(68, 1, N'F', 7, N'VIP', N'AVAILABLE'),
+(69, 1, N'F', 8, N'VIP', N'AVAILABLE'),
+(70, 1, N'F', 9, N'VIP', N'AVAILABLE'),
+(71, 1, N'F', 10, N'VIP', N'AVAILABLE'),
+(72, 2, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(73, 2, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(74, 2, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(75, 2, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(76, 2, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(77, 2, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(78, 2, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(79, 2, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(80, 2, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(81, 2, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(82, 2, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(83, 2, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(84, 2, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(85, 2, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(86, 2, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(87, 2, N'C', 1, N'STANDARD', N'AVAILABLE'),
+(88, 2, N'C', 2, N'STANDARD', N'AVAILABLE'),
+(89, 2, N'C', 3, N'STANDARD', N'AVAILABLE'),
+(90, 2, N'C', 4, N'STANDARD', N'AVAILABLE'),
+(91, 2, N'C', 5, N'STANDARD', N'AVAILABLE'),
+(92, 2, N'C', 6, N'STANDARD', N'AVAILABLE'),
+(93, 2, N'C', 7, N'STANDARD', N'AVAILABLE'),
+(94, 2, N'C', 8, N'STANDARD', N'AVAILABLE'),
+(95, 2, N'C', 9, N'STANDARD', N'AVAILABLE'),
+(96, 2, N'C', 10, N'STANDARD', N'AVAILABLE'),
+(97, 2, N'D', 1, N'STANDARD', N'AVAILABLE'),
+(98, 2, N'D', 2, N'STANDARD', N'AVAILABLE'),
+(99, 2, N'D', 3, N'STANDARD', N'AVAILABLE'),
+(100, 2, N'D', 4, N'STANDARD', N'AVAILABLE'),
+(101, 2, N'D', 5, N'STANDARD', N'AVAILABLE'),
+(102, 2, N'D', 6, N'STANDARD', N'AVAILABLE'),
+(103, 2, N'D', 7, N'STANDARD', N'AVAILABLE'),
+(104, 2, N'D', 8, N'STANDARD', N'AVAILABLE'),
+(105, 2, N'D', 9, N'STANDARD', N'AVAILABLE'),
+(106, 2, N'D', 10, N'STANDARD', N'AVAILABLE'),
+(107, 2, N'E', 1, N'VIP', N'AVAILABLE'),
+(108, 2, N'E', 2, N'VIP', N'AVAILABLE'),
+(109, 2, N'E', 3, N'VIP', N'AVAILABLE'),
+(110, 2, N'E', 4, N'VIP', N'AVAILABLE'),
+(111, 2, N'E', 5, N'VIP', N'AVAILABLE'),
+(112, 2, N'E', 6, N'VIP', N'AVAILABLE'),
+(113, 2, N'E', 7, N'VIP', N'AVAILABLE'),
+(114, 2, N'E', 8, N'VIP', N'AVAILABLE'),
+(115, 2, N'E', 9, N'VIP', N'AVAILABLE'),
+(116, 2, N'E', 10, N'VIP', N'AVAILABLE'),
+(117, 2, N'F', 1, N'VIP', N'AVAILABLE'),
+(118, 2, N'F', 2, N'VIP', N'AVAILABLE'),
+(119, 2, N'F', 3, N'VIP', N'AVAILABLE'),
+(120, 2, N'F', 4, N'VIP', N'AVAILABLE'),
+(121, 2, N'F', 5, N'VIP', N'AVAILABLE'),
+(122, 2, N'F', 6, N'VIP', N'AVAILABLE'),
+(123, 2, N'F', 7, N'VIP', N'AVAILABLE'),
+(124, 2, N'F', 8, N'VIP', N'AVAILABLE'),
+(125, 2, N'F', 9, N'VIP', N'AVAILABLE'),
+(126, 2, N'F', 10, N'VIP', N'AVAILABLE'),
+(127, 3, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(128, 3, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(129, 3, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(130, 3, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(131, 3, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(132, 3, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(133, 3, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(134, 3, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(135, 3, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(136, 3, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(137, 3, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(138, 3, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(139, 3, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(140, 3, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(141, 3, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(142, 3, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(143, 3, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(144, 3, N'C', 1, N'STANDARD', N'AVAILABLE'),
+(145, 3, N'C', 2, N'STANDARD', N'AVAILABLE'),
+(146, 3, N'C', 3, N'STANDARD', N'AVAILABLE'),
+(147, 3, N'C', 4, N'STANDARD', N'AVAILABLE'),
+(148, 3, N'C', 5, N'STANDARD', N'AVAILABLE'),
+(149, 3, N'C', 6, N'STANDARD', N'AVAILABLE'),
+(150, 3, N'C', 7, N'STANDARD', N'AVAILABLE'),
+(151, 3, N'C', 8, N'STANDARD', N'AVAILABLE'),
+(152, 3, N'C', 9, N'STANDARD', N'AVAILABLE'),
+(153, 3, N'C', 10, N'STANDARD', N'AVAILABLE'),
+(154, 3, N'D', 1, N'STANDARD', N'AVAILABLE'),
+(155, 3, N'D', 2, N'STANDARD', N'AVAILABLE'),
+(156, 3, N'D', 3, N'STANDARD', N'AVAILABLE'),
+(157, 3, N'D', 4, N'STANDARD', N'AVAILABLE'),
+(158, 3, N'D', 5, N'STANDARD', N'AVAILABLE'),
+(159, 3, N'D', 6, N'STANDARD', N'AVAILABLE'),
+(160, 3, N'D', 7, N'STANDARD', N'AVAILABLE'),
+(161, 3, N'D', 8, N'STANDARD', N'AVAILABLE'),
+(162, 3, N'D', 9, N'STANDARD', N'AVAILABLE'),
+(163, 3, N'D', 10, N'STANDARD', N'AVAILABLE'),
+(164, 3, N'E', 1, N'VIP', N'AVAILABLE'),
+(165, 3, N'E', 2, N'VIP', N'AVAILABLE'),
+(166, 3, N'E', 3, N'VIP', N'AVAILABLE'),
+(167, 3, N'E', 4, N'VIP', N'AVAILABLE'),
+(168, 3, N'E', 5, N'VIP', N'AVAILABLE'),
+(169, 3, N'E', 6, N'VIP', N'AVAILABLE'),
+(170, 3, N'E', 7, N'VIP', N'AVAILABLE'),
+(171, 3, N'E', 8, N'VIP', N'AVAILABLE'),
+(172, 3, N'E', 9, N'VIP', N'AVAILABLE'),
+(173, 3, N'E', 10, N'VIP', N'AVAILABLE'),
+(174, 3, N'F', 1, N'VIP', N'AVAILABLE'),
+(175, 3, N'F', 2, N'VIP', N'AVAILABLE'),
+(176, 3, N'F', 3, N'VIP', N'AVAILABLE'),
+(177, 3, N'F', 4, N'VIP', N'AVAILABLE'),
+(178, 3, N'F', 5, N'VIP', N'AVAILABLE'),
+(179, 3, N'F', 6, N'VIP', N'AVAILABLE'),
+(180, 3, N'F', 7, N'VIP', N'AVAILABLE'),
+(181, 3, N'F', 8, N'VIP', N'AVAILABLE'),
+(182, 3, N'F', 9, N'VIP', N'AVAILABLE'),
+(183, 3, N'F', 10, N'VIP', N'AVAILABLE'),
+(184, 4, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(185, 4, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(186, 4, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(187, 4, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(188, 4, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(189, 4, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(190, 4, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(191, 4, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(192, 4, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(193, 4, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(194, 4, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(195, 4, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(196, 4, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(197, 4, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(198, 4, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(199, 4, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(200, 4, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(201, 4, N'C', 1, N'STANDARD', N'AVAILABLE'),
+(202, 4, N'C', 2, N'STANDARD', N'AVAILABLE'),
+(203, 4, N'C', 3, N'STANDARD', N'AVAILABLE'),
+(204, 4, N'C', 4, N'STANDARD', N'AVAILABLE'),
+(205, 4, N'C', 5, N'STANDARD', N'AVAILABLE'),
+(206, 4, N'C', 6, N'STANDARD', N'AVAILABLE'),
+(207, 4, N'C', 7, N'STANDARD', N'AVAILABLE'),
+(208, 4, N'C', 8, N'STANDARD', N'AVAILABLE'),
+(209, 4, N'C', 9, N'STANDARD', N'AVAILABLE'),
+(210, 4, N'C', 10, N'STANDARD', N'AVAILABLE'),
+(211, 4, N'D', 1, N'STANDARD', N'AVAILABLE'),
+(212, 4, N'D', 2, N'STANDARD', N'AVAILABLE'),
+(213, 4, N'D', 3, N'STANDARD', N'AVAILABLE'),
+(214, 4, N'D', 4, N'STANDARD', N'AVAILABLE'),
+(215, 4, N'D', 5, N'STANDARD', N'AVAILABLE'),
+(216, 4, N'D', 6, N'STANDARD', N'AVAILABLE'),
+(217, 4, N'D', 7, N'STANDARD', N'AVAILABLE'),
+(218, 4, N'D', 8, N'STANDARD', N'AVAILABLE'),
+(219, 4, N'D', 9, N'STANDARD', N'AVAILABLE'),
+(220, 4, N'D', 10, N'STANDARD', N'AVAILABLE'),
+(221, 4, N'E', 1, N'VIP', N'AVAILABLE'),
+(222, 4, N'E', 2, N'VIP', N'AVAILABLE'),
+(223, 4, N'E', 3, N'VIP', N'AVAILABLE'),
+(224, 4, N'E', 4, N'VIP', N'AVAILABLE'),
+(225, 4, N'E', 5, N'VIP', N'AVAILABLE'),
+(226, 4, N'E', 6, N'VIP', N'AVAILABLE'),
+(227, 4, N'E', 7, N'VIP', N'AVAILABLE'),
+(228, 4, N'E', 8, N'VIP', N'AVAILABLE'),
+(229, 4, N'E', 9, N'VIP', N'AVAILABLE'),
+(230, 4, N'E', 10, N'VIP', N'AVAILABLE'),
+(231, 4, N'F', 1, N'VIP', N'AVAILABLE'),
+(232, 4, N'F', 2, N'VIP', N'AVAILABLE'),
+(233, 4, N'F', 3, N'VIP', N'AVAILABLE'),
+(234, 4, N'F', 4, N'VIP', N'AVAILABLE'),
+(235, 4, N'F', 5, N'VIP', N'AVAILABLE'),
+(236, 4, N'F', 6, N'VIP', N'AVAILABLE'),
+(237, 4, N'F', 7, N'VIP', N'AVAILABLE'),
+(238, 4, N'F', 8, N'VIP', N'AVAILABLE'),
+(239, 4, N'F', 9, N'VIP', N'AVAILABLE'),
+(240, 4, N'F', 10, N'VIP', N'AVAILABLE'),
+(241, 5, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(242, 5, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(243, 5, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(244, 5, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(245, 5, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(246, 5, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(247, 5, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(248, 5, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(249, 5, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(250, 5, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(251, 5, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(252, 5, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(253, 5, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(254, 5, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(255, 5, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(256, 5, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(257, 5, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(258, 5, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(259, 5, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(260, 5, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(261, 5, N'C', 1, N'STANDARD', N'AVAILABLE'),
+(262, 5, N'C', 2, N'STANDARD', N'AVAILABLE'),
+(263, 5, N'C', 3, N'STANDARD', N'AVAILABLE'),
+(264, 5, N'C', 4, N'STANDARD', N'AVAILABLE'),
+(265, 5, N'C', 5, N'STANDARD', N'AVAILABLE'),
+(266, 5, N'C', 6, N'STANDARD', N'AVAILABLE'),
+(267, 5, N'C', 7, N'STANDARD', N'AVAILABLE'),
+(268, 5, N'C', 8, N'STANDARD', N'AVAILABLE'),
+(269, 5, N'C', 9, N'STANDARD', N'AVAILABLE'),
+(270, 5, N'C', 10, N'STANDARD', N'AVAILABLE'),
+(271, 5, N'D', 1, N'STANDARD', N'AVAILABLE'),
+(272, 5, N'D', 2, N'STANDARD', N'AVAILABLE'),
+(273, 5, N'D', 3, N'STANDARD', N'AVAILABLE'),
+(274, 5, N'D', 4, N'STANDARD', N'AVAILABLE'),
+(275, 5, N'D', 5, N'STANDARD', N'AVAILABLE'),
+(276, 5, N'D', 6, N'STANDARD', N'AVAILABLE'),
+(277, 5, N'D', 7, N'STANDARD', N'AVAILABLE'),
+(278, 5, N'D', 8, N'STANDARD', N'AVAILABLE'),
+(279, 5, N'D', 9, N'STANDARD', N'AVAILABLE'),
+(280, 5, N'D', 10, N'STANDARD', N'AVAILABLE'),
+(281, 5, N'E', 1, N'VIP', N'AVAILABLE'),
+(282, 5, N'E', 2, N'VIP', N'AVAILABLE'),
+(283, 5, N'E', 3, N'VIP', N'AVAILABLE'),
+(284, 5, N'E', 4, N'VIP', N'AVAILABLE'),
+(285, 5, N'E', 5, N'VIP', N'AVAILABLE'),
+(286, 5, N'E', 6, N'VIP', N'AVAILABLE'),
+(287, 5, N'E', 7, N'VIP', N'AVAILABLE'),
+(288, 5, N'E', 8, N'VIP', N'AVAILABLE'),
+(289, 5, N'E', 9, N'VIP', N'AVAILABLE'),
+(290, 5, N'E', 10, N'VIP', N'AVAILABLE'),
+(291, 5, N'F', 1, N'VIP', N'AVAILABLE'),
+(292, 5, N'F', 2, N'VIP', N'AVAILABLE'),
+(293, 5, N'F', 3, N'VIP', N'AVAILABLE'),
+(294, 5, N'F', 4, N'VIP', N'AVAILABLE'),
+(295, 5, N'F', 5, N'VIP', N'AVAILABLE'),
+(296, 5, N'F', 6, N'VIP', N'AVAILABLE'),
+(297, 5, N'F', 7, N'VIP', N'AVAILABLE'),
+(298, 5, N'F', 8, N'VIP', N'AVAILABLE'),
+(299, 5, N'F', 9, N'VIP', N'AVAILABLE'),
+(300, 5, N'F', 10, N'VIP', N'AVAILABLE'),
+(301, 6, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(302, 6, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(303, 6, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(304, 6, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(305, 6, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(306, 6, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(307, 6, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(308, 6, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(309, 6, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(310, 6, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(311, 6, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(312, 6, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(313, 6, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(314, 6, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(315, 6, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(316, 6, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(317, 6, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(318, 6, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(319, 6, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(320, 6, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(321, 6, N'C', 1, N'STANDARD', N'AVAILABLE'),
+(322, 6, N'C', 2, N'STANDARD', N'AVAILABLE'),
+(323, 6, N'C', 3, N'STANDARD', N'AVAILABLE'),
+(324, 6, N'C', 4, N'STANDARD', N'AVAILABLE'),
+(325, 6, N'C', 5, N'STANDARD', N'AVAILABLE'),
+(326, 6, N'C', 6, N'STANDARD', N'AVAILABLE'),
+(327, 6, N'C', 7, N'STANDARD', N'AVAILABLE'),
+(328, 6, N'C', 8, N'STANDARD', N'AVAILABLE'),
+(329, 6, N'C', 9, N'STANDARD', N'AVAILABLE'),
+(330, 6, N'C', 10, N'STANDARD', N'AVAILABLE'),
+(331, 6, N'D', 1, N'STANDARD', N'AVAILABLE'),
+(332, 6, N'D', 2, N'STANDARD', N'AVAILABLE'),
+(333, 6, N'D', 3, N'STANDARD', N'AVAILABLE'),
+(334, 6, N'D', 4, N'STANDARD', N'AVAILABLE'),
+(335, 6, N'D', 5, N'STANDARD', N'AVAILABLE'),
+(336, 6, N'D', 6, N'STANDARD', N'AVAILABLE'),
+(337, 6, N'D', 7, N'STANDARD', N'AVAILABLE'),
+(338, 6, N'D', 8, N'STANDARD', N'AVAILABLE'),
+(339, 6, N'D', 9, N'STANDARD', N'AVAILABLE'),
+(340, 6, N'D', 10, N'STANDARD', N'AVAILABLE'),
+(341, 6, N'E', 1, N'VIP', N'AVAILABLE'),
+(342, 6, N'E', 2, N'VIP', N'AVAILABLE'),
+(343, 6, N'E', 3, N'VIP', N'AVAILABLE'),
+(344, 6, N'E', 4, N'VIP', N'AVAILABLE'),
+(345, 6, N'E', 5, N'VIP', N'AVAILABLE'),
+(346, 6, N'E', 6, N'VIP', N'AVAILABLE'),
+(347, 6, N'E', 7, N'VIP', N'AVAILABLE'),
+(348, 6, N'E', 8, N'VIP', N'AVAILABLE'),
+(349, 6, N'E', 9, N'VIP', N'AVAILABLE'),
+(350, 6, N'E', 10, N'VIP', N'AVAILABLE'),
+(351, 6, N'F', 1, N'VIP', N'AVAILABLE'),
+(352, 6, N'F', 2, N'VIP', N'AVAILABLE'),
+(353, 6, N'F', 3, N'VIP', N'AVAILABLE'),
+(354, 6, N'F', 4, N'VIP', N'AVAILABLE'),
+(355, 6, N'F', 5, N'VIP', N'AVAILABLE'),
+(356, 6, N'F', 6, N'VIP', N'AVAILABLE'),
+(357, 6, N'F', 7, N'VIP', N'AVAILABLE'),
+(358, 6, N'F', 8, N'VIP', N'AVAILABLE'),
+(359, 6, N'F', 9, N'VIP', N'AVAILABLE'),
+(360, 6, N'F', 10, N'VIP', N'AVAILABLE'),
+(361, 7, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(362, 7, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(363, 7, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(364, 7, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(365, 7, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(366, 7, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(367, 7, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(368, 7, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(369, 7, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(370, 7, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(371, 7, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(372, 7, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(373, 7, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(374, 7, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(375, 7, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(376, 7, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(377, 7, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(378, 7, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(379, 7, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(380, 7, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(381, 7, N'C', 1, N'STANDARD', N'AVAILABLE'),
+(382, 7, N'C', 2, N'STANDARD', N'AVAILABLE'),
+(383, 7, N'C', 3, N'STANDARD', N'AVAILABLE'),
+(384, 7, N'C', 4, N'STANDARD', N'AVAILABLE'),
+(385, 7, N'C', 5, N'STANDARD', N'AVAILABLE'),
+(386, 7, N'C', 6, N'STANDARD', N'AVAILABLE'),
+(387, 7, N'C', 7, N'STANDARD', N'AVAILABLE'),
+(388, 7, N'C', 8, N'STANDARD', N'AVAILABLE'),
+(389, 7, N'C', 9, N'STANDARD', N'AVAILABLE'),
+(390, 7, N'C', 10, N'STANDARD', N'AVAILABLE'),
+(391, 7, N'D', 1, N'STANDARD', N'AVAILABLE'),
+(392, 7, N'D', 2, N'STANDARD', N'AVAILABLE'),
+(393, 7, N'D', 3, N'STANDARD', N'AVAILABLE'),
+(394, 7, N'D', 4, N'STANDARD', N'AVAILABLE'),
+(395, 7, N'D', 5, N'STANDARD', N'AVAILABLE'),
+(396, 7, N'D', 6, N'STANDARD', N'AVAILABLE'),
+(397, 7, N'D', 7, N'STANDARD', N'AVAILABLE'),
+(398, 7, N'D', 8, N'STANDARD', N'AVAILABLE'),
+(399, 7, N'D', 9, N'STANDARD', N'AVAILABLE'),
+(400, 7, N'D', 10, N'STANDARD', N'AVAILABLE');
+GO
+INSERT INTO Seats (SeatID, HallID, SeatRow, SeatNumber, SeatType, Status) VALUES
+(401, 7, N'E', 1, N'VIP', N'AVAILABLE'),
+(402, 7, N'E', 2, N'VIP', N'AVAILABLE'),
+(403, 7, N'E', 3, N'VIP', N'AVAILABLE'),
+(404, 7, N'E', 4, N'VIP', N'AVAILABLE'),
+(405, 7, N'E', 5, N'VIP', N'AVAILABLE'),
+(406, 7, N'E', 6, N'VIP', N'AVAILABLE'),
+(407, 7, N'E', 7, N'VIP', N'AVAILABLE'),
+(408, 7, N'E', 8, N'VIP', N'AVAILABLE'),
+(409, 7, N'E', 9, N'VIP', N'AVAILABLE'),
+(410, 7, N'E', 10, N'VIP', N'AVAILABLE'),
+(411, 7, N'F', 1, N'VIP', N'AVAILABLE'),
+(412, 7, N'F', 2, N'VIP', N'AVAILABLE'),
+(413, 7, N'F', 3, N'VIP', N'AVAILABLE'),
+(414, 7, N'F', 4, N'VIP', N'AVAILABLE'),
+(415, 7, N'F', 5, N'VIP', N'AVAILABLE'),
+(416, 7, N'F', 6, N'VIP', N'AVAILABLE'),
+(417, 7, N'F', 7, N'VIP', N'AVAILABLE'),
+(418, 7, N'F', 8, N'VIP', N'AVAILABLE'),
+(419, 7, N'F', 9, N'VIP', N'AVAILABLE'),
+(420, 7, N'F', 10, N'VIP', N'AVAILABLE'),
+(421, 8, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(422, 8, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(423, 8, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(424, 8, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(425, 8, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(426, 8, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(427, 8, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(428, 8, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(429, 8, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(430, 8, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(431, 8, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(432, 8, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(433, 8, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(434, 8, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(435, 8, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(436, 8, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(437, 8, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(438, 8, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(439, 8, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(440, 8, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(441, 8, N'C', 1, N'STANDARD', N'AVAILABLE'),
+(442, 8, N'C', 2, N'STANDARD', N'AVAILABLE'),
+(443, 8, N'C', 3, N'STANDARD', N'AVAILABLE'),
+(444, 8, N'C', 4, N'STANDARD', N'AVAILABLE'),
+(445, 8, N'C', 5, N'STANDARD', N'AVAILABLE'),
+(446, 8, N'C', 6, N'STANDARD', N'AVAILABLE'),
+(447, 8, N'C', 7, N'STANDARD', N'AVAILABLE'),
+(448, 8, N'C', 8, N'STANDARD', N'AVAILABLE'),
+(449, 8, N'C', 9, N'STANDARD', N'AVAILABLE'),
+(450, 8, N'C', 10, N'STANDARD', N'AVAILABLE'),
+(451, 8, N'D', 1, N'STANDARD', N'AVAILABLE'),
+(452, 8, N'D', 2, N'STANDARD', N'AVAILABLE'),
+(453, 8, N'D', 3, N'STANDARD', N'AVAILABLE'),
+(454, 8, N'D', 4, N'STANDARD', N'AVAILABLE'),
+(455, 8, N'D', 5, N'STANDARD', N'AVAILABLE'),
+(456, 8, N'D', 6, N'STANDARD', N'AVAILABLE'),
+(457, 8, N'D', 7, N'STANDARD', N'AVAILABLE'),
+(458, 8, N'D', 8, N'STANDARD', N'AVAILABLE'),
+(459, 8, N'D', 9, N'STANDARD', N'AVAILABLE'),
+(460, 8, N'D', 10, N'STANDARD', N'AVAILABLE'),
+(461, 8, N'E', 1, N'VIP', N'AVAILABLE'),
+(462, 8, N'E', 2, N'VIP', N'AVAILABLE'),
+(463, 8, N'E', 3, N'VIP', N'AVAILABLE'),
+(464, 8, N'E', 4, N'VIP', N'AVAILABLE'),
+(465, 8, N'E', 5, N'VIP', N'AVAILABLE'),
+(466, 8, N'E', 6, N'VIP', N'AVAILABLE'),
+(467, 8, N'E', 7, N'VIP', N'AVAILABLE'),
+(468, 8, N'E', 8, N'VIP', N'AVAILABLE'),
+(469, 8, N'E', 9, N'VIP', N'AVAILABLE'),
+(470, 8, N'E', 10, N'VIP', N'AVAILABLE'),
+(471, 8, N'F', 1, N'VIP', N'AVAILABLE'),
+(472, 8, N'F', 2, N'VIP', N'AVAILABLE'),
+(473, 8, N'F', 3, N'VIP', N'AVAILABLE'),
+(474, 8, N'F', 4, N'VIP', N'AVAILABLE'),
+(475, 8, N'F', 5, N'VIP', N'AVAILABLE'),
+(476, 8, N'F', 6, N'VIP', N'AVAILABLE'),
+(477, 8, N'F', 7, N'VIP', N'AVAILABLE'),
+(478, 8, N'F', 8, N'VIP', N'AVAILABLE'),
+(479, 8, N'F', 9, N'VIP', N'AVAILABLE'),
+(480, 8, N'F', 10, N'VIP', N'AVAILABLE'),
+(481, 9, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(482, 9, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(483, 9, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(484, 9, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(485, 9, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(486, 9, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(487, 9, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(488, 9, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(489, 9, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(490, 9, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(491, 9, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(492, 9, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(493, 9, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(494, 9, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(495, 9, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(496, 9, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(497, 9, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(498, 9, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(499, 9, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(500, 9, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(501, 9, N'C', 1, N'STANDARD', N'AVAILABLE'),
+(502, 9, N'C', 2, N'STANDARD', N'AVAILABLE'),
+(503, 9, N'C', 3, N'STANDARD', N'AVAILABLE'),
+(504, 9, N'C', 4, N'STANDARD', N'AVAILABLE'),
+(505, 9, N'C', 5, N'STANDARD', N'AVAILABLE'),
+(506, 9, N'C', 6, N'STANDARD', N'AVAILABLE'),
+(507, 9, N'C', 7, N'STANDARD', N'AVAILABLE'),
+(508, 9, N'C', 8, N'STANDARD', N'AVAILABLE'),
+(509, 9, N'C', 9, N'STANDARD', N'AVAILABLE'),
+(510, 9, N'C', 10, N'STANDARD', N'AVAILABLE'),
+(511, 9, N'D', 1, N'STANDARD', N'AVAILABLE'),
+(512, 9, N'D', 2, N'STANDARD', N'AVAILABLE'),
+(513, 9, N'D', 3, N'STANDARD', N'AVAILABLE'),
+(514, 9, N'D', 4, N'STANDARD', N'AVAILABLE'),
+(515, 9, N'D', 5, N'STANDARD', N'AVAILABLE'),
+(516, 9, N'D', 6, N'STANDARD', N'AVAILABLE'),
+(517, 9, N'D', 7, N'STANDARD', N'AVAILABLE'),
+(518, 9, N'D', 8, N'STANDARD', N'AVAILABLE'),
+(519, 9, N'D', 9, N'STANDARD', N'AVAILABLE'),
+(520, 9, N'D', 10, N'STANDARD', N'AVAILABLE'),
+(521, 9, N'E', 1, N'VIP', N'AVAILABLE'),
+(522, 9, N'E', 2, N'VIP', N'AVAILABLE'),
+(523, 9, N'E', 3, N'VIP', N'AVAILABLE'),
+(524, 9, N'E', 4, N'VIP', N'AVAILABLE'),
+(525, 9, N'E', 5, N'VIP', N'AVAILABLE'),
+(526, 9, N'E', 6, N'VIP', N'AVAILABLE'),
+(527, 9, N'E', 7, N'VIP', N'AVAILABLE'),
+(528, 9, N'E', 8, N'VIP', N'AVAILABLE'),
+(529, 9, N'E', 9, N'VIP', N'AVAILABLE'),
+(530, 9, N'E', 10, N'VIP', N'AVAILABLE'),
+(531, 9, N'F', 1, N'VIP', N'AVAILABLE'),
+(532, 9, N'F', 2, N'VIP', N'AVAILABLE'),
+(533, 9, N'F', 3, N'VIP', N'AVAILABLE'),
+(534, 9, N'F', 4, N'VIP', N'AVAILABLE'),
+(535, 9, N'F', 5, N'VIP', N'AVAILABLE'),
+(536, 9, N'F', 6, N'VIP', N'AVAILABLE'),
+(537, 9, N'F', 7, N'VIP', N'AVAILABLE'),
+(538, 9, N'F', 8, N'VIP', N'AVAILABLE'),
+(539, 9, N'F', 9, N'VIP', N'AVAILABLE'),
+(540, 9, N'F', 10, N'VIP', N'AVAILABLE'),
+(841, 19, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(842, 19, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(843, 19, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(844, 19, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(845, 19, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(846, 19, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(847, 19, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(848, 19, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(849, 19, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(850, 19, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(851, 19, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(852, 19, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(853, 19, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(854, 19, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(855, 19, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(856, 19, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(857, 19, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(858, 19, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(859, 19, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(860, 19, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(861, 19, N'C', 1, N'VIP', N'AVAILABLE'),
+(862, 19, N'C', 2, N'VIP', N'AVAILABLE'),
+(863, 19, N'C', 3, N'VIP', N'AVAILABLE'),
+(864, 19, N'C', 4, N'VIP', N'AVAILABLE'),
+(865, 19, N'C', 5, N'VIP', N'AVAILABLE'),
+(866, 19, N'C', 6, N'VIP', N'AVAILABLE'),
+(867, 19, N'C', 7, N'VIP', N'AVAILABLE'),
+(868, 19, N'C', 8, N'VIP', N'AVAILABLE'),
+(869, 19, N'C', 9, N'VIP', N'AVAILABLE'),
+(870, 19, N'C', 10, N'VIP', N'AVAILABLE'),
+(871, 19, N'D', 1, N'VIP', N'AVAILABLE'),
+(872, 19, N'D', 2, N'VIP', N'AVAILABLE'),
+(873, 19, N'D', 3, N'VIP', N'AVAILABLE'),
+(874, 19, N'D', 4, N'VIP', N'AVAILABLE'),
+(875, 19, N'D', 5, N'VIP', N'AVAILABLE'),
+(876, 19, N'D', 6, N'VIP', N'AVAILABLE'),
+(877, 19, N'D', 7, N'VIP', N'AVAILABLE'),
+(878, 19, N'D', 8, N'VIP', N'AVAILABLE'),
+(879, 19, N'D', 9, N'VIP', N'AVAILABLE'),
+(880, 19, N'D', 10, N'VIP', N'AVAILABLE'),
+(881, 19, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(882, 19, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(883, 19, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(884, 19, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(885, 19, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(886, 19, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(887, 19, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(888, 19, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(889, 19, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(890, 19, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(891, 20, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(892, 20, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(893, 20, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(894, 20, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(895, 20, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(896, 20, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(897, 20, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(898, 20, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(899, 20, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(900, 20, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(901, 20, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(902, 20, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(903, 20, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(904, 20, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(905, 20, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(906, 20, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(907, 20, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(908, 20, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(909, 20, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(910, 20, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(911, 20, N'C', 1, N'VIP', N'AVAILABLE'),
+(912, 20, N'C', 2, N'VIP', N'AVAILABLE'),
+(913, 20, N'C', 3, N'VIP', N'AVAILABLE'),
+(914, 20, N'C', 4, N'VIP', N'AVAILABLE'),
+(915, 20, N'C', 5, N'VIP', N'AVAILABLE'),
+(916, 20, N'C', 6, N'VIP', N'AVAILABLE'),
+(917, 20, N'C', 7, N'VIP', N'AVAILABLE'),
+(918, 20, N'C', 8, N'VIP', N'AVAILABLE'),
+(919, 20, N'C', 9, N'VIP', N'AVAILABLE'),
+(920, 20, N'C', 10, N'VIP', N'AVAILABLE'),
+(921, 20, N'D', 1, N'VIP', N'AVAILABLE'),
+(922, 20, N'D', 2, N'VIP', N'AVAILABLE'),
+(923, 20, N'D', 3, N'VIP', N'AVAILABLE'),
+(924, 20, N'D', 4, N'VIP', N'AVAILABLE'),
+(925, 20, N'D', 5, N'VIP', N'AVAILABLE'),
+(926, 20, N'D', 6, N'VIP', N'AVAILABLE'),
+(927, 20, N'D', 7, N'VIP', N'AVAILABLE'),
+(928, 20, N'D', 8, N'VIP', N'AVAILABLE'),
+(929, 20, N'D', 9, N'VIP', N'AVAILABLE'),
+(930, 20, N'D', 10, N'VIP', N'AVAILABLE'),
+(931, 20, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(932, 20, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(933, 20, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(934, 20, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(935, 20, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(936, 20, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(937, 20, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(938, 20, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(939, 20, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(940, 20, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(941, 21, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(942, 21, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(943, 21, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(944, 21, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(945, 21, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(946, 21, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(947, 21, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(948, 21, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(949, 21, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(950, 21, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(951, 21, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(952, 21, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(953, 21, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(954, 21, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(955, 21, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(956, 21, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(957, 21, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(958, 21, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(959, 21, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(960, 21, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(961, 21, N'C', 1, N'VIP', N'AVAILABLE'),
+(962, 21, N'C', 2, N'VIP', N'AVAILABLE'),
+(963, 21, N'C', 3, N'VIP', N'AVAILABLE'),
+(964, 21, N'C', 4, N'VIP', N'AVAILABLE'),
+(965, 21, N'C', 5, N'VIP', N'AVAILABLE'),
+(966, 21, N'C', 6, N'VIP', N'AVAILABLE'),
+(967, 21, N'C', 7, N'VIP', N'AVAILABLE'),
+(968, 21, N'C', 8, N'VIP', N'AVAILABLE'),
+(969, 21, N'C', 9, N'VIP', N'AVAILABLE'),
+(970, 21, N'C', 10, N'VIP', N'AVAILABLE'),
+(971, 21, N'D', 1, N'VIP', N'AVAILABLE'),
+(972, 21, N'D', 2, N'VIP', N'AVAILABLE'),
+(973, 21, N'D', 3, N'VIP', N'AVAILABLE'),
+(974, 21, N'D', 4, N'VIP', N'AVAILABLE'),
+(975, 21, N'D', 5, N'VIP', N'AVAILABLE'),
+(976, 21, N'D', 6, N'VIP', N'AVAILABLE'),
+(977, 21, N'D', 7, N'VIP', N'AVAILABLE'),
+(978, 21, N'D', 8, N'VIP', N'AVAILABLE'),
+(979, 21, N'D', 9, N'VIP', N'AVAILABLE'),
+(980, 21, N'D', 10, N'VIP', N'AVAILABLE'),
+(981, 21, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(982, 21, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(983, 21, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(984, 21, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(985, 21, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(986, 21, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(987, 21, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(988, 21, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(989, 21, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(990, 21, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(991, 22, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(992, 22, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(993, 22, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(994, 22, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(995, 22, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(996, 22, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(997, 22, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(998, 22, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(999, 22, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(1000, 22, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(1001, 22, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(1002, 22, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(1003, 22, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(1004, 22, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(1005, 22, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(1006, 22, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(1007, 22, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(1008, 22, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(1009, 22, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(1010, 22, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(1011, 22, N'C', 1, N'VIP', N'AVAILABLE'),
+(1012, 22, N'C', 2, N'VIP', N'AVAILABLE'),
+(1013, 22, N'C', 3, N'VIP', N'AVAILABLE'),
+(1014, 22, N'C', 4, N'VIP', N'AVAILABLE'),
+(1015, 22, N'C', 5, N'VIP', N'AVAILABLE'),
+(1016, 22, N'C', 6, N'VIP', N'AVAILABLE'),
+(1017, 22, N'C', 7, N'VIP', N'AVAILABLE'),
+(1018, 22, N'C', 8, N'VIP', N'AVAILABLE'),
+(1019, 22, N'C', 9, N'VIP', N'AVAILABLE'),
+(1020, 22, N'C', 10, N'VIP', N'AVAILABLE'),
+(1021, 22, N'D', 1, N'VIP', N'AVAILABLE'),
+(1022, 22, N'D', 2, N'VIP', N'AVAILABLE'),
+(1023, 22, N'D', 3, N'VIP', N'AVAILABLE'),
+(1024, 22, N'D', 4, N'VIP', N'AVAILABLE'),
+(1025, 22, N'D', 5, N'VIP', N'AVAILABLE'),
+(1026, 22, N'D', 6, N'VIP', N'AVAILABLE'),
+(1027, 22, N'D', 7, N'VIP', N'AVAILABLE'),
+(1028, 22, N'D', 8, N'VIP', N'AVAILABLE'),
+(1029, 22, N'D', 9, N'VIP', N'AVAILABLE'),
+(1030, 22, N'D', 10, N'VIP', N'AVAILABLE'),
+(1031, 22, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(1032, 22, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(1033, 22, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(1034, 22, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(1035, 22, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(1036, 22, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(1037, 22, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(1038, 22, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(1039, 22, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(1040, 22, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(1041, 23, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(1042, 23, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(1043, 23, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(1044, 23, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(1045, 23, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(1046, 23, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(1047, 23, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(1048, 23, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(1049, 23, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(1050, 23, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(1051, 23, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(1052, 23, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(1053, 23, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(1054, 23, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(1055, 23, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(1056, 23, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(1057, 23, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(1058, 23, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(1059, 23, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(1060, 23, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(1061, 23, N'C', 1, N'VIP', N'AVAILABLE'),
+(1062, 23, N'C', 2, N'VIP', N'AVAILABLE'),
+(1063, 23, N'C', 3, N'VIP', N'AVAILABLE'),
+(1064, 23, N'C', 4, N'VIP', N'AVAILABLE'),
+(1065, 23, N'C', 5, N'VIP', N'AVAILABLE'),
+(1066, 23, N'C', 6, N'VIP', N'AVAILABLE'),
+(1067, 23, N'C', 7, N'VIP', N'AVAILABLE'),
+(1068, 23, N'C', 8, N'VIP', N'AVAILABLE'),
+(1069, 23, N'C', 9, N'VIP', N'AVAILABLE'),
+(1070, 23, N'C', 10, N'VIP', N'AVAILABLE'),
+(1071, 23, N'D', 1, N'VIP', N'AVAILABLE'),
+(1072, 23, N'D', 2, N'VIP', N'AVAILABLE'),
+(1073, 23, N'D', 3, N'VIP', N'AVAILABLE'),
+(1074, 23, N'D', 4, N'VIP', N'AVAILABLE'),
+(1075, 23, N'D', 5, N'VIP', N'AVAILABLE'),
+(1076, 23, N'D', 6, N'VIP', N'AVAILABLE'),
+(1077, 23, N'D', 7, N'VIP', N'AVAILABLE'),
+(1078, 23, N'D', 8, N'VIP', N'AVAILABLE'),
+(1079, 23, N'D', 9, N'VIP', N'AVAILABLE'),
+(1080, 23, N'D', 10, N'VIP', N'AVAILABLE'),
+(1081, 23, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(1082, 23, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(1083, 23, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(1084, 23, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(1085, 23, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(1086, 23, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(1087, 23, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(1088, 23, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(1089, 23, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(1090, 23, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(1091, 24, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(1092, 24, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(1093, 24, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(1094, 24, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(1095, 24, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(1096, 24, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(1097, 24, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(1098, 24, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(1099, 24, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(1100, 24, N'A', 10, N'STANDARD', N'AVAILABLE');
+GO
+INSERT INTO Seats (SeatID, HallID, SeatRow, SeatNumber, SeatType, Status) VALUES
+(1101, 24, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(1102, 24, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(1103, 24, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(1104, 24, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(1105, 24, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(1106, 24, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(1107, 24, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(1108, 24, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(1109, 24, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(1110, 24, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(1111, 24, N'C', 1, N'VIP', N'AVAILABLE'),
+(1112, 24, N'C', 2, N'VIP', N'AVAILABLE'),
+(1113, 24, N'C', 3, N'VIP', N'AVAILABLE'),
+(1114, 24, N'C', 4, N'VIP', N'AVAILABLE'),
+(1115, 24, N'C', 5, N'VIP', N'AVAILABLE'),
+(1116, 24, N'C', 6, N'VIP', N'AVAILABLE'),
+(1117, 24, N'C', 7, N'VIP', N'AVAILABLE'),
+(1118, 24, N'C', 8, N'VIP', N'AVAILABLE'),
+(1119, 24, N'C', 9, N'VIP', N'AVAILABLE'),
+(1120, 24, N'C', 10, N'VIP', N'AVAILABLE'),
+(1121, 24, N'D', 1, N'VIP', N'AVAILABLE'),
+(1122, 24, N'D', 2, N'VIP', N'AVAILABLE'),
+(1123, 24, N'D', 3, N'VIP', N'AVAILABLE'),
+(1124, 24, N'D', 4, N'VIP', N'AVAILABLE'),
+(1125, 24, N'D', 5, N'VIP', N'AVAILABLE'),
+(1126, 24, N'D', 6, N'VIP', N'AVAILABLE'),
+(1127, 24, N'D', 7, N'VIP', N'AVAILABLE'),
+(1128, 24, N'D', 8, N'VIP', N'AVAILABLE'),
+(1129, 24, N'D', 9, N'VIP', N'AVAILABLE'),
+(1130, 24, N'D', 10, N'VIP', N'AVAILABLE'),
+(1131, 24, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(1132, 24, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(1133, 24, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(1134, 24, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(1135, 24, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(1136, 24, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(1137, 24, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(1138, 24, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(1139, 24, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(1140, 24, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(1141, 25, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(1142, 25, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(1143, 25, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(1144, 25, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(1145, 25, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(1146, 25, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(1147, 25, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(1148, 25, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(1149, 25, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(1150, 25, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(1151, 25, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(1152, 25, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(1153, 25, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(1154, 25, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(1155, 25, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(1156, 25, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(1157, 25, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(1158, 25, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(1159, 25, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(1160, 25, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(1161, 25, N'C', 1, N'VIP', N'AVAILABLE'),
+(1162, 25, N'C', 2, N'VIP', N'AVAILABLE'),
+(1163, 25, N'C', 3, N'VIP', N'AVAILABLE'),
+(1164, 25, N'C', 4, N'VIP', N'AVAILABLE'),
+(1165, 25, N'C', 5, N'VIP', N'AVAILABLE'),
+(1166, 25, N'C', 6, N'VIP', N'AVAILABLE'),
+(1167, 25, N'C', 7, N'VIP', N'AVAILABLE'),
+(1168, 25, N'C', 8, N'VIP', N'AVAILABLE'),
+(1169, 25, N'C', 9, N'VIP', N'AVAILABLE'),
+(1170, 25, N'C', 10, N'VIP', N'AVAILABLE'),
+(1171, 25, N'D', 1, N'VIP', N'AVAILABLE'),
+(1172, 25, N'D', 2, N'VIP', N'AVAILABLE'),
+(1173, 25, N'D', 3, N'VIP', N'AVAILABLE'),
+(1174, 25, N'D', 4, N'VIP', N'AVAILABLE'),
+(1175, 25, N'D', 5, N'VIP', N'AVAILABLE'),
+(1176, 25, N'D', 6, N'VIP', N'AVAILABLE'),
+(1177, 25, N'D', 7, N'VIP', N'AVAILABLE'),
+(1178, 25, N'D', 8, N'VIP', N'AVAILABLE'),
+(1179, 25, N'D', 9, N'VIP', N'AVAILABLE'),
+(1180, 25, N'D', 10, N'VIP', N'AVAILABLE'),
+(1181, 25, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(1182, 25, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(1183, 25, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(1184, 25, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(1185, 25, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(1186, 25, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(1187, 25, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(1188, 25, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(1189, 25, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(1190, 25, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(1191, 26, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(1192, 26, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(1193, 26, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(1194, 26, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(1195, 26, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(1196, 26, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(1197, 26, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(1198, 26, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(1199, 26, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(1200, 26, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(1201, 26, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(1202, 26, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(1203, 26, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(1204, 26, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(1205, 26, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(1206, 26, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(1207, 26, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(1208, 26, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(1209, 26, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(1210, 26, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(1211, 26, N'C', 1, N'VIP', N'AVAILABLE'),
+(1212, 26, N'C', 2, N'VIP', N'AVAILABLE'),
+(1213, 26, N'C', 3, N'VIP', N'AVAILABLE'),
+(1214, 26, N'C', 4, N'VIP', N'AVAILABLE'),
+(1215, 26, N'C', 5, N'VIP', N'AVAILABLE'),
+(1216, 26, N'C', 6, N'VIP', N'AVAILABLE'),
+(1217, 26, N'C', 7, N'VIP', N'AVAILABLE'),
+(1218, 26, N'C', 8, N'VIP', N'AVAILABLE'),
+(1219, 26, N'C', 9, N'VIP', N'AVAILABLE'),
+(1220, 26, N'C', 10, N'VIP', N'AVAILABLE'),
+(1221, 26, N'D', 1, N'VIP', N'AVAILABLE'),
+(1222, 26, N'D', 2, N'VIP', N'AVAILABLE'),
+(1223, 26, N'D', 3, N'VIP', N'AVAILABLE'),
+(1224, 26, N'D', 4, N'VIP', N'AVAILABLE'),
+(1225, 26, N'D', 5, N'VIP', N'AVAILABLE'),
+(1226, 26, N'D', 6, N'VIP', N'AVAILABLE'),
+(1227, 26, N'D', 7, N'VIP', N'AVAILABLE'),
+(1228, 26, N'D', 8, N'VIP', N'AVAILABLE'),
+(1229, 26, N'D', 9, N'VIP', N'AVAILABLE'),
+(1230, 26, N'D', 10, N'VIP', N'AVAILABLE'),
+(1231, 26, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(1232, 26, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(1233, 26, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(1234, 26, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(1235, 26, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(1236, 26, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(1237, 26, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(1238, 26, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(1239, 26, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(1240, 26, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(1241, 27, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(1242, 27, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(1243, 27, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(1244, 27, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(1245, 27, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(1246, 27, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(1247, 27, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(1248, 27, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(1249, 27, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(1250, 27, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(1251, 27, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(1252, 27, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(1253, 27, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(1254, 27, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(1255, 27, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(1256, 27, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(1257, 27, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(1258, 27, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(1259, 27, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(1260, 27, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(1261, 27, N'C', 1, N'VIP', N'AVAILABLE'),
+(1262, 27, N'C', 2, N'VIP', N'AVAILABLE'),
+(1263, 27, N'C', 3, N'VIP', N'AVAILABLE'),
+(1264, 27, N'C', 4, N'VIP', N'AVAILABLE'),
+(1265, 27, N'C', 5, N'VIP', N'AVAILABLE'),
+(1266, 27, N'C', 6, N'VIP', N'AVAILABLE'),
+(1267, 27, N'C', 7, N'VIP', N'AVAILABLE'),
+(1268, 27, N'C', 8, N'VIP', N'AVAILABLE'),
+(1269, 27, N'C', 9, N'VIP', N'AVAILABLE'),
+(1270, 27, N'C', 10, N'VIP', N'AVAILABLE'),
+(1271, 27, N'D', 1, N'VIP', N'AVAILABLE'),
+(1272, 27, N'D', 2, N'VIP', N'AVAILABLE'),
+(1273, 27, N'D', 3, N'VIP', N'AVAILABLE'),
+(1274, 27, N'D', 4, N'VIP', N'AVAILABLE'),
+(1275, 27, N'D', 5, N'VIP', N'AVAILABLE'),
+(1276, 27, N'D', 6, N'VIP', N'AVAILABLE'),
+(1277, 27, N'D', 7, N'VIP', N'AVAILABLE'),
+(1278, 27, N'D', 8, N'VIP', N'AVAILABLE'),
+(1279, 27, N'D', 9, N'VIP', N'AVAILABLE'),
+(1280, 27, N'D', 10, N'VIP', N'AVAILABLE'),
+(1281, 27, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(1282, 27, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(1283, 27, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(1284, 27, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(1285, 27, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(1286, 27, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(1287, 27, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(1288, 27, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(1289, 27, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(1290, 27, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(1291, 28, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(1292, 28, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(1293, 28, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(1294, 28, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(1295, 28, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(1296, 28, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(1297, 28, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(1298, 28, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(1299, 28, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(1300, 28, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(1301, 28, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(1302, 28, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(1303, 28, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(1304, 28, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(1305, 28, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(1306, 28, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(1307, 28, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(1308, 28, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(1309, 28, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(1310, 28, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(1311, 28, N'C', 1, N'VIP', N'AVAILABLE'),
+(1312, 28, N'C', 2, N'VIP', N'AVAILABLE'),
+(1313, 28, N'C', 3, N'VIP', N'AVAILABLE'),
+(1314, 28, N'C', 4, N'VIP', N'AVAILABLE'),
+(1315, 28, N'C', 5, N'VIP', N'AVAILABLE'),
+(1316, 28, N'C', 6, N'VIP', N'AVAILABLE'),
+(1317, 28, N'C', 7, N'VIP', N'AVAILABLE'),
+(1318, 28, N'C', 8, N'VIP', N'AVAILABLE'),
+(1319, 28, N'C', 9, N'VIP', N'AVAILABLE'),
+(1320, 28, N'C', 10, N'VIP', N'AVAILABLE'),
+(1321, 28, N'D', 1, N'VIP', N'AVAILABLE'),
+(1322, 28, N'D', 2, N'VIP', N'AVAILABLE'),
+(1323, 28, N'D', 3, N'VIP', N'AVAILABLE'),
+(1324, 28, N'D', 4, N'VIP', N'AVAILABLE'),
+(1325, 28, N'D', 5, N'VIP', N'AVAILABLE'),
+(1326, 28, N'D', 6, N'VIP', N'AVAILABLE'),
+(1327, 28, N'D', 7, N'VIP', N'AVAILABLE'),
+(1328, 28, N'D', 8, N'VIP', N'AVAILABLE'),
+(1329, 28, N'D', 9, N'VIP', N'AVAILABLE'),
+(1330, 28, N'D', 10, N'VIP', N'AVAILABLE'),
+(1331, 28, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(1332, 28, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(1333, 28, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(1334, 28, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(1335, 28, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(1336, 28, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(1337, 28, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(1338, 28, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(1339, 28, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(1340, 28, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(1341, 29, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(1342, 29, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(1343, 29, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(1344, 29, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(1345, 29, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(1346, 29, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(1347, 29, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(1348, 29, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(1349, 29, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(1350, 29, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(1351, 29, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(1352, 29, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(1353, 29, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(1354, 29, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(1355, 29, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(1356, 29, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(1357, 29, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(1358, 29, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(1359, 29, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(1360, 29, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(1361, 29, N'C', 1, N'VIP', N'AVAILABLE'),
+(1362, 29, N'C', 2, N'VIP', N'AVAILABLE'),
+(1363, 29, N'C', 3, N'VIP', N'AVAILABLE'),
+(1364, 29, N'C', 4, N'VIP', N'AVAILABLE'),
+(1365, 29, N'C', 5, N'VIP', N'AVAILABLE'),
+(1366, 29, N'C', 6, N'VIP', N'AVAILABLE'),
+(1367, 29, N'C', 7, N'VIP', N'AVAILABLE'),
+(1368, 29, N'C', 8, N'VIP', N'AVAILABLE'),
+(1369, 29, N'C', 9, N'VIP', N'AVAILABLE'),
+(1370, 29, N'C', 10, N'VIP', N'AVAILABLE'),
+(1371, 29, N'D', 1, N'VIP', N'AVAILABLE'),
+(1372, 29, N'D', 2, N'VIP', N'AVAILABLE'),
+(1373, 29, N'D', 3, N'VIP', N'AVAILABLE'),
+(1374, 29, N'D', 4, N'VIP', N'AVAILABLE'),
+(1375, 29, N'D', 5, N'VIP', N'AVAILABLE'),
+(1376, 29, N'D', 6, N'VIP', N'AVAILABLE'),
+(1377, 29, N'D', 7, N'VIP', N'AVAILABLE'),
+(1378, 29, N'D', 8, N'VIP', N'AVAILABLE'),
+(1379, 29, N'D', 9, N'VIP', N'AVAILABLE'),
+(1380, 29, N'D', 10, N'VIP', N'AVAILABLE'),
+(1381, 29, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(1382, 29, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(1383, 29, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(1384, 29, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(1385, 29, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(1386, 29, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(1387, 29, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(1388, 29, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(1389, 29, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(1390, 29, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(1391, 30, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(1392, 30, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(1393, 30, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(1394, 30, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(1395, 30, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(1396, 30, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(1397, 30, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(1398, 30, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(1399, 30, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(1400, 30, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(1401, 30, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(1402, 30, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(1403, 30, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(1404, 30, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(1405, 30, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(1406, 30, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(1407, 30, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(1408, 30, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(1409, 30, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(1410, 30, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(1411, 30, N'C', 1, N'VIP', N'AVAILABLE'),
+(1412, 30, N'C', 2, N'VIP', N'AVAILABLE'),
+(1413, 30, N'C', 3, N'VIP', N'AVAILABLE'),
+(1414, 30, N'C', 4, N'VIP', N'AVAILABLE'),
+(1415, 30, N'C', 5, N'VIP', N'AVAILABLE'),
+(1416, 30, N'C', 6, N'VIP', N'AVAILABLE'),
+(1417, 30, N'C', 7, N'VIP', N'AVAILABLE'),
+(1418, 30, N'C', 8, N'VIP', N'AVAILABLE'),
+(1419, 30, N'C', 9, N'VIP', N'AVAILABLE'),
+(1420, 30, N'C', 10, N'VIP', N'AVAILABLE'),
+(1421, 30, N'D', 1, N'VIP', N'AVAILABLE'),
+(1422, 30, N'D', 2, N'VIP', N'AVAILABLE'),
+(1423, 30, N'D', 3, N'VIP', N'AVAILABLE'),
+(1424, 30, N'D', 4, N'VIP', N'AVAILABLE'),
+(1425, 30, N'D', 5, N'VIP', N'AVAILABLE'),
+(1426, 30, N'D', 6, N'VIP', N'AVAILABLE'),
+(1427, 30, N'D', 7, N'VIP', N'AVAILABLE'),
+(1428, 30, N'D', 8, N'VIP', N'AVAILABLE'),
+(1429, 30, N'D', 9, N'VIP', N'AVAILABLE'),
+(1430, 30, N'D', 10, N'VIP', N'AVAILABLE'),
+(1431, 30, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(1432, 30, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(1433, 30, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(1434, 30, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(1435, 30, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(1436, 30, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(1437, 30, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(1438, 30, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(1439, 30, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(1440, 30, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(1891, 40, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(1892, 40, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(1893, 40, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(1894, 40, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(1895, 40, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(1896, 40, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(1897, 40, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(1898, 40, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(1899, 40, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(1900, 40, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(1901, 40, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(1902, 40, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(1903, 40, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(1904, 40, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(1905, 40, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(1906, 40, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(1907, 40, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(1908, 40, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(1909, 40, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(1910, 40, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(1911, 40, N'C', 1, N'VIP', N'AVAILABLE'),
+(1912, 40, N'C', 2, N'VIP', N'AVAILABLE'),
+(1913, 40, N'C', 3, N'VIP', N'AVAILABLE'),
+(1914, 40, N'C', 4, N'VIP', N'AVAILABLE'),
+(1915, 40, N'C', 5, N'VIP', N'AVAILABLE'),
+(1916, 40, N'C', 6, N'VIP', N'AVAILABLE'),
+(1917, 40, N'C', 7, N'VIP', N'AVAILABLE'),
+(1918, 40, N'C', 8, N'VIP', N'AVAILABLE'),
+(1919, 40, N'C', 9, N'VIP', N'AVAILABLE'),
+(1920, 40, N'C', 10, N'VIP', N'AVAILABLE'),
+(1921, 40, N'D', 1, N'VIP', N'AVAILABLE'),
+(1922, 40, N'D', 2, N'VIP', N'AVAILABLE'),
+(1923, 40, N'D', 3, N'VIP', N'AVAILABLE'),
+(1924, 40, N'D', 4, N'VIP', N'AVAILABLE'),
+(1925, 40, N'D', 5, N'VIP', N'AVAILABLE'),
+(1926, 40, N'D', 6, N'VIP', N'AVAILABLE'),
+(1927, 40, N'D', 7, N'VIP', N'AVAILABLE'),
+(1928, 40, N'D', 8, N'VIP', N'AVAILABLE'),
+(1929, 40, N'D', 9, N'VIP', N'AVAILABLE'),
+(1930, 40, N'D', 10, N'VIP', N'AVAILABLE'),
+(1931, 40, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(1932, 40, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(1933, 40, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(1934, 40, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(1935, 40, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(1936, 40, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(1937, 40, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(1938, 40, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(1939, 40, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(1940, 40, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(1941, 41, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(1942, 41, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(1943, 41, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(1944, 41, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(1945, 41, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(1946, 41, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(1947, 41, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(1948, 41, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(1949, 41, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(1950, 41, N'A', 10, N'STANDARD', N'AVAILABLE');
+GO
+INSERT INTO Seats (SeatID, HallID, SeatRow, SeatNumber, SeatType, Status) VALUES
+(1951, 41, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(1952, 41, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(1953, 41, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(1954, 41, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(1955, 41, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(1956, 41, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(1957, 41, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(1958, 41, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(1959, 41, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(1960, 41, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(1961, 41, N'C', 1, N'VIP', N'AVAILABLE'),
+(1962, 41, N'C', 2, N'VIP', N'AVAILABLE'),
+(1963, 41, N'C', 3, N'VIP', N'AVAILABLE'),
+(1964, 41, N'C', 4, N'VIP', N'AVAILABLE'),
+(1965, 41, N'C', 5, N'VIP', N'AVAILABLE'),
+(1966, 41, N'C', 6, N'VIP', N'AVAILABLE'),
+(1967, 41, N'C', 7, N'VIP', N'AVAILABLE'),
+(1968, 41, N'C', 8, N'VIP', N'AVAILABLE'),
+(1969, 41, N'C', 9, N'VIP', N'AVAILABLE'),
+(1970, 41, N'C', 10, N'VIP', N'AVAILABLE'),
+(1971, 41, N'D', 1, N'VIP', N'AVAILABLE'),
+(1972, 41, N'D', 2, N'VIP', N'AVAILABLE'),
+(1973, 41, N'D', 3, N'VIP', N'AVAILABLE'),
+(1974, 41, N'D', 4, N'VIP', N'AVAILABLE'),
+(1975, 41, N'D', 5, N'VIP', N'AVAILABLE'),
+(1976, 41, N'D', 6, N'VIP', N'AVAILABLE'),
+(1977, 41, N'D', 7, N'VIP', N'AVAILABLE'),
+(1978, 41, N'D', 8, N'VIP', N'AVAILABLE'),
+(1979, 41, N'D', 9, N'VIP', N'AVAILABLE'),
+(1980, 41, N'D', 10, N'VIP', N'AVAILABLE'),
+(1981, 41, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(1982, 41, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(1983, 41, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(1984, 41, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(1985, 41, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(1986, 41, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(1987, 41, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(1988, 41, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(1989, 41, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(1990, 41, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(1991, 42, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(1992, 42, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(1993, 42, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(1994, 42, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(1995, 42, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(1996, 42, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(1997, 42, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(1998, 42, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(1999, 42, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(2000, 42, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(2001, 42, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(2002, 42, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(2003, 42, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(2004, 42, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(2005, 42, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(2006, 42, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(2007, 42, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(2008, 42, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(2009, 42, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(2010, 42, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(2011, 42, N'C', 1, N'VIP', N'AVAILABLE'),
+(2012, 42, N'C', 2, N'VIP', N'AVAILABLE'),
+(2013, 42, N'C', 3, N'VIP', N'AVAILABLE'),
+(2014, 42, N'C', 4, N'VIP', N'AVAILABLE'),
+(2015, 42, N'C', 5, N'VIP', N'AVAILABLE'),
+(2016, 42, N'C', 6, N'VIP', N'AVAILABLE'),
+(2017, 42, N'C', 7, N'VIP', N'AVAILABLE'),
+(2018, 42, N'C', 8, N'VIP', N'AVAILABLE'),
+(2019, 42, N'C', 9, N'VIP', N'AVAILABLE'),
+(2020, 42, N'C', 10, N'VIP', N'AVAILABLE'),
+(2021, 42, N'D', 1, N'VIP', N'AVAILABLE'),
+(2022, 42, N'D', 2, N'VIP', N'AVAILABLE'),
+(2023, 42, N'D', 3, N'VIP', N'AVAILABLE'),
+(2024, 42, N'D', 4, N'VIP', N'AVAILABLE'),
+(2025, 42, N'D', 5, N'VIP', N'AVAILABLE'),
+(2026, 42, N'D', 6, N'VIP', N'AVAILABLE'),
+(2027, 42, N'D', 7, N'VIP', N'AVAILABLE'),
+(2028, 42, N'D', 8, N'VIP', N'AVAILABLE'),
+(2029, 42, N'D', 9, N'VIP', N'AVAILABLE'),
+(2030, 42, N'D', 10, N'VIP', N'AVAILABLE'),
+(2031, 42, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(2032, 42, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(2033, 42, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(2034, 42, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(2035, 42, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(2036, 42, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(2037, 42, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(2038, 42, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(2039, 42, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(2040, 42, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(2791, 58, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(2792, 58, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(2793, 58, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(2794, 58, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(2795, 58, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(2796, 58, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(2797, 58, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(2798, 58, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(2799, 58, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(2800, 58, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(2801, 58, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(2802, 58, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(2803, 58, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(2804, 58, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(2805, 58, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(2806, 58, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(2807, 58, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(2808, 58, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(2809, 58, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(2810, 58, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(2811, 58, N'C', 1, N'VIP', N'AVAILABLE'),
+(2812, 58, N'C', 2, N'VIP', N'AVAILABLE'),
+(2813, 58, N'C', 3, N'VIP', N'AVAILABLE'),
+(2814, 58, N'C', 4, N'VIP', N'AVAILABLE'),
+(2815, 58, N'C', 5, N'VIP', N'AVAILABLE'),
+(2816, 58, N'C', 6, N'VIP', N'AVAILABLE'),
+(2817, 58, N'C', 7, N'VIP', N'AVAILABLE'),
+(2818, 58, N'C', 8, N'VIP', N'AVAILABLE'),
+(2819, 58, N'C', 9, N'VIP', N'AVAILABLE'),
+(2820, 58, N'C', 10, N'VIP', N'AVAILABLE'),
+(2821, 58, N'D', 1, N'VIP', N'AVAILABLE'),
+(2822, 58, N'D', 2, N'VIP', N'AVAILABLE'),
+(2823, 58, N'D', 3, N'VIP', N'AVAILABLE'),
+(2824, 58, N'D', 4, N'VIP', N'AVAILABLE'),
+(2825, 58, N'D', 5, N'VIP', N'AVAILABLE'),
+(2826, 58, N'D', 6, N'VIP', N'AVAILABLE'),
+(2827, 58, N'D', 7, N'VIP', N'AVAILABLE'),
+(2828, 58, N'D', 8, N'VIP', N'AVAILABLE'),
+(2829, 58, N'D', 9, N'VIP', N'AVAILABLE'),
+(2830, 58, N'D', 10, N'VIP', N'AVAILABLE'),
+(2831, 58, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(2832, 58, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(2833, 58, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(2834, 58, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(2835, 58, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(2836, 58, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(2837, 58, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(2838, 58, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(2839, 58, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(2840, 58, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(2841, 59, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(2842, 59, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(2843, 59, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(2844, 59, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(2845, 59, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(2846, 59, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(2847, 59, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(2848, 59, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(2849, 59, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(2850, 59, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(2851, 59, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(2852, 59, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(2853, 59, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(2854, 59, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(2855, 59, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(2856, 59, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(2857, 59, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(2858, 59, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(2859, 59, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(2860, 59, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(2861, 59, N'C', 1, N'VIP', N'AVAILABLE'),
+(2862, 59, N'C', 2, N'VIP', N'AVAILABLE'),
+(2863, 59, N'C', 3, N'VIP', N'AVAILABLE'),
+(2864, 59, N'C', 4, N'VIP', N'AVAILABLE'),
+(2865, 59, N'C', 5, N'VIP', N'AVAILABLE'),
+(2866, 59, N'C', 6, N'VIP', N'AVAILABLE'),
+(2867, 59, N'C', 7, N'VIP', N'AVAILABLE'),
+(2868, 59, N'C', 8, N'VIP', N'AVAILABLE'),
+(2869, 59, N'C', 9, N'VIP', N'AVAILABLE'),
+(2870, 59, N'C', 10, N'VIP', N'AVAILABLE'),
+(2871, 59, N'D', 1, N'VIP', N'AVAILABLE'),
+(2872, 59, N'D', 2, N'VIP', N'AVAILABLE'),
+(2873, 59, N'D', 3, N'VIP', N'AVAILABLE'),
+(2874, 59, N'D', 4, N'VIP', N'AVAILABLE'),
+(2875, 59, N'D', 5, N'VIP', N'AVAILABLE'),
+(2876, 59, N'D', 6, N'VIP', N'AVAILABLE'),
+(2877, 59, N'D', 7, N'VIP', N'AVAILABLE'),
+(2878, 59, N'D', 8, N'VIP', N'AVAILABLE'),
+(2879, 59, N'D', 9, N'VIP', N'AVAILABLE'),
+(2880, 59, N'D', 10, N'VIP', N'AVAILABLE'),
+(2881, 59, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(2882, 59, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(2883, 59, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(2884, 59, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(2885, 59, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(2886, 59, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(2887, 59, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(2888, 59, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(2889, 59, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(2890, 59, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(2891, 60, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(2892, 60, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(2893, 60, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(2894, 60, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(2895, 60, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(2896, 60, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(2897, 60, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(2898, 60, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(2899, 60, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(2900, 60, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(2901, 60, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(2902, 60, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(2903, 60, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(2904, 60, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(2905, 60, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(2906, 60, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(2907, 60, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(2908, 60, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(2909, 60, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(2910, 60, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(2911, 60, N'C', 1, N'VIP', N'AVAILABLE'),
+(2912, 60, N'C', 2, N'VIP', N'AVAILABLE'),
+(2913, 60, N'C', 3, N'VIP', N'AVAILABLE'),
+(2914, 60, N'C', 4, N'VIP', N'AVAILABLE'),
+(2915, 60, N'C', 5, N'VIP', N'AVAILABLE'),
+(2916, 60, N'C', 6, N'VIP', N'AVAILABLE'),
+(2917, 60, N'C', 7, N'VIP', N'AVAILABLE'),
+(2918, 60, N'C', 8, N'VIP', N'AVAILABLE'),
+(2919, 60, N'C', 9, N'VIP', N'AVAILABLE'),
+(2920, 60, N'C', 10, N'VIP', N'AVAILABLE'),
+(2921, 60, N'D', 1, N'VIP', N'AVAILABLE'),
+(2922, 60, N'D', 2, N'VIP', N'AVAILABLE'),
+(2923, 60, N'D', 3, N'VIP', N'AVAILABLE'),
+(2924, 60, N'D', 4, N'VIP', N'AVAILABLE'),
+(2925, 60, N'D', 5, N'VIP', N'AVAILABLE'),
+(2926, 60, N'D', 6, N'VIP', N'AVAILABLE'),
+(2927, 60, N'D', 7, N'VIP', N'AVAILABLE'),
+(2928, 60, N'D', 8, N'VIP', N'AVAILABLE'),
+(2929, 60, N'D', 9, N'VIP', N'AVAILABLE'),
+(2930, 60, N'D', 10, N'VIP', N'AVAILABLE'),
+(2931, 60, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(2932, 60, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(2933, 60, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(2934, 60, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(2935, 60, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(2936, 60, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(2937, 60, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(2938, 60, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(2939, 60, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(2940, 60, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(2941, 61, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(2942, 61, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(2943, 61, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(2944, 61, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(2945, 61, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(2946, 61, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(2947, 61, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(2948, 61, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(2949, 61, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(2950, 61, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(2951, 61, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(2952, 61, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(2953, 61, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(2954, 61, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(2955, 61, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(2956, 61, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(2957, 61, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(2958, 61, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(2959, 61, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(2960, 61, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(2961, 61, N'C', 1, N'VIP', N'AVAILABLE'),
+(2962, 61, N'C', 2, N'VIP', N'AVAILABLE'),
+(2963, 61, N'C', 3, N'VIP', N'AVAILABLE'),
+(2964, 61, N'C', 4, N'VIP', N'AVAILABLE'),
+(2965, 61, N'C', 5, N'VIP', N'AVAILABLE'),
+(2966, 61, N'C', 6, N'VIP', N'AVAILABLE'),
+(2967, 61, N'C', 7, N'VIP', N'AVAILABLE'),
+(2968, 61, N'C', 8, N'VIP', N'AVAILABLE'),
+(2969, 61, N'C', 9, N'VIP', N'AVAILABLE'),
+(2970, 61, N'C', 10, N'VIP', N'AVAILABLE'),
+(2971, 61, N'D', 1, N'VIP', N'AVAILABLE'),
+(2972, 61, N'D', 2, N'VIP', N'AVAILABLE'),
+(2973, 61, N'D', 3, N'VIP', N'AVAILABLE'),
+(2974, 61, N'D', 4, N'VIP', N'AVAILABLE'),
+(2975, 61, N'D', 5, N'VIP', N'AVAILABLE'),
+(2976, 61, N'D', 6, N'VIP', N'AVAILABLE'),
+(2977, 61, N'D', 7, N'VIP', N'AVAILABLE'),
+(2978, 61, N'D', 8, N'VIP', N'AVAILABLE'),
+(2979, 61, N'D', 9, N'VIP', N'AVAILABLE'),
+(2980, 61, N'D', 10, N'VIP', N'AVAILABLE'),
+(2981, 61, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(2982, 61, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(2983, 61, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(2984, 61, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(2985, 61, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(2986, 61, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(2987, 61, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(2988, 61, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(2989, 61, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(2990, 61, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(2991, 62, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(2992, 62, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(2993, 62, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(2994, 62, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(2995, 62, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(2996, 62, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(2997, 62, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(2998, 62, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(2999, 62, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(3000, 62, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(3001, 62, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(3002, 62, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(3003, 62, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(3004, 62, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(3005, 62, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(3006, 62, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(3007, 62, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(3008, 62, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(3009, 62, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(3010, 62, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(3011, 62, N'C', 1, N'VIP', N'AVAILABLE'),
+(3012, 62, N'C', 2, N'VIP', N'AVAILABLE'),
+(3013, 62, N'C', 3, N'VIP', N'AVAILABLE'),
+(3014, 62, N'C', 4, N'VIP', N'AVAILABLE'),
+(3015, 62, N'C', 5, N'VIP', N'AVAILABLE'),
+(3016, 62, N'C', 6, N'VIP', N'AVAILABLE'),
+(3017, 62, N'C', 7, N'VIP', N'AVAILABLE'),
+(3018, 62, N'C', 8, N'VIP', N'AVAILABLE'),
+(3019, 62, N'C', 9, N'VIP', N'AVAILABLE'),
+(3020, 62, N'C', 10, N'VIP', N'AVAILABLE'),
+(3021, 62, N'D', 1, N'VIP', N'AVAILABLE'),
+(3022, 62, N'D', 2, N'VIP', N'AVAILABLE'),
+(3023, 62, N'D', 3, N'VIP', N'AVAILABLE'),
+(3024, 62, N'D', 4, N'VIP', N'AVAILABLE'),
+(3025, 62, N'D', 5, N'VIP', N'AVAILABLE'),
+(3026, 62, N'D', 6, N'VIP', N'AVAILABLE'),
+(3027, 62, N'D', 7, N'VIP', N'AVAILABLE'),
+(3028, 62, N'D', 8, N'VIP', N'AVAILABLE'),
+(3029, 62, N'D', 9, N'VIP', N'AVAILABLE'),
+(3030, 62, N'D', 10, N'VIP', N'AVAILABLE'),
+(3031, 62, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(3032, 62, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(3033, 62, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(3034, 62, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(3035, 62, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(3036, 62, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(3037, 62, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(3038, 62, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(3039, 62, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(3040, 62, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(3041, 63, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(3042, 63, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(3043, 63, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(3044, 63, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(3045, 63, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(3046, 63, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(3047, 63, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(3048, 63, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(3049, 63, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(3050, 63, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(3051, 63, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(3052, 63, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(3053, 63, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(3054, 63, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(3055, 63, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(3056, 63, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(3057, 63, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(3058, 63, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(3059, 63, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(3060, 63, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(3061, 63, N'C', 1, N'VIP', N'AVAILABLE'),
+(3062, 63, N'C', 2, N'VIP', N'AVAILABLE'),
+(3063, 63, N'C', 3, N'VIP', N'AVAILABLE'),
+(3064, 63, N'C', 4, N'VIP', N'AVAILABLE'),
+(3065, 63, N'C', 5, N'VIP', N'AVAILABLE'),
+(3066, 63, N'C', 6, N'VIP', N'AVAILABLE'),
+(3067, 63, N'C', 7, N'VIP', N'AVAILABLE'),
+(3068, 63, N'C', 8, N'VIP', N'AVAILABLE'),
+(3069, 63, N'C', 9, N'VIP', N'AVAILABLE'),
+(3070, 63, N'C', 10, N'VIP', N'AVAILABLE'),
+(3071, 63, N'D', 1, N'VIP', N'AVAILABLE'),
+(3072, 63, N'D', 2, N'VIP', N'AVAILABLE'),
+(3073, 63, N'D', 3, N'VIP', N'AVAILABLE'),
+(3074, 63, N'D', 4, N'VIP', N'AVAILABLE'),
+(3075, 63, N'D', 5, N'VIP', N'AVAILABLE'),
+(3076, 63, N'D', 6, N'VIP', N'AVAILABLE'),
+(3077, 63, N'D', 7, N'VIP', N'AVAILABLE'),
+(3078, 63, N'D', 8, N'VIP', N'AVAILABLE'),
+(3079, 63, N'D', 9, N'VIP', N'AVAILABLE'),
+(3080, 63, N'D', 10, N'VIP', N'AVAILABLE'),
+(3081, 63, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(3082, 63, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(3083, 63, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(3084, 63, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(3085, 63, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(3086, 63, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(3087, 63, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(3088, 63, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(3089, 63, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(3090, 63, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(3091, 64, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(3092, 64, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(3093, 64, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(3094, 64, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(3095, 64, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(3096, 64, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(3097, 64, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(3098, 64, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(3099, 64, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(3100, 64, N'A', 10, N'STANDARD', N'AVAILABLE');
+GO
+INSERT INTO Seats (SeatID, HallID, SeatRow, SeatNumber, SeatType, Status) VALUES
+(3101, 64, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(3102, 64, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(3103, 64, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(3104, 64, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(3105, 64, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(3106, 64, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(3107, 64, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(3108, 64, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(3109, 64, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(3110, 64, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(3111, 64, N'C', 1, N'VIP', N'AVAILABLE'),
+(3112, 64, N'C', 2, N'VIP', N'AVAILABLE'),
+(3113, 64, N'C', 3, N'VIP', N'AVAILABLE'),
+(3114, 64, N'C', 4, N'VIP', N'AVAILABLE'),
+(3115, 64, N'C', 5, N'VIP', N'AVAILABLE'),
+(3116, 64, N'C', 6, N'VIP', N'AVAILABLE'),
+(3117, 64, N'C', 7, N'VIP', N'AVAILABLE'),
+(3118, 64, N'C', 8, N'VIP', N'AVAILABLE'),
+(3119, 64, N'C', 9, N'VIP', N'AVAILABLE'),
+(3120, 64, N'C', 10, N'VIP', N'AVAILABLE'),
+(3121, 64, N'D', 1, N'VIP', N'AVAILABLE'),
+(3122, 64, N'D', 2, N'VIP', N'AVAILABLE'),
+(3123, 64, N'D', 3, N'VIP', N'AVAILABLE'),
+(3124, 64, N'D', 4, N'VIP', N'AVAILABLE'),
+(3125, 64, N'D', 5, N'VIP', N'AVAILABLE'),
+(3126, 64, N'D', 6, N'VIP', N'AVAILABLE'),
+(3127, 64, N'D', 7, N'VIP', N'AVAILABLE'),
+(3128, 64, N'D', 8, N'VIP', N'AVAILABLE'),
+(3129, 64, N'D', 9, N'VIP', N'AVAILABLE'),
+(3130, 64, N'D', 10, N'VIP', N'AVAILABLE'),
+(3131, 64, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(3132, 64, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(3133, 64, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(3134, 64, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(3135, 64, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(3136, 64, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(3137, 64, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(3138, 64, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(3139, 64, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(3140, 64, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(3141, 65, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(3142, 65, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(3143, 65, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(3144, 65, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(3145, 65, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(3146, 65, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(3147, 65, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(3148, 65, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(3149, 65, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(3150, 65, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(3151, 65, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(3152, 65, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(3153, 65, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(3154, 65, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(3155, 65, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(3156, 65, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(3157, 65, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(3158, 65, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(3159, 65, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(3160, 65, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(3161, 65, N'C', 1, N'VIP', N'AVAILABLE'),
+(3162, 65, N'C', 2, N'VIP', N'AVAILABLE'),
+(3163, 65, N'C', 3, N'VIP', N'AVAILABLE'),
+(3164, 65, N'C', 4, N'VIP', N'AVAILABLE'),
+(3165, 65, N'C', 5, N'VIP', N'AVAILABLE'),
+(3166, 65, N'C', 6, N'VIP', N'AVAILABLE'),
+(3167, 65, N'C', 7, N'VIP', N'AVAILABLE'),
+(3168, 65, N'C', 8, N'VIP', N'AVAILABLE'),
+(3169, 65, N'C', 9, N'VIP', N'AVAILABLE'),
+(3170, 65, N'C', 10, N'VIP', N'AVAILABLE'),
+(3171, 65, N'D', 1, N'VIP', N'AVAILABLE'),
+(3172, 65, N'D', 2, N'VIP', N'AVAILABLE'),
+(3173, 65, N'D', 3, N'VIP', N'AVAILABLE'),
+(3174, 65, N'D', 4, N'VIP', N'AVAILABLE'),
+(3175, 65, N'D', 5, N'VIP', N'AVAILABLE'),
+(3176, 65, N'D', 6, N'VIP', N'AVAILABLE'),
+(3177, 65, N'D', 7, N'VIP', N'AVAILABLE'),
+(3178, 65, N'D', 8, N'VIP', N'AVAILABLE'),
+(3179, 65, N'D', 9, N'VIP', N'AVAILABLE'),
+(3180, 65, N'D', 10, N'VIP', N'AVAILABLE'),
+(3181, 65, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(3182, 65, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(3183, 65, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(3184, 65, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(3185, 65, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(3186, 65, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(3187, 65, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(3188, 65, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(3189, 65, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(3190, 65, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(3191, 66, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(3192, 66, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(3193, 66, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(3194, 66, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(3195, 66, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(3196, 66, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(3197, 66, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(3198, 66, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(3199, 66, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(3200, 66, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(3201, 66, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(3202, 66, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(3203, 66, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(3204, 66, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(3205, 66, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(3206, 66, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(3207, 66, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(3208, 66, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(3209, 66, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(3210, 66, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(3211, 66, N'C', 1, N'VIP', N'AVAILABLE'),
+(3212, 66, N'C', 2, N'VIP', N'AVAILABLE'),
+(3213, 66, N'C', 3, N'VIP', N'AVAILABLE'),
+(3214, 66, N'C', 4, N'VIP', N'AVAILABLE'),
+(3215, 66, N'C', 5, N'VIP', N'AVAILABLE'),
+(3216, 66, N'C', 6, N'VIP', N'AVAILABLE'),
+(3217, 66, N'C', 7, N'VIP', N'AVAILABLE'),
+(3218, 66, N'C', 8, N'VIP', N'AVAILABLE'),
+(3219, 66, N'C', 9, N'VIP', N'AVAILABLE'),
+(3220, 66, N'C', 10, N'VIP', N'AVAILABLE'),
+(3221, 66, N'D', 1, N'VIP', N'AVAILABLE'),
+(3222, 66, N'D', 2, N'VIP', N'AVAILABLE'),
+(3223, 66, N'D', 3, N'VIP', N'AVAILABLE'),
+(3224, 66, N'D', 4, N'VIP', N'AVAILABLE'),
+(3225, 66, N'D', 5, N'VIP', N'AVAILABLE'),
+(3226, 66, N'D', 6, N'VIP', N'AVAILABLE'),
+(3227, 66, N'D', 7, N'VIP', N'AVAILABLE'),
+(3228, 66, N'D', 8, N'VIP', N'AVAILABLE'),
+(3229, 66, N'D', 9, N'VIP', N'AVAILABLE'),
+(3230, 66, N'D', 10, N'VIP', N'AVAILABLE'),
+(3231, 66, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(3232, 66, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(3233, 66, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(3234, 66, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(3235, 66, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(3236, 66, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(3237, 66, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(3238, 66, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(3239, 66, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(3240, 66, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(3241, 67, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(3242, 67, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(3243, 67, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(3244, 67, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(3245, 67, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(3246, 67, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(3247, 67, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(3248, 67, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(3249, 67, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(3250, 67, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(3251, 67, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(3252, 67, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(3253, 67, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(3254, 67, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(3255, 67, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(3256, 67, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(3257, 67, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(3258, 67, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(3259, 67, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(3260, 67, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(3261, 67, N'C', 1, N'VIP', N'AVAILABLE'),
+(3262, 67, N'C', 2, N'VIP', N'AVAILABLE'),
+(3263, 67, N'C', 3, N'VIP', N'AVAILABLE'),
+(3264, 67, N'C', 4, N'VIP', N'AVAILABLE'),
+(3265, 67, N'C', 5, N'VIP', N'AVAILABLE'),
+(3266, 67, N'C', 6, N'VIP', N'AVAILABLE'),
+(3267, 67, N'C', 7, N'VIP', N'AVAILABLE'),
+(3268, 67, N'C', 8, N'VIP', N'AVAILABLE'),
+(3269, 67, N'C', 9, N'VIP', N'AVAILABLE'),
+(3270, 67, N'C', 10, N'VIP', N'AVAILABLE'),
+(3271, 67, N'D', 1, N'VIP', N'AVAILABLE'),
+(3272, 67, N'D', 2, N'VIP', N'AVAILABLE'),
+(3273, 67, N'D', 3, N'VIP', N'AVAILABLE'),
+(3274, 67, N'D', 4, N'VIP', N'AVAILABLE'),
+(3275, 67, N'D', 5, N'VIP', N'AVAILABLE'),
+(3276, 67, N'D', 6, N'VIP', N'AVAILABLE'),
+(3277, 67, N'D', 7, N'VIP', N'AVAILABLE'),
+(3278, 67, N'D', 8, N'VIP', N'AVAILABLE'),
+(3279, 67, N'D', 9, N'VIP', N'AVAILABLE'),
+(3280, 67, N'D', 10, N'VIP', N'AVAILABLE'),
+(3281, 67, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(3282, 67, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(3283, 67, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(3284, 67, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(3285, 67, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(3286, 67, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(3287, 67, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(3288, 67, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(3289, 67, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(3290, 67, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(3291, 68, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(3292, 68, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(3293, 68, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(3294, 68, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(3295, 68, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(3296, 68, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(3297, 68, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(3298, 68, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(3299, 68, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(3300, 68, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(3301, 68, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(3302, 68, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(3303, 68, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(3304, 68, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(3305, 68, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(3306, 68, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(3307, 68, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(3308, 68, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(3309, 68, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(3310, 68, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(3311, 68, N'C', 1, N'VIP', N'AVAILABLE'),
+(3312, 68, N'C', 2, N'VIP', N'AVAILABLE'),
+(3313, 68, N'C', 3, N'VIP', N'AVAILABLE'),
+(3314, 68, N'C', 4, N'VIP', N'AVAILABLE'),
+(3315, 68, N'C', 5, N'VIP', N'AVAILABLE'),
+(3316, 68, N'C', 6, N'VIP', N'AVAILABLE'),
+(3317, 68, N'C', 7, N'VIP', N'AVAILABLE'),
+(3318, 68, N'C', 8, N'VIP', N'AVAILABLE'),
+(3319, 68, N'C', 9, N'VIP', N'AVAILABLE'),
+(3320, 68, N'C', 10, N'VIP', N'AVAILABLE'),
+(3321, 68, N'D', 1, N'VIP', N'AVAILABLE'),
+(3322, 68, N'D', 2, N'VIP', N'AVAILABLE'),
+(3323, 68, N'D', 3, N'VIP', N'AVAILABLE'),
+(3324, 68, N'D', 4, N'VIP', N'AVAILABLE'),
+(3325, 68, N'D', 5, N'VIP', N'AVAILABLE'),
+(3326, 68, N'D', 6, N'VIP', N'AVAILABLE'),
+(3327, 68, N'D', 7, N'VIP', N'AVAILABLE'),
+(3328, 68, N'D', 8, N'VIP', N'AVAILABLE'),
+(3329, 68, N'D', 9, N'VIP', N'AVAILABLE'),
+(3330, 68, N'D', 10, N'VIP', N'AVAILABLE'),
+(3331, 68, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(3332, 68, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(3333, 68, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(3334, 68, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(3335, 68, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(3336, 68, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(3337, 68, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(3338, 68, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(3339, 68, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(3340, 68, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(3341, 69, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(3342, 69, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(3343, 69, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(3344, 69, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(3345, 69, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(3346, 69, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(3347, 69, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(3348, 69, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(3349, 69, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(3350, 69, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(3351, 69, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(3352, 69, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(3353, 69, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(3354, 69, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(3355, 69, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(3356, 69, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(3357, 69, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(3358, 69, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(3359, 69, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(3360, 69, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(3361, 69, N'C', 1, N'VIP', N'AVAILABLE'),
+(3362, 69, N'C', 2, N'VIP', N'AVAILABLE'),
+(3363, 69, N'C', 3, N'VIP', N'AVAILABLE'),
+(3364, 69, N'C', 4, N'VIP', N'AVAILABLE'),
+(3365, 69, N'C', 5, N'VIP', N'AVAILABLE'),
+(3366, 69, N'C', 6, N'VIP', N'AVAILABLE'),
+(3367, 69, N'C', 7, N'VIP', N'AVAILABLE'),
+(3368, 69, N'C', 8, N'VIP', N'AVAILABLE'),
+(3369, 69, N'C', 9, N'VIP', N'AVAILABLE'),
+(3370, 69, N'C', 10, N'VIP', N'AVAILABLE'),
+(3371, 69, N'D', 1, N'VIP', N'AVAILABLE'),
+(3372, 69, N'D', 2, N'VIP', N'AVAILABLE'),
+(3373, 69, N'D', 3, N'VIP', N'AVAILABLE'),
+(3374, 69, N'D', 4, N'VIP', N'AVAILABLE'),
+(3375, 69, N'D', 5, N'VIP', N'AVAILABLE'),
+(3376, 69, N'D', 6, N'VIP', N'AVAILABLE'),
+(3377, 69, N'D', 7, N'VIP', N'AVAILABLE'),
+(3378, 69, N'D', 8, N'VIP', N'AVAILABLE'),
+(3379, 69, N'D', 9, N'VIP', N'AVAILABLE'),
+(3380, 69, N'D', 10, N'VIP', N'AVAILABLE'),
+(3381, 69, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(3382, 69, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(3383, 69, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(3384, 69, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(3385, 69, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(3386, 69, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(3387, 69, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(3388, 69, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(3389, 69, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(3390, 69, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(3391, 70, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(3392, 70, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(3393, 70, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(3394, 70, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(3395, 70, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(3396, 70, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(3397, 70, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(3398, 70, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(3399, 70, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(3400, 70, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(3401, 70, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(3402, 70, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(3403, 70, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(3404, 70, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(3405, 70, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(3406, 70, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(3407, 70, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(3408, 70, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(3409, 70, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(3410, 70, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(3411, 70, N'C', 1, N'VIP', N'AVAILABLE'),
+(3412, 70, N'C', 2, N'VIP', N'AVAILABLE'),
+(3413, 70, N'C', 3, N'VIP', N'AVAILABLE'),
+(3414, 70, N'C', 4, N'VIP', N'AVAILABLE'),
+(3415, 70, N'C', 5, N'VIP', N'AVAILABLE'),
+(3416, 70, N'C', 6, N'VIP', N'AVAILABLE'),
+(3417, 70, N'C', 7, N'VIP', N'AVAILABLE'),
+(3418, 70, N'C', 8, N'VIP', N'AVAILABLE'),
+(3419, 70, N'C', 9, N'VIP', N'AVAILABLE'),
+(3420, 70, N'C', 10, N'VIP', N'AVAILABLE'),
+(3421, 70, N'D', 1, N'VIP', N'AVAILABLE'),
+(3422, 70, N'D', 2, N'VIP', N'AVAILABLE'),
+(3423, 70, N'D', 3, N'VIP', N'AVAILABLE'),
+(3424, 70, N'D', 4, N'VIP', N'AVAILABLE'),
+(3425, 70, N'D', 5, N'VIP', N'AVAILABLE'),
+(3426, 70, N'D', 6, N'VIP', N'AVAILABLE'),
+(3427, 70, N'D', 7, N'VIP', N'AVAILABLE'),
+(3428, 70, N'D', 8, N'VIP', N'AVAILABLE'),
+(3429, 70, N'D', 9, N'VIP', N'AVAILABLE'),
+(3430, 70, N'D', 10, N'VIP', N'AVAILABLE'),
+(3431, 70, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(3432, 70, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(3433, 70, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(3434, 70, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(3435, 70, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(3436, 70, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(3437, 70, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(3438, 70, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(3439, 70, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(3440, 70, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(3441, 71, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(3442, 71, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(3443, 71, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(3444, 71, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(3445, 71, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(3446, 71, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(3447, 71, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(3448, 71, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(3449, 71, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(3450, 71, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(3451, 71, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(3452, 71, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(3453, 71, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(3454, 71, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(3455, 71, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(3456, 71, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(3457, 71, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(3458, 71, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(3459, 71, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(3460, 71, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(3461, 71, N'C', 1, N'VIP', N'AVAILABLE'),
+(3462, 71, N'C', 2, N'VIP', N'AVAILABLE'),
+(3463, 71, N'C', 3, N'VIP', N'AVAILABLE'),
+(3464, 71, N'C', 4, N'VIP', N'AVAILABLE'),
+(3465, 71, N'C', 5, N'VIP', N'AVAILABLE'),
+(3466, 71, N'C', 6, N'VIP', N'AVAILABLE'),
+(3467, 71, N'C', 7, N'VIP', N'AVAILABLE'),
+(3468, 71, N'C', 8, N'VIP', N'AVAILABLE'),
+(3469, 71, N'C', 9, N'VIP', N'AVAILABLE'),
+(3470, 71, N'C', 10, N'VIP', N'AVAILABLE'),
+(3471, 71, N'D', 1, N'VIP', N'AVAILABLE'),
+(3472, 71, N'D', 2, N'VIP', N'AVAILABLE'),
+(3473, 71, N'D', 3, N'VIP', N'AVAILABLE'),
+(3474, 71, N'D', 4, N'VIP', N'AVAILABLE'),
+(3475, 71, N'D', 5, N'VIP', N'AVAILABLE'),
+(3476, 71, N'D', 6, N'VIP', N'AVAILABLE'),
+(3477, 71, N'D', 7, N'VIP', N'AVAILABLE'),
+(3478, 71, N'D', 8, N'VIP', N'AVAILABLE'),
+(3479, 71, N'D', 9, N'VIP', N'AVAILABLE'),
+(3480, 71, N'D', 10, N'VIP', N'AVAILABLE'),
+(3481, 71, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(3482, 71, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(3483, 71, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(3484, 71, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(3485, 71, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(3486, 71, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(3487, 71, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(3488, 71, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(3489, 71, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(3490, 71, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(3491, 72, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(3492, 72, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(3493, 72, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(3494, 72, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(3495, 72, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(3496, 72, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(3497, 72, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(3498, 72, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(3499, 72, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(3500, 72, N'A', 10, N'STANDARD', N'AVAILABLE');
+GO
+INSERT INTO Seats (SeatID, HallID, SeatRow, SeatNumber, SeatType, Status) VALUES
+(3501, 72, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(3502, 72, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(3503, 72, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(3504, 72, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(3505, 72, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(3506, 72, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(3507, 72, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(3508, 72, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(3509, 72, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(3510, 72, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(3511, 72, N'C', 1, N'VIP', N'AVAILABLE'),
+(3512, 72, N'C', 2, N'VIP', N'AVAILABLE'),
+(3513, 72, N'C', 3, N'VIP', N'AVAILABLE'),
+(3514, 72, N'C', 4, N'VIP', N'AVAILABLE'),
+(3515, 72, N'C', 5, N'VIP', N'AVAILABLE'),
+(3516, 72, N'C', 6, N'VIP', N'AVAILABLE'),
+(3517, 72, N'C', 7, N'VIP', N'AVAILABLE'),
+(3518, 72, N'C', 8, N'VIP', N'AVAILABLE'),
+(3519, 72, N'C', 9, N'VIP', N'AVAILABLE'),
+(3520, 72, N'C', 10, N'VIP', N'AVAILABLE'),
+(3521, 72, N'D', 1, N'VIP', N'AVAILABLE'),
+(3522, 72, N'D', 2, N'VIP', N'AVAILABLE'),
+(3523, 72, N'D', 3, N'VIP', N'AVAILABLE'),
+(3524, 72, N'D', 4, N'VIP', N'AVAILABLE'),
+(3525, 72, N'D', 5, N'VIP', N'AVAILABLE'),
+(3526, 72, N'D', 6, N'VIP', N'AVAILABLE'),
+(3527, 72, N'D', 7, N'VIP', N'AVAILABLE'),
+(3528, 72, N'D', 8, N'VIP', N'AVAILABLE'),
+(3529, 72, N'D', 9, N'VIP', N'AVAILABLE'),
+(3530, 72, N'D', 10, N'VIP', N'AVAILABLE'),
+(3531, 72, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(3532, 72, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(3533, 72, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(3534, 72, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(3535, 72, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(3536, 72, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(3537, 72, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(3538, 72, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(3539, 72, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(3540, 72, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(3541, 73, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(3542, 73, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(3543, 73, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(3544, 73, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(3545, 73, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(3546, 73, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(3547, 73, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(3548, 73, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(3549, 73, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(3550, 73, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(3551, 73, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(3552, 73, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(3553, 73, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(3554, 73, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(3555, 73, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(3556, 73, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(3557, 73, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(3558, 73, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(3559, 73, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(3560, 73, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(3561, 73, N'C', 1, N'VIP', N'AVAILABLE'),
+(3562, 73, N'C', 2, N'VIP', N'AVAILABLE'),
+(3563, 73, N'C', 3, N'VIP', N'AVAILABLE'),
+(3564, 73, N'C', 4, N'VIP', N'AVAILABLE'),
+(3565, 73, N'C', 5, N'VIP', N'AVAILABLE'),
+(3566, 73, N'C', 6, N'VIP', N'AVAILABLE'),
+(3567, 73, N'C', 7, N'VIP', N'AVAILABLE'),
+(3568, 73, N'C', 8, N'VIP', N'AVAILABLE'),
+(3569, 73, N'C', 9, N'VIP', N'AVAILABLE'),
+(3570, 73, N'C', 10, N'VIP', N'AVAILABLE'),
+(3571, 73, N'D', 1, N'VIP', N'AVAILABLE'),
+(3572, 73, N'D', 2, N'VIP', N'AVAILABLE'),
+(3573, 73, N'D', 3, N'VIP', N'AVAILABLE'),
+(3574, 73, N'D', 4, N'VIP', N'AVAILABLE'),
+(3575, 73, N'D', 5, N'VIP', N'AVAILABLE'),
+(3576, 73, N'D', 6, N'VIP', N'AVAILABLE'),
+(3577, 73, N'D', 7, N'VIP', N'AVAILABLE'),
+(3578, 73, N'D', 8, N'VIP', N'AVAILABLE'),
+(3579, 73, N'D', 9, N'VIP', N'AVAILABLE'),
+(3580, 73, N'D', 10, N'VIP', N'AVAILABLE'),
+(3581, 73, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(3582, 73, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(3583, 73, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(3584, 73, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(3585, 73, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(3586, 73, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(3587, 73, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(3588, 73, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(3589, 73, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(3590, 73, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(3591, 74, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(3592, 74, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(3593, 74, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(3594, 74, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(3595, 74, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(3596, 74, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(3597, 74, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(3598, 74, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(3599, 74, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(3600, 74, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(3601, 74, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(3602, 74, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(3603, 74, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(3604, 74, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(3605, 74, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(3606, 74, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(3607, 74, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(3608, 74, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(3609, 74, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(3610, 74, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(3611, 74, N'C', 1, N'VIP', N'AVAILABLE'),
+(3612, 74, N'C', 2, N'VIP', N'AVAILABLE'),
+(3613, 74, N'C', 3, N'VIP', N'AVAILABLE'),
+(3614, 74, N'C', 4, N'VIP', N'AVAILABLE'),
+(3615, 74, N'C', 5, N'VIP', N'AVAILABLE'),
+(3616, 74, N'C', 6, N'VIP', N'AVAILABLE'),
+(3617, 74, N'C', 7, N'VIP', N'AVAILABLE'),
+(3618, 74, N'C', 8, N'VIP', N'AVAILABLE'),
+(3619, 74, N'C', 9, N'VIP', N'AVAILABLE'),
+(3620, 74, N'C', 10, N'VIP', N'AVAILABLE'),
+(3621, 74, N'D', 1, N'VIP', N'AVAILABLE'),
+(3622, 74, N'D', 2, N'VIP', N'AVAILABLE'),
+(3623, 74, N'D', 3, N'VIP', N'AVAILABLE'),
+(3624, 74, N'D', 4, N'VIP', N'AVAILABLE'),
+(3625, 74, N'D', 5, N'VIP', N'AVAILABLE'),
+(3626, 74, N'D', 6, N'VIP', N'AVAILABLE'),
+(3627, 74, N'D', 7, N'VIP', N'AVAILABLE'),
+(3628, 74, N'D', 8, N'VIP', N'AVAILABLE'),
+(3629, 74, N'D', 9, N'VIP', N'AVAILABLE'),
+(3630, 74, N'D', 10, N'VIP', N'AVAILABLE'),
+(3631, 74, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(3632, 74, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(3633, 74, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(3634, 74, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(3635, 74, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(3636, 74, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(3637, 74, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(3638, 74, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(3639, 74, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(3640, 74, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(3641, 75, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(3642, 75, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(3643, 75, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(3644, 75, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(3645, 75, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(3646, 75, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(3647, 75, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(3648, 75, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(3649, 75, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(3650, 75, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(3651, 75, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(3652, 75, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(3653, 75, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(3654, 75, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(3655, 75, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(3656, 75, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(3657, 75, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(3658, 75, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(3659, 75, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(3660, 75, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(3661, 75, N'C', 1, N'VIP', N'AVAILABLE'),
+(3662, 75, N'C', 2, N'VIP', N'AVAILABLE'),
+(3663, 75, N'C', 3, N'VIP', N'AVAILABLE'),
+(3664, 75, N'C', 4, N'VIP', N'AVAILABLE'),
+(3665, 75, N'C', 5, N'VIP', N'AVAILABLE'),
+(3666, 75, N'C', 6, N'VIP', N'AVAILABLE'),
+(3667, 75, N'C', 7, N'VIP', N'AVAILABLE'),
+(3668, 75, N'C', 8, N'VIP', N'AVAILABLE'),
+(3669, 75, N'C', 9, N'VIP', N'AVAILABLE'),
+(3670, 75, N'C', 10, N'VIP', N'AVAILABLE'),
+(3671, 75, N'D', 1, N'VIP', N'AVAILABLE'),
+(3672, 75, N'D', 2, N'VIP', N'AVAILABLE'),
+(3673, 75, N'D', 3, N'VIP', N'AVAILABLE'),
+(3674, 75, N'D', 4, N'VIP', N'AVAILABLE'),
+(3675, 75, N'D', 5, N'VIP', N'AVAILABLE'),
+(3676, 75, N'D', 6, N'VIP', N'AVAILABLE'),
+(3677, 75, N'D', 7, N'VIP', N'AVAILABLE'),
+(3678, 75, N'D', 8, N'VIP', N'AVAILABLE'),
+(3679, 75, N'D', 9, N'VIP', N'AVAILABLE'),
+(3680, 75, N'D', 10, N'VIP', N'AVAILABLE'),
+(3681, 75, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(3682, 75, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(3683, 75, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(3684, 75, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(3685, 75, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(3686, 75, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(3687, 75, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(3688, 75, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(3689, 75, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(3690, 75, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(3691, 76, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(3692, 76, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(3693, 76, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(3694, 76, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(3695, 76, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(3696, 76, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(3697, 76, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(3698, 76, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(3699, 76, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(3700, 76, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(3701, 76, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(3702, 76, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(3703, 76, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(3704, 76, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(3705, 76, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(3706, 76, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(3707, 76, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(3708, 76, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(3709, 76, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(3710, 76, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(3711, 76, N'C', 1, N'VIP', N'AVAILABLE'),
+(3712, 76, N'C', 2, N'VIP', N'AVAILABLE'),
+(3713, 76, N'C', 3, N'VIP', N'AVAILABLE'),
+(3714, 76, N'C', 4, N'VIP', N'AVAILABLE'),
+(3715, 76, N'C', 5, N'VIP', N'AVAILABLE'),
+(3716, 76, N'C', 6, N'VIP', N'AVAILABLE'),
+(3717, 76, N'C', 7, N'VIP', N'AVAILABLE'),
+(3718, 76, N'C', 8, N'VIP', N'AVAILABLE'),
+(3719, 76, N'C', 9, N'VIP', N'AVAILABLE'),
+(3720, 76, N'C', 10, N'VIP', N'AVAILABLE'),
+(3721, 76, N'D', 1, N'VIP', N'AVAILABLE'),
+(3722, 76, N'D', 2, N'VIP', N'AVAILABLE'),
+(3723, 76, N'D', 3, N'VIP', N'AVAILABLE'),
+(3724, 76, N'D', 4, N'VIP', N'AVAILABLE'),
+(3725, 76, N'D', 5, N'VIP', N'AVAILABLE'),
+(3726, 76, N'D', 6, N'VIP', N'AVAILABLE'),
+(3727, 76, N'D', 7, N'VIP', N'AVAILABLE'),
+(3728, 76, N'D', 8, N'VIP', N'AVAILABLE'),
+(3729, 76, N'D', 9, N'VIP', N'AVAILABLE'),
+(3730, 76, N'D', 10, N'VIP', N'AVAILABLE'),
+(3731, 76, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(3732, 76, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(3733, 76, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(3734, 76, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(3735, 76, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(3736, 76, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(3737, 76, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(3738, 76, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(3739, 76, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(3740, 76, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(3741, 77, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(3742, 77, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(3743, 77, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(3744, 77, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(3745, 77, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(3746, 77, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(3747, 77, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(3748, 77, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(3749, 77, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(3750, 77, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(3751, 77, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(3752, 77, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(3753, 77, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(3754, 77, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(3755, 77, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(3756, 77, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(3757, 77, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(3758, 77, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(3759, 77, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(3760, 77, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(3761, 77, N'C', 1, N'VIP', N'AVAILABLE'),
+(3762, 77, N'C', 2, N'VIP', N'AVAILABLE'),
+(3763, 77, N'C', 3, N'VIP', N'AVAILABLE'),
+(3764, 77, N'C', 4, N'VIP', N'AVAILABLE'),
+(3765, 77, N'C', 5, N'VIP', N'AVAILABLE'),
+(3766, 77, N'C', 6, N'VIP', N'AVAILABLE'),
+(3767, 77, N'C', 7, N'VIP', N'AVAILABLE'),
+(3768, 77, N'C', 8, N'VIP', N'AVAILABLE'),
+(3769, 77, N'C', 9, N'VIP', N'AVAILABLE'),
+(3770, 77, N'C', 10, N'VIP', N'AVAILABLE'),
+(3771, 77, N'D', 1, N'VIP', N'AVAILABLE'),
+(3772, 77, N'D', 2, N'VIP', N'AVAILABLE'),
+(3773, 77, N'D', 3, N'VIP', N'AVAILABLE'),
+(3774, 77, N'D', 4, N'VIP', N'AVAILABLE'),
+(3775, 77, N'D', 5, N'VIP', N'AVAILABLE'),
+(3776, 77, N'D', 6, N'VIP', N'AVAILABLE'),
+(3777, 77, N'D', 7, N'VIP', N'AVAILABLE'),
+(3778, 77, N'D', 8, N'VIP', N'AVAILABLE'),
+(3779, 77, N'D', 9, N'VIP', N'AVAILABLE'),
+(3780, 77, N'D', 10, N'VIP', N'AVAILABLE'),
+(3781, 77, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(3782, 77, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(3783, 77, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(3784, 77, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(3785, 77, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(3786, 77, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(3787, 77, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(3788, 77, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(3789, 77, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(3790, 77, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(3791, 78, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(3792, 78, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(3793, 78, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(3794, 78, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(3795, 78, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(3796, 78, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(3797, 78, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(3798, 78, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(3799, 78, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(3800, 78, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(3801, 78, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(3802, 78, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(3803, 78, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(3804, 78, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(3805, 78, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(3806, 78, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(3807, 78, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(3808, 78, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(3809, 78, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(3810, 78, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(3811, 78, N'C', 1, N'VIP', N'AVAILABLE'),
+(3812, 78, N'C', 2, N'VIP', N'AVAILABLE'),
+(3813, 78, N'C', 3, N'VIP', N'AVAILABLE'),
+(3814, 78, N'C', 4, N'VIP', N'AVAILABLE'),
+(3815, 78, N'C', 5, N'VIP', N'AVAILABLE'),
+(3816, 78, N'C', 6, N'VIP', N'AVAILABLE'),
+(3817, 78, N'C', 7, N'VIP', N'AVAILABLE'),
+(3818, 78, N'C', 8, N'VIP', N'AVAILABLE'),
+(3819, 78, N'C', 9, N'VIP', N'AVAILABLE'),
+(3820, 78, N'C', 10, N'VIP', N'AVAILABLE'),
+(3821, 78, N'D', 1, N'VIP', N'AVAILABLE'),
+(3822, 78, N'D', 2, N'VIP', N'AVAILABLE'),
+(3823, 78, N'D', 3, N'VIP', N'AVAILABLE'),
+(3824, 78, N'D', 4, N'VIP', N'AVAILABLE'),
+(3825, 78, N'D', 5, N'VIP', N'AVAILABLE'),
+(3826, 78, N'D', 6, N'VIP', N'AVAILABLE'),
+(3827, 78, N'D', 7, N'VIP', N'AVAILABLE'),
+(3828, 78, N'D', 8, N'VIP', N'AVAILABLE'),
+(3829, 78, N'D', 9, N'VIP', N'AVAILABLE'),
+(3830, 78, N'D', 10, N'VIP', N'AVAILABLE'),
+(3831, 78, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(3832, 78, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(3833, 78, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(3834, 78, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(3835, 78, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(3836, 78, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(3837, 78, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(3838, 78, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(3839, 78, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(3840, 78, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(3841, 79, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(3842, 79, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(3843, 79, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(3844, 79, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(3845, 79, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(3846, 79, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(3847, 79, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(3848, 79, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(3849, 79, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(3850, 79, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(3851, 79, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(3852, 79, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(3853, 79, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(3854, 79, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(3855, 79, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(3856, 79, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(3857, 79, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(3858, 79, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(3859, 79, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(3860, 79, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(3861, 79, N'C', 1, N'VIP', N'AVAILABLE'),
+(3862, 79, N'C', 2, N'VIP', N'AVAILABLE'),
+(3863, 79, N'C', 3, N'VIP', N'AVAILABLE'),
+(3864, 79, N'C', 4, N'VIP', N'AVAILABLE'),
+(3865, 79, N'C', 5, N'VIP', N'AVAILABLE'),
+(3866, 79, N'C', 6, N'VIP', N'AVAILABLE'),
+(3867, 79, N'C', 7, N'VIP', N'AVAILABLE'),
+(3868, 79, N'C', 8, N'VIP', N'AVAILABLE'),
+(3869, 79, N'C', 9, N'VIP', N'AVAILABLE'),
+(3870, 79, N'C', 10, N'VIP', N'AVAILABLE'),
+(3871, 79, N'D', 1, N'VIP', N'AVAILABLE'),
+(3872, 79, N'D', 2, N'VIP', N'AVAILABLE'),
+(3873, 79, N'D', 3, N'VIP', N'AVAILABLE'),
+(3874, 79, N'D', 4, N'VIP', N'AVAILABLE'),
+(3875, 79, N'D', 5, N'VIP', N'AVAILABLE'),
+(3876, 79, N'D', 6, N'VIP', N'AVAILABLE'),
+(3877, 79, N'D', 7, N'VIP', N'AVAILABLE'),
+(3878, 79, N'D', 8, N'VIP', N'AVAILABLE'),
+(3879, 79, N'D', 9, N'VIP', N'AVAILABLE'),
+(3880, 79, N'D', 10, N'VIP', N'AVAILABLE'),
+(3881, 79, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(3882, 79, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(3883, 79, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(3884, 79, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(3885, 79, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(3886, 79, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(3887, 79, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(3888, 79, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(3889, 79, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(3890, 79, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(3891, 80, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(3892, 80, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(3893, 80, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(3894, 80, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(3895, 80, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(3896, 80, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(3897, 80, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(3898, 80, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(3899, 80, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(3900, 80, N'A', 10, N'STANDARD', N'AVAILABLE');
+GO
+INSERT INTO Seats (SeatID, HallID, SeatRow, SeatNumber, SeatType, Status) VALUES
+(3901, 80, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(3902, 80, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(3903, 80, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(3904, 80, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(3905, 80, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(3906, 80, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(3907, 80, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(3908, 80, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(3909, 80, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(3910, 80, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(3911, 80, N'C', 1, N'VIP', N'AVAILABLE'),
+(3912, 80, N'C', 2, N'VIP', N'AVAILABLE'),
+(3913, 80, N'C', 3, N'VIP', N'AVAILABLE'),
+(3914, 80, N'C', 4, N'VIP', N'AVAILABLE'),
+(3915, 80, N'C', 5, N'VIP', N'AVAILABLE'),
+(3916, 80, N'C', 6, N'VIP', N'AVAILABLE'),
+(3917, 80, N'C', 7, N'VIP', N'AVAILABLE'),
+(3918, 80, N'C', 8, N'VIP', N'AVAILABLE'),
+(3919, 80, N'C', 9, N'VIP', N'AVAILABLE'),
+(3920, 80, N'C', 10, N'VIP', N'AVAILABLE'),
+(3921, 80, N'D', 1, N'VIP', N'AVAILABLE'),
+(3922, 80, N'D', 2, N'VIP', N'AVAILABLE'),
+(3923, 80, N'D', 3, N'VIP', N'AVAILABLE'),
+(3924, 80, N'D', 4, N'VIP', N'AVAILABLE'),
+(3925, 80, N'D', 5, N'VIP', N'AVAILABLE'),
+(3926, 80, N'D', 6, N'VIP', N'AVAILABLE'),
+(3927, 80, N'D', 7, N'VIP', N'AVAILABLE'),
+(3928, 80, N'D', 8, N'VIP', N'AVAILABLE'),
+(3929, 80, N'D', 9, N'VIP', N'AVAILABLE'),
+(3930, 80, N'D', 10, N'VIP', N'AVAILABLE'),
+(3931, 80, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(3932, 80, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(3933, 80, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(3934, 80, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(3935, 80, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(3936, 80, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(3937, 80, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(3938, 80, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(3939, 80, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(3940, 80, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(3941, 81, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(3942, 81, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(3943, 81, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(3944, 81, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(3945, 81, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(3946, 81, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(3947, 81, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(3948, 81, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(3949, 81, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(3950, 81, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(3951, 81, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(3952, 81, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(3953, 81, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(3954, 81, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(3955, 81, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(3956, 81, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(3957, 81, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(3958, 81, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(3959, 81, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(3960, 81, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(3961, 81, N'C', 1, N'VIP', N'AVAILABLE'),
+(3962, 81, N'C', 2, N'VIP', N'AVAILABLE'),
+(3963, 81, N'C', 3, N'VIP', N'AVAILABLE'),
+(3964, 81, N'C', 4, N'VIP', N'AVAILABLE'),
+(3965, 81, N'C', 5, N'VIP', N'AVAILABLE'),
+(3966, 81, N'C', 6, N'VIP', N'AVAILABLE'),
+(3967, 81, N'C', 7, N'VIP', N'AVAILABLE'),
+(3968, 81, N'C', 8, N'VIP', N'AVAILABLE'),
+(3969, 81, N'C', 9, N'VIP', N'AVAILABLE'),
+(3970, 81, N'C', 10, N'VIP', N'AVAILABLE'),
+(3971, 81, N'D', 1, N'VIP', N'AVAILABLE'),
+(3972, 81, N'D', 2, N'VIP', N'AVAILABLE'),
+(3973, 81, N'D', 3, N'VIP', N'AVAILABLE'),
+(3974, 81, N'D', 4, N'VIP', N'AVAILABLE'),
+(3975, 81, N'D', 5, N'VIP', N'AVAILABLE'),
+(3976, 81, N'D', 6, N'VIP', N'AVAILABLE'),
+(3977, 81, N'D', 7, N'VIP', N'AVAILABLE'),
+(3978, 81, N'D', 8, N'VIP', N'AVAILABLE'),
+(3979, 81, N'D', 9, N'VIP', N'AVAILABLE'),
+(3980, 81, N'D', 10, N'VIP', N'AVAILABLE'),
+(3981, 81, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(3982, 81, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(3983, 81, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(3984, 81, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(3985, 81, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(3986, 81, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(3987, 81, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(3988, 81, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(3989, 81, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(3990, 81, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(3991, 82, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(3992, 82, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(3993, 82, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(3994, 82, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(3995, 82, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(3996, 82, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(3997, 82, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(3998, 82, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(3999, 82, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(4000, 82, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(4001, 82, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(4002, 82, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(4003, 82, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(4004, 82, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(4005, 82, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(4006, 82, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(4007, 82, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(4008, 82, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(4009, 82, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(4010, 82, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(4011, 82, N'C', 1, N'VIP', N'AVAILABLE'),
+(4012, 82, N'C', 2, N'VIP', N'AVAILABLE'),
+(4013, 82, N'C', 3, N'VIP', N'AVAILABLE'),
+(4014, 82, N'C', 4, N'VIP', N'AVAILABLE'),
+(4015, 82, N'C', 5, N'VIP', N'AVAILABLE'),
+(4016, 82, N'C', 6, N'VIP', N'AVAILABLE'),
+(4017, 82, N'C', 7, N'VIP', N'AVAILABLE'),
+(4018, 82, N'C', 8, N'VIP', N'AVAILABLE'),
+(4019, 82, N'C', 9, N'VIP', N'AVAILABLE'),
+(4020, 82, N'C', 10, N'VIP', N'AVAILABLE'),
+(4021, 82, N'D', 1, N'VIP', N'AVAILABLE'),
+(4022, 82, N'D', 2, N'VIP', N'AVAILABLE'),
+(4023, 82, N'D', 3, N'VIP', N'AVAILABLE'),
+(4024, 82, N'D', 4, N'VIP', N'AVAILABLE'),
+(4025, 82, N'D', 5, N'VIP', N'AVAILABLE'),
+(4026, 82, N'D', 6, N'VIP', N'AVAILABLE'),
+(4027, 82, N'D', 7, N'VIP', N'AVAILABLE'),
+(4028, 82, N'D', 8, N'VIP', N'AVAILABLE'),
+(4029, 82, N'D', 9, N'VIP', N'AVAILABLE'),
+(4030, 82, N'D', 10, N'VIP', N'AVAILABLE'),
+(4031, 82, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(4032, 82, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(4033, 82, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(4034, 82, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(4035, 82, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(4036, 82, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(4037, 82, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(4038, 82, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(4039, 82, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(4040, 82, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(4041, 83, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(4042, 83, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(4043, 83, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(4044, 83, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(4045, 83, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(4046, 83, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(4047, 83, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(4048, 83, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(4049, 83, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(4050, 83, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(4051, 83, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(4052, 83, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(4053, 83, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(4054, 83, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(4055, 83, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(4056, 83, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(4057, 83, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(4058, 83, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(4059, 83, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(4060, 83, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(4061, 83, N'C', 1, N'VIP', N'AVAILABLE'),
+(4062, 83, N'C', 2, N'VIP', N'AVAILABLE'),
+(4063, 83, N'C', 3, N'VIP', N'AVAILABLE'),
+(4064, 83, N'C', 4, N'VIP', N'AVAILABLE'),
+(4065, 83, N'C', 5, N'VIP', N'AVAILABLE'),
+(4066, 83, N'C', 6, N'VIP', N'AVAILABLE'),
+(4067, 83, N'C', 7, N'VIP', N'AVAILABLE'),
+(4068, 83, N'C', 8, N'VIP', N'AVAILABLE'),
+(4069, 83, N'C', 9, N'VIP', N'AVAILABLE'),
+(4070, 83, N'C', 10, N'VIP', N'AVAILABLE'),
+(4071, 83, N'D', 1, N'VIP', N'AVAILABLE'),
+(4072, 83, N'D', 2, N'VIP', N'AVAILABLE'),
+(4073, 83, N'D', 3, N'VIP', N'AVAILABLE'),
+(4074, 83, N'D', 4, N'VIP', N'AVAILABLE'),
+(4075, 83, N'D', 5, N'VIP', N'AVAILABLE'),
+(4076, 83, N'D', 6, N'VIP', N'AVAILABLE'),
+(4077, 83, N'D', 7, N'VIP', N'AVAILABLE'),
+(4078, 83, N'D', 8, N'VIP', N'AVAILABLE'),
+(4079, 83, N'D', 9, N'VIP', N'AVAILABLE'),
+(4080, 83, N'D', 10, N'VIP', N'AVAILABLE'),
+(4081, 83, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(4082, 83, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(4083, 83, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(4084, 83, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(4085, 83, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(4086, 83, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(4087, 83, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(4088, 83, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(4089, 83, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(4090, 83, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(4091, 84, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(4092, 84, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(4093, 84, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(4094, 84, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(4095, 84, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(4096, 84, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(4097, 84, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(4098, 84, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(4099, 84, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(4100, 84, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(4101, 84, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(4102, 84, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(4103, 84, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(4104, 84, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(4105, 84, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(4106, 84, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(4107, 84, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(4108, 84, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(4109, 84, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(4110, 84, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(4111, 84, N'C', 1, N'VIP', N'AVAILABLE'),
+(4112, 84, N'C', 2, N'VIP', N'AVAILABLE'),
+(4113, 84, N'C', 3, N'VIP', N'AVAILABLE'),
+(4114, 84, N'C', 4, N'VIP', N'AVAILABLE'),
+(4115, 84, N'C', 5, N'VIP', N'AVAILABLE'),
+(4116, 84, N'C', 6, N'VIP', N'AVAILABLE'),
+(4117, 84, N'C', 7, N'VIP', N'AVAILABLE'),
+(4118, 84, N'C', 8, N'VIP', N'AVAILABLE'),
+(4119, 84, N'C', 9, N'VIP', N'AVAILABLE'),
+(4120, 84, N'C', 10, N'VIP', N'AVAILABLE'),
+(4121, 84, N'D', 1, N'VIP', N'AVAILABLE'),
+(4122, 84, N'D', 2, N'VIP', N'AVAILABLE'),
+(4123, 84, N'D', 3, N'VIP', N'AVAILABLE'),
+(4124, 84, N'D', 4, N'VIP', N'AVAILABLE'),
+(4125, 84, N'D', 5, N'VIP', N'AVAILABLE'),
+(4126, 84, N'D', 6, N'VIP', N'AVAILABLE'),
+(4127, 84, N'D', 7, N'VIP', N'AVAILABLE'),
+(4128, 84, N'D', 8, N'VIP', N'AVAILABLE'),
+(4129, 84, N'D', 9, N'VIP', N'AVAILABLE'),
+(4130, 84, N'D', 10, N'VIP', N'AVAILABLE'),
+(4131, 84, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(4132, 84, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(4133, 84, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(4134, 84, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(4135, 84, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(4136, 84, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(4137, 84, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(4138, 84, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(4139, 84, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(4140, 84, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(4141, 85, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(4142, 85, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(4143, 85, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(4144, 85, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(4145, 85, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(4146, 85, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(4147, 85, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(4148, 85, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(4149, 85, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(4150, 85, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(4151, 85, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(4152, 85, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(4153, 85, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(4154, 85, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(4155, 85, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(4156, 85, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(4157, 85, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(4158, 85, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(4159, 85, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(4160, 85, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(4161, 85, N'C', 1, N'VIP', N'AVAILABLE'),
+(4162, 85, N'C', 2, N'VIP', N'AVAILABLE'),
+(4163, 85, N'C', 3, N'VIP', N'AVAILABLE'),
+(4164, 85, N'C', 4, N'VIP', N'AVAILABLE'),
+(4165, 85, N'C', 5, N'VIP', N'AVAILABLE'),
+(4166, 85, N'C', 6, N'VIP', N'AVAILABLE'),
+(4167, 85, N'C', 7, N'VIP', N'AVAILABLE'),
+(4168, 85, N'C', 8, N'VIP', N'AVAILABLE'),
+(4169, 85, N'C', 9, N'VIP', N'AVAILABLE'),
+(4170, 85, N'C', 10, N'VIP', N'AVAILABLE'),
+(4171, 85, N'D', 1, N'VIP', N'AVAILABLE'),
+(4172, 85, N'D', 2, N'VIP', N'AVAILABLE'),
+(4173, 85, N'D', 3, N'VIP', N'AVAILABLE'),
+(4174, 85, N'D', 4, N'VIP', N'AVAILABLE'),
+(4175, 85, N'D', 5, N'VIP', N'AVAILABLE'),
+(4176, 85, N'D', 6, N'VIP', N'AVAILABLE'),
+(4177, 85, N'D', 7, N'VIP', N'AVAILABLE'),
+(4178, 85, N'D', 8, N'VIP', N'AVAILABLE'),
+(4179, 85, N'D', 9, N'VIP', N'AVAILABLE'),
+(4180, 85, N'D', 10, N'VIP', N'AVAILABLE'),
+(4181, 85, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(4182, 85, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(4183, 85, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(4184, 85, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(4185, 85, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(4186, 85, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(4187, 85, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(4188, 85, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(4189, 85, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(4190, 85, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(4191, 86, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(4192, 86, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(4193, 86, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(4194, 86, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(4195, 86, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(4196, 86, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(4197, 86, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(4198, 86, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(4199, 86, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(4200, 86, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(4201, 86, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(4202, 86, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(4203, 86, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(4204, 86, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(4205, 86, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(4206, 86, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(4207, 86, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(4208, 86, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(4209, 86, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(4210, 86, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(4211, 86, N'C', 1, N'VIP', N'AVAILABLE'),
+(4212, 86, N'C', 2, N'VIP', N'AVAILABLE'),
+(4213, 86, N'C', 3, N'VIP', N'AVAILABLE'),
+(4214, 86, N'C', 4, N'VIP', N'AVAILABLE'),
+(4215, 86, N'C', 5, N'VIP', N'AVAILABLE'),
+(4216, 86, N'C', 6, N'VIP', N'AVAILABLE'),
+(4217, 86, N'C', 7, N'VIP', N'AVAILABLE'),
+(4218, 86, N'C', 8, N'VIP', N'AVAILABLE'),
+(4219, 86, N'C', 9, N'VIP', N'AVAILABLE'),
+(4220, 86, N'C', 10, N'VIP', N'AVAILABLE'),
+(4221, 86, N'D', 1, N'VIP', N'AVAILABLE'),
+(4222, 86, N'D', 2, N'VIP', N'AVAILABLE'),
+(4223, 86, N'D', 3, N'VIP', N'AVAILABLE'),
+(4224, 86, N'D', 4, N'VIP', N'AVAILABLE'),
+(4225, 86, N'D', 5, N'VIP', N'AVAILABLE'),
+(4226, 86, N'D', 6, N'VIP', N'AVAILABLE'),
+(4227, 86, N'D', 7, N'VIP', N'AVAILABLE'),
+(4228, 86, N'D', 8, N'VIP', N'AVAILABLE'),
+(4229, 86, N'D', 9, N'VIP', N'AVAILABLE'),
+(4230, 86, N'D', 10, N'VIP', N'AVAILABLE'),
+(4231, 86, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(4232, 86, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(4233, 86, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(4234, 86, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(4235, 86, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(4236, 86, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(4237, 86, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(4238, 86, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(4239, 86, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(4240, 86, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(4241, 87, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(4242, 87, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(4243, 87, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(4244, 87, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(4245, 87, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(4246, 87, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(4247, 87, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(4248, 87, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(4249, 87, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(4250, 87, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(4251, 87, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(4252, 87, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(4253, 87, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(4254, 87, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(4255, 87, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(4256, 87, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(4257, 87, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(4258, 87, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(4259, 87, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(4260, 87, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(4261, 87, N'C', 1, N'VIP', N'AVAILABLE'),
+(4262, 87, N'C', 2, N'VIP', N'AVAILABLE'),
+(4263, 87, N'C', 3, N'VIP', N'AVAILABLE'),
+(4264, 87, N'C', 4, N'VIP', N'AVAILABLE'),
+(4265, 87, N'C', 5, N'VIP', N'AVAILABLE'),
+(4266, 87, N'C', 6, N'VIP', N'AVAILABLE'),
+(4267, 87, N'C', 7, N'VIP', N'AVAILABLE'),
+(4268, 87, N'C', 8, N'VIP', N'AVAILABLE'),
+(4269, 87, N'C', 9, N'VIP', N'AVAILABLE'),
+(4270, 87, N'C', 10, N'VIP', N'AVAILABLE'),
+(4271, 87, N'D', 1, N'VIP', N'AVAILABLE'),
+(4272, 87, N'D', 2, N'VIP', N'AVAILABLE'),
+(4273, 87, N'D', 3, N'VIP', N'AVAILABLE'),
+(4274, 87, N'D', 4, N'VIP', N'AVAILABLE'),
+(4275, 87, N'D', 5, N'VIP', N'AVAILABLE'),
+(4276, 87, N'D', 6, N'VIP', N'AVAILABLE'),
+(4277, 87, N'D', 7, N'VIP', N'AVAILABLE'),
+(4278, 87, N'D', 8, N'VIP', N'AVAILABLE'),
+(4279, 87, N'D', 9, N'VIP', N'AVAILABLE'),
+(4280, 87, N'D', 10, N'VIP', N'AVAILABLE'),
+(4281, 87, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(4282, 87, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(4283, 87, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(4284, 87, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(4285, 87, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(4286, 87, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(4287, 87, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(4288, 87, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(4289, 87, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(4290, 87, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(4291, 88, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(4292, 88, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(4293, 88, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(4294, 88, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(4295, 88, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(4296, 88, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(4297, 88, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(4298, 88, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(4299, 88, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(4300, 88, N'A', 10, N'STANDARD', N'AVAILABLE');
+GO
+INSERT INTO Seats (SeatID, HallID, SeatRow, SeatNumber, SeatType, Status) VALUES
+(4301, 88, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(4302, 88, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(4303, 88, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(4304, 88, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(4305, 88, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(4306, 88, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(4307, 88, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(4308, 88, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(4309, 88, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(4310, 88, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(4311, 88, N'C', 1, N'VIP', N'AVAILABLE'),
+(4312, 88, N'C', 2, N'VIP', N'AVAILABLE'),
+(4313, 88, N'C', 3, N'VIP', N'AVAILABLE'),
+(4314, 88, N'C', 4, N'VIP', N'AVAILABLE'),
+(4315, 88, N'C', 5, N'VIP', N'AVAILABLE'),
+(4316, 88, N'C', 6, N'VIP', N'AVAILABLE'),
+(4317, 88, N'C', 7, N'VIP', N'AVAILABLE'),
+(4318, 88, N'C', 8, N'VIP', N'AVAILABLE'),
+(4319, 88, N'C', 9, N'VIP', N'AVAILABLE'),
+(4320, 88, N'C', 10, N'VIP', N'AVAILABLE'),
+(4321, 88, N'D', 1, N'VIP', N'AVAILABLE'),
+(4322, 88, N'D', 2, N'VIP', N'AVAILABLE'),
+(4323, 88, N'D', 3, N'VIP', N'AVAILABLE'),
+(4324, 88, N'D', 4, N'VIP', N'AVAILABLE'),
+(4325, 88, N'D', 5, N'VIP', N'AVAILABLE'),
+(4326, 88, N'D', 6, N'VIP', N'AVAILABLE'),
+(4327, 88, N'D', 7, N'VIP', N'AVAILABLE'),
+(4328, 88, N'D', 8, N'VIP', N'AVAILABLE'),
+(4329, 88, N'D', 9, N'VIP', N'AVAILABLE'),
+(4330, 88, N'D', 10, N'VIP', N'AVAILABLE'),
+(4331, 88, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(4332, 88, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(4333, 88, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(4334, 88, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(4335, 88, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(4336, 88, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(4337, 88, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(4338, 88, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(4339, 88, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(4340, 88, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(4341, 89, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(4342, 89, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(4343, 89, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(4344, 89, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(4345, 89, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(4346, 89, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(4347, 89, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(4348, 89, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(4349, 89, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(4350, 89, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(4351, 89, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(4352, 89, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(4353, 89, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(4354, 89, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(4355, 89, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(4356, 89, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(4357, 89, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(4358, 89, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(4359, 89, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(4360, 89, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(4361, 89, N'C', 1, N'VIP', N'AVAILABLE'),
+(4362, 89, N'C', 2, N'VIP', N'AVAILABLE'),
+(4363, 89, N'C', 3, N'VIP', N'AVAILABLE'),
+(4364, 89, N'C', 4, N'VIP', N'AVAILABLE'),
+(4365, 89, N'C', 5, N'VIP', N'AVAILABLE'),
+(4366, 89, N'C', 6, N'VIP', N'AVAILABLE'),
+(4367, 89, N'C', 7, N'VIP', N'AVAILABLE'),
+(4368, 89, N'C', 8, N'VIP', N'AVAILABLE'),
+(4369, 89, N'C', 9, N'VIP', N'AVAILABLE'),
+(4370, 89, N'C', 10, N'VIP', N'AVAILABLE'),
+(4371, 89, N'D', 1, N'VIP', N'AVAILABLE'),
+(4372, 89, N'D', 2, N'VIP', N'AVAILABLE'),
+(4373, 89, N'D', 3, N'VIP', N'AVAILABLE'),
+(4374, 89, N'D', 4, N'VIP', N'AVAILABLE'),
+(4375, 89, N'D', 5, N'VIP', N'AVAILABLE'),
+(4376, 89, N'D', 6, N'VIP', N'AVAILABLE'),
+(4377, 89, N'D', 7, N'VIP', N'AVAILABLE'),
+(4378, 89, N'D', 8, N'VIP', N'AVAILABLE'),
+(4379, 89, N'D', 9, N'VIP', N'AVAILABLE'),
+(4380, 89, N'D', 10, N'VIP', N'AVAILABLE'),
+(4381, 89, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(4382, 89, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(4383, 89, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(4384, 89, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(4385, 89, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(4386, 89, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(4387, 89, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(4388, 89, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(4389, 89, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(4390, 89, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(4391, 90, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(4392, 90, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(4393, 90, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(4394, 90, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(4395, 90, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(4396, 90, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(4397, 90, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(4398, 90, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(4399, 90, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(4400, 90, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(4401, 90, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(4402, 90, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(4403, 90, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(4404, 90, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(4405, 90, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(4406, 90, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(4407, 90, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(4408, 90, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(4409, 90, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(4410, 90, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(4411, 90, N'C', 1, N'VIP', N'AVAILABLE'),
+(4412, 90, N'C', 2, N'VIP', N'AVAILABLE'),
+(4413, 90, N'C', 3, N'VIP', N'AVAILABLE'),
+(4414, 90, N'C', 4, N'VIP', N'AVAILABLE'),
+(4415, 90, N'C', 5, N'VIP', N'AVAILABLE'),
+(4416, 90, N'C', 6, N'VIP', N'AVAILABLE'),
+(4417, 90, N'C', 7, N'VIP', N'AVAILABLE'),
+(4418, 90, N'C', 8, N'VIP', N'AVAILABLE'),
+(4419, 90, N'C', 9, N'VIP', N'AVAILABLE'),
+(4420, 90, N'C', 10, N'VIP', N'AVAILABLE'),
+(4421, 90, N'D', 1, N'VIP', N'AVAILABLE'),
+(4422, 90, N'D', 2, N'VIP', N'AVAILABLE'),
+(4423, 90, N'D', 3, N'VIP', N'AVAILABLE'),
+(4424, 90, N'D', 4, N'VIP', N'AVAILABLE'),
+(4425, 90, N'D', 5, N'VIP', N'AVAILABLE'),
+(4426, 90, N'D', 6, N'VIP', N'AVAILABLE'),
+(4427, 90, N'D', 7, N'VIP', N'AVAILABLE'),
+(4428, 90, N'D', 8, N'VIP', N'AVAILABLE'),
+(4429, 90, N'D', 9, N'VIP', N'AVAILABLE'),
+(4430, 90, N'D', 10, N'VIP', N'AVAILABLE'),
+(4431, 90, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(4432, 90, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(4433, 90, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(4434, 90, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(4435, 90, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(4436, 90, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(4437, 90, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(4438, 90, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(4439, 90, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(4440, 90, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(4441, 91, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(4442, 91, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(4443, 91, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(4444, 91, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(4445, 91, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(4446, 91, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(4447, 91, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(4448, 91, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(4449, 91, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(4450, 91, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(4451, 91, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(4452, 91, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(4453, 91, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(4454, 91, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(4455, 91, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(4456, 91, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(4457, 91, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(4458, 91, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(4459, 91, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(4460, 91, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(4461, 91, N'C', 1, N'VIP', N'AVAILABLE'),
+(4462, 91, N'C', 2, N'VIP', N'AVAILABLE'),
+(4463, 91, N'C', 3, N'VIP', N'AVAILABLE'),
+(4464, 91, N'C', 4, N'VIP', N'AVAILABLE'),
+(4465, 91, N'C', 5, N'VIP', N'AVAILABLE'),
+(4466, 91, N'C', 6, N'VIP', N'AVAILABLE'),
+(4467, 91, N'C', 7, N'VIP', N'AVAILABLE'),
+(4468, 91, N'C', 8, N'VIP', N'AVAILABLE'),
+(4469, 91, N'C', 9, N'VIP', N'AVAILABLE'),
+(4470, 91, N'C', 10, N'VIP', N'AVAILABLE'),
+(4471, 91, N'D', 1, N'VIP', N'AVAILABLE'),
+(4472, 91, N'D', 2, N'VIP', N'AVAILABLE'),
+(4473, 91, N'D', 3, N'VIP', N'AVAILABLE'),
+(4474, 91, N'D', 4, N'VIP', N'AVAILABLE'),
+(4475, 91, N'D', 5, N'VIP', N'AVAILABLE'),
+(4476, 91, N'D', 6, N'VIP', N'AVAILABLE'),
+(4477, 91, N'D', 7, N'VIP', N'AVAILABLE'),
+(4478, 91, N'D', 8, N'VIP', N'AVAILABLE'),
+(4479, 91, N'D', 9, N'VIP', N'AVAILABLE'),
+(4480, 91, N'D', 10, N'VIP', N'AVAILABLE'),
+(4481, 91, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(4482, 91, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(4483, 91, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(4484, 91, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(4485, 91, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(4486, 91, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(4487, 91, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(4488, 91, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(4489, 91, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(4490, 91, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(4491, 92, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(4492, 92, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(4493, 92, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(4494, 92, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(4495, 92, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(4496, 92, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(4497, 92, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(4498, 92, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(4499, 92, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(4500, 92, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(4501, 92, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(4502, 92, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(4503, 92, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(4504, 92, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(4505, 92, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(4506, 92, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(4507, 92, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(4508, 92, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(4509, 92, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(4510, 92, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(4511, 92, N'C', 1, N'VIP', N'AVAILABLE'),
+(4512, 92, N'C', 2, N'VIP', N'AVAILABLE'),
+(4513, 92, N'C', 3, N'VIP', N'AVAILABLE'),
+(4514, 92, N'C', 4, N'VIP', N'AVAILABLE'),
+(4515, 92, N'C', 5, N'VIP', N'AVAILABLE'),
+(4516, 92, N'C', 6, N'VIP', N'AVAILABLE'),
+(4517, 92, N'C', 7, N'VIP', N'AVAILABLE'),
+(4518, 92, N'C', 8, N'VIP', N'AVAILABLE'),
+(4519, 92, N'C', 9, N'VIP', N'AVAILABLE'),
+(4520, 92, N'C', 10, N'VIP', N'AVAILABLE'),
+(4521, 92, N'D', 1, N'VIP', N'AVAILABLE'),
+(4522, 92, N'D', 2, N'VIP', N'AVAILABLE'),
+(4523, 92, N'D', 3, N'VIP', N'AVAILABLE'),
+(4524, 92, N'D', 4, N'VIP', N'AVAILABLE'),
+(4525, 92, N'D', 5, N'VIP', N'AVAILABLE'),
+(4526, 92, N'D', 6, N'VIP', N'AVAILABLE'),
+(4527, 92, N'D', 7, N'VIP', N'AVAILABLE'),
+(4528, 92, N'D', 8, N'VIP', N'AVAILABLE'),
+(4529, 92, N'D', 9, N'VIP', N'AVAILABLE'),
+(4530, 92, N'D', 10, N'VIP', N'AVAILABLE'),
+(4531, 92, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(4532, 92, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(4533, 92, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(4534, 92, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(4535, 92, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(4536, 92, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(4537, 92, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(4538, 92, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(4539, 92, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(4540, 92, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(4541, 93, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(4542, 93, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(4543, 93, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(4544, 93, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(4545, 93, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(4546, 93, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(4547, 93, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(4548, 93, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(4549, 93, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(4550, 93, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(4551, 93, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(4552, 93, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(4553, 93, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(4554, 93, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(4555, 93, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(4556, 93, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(4557, 93, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(4558, 93, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(4559, 93, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(4560, 93, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(4561, 93, N'C', 1, N'VIP', N'AVAILABLE'),
+(4562, 93, N'C', 2, N'VIP', N'AVAILABLE'),
+(4563, 93, N'C', 3, N'VIP', N'AVAILABLE'),
+(4564, 93, N'C', 4, N'VIP', N'AVAILABLE'),
+(4565, 93, N'C', 5, N'VIP', N'AVAILABLE'),
+(4566, 93, N'C', 6, N'VIP', N'AVAILABLE'),
+(4567, 93, N'C', 7, N'VIP', N'AVAILABLE'),
+(4568, 93, N'C', 8, N'VIP', N'AVAILABLE'),
+(4569, 93, N'C', 9, N'VIP', N'AVAILABLE'),
+(4570, 93, N'C', 10, N'VIP', N'AVAILABLE'),
+(4571, 93, N'D', 1, N'VIP', N'AVAILABLE'),
+(4572, 93, N'D', 2, N'VIP', N'AVAILABLE'),
+(4573, 93, N'D', 3, N'VIP', N'AVAILABLE'),
+(4574, 93, N'D', 4, N'VIP', N'AVAILABLE'),
+(4575, 93, N'D', 5, N'VIP', N'AVAILABLE'),
+(4576, 93, N'D', 6, N'VIP', N'AVAILABLE'),
+(4577, 93, N'D', 7, N'VIP', N'AVAILABLE'),
+(4578, 93, N'D', 8, N'VIP', N'AVAILABLE'),
+(4579, 93, N'D', 9, N'VIP', N'AVAILABLE'),
+(4580, 93, N'D', 10, N'VIP', N'AVAILABLE'),
+(4581, 93, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(4582, 93, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(4583, 93, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(4584, 93, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(4585, 93, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(4586, 93, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(4587, 93, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(4588, 93, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(4589, 93, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(4590, 93, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(4591, 94, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(4592, 94, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(4593, 94, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(4594, 94, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(4595, 94, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(4596, 94, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(4597, 94, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(4598, 94, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(4599, 94, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(4600, 94, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(4601, 94, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(4602, 94, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(4603, 94, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(4604, 94, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(4605, 94, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(4606, 94, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(4607, 94, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(4608, 94, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(4609, 94, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(4610, 94, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(4611, 94, N'C', 1, N'VIP', N'AVAILABLE'),
+(4612, 94, N'C', 2, N'VIP', N'AVAILABLE'),
+(4613, 94, N'C', 3, N'VIP', N'AVAILABLE'),
+(4614, 94, N'C', 4, N'VIP', N'AVAILABLE'),
+(4615, 94, N'C', 5, N'VIP', N'AVAILABLE'),
+(4616, 94, N'C', 6, N'VIP', N'AVAILABLE'),
+(4617, 94, N'C', 7, N'VIP', N'AVAILABLE'),
+(4618, 94, N'C', 8, N'VIP', N'AVAILABLE'),
+(4619, 94, N'C', 9, N'VIP', N'AVAILABLE'),
+(4620, 94, N'C', 10, N'VIP', N'AVAILABLE'),
+(4621, 94, N'D', 1, N'VIP', N'AVAILABLE'),
+(4622, 94, N'D', 2, N'VIP', N'AVAILABLE'),
+(4623, 94, N'D', 3, N'VIP', N'AVAILABLE'),
+(4624, 94, N'D', 4, N'VIP', N'AVAILABLE'),
+(4625, 94, N'D', 5, N'VIP', N'AVAILABLE'),
+(4626, 94, N'D', 6, N'VIP', N'AVAILABLE'),
+(4627, 94, N'D', 7, N'VIP', N'AVAILABLE'),
+(4628, 94, N'D', 8, N'VIP', N'AVAILABLE'),
+(4629, 94, N'D', 9, N'VIP', N'AVAILABLE'),
+(4630, 94, N'D', 10, N'VIP', N'AVAILABLE'),
+(4631, 94, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(4632, 94, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(4633, 94, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(4634, 94, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(4635, 94, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(4636, 94, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(4637, 94, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(4638, 94, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(4639, 94, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(4640, 94, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(4641, 95, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(4642, 95, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(4643, 95, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(4644, 95, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(4645, 95, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(4646, 95, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(4647, 95, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(4648, 95, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(4649, 95, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(4650, 95, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(4651, 95, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(4652, 95, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(4653, 95, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(4654, 95, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(4655, 95, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(4656, 95, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(4657, 95, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(4658, 95, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(4659, 95, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(4660, 95, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(4661, 95, N'C', 1, N'VIP', N'AVAILABLE'),
+(4662, 95, N'C', 2, N'VIP', N'AVAILABLE'),
+(4663, 95, N'C', 3, N'VIP', N'AVAILABLE'),
+(4664, 95, N'C', 4, N'VIP', N'AVAILABLE'),
+(4665, 95, N'C', 5, N'VIP', N'AVAILABLE'),
+(4666, 95, N'C', 6, N'VIP', N'AVAILABLE'),
+(4667, 95, N'C', 7, N'VIP', N'AVAILABLE'),
+(4668, 95, N'C', 8, N'VIP', N'AVAILABLE'),
+(4669, 95, N'C', 9, N'VIP', N'AVAILABLE'),
+(4670, 95, N'C', 10, N'VIP', N'AVAILABLE'),
+(4671, 95, N'D', 1, N'VIP', N'AVAILABLE'),
+(4672, 95, N'D', 2, N'VIP', N'AVAILABLE'),
+(4673, 95, N'D', 3, N'VIP', N'AVAILABLE'),
+(4674, 95, N'D', 4, N'VIP', N'AVAILABLE'),
+(4675, 95, N'D', 5, N'VIP', N'AVAILABLE'),
+(4676, 95, N'D', 6, N'VIP', N'AVAILABLE'),
+(4677, 95, N'D', 7, N'VIP', N'AVAILABLE'),
+(4678, 95, N'D', 8, N'VIP', N'AVAILABLE'),
+(4679, 95, N'D', 9, N'VIP', N'AVAILABLE'),
+(4680, 95, N'D', 10, N'VIP', N'AVAILABLE'),
+(4681, 95, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(4682, 95, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(4683, 95, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(4684, 95, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(4685, 95, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(4686, 95, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(4687, 95, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(4688, 95, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(4689, 95, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(4690, 95, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(4691, 96, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(4692, 96, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(4693, 96, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(4694, 96, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(4695, 96, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(4696, 96, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(4697, 96, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(4698, 96, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(4699, 96, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(4700, 96, N'A', 10, N'STANDARD', N'AVAILABLE');
+GO
+INSERT INTO Seats (SeatID, HallID, SeatRow, SeatNumber, SeatType, Status) VALUES
+(4701, 96, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(4702, 96, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(4703, 96, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(4704, 96, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(4705, 96, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(4706, 96, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(4707, 96, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(4708, 96, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(4709, 96, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(4710, 96, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(4711, 96, N'C', 1, N'VIP', N'AVAILABLE'),
+(4712, 96, N'C', 2, N'VIP', N'AVAILABLE'),
+(4713, 96, N'C', 3, N'VIP', N'AVAILABLE'),
+(4714, 96, N'C', 4, N'VIP', N'AVAILABLE'),
+(4715, 96, N'C', 5, N'VIP', N'AVAILABLE'),
+(4716, 96, N'C', 6, N'VIP', N'AVAILABLE'),
+(4717, 96, N'C', 7, N'VIP', N'AVAILABLE'),
+(4718, 96, N'C', 8, N'VIP', N'AVAILABLE'),
+(4719, 96, N'C', 9, N'VIP', N'AVAILABLE'),
+(4720, 96, N'C', 10, N'VIP', N'AVAILABLE'),
+(4721, 96, N'D', 1, N'VIP', N'AVAILABLE'),
+(4722, 96, N'D', 2, N'VIP', N'AVAILABLE'),
+(4723, 96, N'D', 3, N'VIP', N'AVAILABLE'),
+(4724, 96, N'D', 4, N'VIP', N'AVAILABLE'),
+(4725, 96, N'D', 5, N'VIP', N'AVAILABLE'),
+(4726, 96, N'D', 6, N'VIP', N'AVAILABLE'),
+(4727, 96, N'D', 7, N'VIP', N'AVAILABLE'),
+(4728, 96, N'D', 8, N'VIP', N'AVAILABLE'),
+(4729, 96, N'D', 9, N'VIP', N'AVAILABLE'),
+(4730, 96, N'D', 10, N'VIP', N'AVAILABLE'),
+(4731, 96, N'E', 1, N'STANDARD', N'AVAILABLE'),
+(4732, 96, N'E', 2, N'STANDARD', N'AVAILABLE'),
+(4733, 96, N'E', 3, N'STANDARD', N'AVAILABLE'),
+(4734, 96, N'E', 4, N'STANDARD', N'AVAILABLE'),
+(4735, 96, N'E', 5, N'SWEETBOX', N'AVAILABLE'),
+(4736, 96, N'E', 6, N'SWEETBOX', N'AVAILABLE'),
+(4737, 96, N'E', 7, N'STANDARD', N'AVAILABLE'),
+(4738, 96, N'E', 8, N'STANDARD', N'AVAILABLE'),
+(4739, 96, N'E', 9, N'STANDARD', N'AVAILABLE'),
+(4740, 96, N'E', 10, N'STANDARD', N'AVAILABLE'),
+(4741, 97, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(4742, 97, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(4743, 97, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(4744, 97, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(4745, 97, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(4746, 97, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(4747, 97, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(4748, 97, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(4749, 97, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(4750, 97, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(4751, 97, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(4752, 97, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(4753, 97, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(4754, 97, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(4755, 97, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(4756, 97, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(4757, 97, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(4758, 97, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(4759, 97, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(4760, 97, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(4761, 97, N'C', 1, N'STANDARD', N'AVAILABLE'),
+(4762, 97, N'C', 2, N'STANDARD', N'AVAILABLE'),
+(4763, 97, N'C', 3, N'STANDARD', N'AVAILABLE'),
+(4764, 97, N'C', 4, N'STANDARD', N'AVAILABLE'),
+(4765, 97, N'C', 5, N'STANDARD', N'AVAILABLE'),
+(4766, 97, N'C', 6, N'STANDARD', N'AVAILABLE'),
+(4767, 97, N'C', 7, N'STANDARD', N'AVAILABLE'),
+(4768, 97, N'C', 8, N'STANDARD', N'AVAILABLE'),
+(4769, 97, N'C', 9, N'STANDARD', N'AVAILABLE'),
+(4770, 97, N'C', 10, N'STANDARD', N'AVAILABLE'),
+(4771, 97, N'D', 1, N'VIP', N'AVAILABLE'),
+(4772, 97, N'D', 2, N'VIP', N'AVAILABLE'),
+(4773, 97, N'D', 3, N'VIP', N'AVAILABLE'),
+(4774, 97, N'D', 4, N'VIP', N'AVAILABLE'),
+(4775, 97, N'D', 5, N'VIP', N'AVAILABLE'),
+(4776, 97, N'D', 6, N'VIP', N'AVAILABLE'),
+(4777, 97, N'D', 7, N'VIP', N'AVAILABLE'),
+(4778, 97, N'D', 8, N'VIP', N'AVAILABLE'),
+(4779, 97, N'D', 9, N'VIP', N'AVAILABLE'),
+(4780, 97, N'D', 10, N'VIP', N'AVAILABLE'),
+(4781, 97, N'E', 1, N'VIP', N'AVAILABLE'),
+(4782, 97, N'E', 2, N'VIP', N'AVAILABLE'),
+(4783, 97, N'E', 3, N'VIP', N'AVAILABLE'),
+(4784, 97, N'E', 4, N'VIP', N'AVAILABLE'),
+(4785, 97, N'E', 5, N'VIP', N'AVAILABLE'),
+(4786, 97, N'E', 6, N'VIP', N'AVAILABLE'),
+(4787, 97, N'E', 7, N'VIP', N'AVAILABLE'),
+(4788, 97, N'E', 8, N'VIP', N'AVAILABLE'),
+(4789, 97, N'E', 9, N'VIP', N'AVAILABLE'),
+(4790, 97, N'E', 10, N'VIP', N'AVAILABLE'),
+(4791, 98, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(4792, 98, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(4793, 98, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(4794, 98, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(4795, 98, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(4796, 98, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(4797, 98, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(4798, 98, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(4799, 98, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(4800, 98, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(4801, 98, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(4802, 98, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(4803, 98, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(4804, 98, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(4805, 98, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(4806, 98, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(4807, 98, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(4808, 98, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(4809, 98, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(4810, 98, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(4811, 98, N'C', 1, N'STANDARD', N'AVAILABLE'),
+(4812, 98, N'C', 2, N'STANDARD', N'AVAILABLE'),
+(4813, 98, N'C', 3, N'STANDARD', N'AVAILABLE'),
+(4814, 98, N'C', 4, N'STANDARD', N'AVAILABLE'),
+(4815, 98, N'C', 5, N'STANDARD', N'AVAILABLE'),
+(4816, 98, N'C', 6, N'STANDARD', N'AVAILABLE'),
+(4817, 98, N'C', 7, N'STANDARD', N'AVAILABLE'),
+(4818, 98, N'C', 8, N'STANDARD', N'AVAILABLE'),
+(4819, 98, N'C', 9, N'STANDARD', N'AVAILABLE'),
+(4820, 98, N'C', 10, N'STANDARD', N'AVAILABLE'),
+(4821, 98, N'D', 1, N'VIP', N'AVAILABLE'),
+(4822, 98, N'D', 2, N'VIP', N'AVAILABLE'),
+(4823, 98, N'D', 3, N'VIP', N'AVAILABLE'),
+(4824, 98, N'D', 4, N'VIP', N'AVAILABLE'),
+(4825, 98, N'D', 5, N'VIP', N'AVAILABLE'),
+(4826, 98, N'D', 6, N'VIP', N'AVAILABLE'),
+(4827, 98, N'D', 7, N'VIP', N'AVAILABLE'),
+(4828, 98, N'D', 8, N'VIP', N'AVAILABLE'),
+(4829, 98, N'D', 9, N'VIP', N'AVAILABLE'),
+(4830, 98, N'D', 10, N'VIP', N'AVAILABLE'),
+(4831, 98, N'E', 1, N'VIP', N'AVAILABLE'),
+(4832, 98, N'E', 2, N'VIP', N'AVAILABLE'),
+(4833, 98, N'E', 3, N'VIP', N'AVAILABLE'),
+(4834, 98, N'E', 4, N'VIP', N'AVAILABLE'),
+(4835, 98, N'E', 5, N'VIP', N'AVAILABLE'),
+(4836, 98, N'E', 6, N'VIP', N'AVAILABLE'),
+(4837, 98, N'E', 7, N'VIP', N'AVAILABLE'),
+(4838, 98, N'E', 8, N'VIP', N'AVAILABLE'),
+(4839, 98, N'E', 9, N'VIP', N'AVAILABLE'),
+(4840, 98, N'E', 10, N'VIP', N'AVAILABLE'),
+(4841, 99, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(4842, 99, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(4843, 99, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(4844, 99, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(4845, 99, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(4846, 99, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(4847, 99, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(4848, 99, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(4849, 99, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(4850, 99, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(4851, 99, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(4852, 99, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(4853, 99, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(4854, 99, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(4855, 99, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(4856, 99, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(4857, 99, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(4858, 99, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(4859, 99, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(4860, 99, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(4861, 99, N'C', 1, N'STANDARD', N'AVAILABLE'),
+(4862, 99, N'C', 2, N'STANDARD', N'AVAILABLE'),
+(4863, 99, N'C', 3, N'STANDARD', N'AVAILABLE'),
+(4864, 99, N'C', 4, N'STANDARD', N'AVAILABLE'),
+(4865, 99, N'C', 5, N'STANDARD', N'AVAILABLE'),
+(4866, 99, N'C', 6, N'STANDARD', N'AVAILABLE'),
+(4867, 99, N'C', 7, N'STANDARD', N'AVAILABLE'),
+(4868, 99, N'C', 8, N'STANDARD', N'AVAILABLE'),
+(4869, 99, N'C', 9, N'STANDARD', N'AVAILABLE'),
+(4870, 99, N'C', 10, N'STANDARD', N'AVAILABLE'),
+(4871, 99, N'D', 1, N'VIP', N'AVAILABLE'),
+(4872, 99, N'D', 2, N'VIP', N'AVAILABLE'),
+(4873, 99, N'D', 3, N'VIP', N'AVAILABLE'),
+(4874, 99, N'D', 4, N'VIP', N'AVAILABLE'),
+(4875, 99, N'D', 5, N'VIP', N'AVAILABLE'),
+(4876, 99, N'D', 6, N'VIP', N'AVAILABLE'),
+(4877, 99, N'D', 7, N'VIP', N'AVAILABLE'),
+(4878, 99, N'D', 8, N'VIP', N'AVAILABLE'),
+(4879, 99, N'D', 9, N'VIP', N'AVAILABLE'),
+(4880, 99, N'D', 10, N'VIP', N'AVAILABLE'),
+(4881, 99, N'E', 1, N'VIP', N'AVAILABLE'),
+(4882, 99, N'E', 2, N'VIP', N'AVAILABLE'),
+(4883, 99, N'E', 3, N'VIP', N'AVAILABLE'),
+(4884, 99, N'E', 4, N'VIP', N'AVAILABLE'),
+(4885, 99, N'E', 5, N'VIP', N'AVAILABLE'),
+(4886, 99, N'E', 6, N'VIP', N'AVAILABLE'),
+(4887, 99, N'E', 7, N'VIP', N'AVAILABLE'),
+(4888, 99, N'E', 8, N'VIP', N'AVAILABLE'),
+(4889, 99, N'E', 9, N'VIP', N'AVAILABLE'),
+(4890, 99, N'E', 10, N'VIP', N'AVAILABLE'),
+(4891, 100, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(4892, 100, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(4893, 100, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(4894, 100, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(4895, 100, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(4896, 100, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(4897, 100, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(4898, 100, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(4899, 100, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(4900, 100, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(4901, 100, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(4902, 100, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(4903, 100, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(4904, 100, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(4905, 100, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(4906, 100, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(4907, 100, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(4908, 100, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(4909, 100, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(4910, 100, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(4911, 100, N'C', 1, N'STANDARD', N'AVAILABLE'),
+(4912, 100, N'C', 2, N'STANDARD', N'AVAILABLE'),
+(4913, 100, N'C', 3, N'STANDARD', N'AVAILABLE'),
+(4914, 100, N'C', 4, N'STANDARD', N'AVAILABLE'),
+(4915, 100, N'C', 5, N'STANDARD', N'AVAILABLE'),
+(4916, 100, N'C', 6, N'STANDARD', N'AVAILABLE'),
+(4917, 100, N'C', 7, N'STANDARD', N'AVAILABLE'),
+(4918, 100, N'C', 8, N'STANDARD', N'AVAILABLE'),
+(4919, 100, N'C', 9, N'STANDARD', N'AVAILABLE'),
+(4920, 100, N'C', 10, N'STANDARD', N'AVAILABLE'),
+(4921, 100, N'D', 1, N'VIP', N'AVAILABLE'),
+(4922, 100, N'D', 2, N'VIP', N'AVAILABLE'),
+(4923, 100, N'D', 3, N'VIP', N'AVAILABLE'),
+(4924, 100, N'D', 4, N'VIP', N'AVAILABLE'),
+(4925, 100, N'D', 5, N'VIP', N'AVAILABLE'),
+(4926, 100, N'D', 6, N'VIP', N'AVAILABLE'),
+(4927, 100, N'D', 7, N'VIP', N'AVAILABLE'),
+(4928, 100, N'D', 8, N'VIP', N'AVAILABLE'),
+(4929, 100, N'D', 9, N'VIP', N'AVAILABLE'),
+(4930, 100, N'D', 10, N'VIP', N'AVAILABLE'),
+(4931, 100, N'E', 1, N'VIP', N'AVAILABLE'),
+(4932, 100, N'E', 2, N'VIP', N'AVAILABLE'),
+(4933, 100, N'E', 3, N'VIP', N'AVAILABLE'),
+(4934, 100, N'E', 4, N'VIP', N'AVAILABLE'),
+(4935, 100, N'E', 5, N'VIP', N'AVAILABLE'),
+(4936, 100, N'E', 6, N'VIP', N'AVAILABLE'),
+(4937, 100, N'E', 7, N'VIP', N'AVAILABLE'),
+(4938, 100, N'E', 8, N'VIP', N'AVAILABLE'),
+(4939, 100, N'E', 9, N'VIP', N'AVAILABLE'),
+(4940, 100, N'E', 10, N'VIP', N'AVAILABLE'),
+(4941, 101, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(4942, 101, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(4943, 101, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(4944, 101, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(4945, 101, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(4946, 101, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(4947, 101, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(4948, 101, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(4949, 101, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(4950, 101, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(4951, 101, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(4952, 101, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(4953, 101, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(4954, 101, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(4955, 101, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(4956, 101, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(4957, 101, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(4958, 101, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(4959, 101, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(4960, 101, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(4961, 101, N'C', 1, N'STANDARD', N'AVAILABLE'),
+(4962, 101, N'C', 2, N'STANDARD', N'AVAILABLE'),
+(4963, 101, N'C', 3, N'STANDARD', N'AVAILABLE'),
+(4964, 101, N'C', 4, N'STANDARD', N'AVAILABLE'),
+(4965, 101, N'C', 5, N'STANDARD', N'AVAILABLE'),
+(4966, 101, N'C', 6, N'STANDARD', N'AVAILABLE'),
+(4967, 101, N'C', 7, N'STANDARD', N'AVAILABLE'),
+(4968, 101, N'C', 8, N'STANDARD', N'AVAILABLE'),
+(4969, 101, N'C', 9, N'STANDARD', N'AVAILABLE'),
+(4970, 101, N'C', 10, N'STANDARD', N'AVAILABLE'),
+(4971, 101, N'D', 1, N'VIP', N'AVAILABLE'),
+(4972, 101, N'D', 2, N'VIP', N'AVAILABLE'),
+(4973, 101, N'D', 3, N'VIP', N'AVAILABLE'),
+(4974, 101, N'D', 4, N'VIP', N'AVAILABLE'),
+(4975, 101, N'D', 5, N'VIP', N'AVAILABLE'),
+(4976, 101, N'D', 6, N'VIP', N'AVAILABLE'),
+(4977, 101, N'D', 7, N'VIP', N'AVAILABLE'),
+(4978, 101, N'D', 8, N'VIP', N'AVAILABLE'),
+(4979, 101, N'D', 9, N'VIP', N'AVAILABLE'),
+(4980, 101, N'D', 10, N'VIP', N'AVAILABLE'),
+(4981, 101, N'E', 1, N'VIP', N'AVAILABLE'),
+(4982, 101, N'E', 2, N'VIP', N'AVAILABLE'),
+(4983, 101, N'E', 3, N'VIP', N'AVAILABLE'),
+(4984, 101, N'E', 4, N'VIP', N'AVAILABLE'),
+(4985, 101, N'E', 5, N'VIP', N'AVAILABLE'),
+(4986, 101, N'E', 6, N'VIP', N'AVAILABLE'),
+(4987, 101, N'E', 7, N'VIP', N'AVAILABLE'),
+(4988, 101, N'E', 8, N'VIP', N'AVAILABLE'),
+(4989, 101, N'E', 9, N'VIP', N'AVAILABLE'),
+(4990, 101, N'E', 10, N'VIP', N'AVAILABLE'),
+(4991, 102, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(4992, 102, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(4993, 102, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(4994, 102, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(4995, 102, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(4996, 102, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(4997, 102, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(4998, 102, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(4999, 102, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(5000, 102, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(5001, 102, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(5002, 102, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(5003, 102, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(5004, 102, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(5005, 102, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(5006, 102, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(5007, 102, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(5008, 102, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(5009, 102, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(5010, 102, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(5011, 102, N'C', 1, N'STANDARD', N'AVAILABLE'),
+(5012, 102, N'C', 2, N'STANDARD', N'AVAILABLE'),
+(5013, 102, N'C', 3, N'STANDARD', N'AVAILABLE'),
+(5014, 102, N'C', 4, N'STANDARD', N'AVAILABLE'),
+(5015, 102, N'C', 5, N'STANDARD', N'AVAILABLE'),
+(5016, 102, N'C', 6, N'STANDARD', N'AVAILABLE'),
+(5017, 102, N'C', 7, N'STANDARD', N'AVAILABLE'),
+(5018, 102, N'C', 8, N'STANDARD', N'AVAILABLE'),
+(5019, 102, N'C', 9, N'STANDARD', N'AVAILABLE'),
+(5020, 102, N'C', 10, N'STANDARD', N'AVAILABLE'),
+(5021, 102, N'D', 1, N'VIP', N'AVAILABLE'),
+(5022, 102, N'D', 2, N'VIP', N'AVAILABLE'),
+(5023, 102, N'D', 3, N'VIP', N'AVAILABLE'),
+(5024, 102, N'D', 4, N'VIP', N'AVAILABLE'),
+(5025, 102, N'D', 5, N'VIP', N'AVAILABLE'),
+(5026, 102, N'D', 6, N'VIP', N'AVAILABLE'),
+(5027, 102, N'D', 7, N'VIP', N'AVAILABLE'),
+(5028, 102, N'D', 8, N'VIP', N'AVAILABLE'),
+(5029, 102, N'D', 9, N'VIP', N'AVAILABLE'),
+(5030, 102, N'D', 10, N'VIP', N'AVAILABLE'),
+(5031, 102, N'E', 1, N'VIP', N'AVAILABLE'),
+(5032, 102, N'E', 2, N'VIP', N'AVAILABLE'),
+(5033, 102, N'E', 3, N'VIP', N'AVAILABLE'),
+(5034, 102, N'E', 4, N'VIP', N'AVAILABLE'),
+(5035, 102, N'E', 5, N'VIP', N'AVAILABLE'),
+(5036, 102, N'E', 6, N'VIP', N'AVAILABLE'),
+(5037, 102, N'E', 7, N'VIP', N'AVAILABLE'),
+(5038, 102, N'E', 8, N'VIP', N'AVAILABLE'),
+(5039, 102, N'E', 9, N'VIP', N'AVAILABLE'),
+(5040, 102, N'E', 10, N'VIP', N'AVAILABLE'),
+(5041, 103, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(5042, 103, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(5043, 103, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(5044, 103, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(5045, 103, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(5046, 103, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(5047, 103, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(5048, 103, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(5049, 103, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(5050, 103, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(5051, 103, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(5052, 103, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(5053, 103, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(5054, 103, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(5055, 103, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(5056, 103, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(5057, 103, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(5058, 103, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(5059, 103, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(5060, 103, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(5061, 103, N'C', 1, N'STANDARD', N'AVAILABLE'),
+(5062, 103, N'C', 2, N'STANDARD', N'AVAILABLE'),
+(5063, 103, N'C', 3, N'STANDARD', N'AVAILABLE'),
+(5064, 103, N'C', 4, N'STANDARD', N'AVAILABLE'),
+(5065, 103, N'C', 5, N'STANDARD', N'AVAILABLE'),
+(5066, 103, N'C', 6, N'STANDARD', N'AVAILABLE'),
+(5067, 103, N'C', 7, N'STANDARD', N'AVAILABLE'),
+(5068, 103, N'C', 8, N'STANDARD', N'AVAILABLE'),
+(5069, 103, N'C', 9, N'STANDARD', N'AVAILABLE'),
+(5070, 103, N'C', 10, N'STANDARD', N'AVAILABLE'),
+(5071, 103, N'D', 1, N'VIP', N'AVAILABLE'),
+(5072, 103, N'D', 2, N'VIP', N'AVAILABLE'),
+(5073, 103, N'D', 3, N'VIP', N'AVAILABLE'),
+(5074, 103, N'D', 4, N'VIP', N'AVAILABLE'),
+(5075, 103, N'D', 5, N'VIP', N'AVAILABLE'),
+(5076, 103, N'D', 6, N'VIP', N'AVAILABLE'),
+(5077, 103, N'D', 7, N'VIP', N'AVAILABLE'),
+(5078, 103, N'D', 8, N'VIP', N'AVAILABLE'),
+(5079, 103, N'D', 9, N'VIP', N'AVAILABLE'),
+(5080, 103, N'D', 10, N'VIP', N'AVAILABLE'),
+(5081, 103, N'E', 1, N'VIP', N'AVAILABLE'),
+(5082, 103, N'E', 2, N'VIP', N'AVAILABLE'),
+(5083, 103, N'E', 3, N'VIP', N'AVAILABLE'),
+(5084, 103, N'E', 4, N'VIP', N'AVAILABLE'),
+(5085, 103, N'E', 5, N'VIP', N'AVAILABLE'),
+(5086, 103, N'E', 6, N'VIP', N'AVAILABLE'),
+(5087, 103, N'E', 7, N'VIP', N'AVAILABLE'),
+(5088, 103, N'E', 8, N'VIP', N'AVAILABLE'),
+(5089, 103, N'E', 9, N'VIP', N'AVAILABLE'),
+(5090, 103, N'E', 10, N'VIP', N'AVAILABLE'),
+(5091, 104, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(5092, 104, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(5093, 104, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(5094, 104, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(5095, 104, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(5096, 104, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(5097, 104, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(5098, 104, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(5099, 104, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(5100, 104, N'A', 10, N'STANDARD', N'AVAILABLE');
+GO
+INSERT INTO Seats (SeatID, HallID, SeatRow, SeatNumber, SeatType, Status) VALUES
+(5101, 104, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(5102, 104, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(5103, 104, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(5104, 104, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(5105, 104, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(5106, 104, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(5107, 104, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(5108, 104, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(5109, 104, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(5110, 104, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(5111, 104, N'C', 1, N'STANDARD', N'AVAILABLE'),
+(5112, 104, N'C', 2, N'STANDARD', N'AVAILABLE'),
+(5113, 104, N'C', 3, N'STANDARD', N'AVAILABLE'),
+(5114, 104, N'C', 4, N'STANDARD', N'AVAILABLE'),
+(5115, 104, N'C', 5, N'STANDARD', N'AVAILABLE'),
+(5116, 104, N'C', 6, N'STANDARD', N'AVAILABLE'),
+(5117, 104, N'C', 7, N'STANDARD', N'AVAILABLE'),
+(5118, 104, N'C', 8, N'STANDARD', N'AVAILABLE'),
+(5119, 104, N'C', 9, N'STANDARD', N'AVAILABLE'),
+(5120, 104, N'C', 10, N'STANDARD', N'AVAILABLE'),
+(5121, 104, N'D', 1, N'VIP', N'AVAILABLE'),
+(5122, 104, N'D', 2, N'VIP', N'AVAILABLE'),
+(5123, 104, N'D', 3, N'VIP', N'AVAILABLE'),
+(5124, 104, N'D', 4, N'VIP', N'AVAILABLE'),
+(5125, 104, N'D', 5, N'VIP', N'AVAILABLE'),
+(5126, 104, N'D', 6, N'VIP', N'AVAILABLE'),
+(5127, 104, N'D', 7, N'VIP', N'AVAILABLE'),
+(5128, 104, N'D', 8, N'VIP', N'AVAILABLE'),
+(5129, 104, N'D', 9, N'VIP', N'AVAILABLE'),
+(5130, 104, N'D', 10, N'VIP', N'AVAILABLE'),
+(5131, 104, N'E', 1, N'VIP', N'AVAILABLE'),
+(5132, 104, N'E', 2, N'VIP', N'AVAILABLE'),
+(5133, 104, N'E', 3, N'VIP', N'AVAILABLE'),
+(5134, 104, N'E', 4, N'VIP', N'AVAILABLE'),
+(5135, 104, N'E', 5, N'VIP', N'AVAILABLE'),
+(5136, 104, N'E', 6, N'VIP', N'AVAILABLE'),
+(5137, 104, N'E', 7, N'VIP', N'AVAILABLE'),
+(5138, 104, N'E', 8, N'VIP', N'AVAILABLE'),
+(5139, 104, N'E', 9, N'VIP', N'AVAILABLE'),
+(5140, 104, N'E', 10, N'VIP', N'AVAILABLE'),
+(5141, 105, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(5142, 105, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(5143, 105, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(5144, 105, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(5145, 105, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(5146, 105, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(5147, 105, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(5148, 105, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(5149, 105, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(5150, 105, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(5151, 105, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(5152, 105, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(5153, 105, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(5154, 105, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(5155, 105, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(5156, 105, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(5157, 105, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(5158, 105, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(5159, 105, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(5160, 105, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(5161, 105, N'C', 1, N'STANDARD', N'AVAILABLE'),
+(5162, 105, N'C', 2, N'STANDARD', N'AVAILABLE'),
+(5163, 105, N'C', 3, N'STANDARD', N'AVAILABLE'),
+(5164, 105, N'C', 4, N'STANDARD', N'AVAILABLE'),
+(5165, 105, N'C', 5, N'STANDARD', N'AVAILABLE'),
+(5166, 105, N'C', 6, N'STANDARD', N'AVAILABLE'),
+(5167, 105, N'C', 7, N'STANDARD', N'AVAILABLE'),
+(5168, 105, N'C', 8, N'STANDARD', N'AVAILABLE'),
+(5169, 105, N'C', 9, N'STANDARD', N'AVAILABLE'),
+(5170, 105, N'C', 10, N'STANDARD', N'AVAILABLE'),
+(5171, 105, N'D', 1, N'VIP', N'AVAILABLE'),
+(5172, 105, N'D', 2, N'VIP', N'AVAILABLE'),
+(5173, 105, N'D', 3, N'VIP', N'AVAILABLE'),
+(5174, 105, N'D', 4, N'VIP', N'AVAILABLE'),
+(5175, 105, N'D', 5, N'VIP', N'AVAILABLE'),
+(5176, 105, N'D', 6, N'VIP', N'AVAILABLE'),
+(5177, 105, N'D', 7, N'VIP', N'AVAILABLE'),
+(5178, 105, N'D', 8, N'VIP', N'AVAILABLE'),
+(5179, 105, N'D', 9, N'VIP', N'AVAILABLE'),
+(5180, 105, N'D', 10, N'VIP', N'AVAILABLE'),
+(5181, 105, N'E', 1, N'VIP', N'AVAILABLE'),
+(5182, 105, N'E', 2, N'VIP', N'AVAILABLE'),
+(5183, 105, N'E', 3, N'VIP', N'AVAILABLE'),
+(5184, 105, N'E', 4, N'VIP', N'AVAILABLE'),
+(5185, 105, N'E', 5, N'VIP', N'AVAILABLE'),
+(5186, 105, N'E', 6, N'VIP', N'AVAILABLE'),
+(5187, 105, N'E', 7, N'VIP', N'AVAILABLE'),
+(5188, 105, N'E', 8, N'VIP', N'AVAILABLE'),
+(5189, 105, N'E', 9, N'VIP', N'AVAILABLE'),
+(5190, 105, N'E', 10, N'VIP', N'AVAILABLE'),
+(5191, 106, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(5192, 106, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(5193, 106, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(5194, 106, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(5195, 106, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(5196, 106, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(5197, 106, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(5198, 106, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(5199, 106, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(5200, 106, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(5201, 106, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(5202, 106, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(5203, 106, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(5204, 106, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(5205, 106, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(5206, 106, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(5207, 106, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(5208, 106, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(5209, 106, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(5210, 106, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(5211, 106, N'C', 1, N'STANDARD', N'AVAILABLE'),
+(5212, 106, N'C', 2, N'STANDARD', N'AVAILABLE'),
+(5213, 106, N'C', 3, N'STANDARD', N'AVAILABLE'),
+(5214, 106, N'C', 4, N'STANDARD', N'AVAILABLE'),
+(5215, 106, N'C', 5, N'STANDARD', N'AVAILABLE'),
+(5216, 106, N'C', 6, N'STANDARD', N'AVAILABLE'),
+(5217, 106, N'C', 7, N'STANDARD', N'AVAILABLE'),
+(5218, 106, N'C', 8, N'STANDARD', N'AVAILABLE'),
+(5219, 106, N'C', 9, N'STANDARD', N'AVAILABLE'),
+(5220, 106, N'C', 10, N'STANDARD', N'AVAILABLE'),
+(5221, 106, N'D', 1, N'VIP', N'AVAILABLE'),
+(5222, 106, N'D', 2, N'VIP', N'AVAILABLE'),
+(5223, 106, N'D', 3, N'VIP', N'AVAILABLE'),
+(5224, 106, N'D', 4, N'VIP', N'AVAILABLE'),
+(5225, 106, N'D', 5, N'VIP', N'AVAILABLE'),
+(5226, 106, N'D', 6, N'VIP', N'AVAILABLE'),
+(5227, 106, N'D', 7, N'VIP', N'AVAILABLE'),
+(5228, 106, N'D', 8, N'VIP', N'AVAILABLE'),
+(5229, 106, N'D', 9, N'VIP', N'AVAILABLE'),
+(5230, 106, N'D', 10, N'VIP', N'AVAILABLE'),
+(5231, 106, N'E', 1, N'VIP', N'AVAILABLE'),
+(5232, 106, N'E', 2, N'VIP', N'AVAILABLE'),
+(5233, 106, N'E', 3, N'VIP', N'AVAILABLE'),
+(5234, 106, N'E', 4, N'VIP', N'AVAILABLE'),
+(5235, 106, N'E', 5, N'VIP', N'AVAILABLE'),
+(5236, 106, N'E', 6, N'VIP', N'AVAILABLE'),
+(5237, 106, N'E', 7, N'VIP', N'AVAILABLE'),
+(5238, 106, N'E', 8, N'VIP', N'AVAILABLE'),
+(5239, 106, N'E', 9, N'VIP', N'AVAILABLE'),
+(5240, 106, N'E', 10, N'VIP', N'AVAILABLE'),
+(5241, 107, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(5242, 107, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(5243, 107, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(5244, 107, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(5245, 107, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(5246, 107, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(5247, 107, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(5248, 107, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(5249, 107, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(5250, 107, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(5251, 107, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(5252, 107, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(5253, 107, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(5254, 107, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(5255, 107, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(5256, 107, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(5257, 107, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(5258, 107, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(5259, 107, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(5260, 107, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(5261, 107, N'C', 1, N'STANDARD', N'AVAILABLE'),
+(5262, 107, N'C', 2, N'STANDARD', N'AVAILABLE'),
+(5263, 107, N'C', 3, N'STANDARD', N'AVAILABLE'),
+(5264, 107, N'C', 4, N'STANDARD', N'AVAILABLE'),
+(5265, 107, N'C', 5, N'STANDARD', N'AVAILABLE'),
+(5266, 107, N'C', 6, N'STANDARD', N'AVAILABLE'),
+(5267, 107, N'C', 7, N'STANDARD', N'AVAILABLE'),
+(5268, 107, N'C', 8, N'STANDARD', N'AVAILABLE'),
+(5269, 107, N'C', 9, N'STANDARD', N'AVAILABLE'),
+(5270, 107, N'C', 10, N'STANDARD', N'AVAILABLE'),
+(5271, 107, N'D', 1, N'VIP', N'AVAILABLE'),
+(5272, 107, N'D', 2, N'VIP', N'AVAILABLE'),
+(5273, 107, N'D', 3, N'VIP', N'AVAILABLE'),
+(5274, 107, N'D', 4, N'VIP', N'AVAILABLE'),
+(5275, 107, N'D', 5, N'VIP', N'AVAILABLE'),
+(5276, 107, N'D', 6, N'VIP', N'AVAILABLE'),
+(5277, 107, N'D', 7, N'VIP', N'AVAILABLE'),
+(5278, 107, N'D', 8, N'VIP', N'AVAILABLE'),
+(5279, 107, N'D', 9, N'VIP', N'AVAILABLE'),
+(5280, 107, N'D', 10, N'VIP', N'AVAILABLE'),
+(5281, 107, N'E', 1, N'VIP', N'AVAILABLE'),
+(5282, 107, N'E', 2, N'VIP', N'AVAILABLE'),
+(5283, 107, N'E', 3, N'VIP', N'AVAILABLE'),
+(5284, 107, N'E', 4, N'VIP', N'AVAILABLE'),
+(5285, 107, N'E', 5, N'VIP', N'AVAILABLE'),
+(5286, 107, N'E', 6, N'VIP', N'AVAILABLE'),
+(5287, 107, N'E', 7, N'VIP', N'AVAILABLE'),
+(5288, 107, N'E', 8, N'VIP', N'AVAILABLE'),
+(5289, 107, N'E', 9, N'VIP', N'AVAILABLE'),
+(5290, 107, N'E', 10, N'VIP', N'AVAILABLE'),
+(5291, 108, N'A', 1, N'STANDARD', N'AVAILABLE'),
+(5292, 108, N'A', 2, N'STANDARD', N'AVAILABLE'),
+(5293, 108, N'A', 3, N'STANDARD', N'AVAILABLE'),
+(5294, 108, N'A', 4, N'STANDARD', N'AVAILABLE'),
+(5295, 108, N'A', 5, N'STANDARD', N'AVAILABLE'),
+(5296, 108, N'A', 6, N'STANDARD', N'AVAILABLE'),
+(5297, 108, N'A', 7, N'STANDARD', N'AVAILABLE'),
+(5298, 108, N'A', 8, N'STANDARD', N'AVAILABLE'),
+(5299, 108, N'A', 9, N'STANDARD', N'AVAILABLE'),
+(5300, 108, N'A', 10, N'STANDARD', N'AVAILABLE'),
+(5301, 108, N'B', 1, N'STANDARD', N'AVAILABLE'),
+(5302, 108, N'B', 2, N'STANDARD', N'AVAILABLE'),
+(5303, 108, N'B', 3, N'STANDARD', N'AVAILABLE'),
+(5304, 108, N'B', 4, N'STANDARD', N'AVAILABLE'),
+(5305, 108, N'B', 5, N'STANDARD', N'AVAILABLE'),
+(5306, 108, N'B', 6, N'STANDARD', N'AVAILABLE'),
+(5307, 108, N'B', 7, N'STANDARD', N'AVAILABLE'),
+(5308, 108, N'B', 8, N'STANDARD', N'AVAILABLE'),
+(5309, 108, N'B', 9, N'STANDARD', N'AVAILABLE'),
+(5310, 108, N'B', 10, N'STANDARD', N'AVAILABLE'),
+(5311, 108, N'C', 1, N'STANDARD', N'AVAILABLE'),
+(5312, 108, N'C', 2, N'STANDARD', N'AVAILABLE'),
+(5313, 108, N'C', 3, N'STANDARD', N'AVAILABLE'),
+(5314, 108, N'C', 4, N'STANDARD', N'AVAILABLE'),
+(5315, 108, N'C', 5, N'STANDARD', N'AVAILABLE'),
+(5316, 108, N'C', 6, N'STANDARD', N'AVAILABLE'),
+(5317, 108, N'C', 7, N'STANDARD', N'AVAILABLE'),
+(5318, 108, N'C', 8, N'STANDARD', N'AVAILABLE'),
+(5319, 108, N'C', 9, N'STANDARD', N'AVAILABLE'),
+(5320, 108, N'C', 10, N'STANDARD', N'AVAILABLE'),
+(5321, 108, N'D', 1, N'VIP', N'AVAILABLE'),
+(5322, 108, N'D', 2, N'VIP', N'AVAILABLE'),
+(5323, 108, N'D', 3, N'VIP', N'AVAILABLE'),
+(5324, 108, N'D', 4, N'VIP', N'AVAILABLE'),
+(5325, 108, N'D', 5, N'VIP', N'AVAILABLE'),
+(5326, 108, N'D', 6, N'VIP', N'AVAILABLE'),
+(5327, 108, N'D', 7, N'VIP', N'AVAILABLE'),
+(5328, 108, N'D', 8, N'VIP', N'AVAILABLE'),
+(5329, 108, N'D', 9, N'VIP', N'AVAILABLE'),
+(5330, 108, N'D', 10, N'VIP', N'AVAILABLE'),
+(5331, 108, N'E', 1, N'VIP', N'AVAILABLE'),
+(5332, 108, N'E', 2, N'VIP', N'AVAILABLE'),
+(5333, 108, N'E', 3, N'VIP', N'AVAILABLE'),
+(5334, 108, N'E', 4, N'VIP', N'AVAILABLE'),
+(5335, 108, N'E', 5, N'VIP', N'AVAILABLE'),
+(5336, 108, N'E', 6, N'VIP', N'AVAILABLE'),
+(5337, 108, N'E', 7, N'VIP', N'AVAILABLE'),
+(5338, 108, N'E', 8, N'VIP', N'AVAILABLE'),
+(5339, 108, N'E', 9, N'VIP', N'AVAILABLE'),
+(5340, 108, N'E', 10, N'VIP', N'AVAILABLE');
+GO
+SET IDENTITY_INSERT Seats OFF;
+GO
+
+-- ====================================================================================
+-- CentreManagerAssignments (24 bản ghi)
+-- ====================================================================================
+SET IDENTITY_INSERT CentreManagerAssignments ON;
+GO
+INSERT INTO CentreManagerAssignments (AssignmentID, CentreID, ManagerID, AssignedBy, StartDate, EndDate, Status, Notes, CreatedAt) VALUES
+(1, 2, 3, 4, '2026-01-01 00:00:00', '2026-10-14 17:34:57', N'ENDED', N'Hết thời hạn', '2026-10-14 17:02:14'),
+(2, 5, 7, 4, '2026-01-01 00:00:00', '2026-10-14 17:19:38', N'ENDED', N'Hết thời hạn', '2026-10-14 17:02:14'),
+(3, 22, 7, 4, '2026-10-14 17:20:02', '2026-10-14 17:34:46', N'ENDED', N'Hết thời hạn', '2026-10-14 17:20:02'),
+(4, 22, 3, 4, '2026-10-14 17:42:01', '2026-10-14 17:42:09', N'REPLACED', N'', '2026-10-14 17:42:01'),
+(5, 21, 3, 4, '2026-10-14 17:42:09', '2026-10-14 17:42:14', N'REPLACED', N'', '2026-10-14 17:42:09'),
+(6, 22, 3, 4, '2026-10-14 17:42:14', '2026-10-14 17:50:57', N'REPLACED', N'', '2026-10-14 17:42:14'),
+(7, 22, 7, 4, '2026-10-14 17:50:57', NULL, N'ACTIVE', N'', '2026-10-14 17:50:57'),
+(8, 21, 3, 4, '2026-10-14 21:39:51', '2026-10-15 10:26:46', N'REPLACED', N'', '2026-10-14 21:39:51'),
+(9, 20, 3, 4, '2026-10-15 10:26:46', '2026-10-15 10:32:34', N'REPLACED', N'', '2026-10-15 10:26:46'),
+(10, 21, 3, 4, '2026-10-15 10:32:34', '2026-10-15 20:17:39', N'REPLACED', N'', '2026-10-15 10:32:34'),
+(11, 1, 14, 4, '2026-09-15 20:10:06', '2026-10-15 20:17:39', N'REPLACED', N'Bổ nhiệm Quản lý chi nhánh đương nhiệm', '2026-10-15 20:10:06'),
+(12, 2, 15, 4, '2026-09-15 20:10:06', NULL, N'ACTIVE', N'Bổ nhiệm Quản lý chi nhánh đương nhiệm', '2026-10-15 20:10:06'),
+(13, 3, 16, 4, '2026-09-15 20:10:06', NULL, N'ACTIVE', N'Bổ nhiệm Quản lý chi nhánh đương nhiệm', '2026-10-15 20:10:06'),
+(14, 4, 17, 4, '2026-09-15 20:10:06', NULL, N'ACTIVE', N'Bổ nhiệm Quản lý chi nhánh đương nhiệm', '2026-10-15 20:10:06'),
+(15, 5, 18, 4, '2026-09-15 20:10:06', NULL, N'ACTIVE', N'Bổ nhiệm Quản lý chi nhánh đương nhiệm', '2026-10-15 20:10:06'),
+(16, 6, 19, 4, '2026-09-15 20:10:06', NULL, N'ACTIVE', N'Bổ nhiệm Quản lý chi nhánh đương nhiệm', '2026-10-15 20:10:06'),
+(17, 17, 20, 4, '2026-09-15 20:10:06', NULL, N'ACTIVE', N'Bổ nhiệm Quản lý chi nhánh đương nhiệm', '2026-10-15 20:10:06'),
+(18, 18, 21, 4, '2026-09-15 20:10:06', NULL, N'ACTIVE', N'Bổ nhiệm Quản lý chi nhánh đương nhiệm', '2026-10-15 20:10:06'),
+(19, 19, 22, 4, '2026-09-15 20:10:06', NULL, N'ACTIVE', N'Bổ nhiệm Quản lý chi nhánh đương nhiệm', '2026-10-15 20:10:06'),
+(20, 20, 23, 4, '2026-09-15 20:10:06', NULL, N'ACTIVE', N'Bổ nhiệm Quản lý chi nhánh đương nhiệm', '2026-10-15 20:10:06'),
+(21, 1, 3, 4, '2026-10-15 20:17:39', '2026-10-15 20:21:37', N'REPLACED', N'Bổ nhiệm Quản lý chi nhánh đương nhiệm', '2026-10-15 20:17:39'),
+(22, 1, 3, 4, '2026-10-15 20:21:37', '2026-10-15 20:21:53', N'REPLACED', N'Kiểm tra bổ nhiệm', '2026-10-15 20:21:37'),
+(23, 1, 14, 4, '2026-10-15 20:21:53', NULL, N'ACTIVE', N'Khôi phục phân công Quản lý Cầu Giấy', '2026-10-15 20:21:53'),
+(24, 21, 3, 4, '2026-10-15 20:21:53', NULL, N'ACTIVE', N'Khôi phục phân công Quản lý Thủ Đức', '2026-10-15 20:21:53');
+GO
+SET IDENTITY_INSERT CentreManagerAssignments OFF;
+GO
+
+-- ====================================================================================
+-- StaffTransferHistory (1 bản ghi)
+-- ====================================================================================
+SET IDENTITY_INSERT StaffTransferHistory ON;
+GO
+INSERT INTO StaffTransferHistory (TransferID, UserID, FromCentreID, ToCentreID, TransferredBy, TransferDate, EffectiveDate, OldRole, NewRole, Reason, Notes) VALUES
+(1, 5, 1, 17, 4, '2026-10-14 17:52:49', '2026-10-15', 'TICKET_SALES_STAFF', 'TICKET_SALES_STAFF', N'Luân chuyển định kỳ', N'');
+GO
+SET IDENTITY_INSERT StaffTransferHistory OFF;
+GO
+
+-- ====================================================================================
+-- Movies (16 bản ghi)
+-- ====================================================================================
+SET IDENTITY_INSERT Movies ON;
+GO
+INSERT INTO Movies (MovieID, Title, Description, Duration, Genre, Director, Cast, Language, ReleaseDate, EndDate, PosterURL, TrailerURL, AgeRating, Status, CreatedAt, UpdatedAt) VALUES
+(1, N'Avatar: Dòng Chảy Của Nước', N'Hơn một thập kỷ sau các sự kiện của phần đầu tiên, Avatar: Dòng Chảy Của Nước kể câu chuyện về gia đình Sully, những rắc rối bám theo họ, những nỗ lực để giữ an toàn cho nhau và những trận chiến sinh tử để bảo vệ giống loài Na''vi.', 192, N'Khoa Học Viễn Tưởng, Hành Động, Phiêu Lưu', N'James Cameron', N'Sam Worthington, Zoe Saldana, Sigourney Weaver, Stephen Lang, Kate Winslet', N'Tiếng Anh - Phụ đề Tiếng Việt', '2022-12-16', '2026-12-31', N'/Cine_Flow/uploads/movies/poster-avatar-2.jpg', N'https://www.youtube.com/watch?v=d9MyW72ELq0', N'T13', N'NOW_SHOWING', '2026-10-03 23:08:30', '2026-10-13 10:43:17'),
+(2, N'Inception (Kẻ Đánh Cắp Giấc Mơ)', N'Dom Cobb là một đạo chích bậc thầy chuyên đánh cắp các bí mật sâu kín nhất trong tiềm thức khi đối tượng đang ngủ mơ. Cơ hội chuộc lại cuộc đời đến khi anh nhận nhiệm vụ bất khả thi: cấy ghép một ý tưởng vào tâm trí người khác thay vì đánh cắp.', 148, N'Khoa Học Viễn Tưởng, Hành Động, Giật Gân', N'Christopher Nolan', N'Leonardo DiCaprio, Joseph Gordon-Levitt, Elliot Page, Tom Hardy, Ken Watanabe, Cillian Murphy', N'Tiếng Anh - Phụ đề Tiếng Việt', '2010-07-16', '2026-12-31', N'/Cine_Flow/uploads/movies/poster-inception.jpg', N'https://www.youtube.com/watch?v=YoHD9XEInc0', N'T16', N'NOW_SHOWING', '2026-10-03 23:08:30', '2026-10-13 10:43:17'),
+(3, N'Địa Đạo: Mặt Trời Trong Bóng Tối', N'Tác phẩm điện ảnh lịch sử quy mô lớn tái hiện cuộc sống kiên cường và tinh thần chiến đấu bất khuất của quân và dân Củ Chi sâu trong mê cung lòng đất anh hùng thời kháng chiến chống Mỹ cứu nước.', 125, N'Chiến Tranh, Lịch Sử, Hành Động', N'Bùi Thạc Chuyên', N'Thái Hòa, Quang Tuấn, Hồ Thu Anh, Diễm Hằng', N'Tiếng Việt', '2025-04-30', '2026-12-31', N'/Cine_Flow/uploads/movies/poster-dia-dao.jpg', N'https://www.youtube.com/watch?v=3g8z4b8mNlA', N'T16', N'NOW_SHOWING', '2026-10-03 23:08:31', '2026-10-13 10:43:17'),
+(4, N'Kẻ Trộm Mặt Trăng 4 (Despicable Me 4)', N'Gia đình Gru và Lucy chào đón quý tử Gru Jr., cậu bé chuyên gây khó dễ cho bố. Cuộc sống êm đềm bị đảo lộn khi kẻ thù Maxime Le Mal trốn thoát và tuyên thệ trả thù, buộc cả gia đình phải đi lánh nạn.', 94, N'Hoạt Hình, Hài Hước, Gia Đình, Phiêu Lưu', N'Chris Renaud', N'Steve Carell, Kristen Wiig, Will Ferrell, Joey King, Sofia Vergara', N'Tiếng Anh - Lồng tiếng & Phụ đề Tiếng Việt', '2024-07-05', '2026-12-31', N'/Cine_Flow/uploads/movies/poster-despicable-me-4.jpg', N'https://www.youtube.com/watch?v=qQlr9-rF32A', N'P', N'NOW_SHOWING', '2026-10-03 23:08:31', '2026-10-13 10:43:17'),
+(5, N'Deadpool & Wolverine', N'Wade Wilson đang tận hưởng cuộc sống bình lặng thì tổ chức TVA kéo anh vào sứ mệnh giải cứu vũ trụ của mình khỏi sự diệt vong, buộc anh phải hợp tác cùng phiên bản bất cần đời của Wolverine.', 128, N'Hành Động, Hài Hước, Khoa Học Viễn Tưởng', N'Shawn Levy', N'Ryan Reynolds, Hugh Jackman, Emma Corrin, Matthew Macfadyen, Morena Baccarin', N'Tiếng Anh - Phụ đề Tiếng Việt', '2024-07-26', '2026-12-31', N'/Cine_Flow/uploads/movies/poster-deadpool-wolverine.jpg', N'https://www.youtube.com/watch?v=73_1biulkYk', N'T18', N'NOW_SHOWING', '2026-10-03 23:08:31', '2026-10-13 10:43:17'),
+(6, N'Dune: Hành Tinh Cát - Phần 2', N'Paul Atreides đồng hành cùng Chani và tộc người Fremen trên sa mạc Arrakis nhằm trả thù những kẻ đã âm mưu tiêu diệt gia tộc Atreides, đồng thời gánh vác sứ mệnh định đoạt tương lai toàn cõi thiên hà.', 166, N'Khoa Học Viễn Tưởng, Phiêu Lưu, Hành Động', N'Denis Villeneuve', N'Timothée Chalamet, Zendaya, Rebecca Ferguson, Javier Bardem, Austin Butler, Florence Pugh', N'Tiếng Anh - Phụ đề Tiếng Việt', '2024-03-01', '2026-12-31', N'/Cine_Flow/uploads/movies/poster-dune-2.jpg', N'https://www.youtube.com/watch?v=Way9Dexny3w', N'T16', N'NOW_SHOWING', '2026-10-03 23:08:31', '2026-10-13 10:43:17'),
+(7, N'Godzilla x Kong: Đế Chế Mới', N'Hai quái thú huyền thoại Godzilla và Kong phải gạt bỏ hiềm khích để cùng liên minh chống lại mối hiểm họa diệt vong mới nổi lên từ lòng Trái Đất Rỗng, đe dọa sự tồn vong của cả giống loài titan và nhân loại.', 115, N'Hành Động, Khoa Học Viễn Tưởng, Phiêu Lưu', N'Adam Wingard', N'Rebecca Hall, Brian Tyree Henry, Dan Stevens, Kaylee Hottle, Alex Ferns', N'Tiếng Anh - Phụ đề Tiếng Việt', '2024-03-29', '2026-12-31', N'/Cine_Flow/uploads/movies/poster-godzilla-kong.jpg', N'https://www.youtube.com/watch?v=lV1OOlGwExg', N'T13', N'NOW_SHOWING', '2026-10-03 23:08:31', '2026-10-13 10:43:17'),
+(8, N'Transformers Một (Transformers One)', N'Bộ phim hoạt hình bom tấn hé lộ nguồn gốc sâu xa mối quan hệ hữu nghị keo sơn giữa Orion Pax và D-16 trên hành tinh Cybertron trước khi họ trở thành tử thù Optimus Prime và Megatron.', 104, N'Hoạt Hình, Khoa Học Viễn Tưởng, Hành Động', N'Josh Cooley', N'Chris Hemsworth, Brian Tyree Henry, Scarlett Johansson, Keegan-Michael Key, Steve Buscemi', N'Tiếng Anh - Lồng tiếng & Phụ đề Tiếng Việt', '2024-09-20', '2026-12-31', N'/Cine_Flow/uploads/movies/poster-transformers-one.jpg', N'https://www.youtube.com/watch?v=u2NuUVuuWO4', N'K', N'ARCHIVED', '2026-10-03 23:08:31', '2026-10-13 12:06:25'),
+(9, N'Mai', N'Chuyện tình đầy trắc trở giữa Mai - một phụ nữ làm nghề massage trị liệu chịu nhiều định kiến xã hội với Dương - chàng thiếu gia lãng tử mê âm nhạc. Khi quá khứ đau thương ùa về, liệu tình yêu có đủ lớn để vượt qua rào cản?', 131, N'Tâm Lý, Tình Cảm, Chính Kịch', N'Trấn Thành', N'Phương Anh Đào, Tuấn Trần, Trấn Thành, Hồng Đào, Uyển Ân, Quốc Khánh', N'Tiếng Việt', '2024-02-10', '2026-12-31', N'/Cine_Flow/uploads/movies/poster-mai.jpg', N'https://www.youtube.com/watch?v=845b4B1u4n0', N'T18', N'NOW_SHOWING', '2026-10-03 23:08:31', '2026-10-13 10:43:17'),
+(10, N'Oppenheimer', N'Bộ phim lịch sử đỉnh cao tái hiện cuộc đời thăng trầm của J. Robert Oppenheimer, nhà vật lý chỉ huy dự án Manhattan phát minh ra bom nguyên tử, và những giằng xé lương tâm khi thay đổi vĩnh viễn vận mệnh nhân loại.', 180, N'Lịch Sử, Chính Kịch, Tiểu Sử', N'Christopher Nolan', N'Cillian Murphy, Emily Blunt, Matt Damon, Robert Downey Jr., Florence Pugh', N'Tiếng Anh - Phụ đề Tiếng Việt', '2023-07-21', '2026-12-31', N'/Cine_Flow/uploads/movies/poster-oppenheimer.jpg', N'https://www.youtube.com/watch?v=uYPbbksJxIg', N'T18', N'NOW_SHOWING', '2026-10-03 23:08:31', '2026-10-13 10:43:17'),
+(11, N'Kung Fu Panda 4', N'Po chuẩn bị trở thành Thủ lĩnh Tinh thần của Thung lũng Bình Yên và cần tìm kiếm người kế vị Thần Long Đại Hiệp. Đúng lúc này, mụ phù thủy Tắc Kè Bông với thuật biến hình quỷ quyệt xuất hiện đe dọa hòa bình thế giới.', 94, N'Hoạt Hình, Hành Động, Hài Hước, Gia Đình', N'Mike Mitchell', N'Jack Black, Awkwafina, Viola Davis, Dustin Hoffman, Bryan Cranston, James Hong', N'Tiếng Anh - Lồng tiếng & Phụ đề Tiếng Việt', '2024-03-08', '2026-12-31', N'/Cine_Flow/uploads/movies/poster-kung-fu-panda-4.jpg', N'https://www.youtube.com/watch?v=_inKs4eeHiI', N'P', N'NOW_SHOWING', '2026-10-03 23:08:31', '2026-10-13 10:43:17'),
+(12, N'Lật Mặt 7: Một Điều Ước', N'Câu chuyện cảm động về bà Hai 73 tuổi sống cô quạnh tại vùng quê hẻo lánh và 5 người con đã lập gia đình ở tứ xứ. Khi người mẹ gặp nạn gãy chân, cuộc họp gia đình đầy éo le mở ra những góc khuất tình thân sâu sắc.', 138, N'Gia Đình, Chính Kịch, Hài Hước', N'Lý Hải', N'Thanh Hiền, Trương Minh Cường, Đinh Y Nhung, Quách Ngọc Tuyên, Trâm Anh', N'Tiếng Việt', '2024-04-26', '2026-12-31', N'/Cine_Flow/uploads/movies/poster-lat-mat-7.jpg', N'https://www.youtube.com/watch?v=d_k8kI0u_pE', N'K', N'NOW_SHOWING', '2026-10-03 23:08:31', '2026-10-13 10:43:17'),
+(13, N'Những Mảnh Ghép Cảm Xúc 2 (Inside Out 2)', N'Riley bước vào tuổi dậy thì cũng là lúc tổng hành dinh tâm trí xuất hiện các cảm xúc vị thành niên phức tạp: Lo Âu, Ganh Tị, Xấu Hổ và Chán Nản. Một cuộc đại chiến cảm xúc bùng nổ để định hình bản ngã của cô bé.', 96, N'Hoạt Hình, Hài Hước, Gia Đình, Phiêu Lưu', N'Kelsey Mann', N'Amy Poehler, Maya Hawke, Kensington Tallman, Liza Lapira, Tony Hale, Phyllis Smith', N'Tiếng Anh - Lồng tiếng & Phụ đề Tiếng Việt', '2024-06-14', '2026-12-31', N'/Cine_Flow/uploads/movies/poster-inside-out-2.jpg', N'https://www.youtube.com/watch?v=LEjhY15eCx0', N'P', N'NOW_SHOWING', '2026-10-03 23:08:31', '2026-10-13 10:43:17'),
+(14, N'Đất Rừng Phương Nam', N'Hành trình tìm cha giàu cảm xúc của cậu bé An giữa vùng sông nước Nam Bộ trù phú và hào sảng đầu thế kỷ 20, nơi tôi luyện ý chí kiên cường và lòng yêu quê hương đất nước qua bao thăng trầm thời cuộc.', 134, N'Phiêu Lưu, Lịch Sử, Chính Kịch', N'Nguyễn Quang Dũng', N'Hạo Khang, Tuấn Trần, Trấn Thành, Tiến Luật, Băng Di, Hứa Vĩ Văn', N'Tiếng Việt', '2023-10-20', '2026-12-31', N'/Cine_Flow/uploads/movies/poster-dat-rung-phuong-nam.jpg', N'https://www.youtube.com/watch?v=hkn9tKIb3w4', N'K', N'ENDED', '2026-10-03 23:08:31', '2026-10-13 10:43:17'),
+(15, N'Bố Già', N'Chuyện đời thường nhật đầy cảm xúc và tiếng cười nơi con hẻm nghèo Sài Gòn của ba Sang và cậu con trai Quắn. Sự hy sinh thầm lặng của bậc làm cha và những bất đồng thế hệ khắc họa nên tình phụ tử thiêng liêng.', 128, N'Gia Đình, Hài Hước, Chính Kịch', N'Trấn Thành, Vũ Ngọc Đãng', N'Trấn Thành, Tuấn Trần, Ngân Chi, NSND Ngọc Giàu, Lê Giang, Lan Phương, Hoàng Mèo', N'Tiếng Việt', '2021-03-05', '2026-12-31', N'/Cine_Flow/uploads/movies/poster-bo-gia.jpg', N'https://www.youtube.com/watch?v=jluSu8Rw6YE', N'T13', N'ARCHIVED', '2026-10-03 23:08:31', '2026-10-13 11:36:46'),
+(18, N'Piano', N'phim về cậu bé đánh đàn piano làm cảm hoá kẻ bị tha hoá', 120, N'Tâm lý, Tình cảm', N'Trấn Thành, Vũ Ngọc Đãng', N'Hồng Ánh, Lê Xuân Tiền', N'Tiếng Việt', '2026-10-20', '2026-12-24', N'', N'', N'P', N'COMING_SOON', '2026-10-13 11:49:48', '2026-10-13 11:50:35');
+GO
+SET IDENTITY_INSERT Movies OFF;
+GO
+
+-- ====================================================================================
+-- CentreMovies (216 bản ghi)
+-- ====================================================================================
+SET IDENTITY_INSERT CentreMovies ON;
+GO
+INSERT INTO CentreMovies (CentreMovieID, CentreID, MovieID, IsActive, CreatedAt, UpdatedAt) VALUES
+(1, 1, 1, 1, '2026-10-03 23:08:30', '2026-10-11 20:54:00'),
+(2, 1, 2, 1, '2026-10-03 23:08:30', NULL),
+(3, 2, 1, 1, '2026-10-03 23:08:30', '2026-10-15 20:10:06'),
+(4, 2, 2, 1, '2026-10-03 23:08:30', NULL),
+(5, 1, 3, 1, '2026-10-03 23:08:31', NULL),
+(6, 2, 3, 1, '2026-10-03 23:08:31', NULL),
+(7, 3, 3, 1, '2026-10-03 23:08:31', NULL),
+(8, 4, 3, 1, '2026-10-03 23:08:31', NULL),
+(9, 5, 3, 1, '2026-10-03 23:08:31', NULL),
+(10, 6, 3, 1, '2026-10-03 23:08:31', NULL),
+(11, 1, 4, 1, '2026-10-03 23:08:31', NULL),
+(12, 2, 4, 1, '2026-10-03 23:08:31', NULL),
+(13, 3, 4, 1, '2026-10-03 23:08:31', NULL),
+(14, 4, 4, 1, '2026-10-03 23:08:31', NULL),
+(15, 5, 4, 1, '2026-10-03 23:08:31', NULL),
+(16, 6, 4, 1, '2026-10-03 23:08:31', NULL),
+(17, 1, 5, 1, '2026-10-03 23:08:31', NULL),
+(18, 2, 5, 1, '2026-10-03 23:08:31', NULL),
+(19, 3, 5, 1, '2026-10-03 23:08:31', NULL),
+(20, 4, 5, 1, '2026-10-03 23:08:31', NULL),
+(21, 5, 5, 1, '2026-10-03 23:08:31', NULL),
+(22, 6, 5, 1, '2026-10-03 23:08:31', NULL),
+(23, 1, 9, 1, '2026-10-03 23:08:31', NULL),
+(24, 2, 9, 1, '2026-10-03 23:08:31', NULL),
+(25, 3, 9, 1, '2026-10-03 23:08:31', NULL),
+(26, 4, 9, 1, '2026-10-03 23:08:31', NULL),
+(27, 5, 9, 1, '2026-10-03 23:08:31', NULL),
+(28, 6, 9, 1, '2026-10-03 23:08:31', NULL),
+(29, 1, 10, 1, '2026-10-03 23:08:31', '2026-10-15 20:10:06'),
+(30, 2, 10, 1, '2026-10-03 23:08:31', '2026-10-15 20:10:06'),
+(31, 3, 10, 1, '2026-10-03 23:08:31', '2026-10-15 20:10:06'),
+(32, 4, 10, 1, '2026-10-03 23:08:31', '2026-10-15 20:10:06'),
+(33, 5, 10, 1, '2026-10-03 23:08:31', '2026-10-15 20:10:06'),
+(34, 6, 10, 1, '2026-10-03 23:08:31', '2026-10-15 20:10:06'),
+(35, 1, 12, 1, '2026-10-03 23:08:31', NULL),
+(36, 2, 12, 1, '2026-10-03 23:08:31', NULL),
+(37, 3, 12, 1, '2026-10-03 23:08:31', NULL),
+(38, 4, 12, 1, '2026-10-03 23:08:31', NULL),
+(39, 5, 12, 1, '2026-10-03 23:08:31', NULL),
+(40, 6, 12, 1, '2026-10-03 23:08:31', NULL),
+(41, 1, 13, 1, '2026-10-03 23:08:31', NULL),
+(42, 2, 13, 1, '2026-10-03 23:08:31', NULL),
+(43, 3, 13, 1, '2026-10-03 23:08:31', NULL),
+(44, 4, 13, 1, '2026-10-03 23:08:31', NULL),
+(45, 5, 13, 1, '2026-10-03 23:08:31', NULL),
+(46, 6, 13, 1, '2026-10-03 23:08:31', NULL),
+(47, 1, 14, 1, '2026-10-03 23:08:31', NULL),
+(48, 2, 14, 1, '2026-10-03 23:08:31', NULL),
+(49, 3, 14, 1, '2026-10-03 23:08:31', NULL),
+(50, 4, 14, 1, '2026-10-03 23:08:31', NULL),
+(51, 5, 14, 1, '2026-10-03 23:08:31', NULL),
+(52, 6, 14, 1, '2026-10-03 23:08:31', NULL),
+(53, 1, 15, 0, '2026-10-03 23:08:31', '2026-10-12 22:40:59'),
+(54, 2, 15, 0, '2026-10-03 23:08:31', '2026-10-12 22:40:59'),
+(55, 3, 15, 0, '2026-10-03 23:08:31', '2026-10-12 22:40:59'),
+(56, 4, 15, 1, '2026-10-03 23:08:31', '2026-10-11 21:37:35'),
+(57, 5, 15, 1, '2026-10-03 23:08:31', '2026-10-11 21:37:35'),
+(58, 6, 15, 0, '2026-10-03 23:08:31', '2026-10-11 21:37:35'),
+(59, 1, 18, 1, '2026-10-13 23:22:47', NULL),
+(60, 17, 18, 1, '2026-10-13 23:22:47', NULL),
+(61, 2, 18, 1, '2026-10-13 23:22:47', NULL),
+(62, 18, 18, 1, '2026-10-13 23:22:47', NULL),
+(63, 3, 18, 1, '2026-10-13 23:22:47', NULL),
+(64, 19, 18, 1, '2026-10-13 23:22:47', NULL),
+(65, 20, 18, 1, '2026-10-13 23:22:47', NULL),
+(66, 4, 18, 1, '2026-10-13 23:22:47', NULL),
+(67, 5, 18, 1, '2026-10-13 23:22:47', NULL),
+(68, 21, 18, 1, '2026-10-13 23:22:47', NULL),
+(69, 22, 18, 1, '2026-10-13 23:22:47', NULL),
+(70, 6, 18, 1, '2026-10-13 23:22:47', NULL),
+(71, 1, 6, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(72, 1, 7, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(73, 1, 11, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(74, 2, 6, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(75, 2, 7, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(76, 2, 11, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(77, 3, 1, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(78, 3, 2, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(79, 3, 6, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(80, 3, 7, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(81, 3, 11, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(82, 4, 1, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(83, 4, 2, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(84, 4, 6, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(85, 4, 7, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(86, 4, 11, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(87, 5, 1, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(88, 5, 2, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(89, 5, 6, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(90, 5, 7, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(91, 5, 11, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(92, 6, 1, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(93, 6, 2, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(94, 6, 6, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(95, 6, 7, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(96, 6, 11, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(97, 17, 1, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(98, 17, 2, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(99, 17, 3, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(100, 17, 4, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(101, 17, 5, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(102, 17, 6, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(103, 17, 7, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(104, 17, 9, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(105, 17, 10, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(106, 17, 11, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(107, 17, 12, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(108, 17, 13, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(109, 18, 1, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(110, 18, 2, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(111, 18, 3, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(112, 18, 4, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(113, 18, 5, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(114, 18, 6, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(115, 18, 7, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(116, 18, 9, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(117, 18, 10, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(118, 18, 11, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(119, 18, 12, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(120, 18, 13, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(121, 19, 1, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(122, 19, 2, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(123, 19, 3, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(124, 19, 4, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(125, 19, 5, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(126, 19, 6, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(127, 19, 7, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(128, 19, 9, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(129, 19, 10, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(130, 19, 11, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(131, 19, 12, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(132, 19, 13, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(133, 20, 1, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(134, 20, 2, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(135, 20, 3, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(136, 20, 4, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(137, 20, 5, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(138, 20, 6, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(139, 20, 7, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(140, 20, 9, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(141, 20, 10, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(142, 20, 11, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(143, 20, 12, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(144, 20, 13, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(145, 21, 1, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(146, 21, 2, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(147, 21, 3, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(148, 21, 4, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(149, 21, 5, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(150, 21, 6, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(151, 21, 7, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(152, 21, 9, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(153, 21, 10, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(154, 21, 11, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(155, 21, 12, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(156, 21, 13, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(157, 22, 1, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(158, 22, 2, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(159, 22, 3, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(160, 22, 4, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(161, 22, 5, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(162, 22, 6, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(163, 22, 7, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(164, 22, 9, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(165, 22, 10, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(166, 22, 11, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(167, 22, 12, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(168, 22, 13, 1, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(217, 23, 1, 1, '2026-10-17 21:58:18', NULL),
+(218, 23, 2, 1, '2026-10-17 21:58:18', NULL),
+(219, 23, 3, 1, '2026-10-17 21:58:18', NULL),
+(220, 23, 4, 1, '2026-10-17 21:58:18', NULL),
+(221, 23, 5, 1, '2026-10-17 21:58:18', NULL),
+(222, 23, 6, 1, '2026-10-17 21:58:18', NULL),
+(223, 23, 7, 1, '2026-10-17 21:58:18', NULL),
+(224, 23, 9, 1, '2026-10-17 21:58:18', NULL),
+(225, 23, 10, 1, '2026-10-17 21:58:18', NULL),
+(226, 23, 11, 1, '2026-10-17 21:58:18', NULL),
+(227, 23, 12, 1, '2026-10-17 21:58:18', NULL),
+(228, 23, 13, 1, '2026-10-17 21:58:18', NULL),
+(229, 24, 1, 1, '2026-10-17 21:58:18', NULL),
+(230, 24, 2, 1, '2026-10-17 21:58:18', NULL),
+(231, 24, 3, 1, '2026-10-17 21:58:18', NULL),
+(232, 24, 4, 1, '2026-10-17 21:58:18', NULL),
+(233, 24, 5, 1, '2026-10-17 21:58:18', NULL),
+(234, 24, 6, 1, '2026-10-17 21:58:18', NULL),
+(235, 24, 7, 1, '2026-10-17 21:58:18', NULL),
+(236, 24, 9, 1, '2026-10-17 21:58:18', NULL),
+(237, 24, 10, 1, '2026-10-17 21:58:18', NULL),
+(238, 24, 11, 1, '2026-10-17 21:58:18', NULL),
+(239, 24, 12, 1, '2026-10-17 21:58:18', NULL),
+(240, 24, 13, 1, '2026-10-17 21:58:18', NULL),
+(241, 25, 1, 1, '2026-10-17 21:58:18', NULL),
+(242, 25, 2, 1, '2026-10-17 21:58:18', NULL),
+(243, 25, 3, 1, '2026-10-17 21:58:18', NULL),
+(244, 25, 4, 1, '2026-10-17 21:58:18', NULL),
+(245, 25, 5, 1, '2026-10-17 21:58:18', NULL),
+(246, 25, 6, 1, '2026-10-17 21:58:18', NULL),
+(247, 25, 7, 1, '2026-10-17 21:58:18', NULL),
+(248, 25, 9, 1, '2026-10-17 21:58:18', NULL),
+(249, 25, 10, 1, '2026-10-17 21:58:18', NULL),
+(250, 25, 11, 1, '2026-10-17 21:58:18', NULL),
+(251, 25, 12, 1, '2026-10-17 21:58:18', NULL),
+(252, 25, 13, 1, '2026-10-17 21:58:18', NULL),
+(253, 26, 1, 1, '2026-10-17 21:58:18', NULL),
+(254, 26, 2, 1, '2026-10-17 21:58:18', NULL),
+(255, 26, 3, 1, '2026-10-17 21:58:18', NULL),
+(256, 26, 4, 1, '2026-10-17 21:58:18', NULL),
+(257, 26, 5, 1, '2026-10-17 21:58:18', NULL),
+(258, 26, 6, 1, '2026-10-17 21:58:18', NULL),
+(259, 26, 7, 1, '2026-10-17 21:58:18', NULL),
+(260, 26, 9, 1, '2026-10-17 21:58:18', NULL),
+(261, 26, 10, 1, '2026-10-17 21:58:18', NULL),
+(262, 26, 11, 1, '2026-10-17 21:58:18', NULL),
+(263, 26, 12, 1, '2026-10-17 21:58:18', NULL),
+(264, 26, 13, 1, '2026-10-17 21:58:18', NULL);
+GO
+SET IDENTITY_INSERT CentreMovies OFF;
+GO
+
+-- ====================================================================================
+-- CentrePricing (16 bản ghi)
+-- ====================================================================================
+SET IDENTITY_INSERT CentrePricing ON;
+GO
+INSERT INTO CentrePricing (CentrePricingID, CentreID, BasePrice, EffectiveFrom, EffectiveTo, UpdatedBy, CreatedAt) VALUES
+(1, 1, 85000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(2, 2, 85000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(3, 3, 85000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(4, 17, 85000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(5, 4, 90000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(6, 19, 90000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(7, 20, 90000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(8, 21, 90000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(9, 5, 80000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(10, 18, 80000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(11, 22, 80000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(12, 23, 80000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(13, 6, 75000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(14, 24, 75000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(15, 25, 75000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(16, 26, 75000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00');
+GO
+SET IDENTITY_INSERT CentrePricing OFF;
+GO
+
+-- ====================================================================================
+-- TimeSlotPricing (80 bản ghi)
+-- ====================================================================================
+SET IDENTITY_INSERT TimeSlotPricing ON;
+GO
+INSERT INTO TimeSlotPricing (TimeSlotPricingID, CentreID, SlotName, StartTime, EndTime, Surcharge, EffectiveFrom, EffectiveTo, UpdatedBy, CreatedAt) VALUES
+(1, 1, N'Suất sáng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(2, 1, N'Suất chiều', N'12:00:00.0000000', N'17:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(3, 1, N'Khung giờ vàng tối', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(4, 1, N'Suất tối muộn', N'22:00:00.0000000', N'23:59:59.0000000', 10000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(5, 1, N'Suất khuya', N'00:00:00.0000000', N'06:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(6, 2, N'Suất sáng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(7, 2, N'Suất chiều', N'12:00:00.0000000', N'17:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(8, 2, N'Khung giờ vàng tối', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(9, 2, N'Suất tối muộn', N'22:00:00.0000000', N'23:59:59.0000000', 10000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(10, 2, N'Suất khuya', N'00:00:00.0000000', N'06:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(11, 3, N'Suất sáng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(12, 3, N'Suất chiều', N'12:00:00.0000000', N'17:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(13, 3, N'Khung giờ vàng tối', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(14, 3, N'Suất tối muộn', N'22:00:00.0000000', N'23:59:59.0000000', 10000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(15, 3, N'Suất khuya', N'00:00:00.0000000', N'06:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(16, 4, N'Suất sáng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(17, 4, N'Suất chiều', N'12:00:00.0000000', N'17:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(18, 4, N'Khung giờ vàng tối', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(19, 4, N'Suất tối muộn', N'22:00:00.0000000', N'23:59:59.0000000', 10000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(20, 4, N'Suất khuya', N'00:00:00.0000000', N'06:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(21, 5, N'Suất sáng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(22, 5, N'Suất chiều', N'12:00:00.0000000', N'17:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(23, 5, N'Khung giờ vàng tối', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(24, 5, N'Suất tối muộn', N'22:00:00.0000000', N'23:59:59.0000000', 10000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(25, 5, N'Suất khuya', N'00:00:00.0000000', N'06:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(26, 6, N'Suất sáng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(27, 6, N'Suất chiều', N'12:00:00.0000000', N'17:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(28, 6, N'Khung giờ vàng tối', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(29, 6, N'Suất tối muộn', N'22:00:00.0000000', N'23:59:59.0000000', 10000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(30, 6, N'Suất khuya', N'00:00:00.0000000', N'06:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(31, 17, N'Suất sáng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(32, 17, N'Suất chiều', N'12:00:00.0000000', N'17:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(33, 17, N'Khung giờ vàng tối', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(34, 17, N'Suất tối muộn', N'22:00:00.0000000', N'23:59:59.0000000', 10000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(35, 17, N'Suất khuya', N'00:00:00.0000000', N'06:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(36, 18, N'Suất sáng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(37, 18, N'Suất chiều', N'12:00:00.0000000', N'17:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(38, 18, N'Khung giờ vàng tối', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(39, 18, N'Suất tối muộn', N'22:00:00.0000000', N'23:59:59.0000000', 10000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(40, 18, N'Suất khuya', N'00:00:00.0000000', N'06:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(41, 19, N'Suất sáng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(42, 19, N'Suất chiều', N'12:00:00.0000000', N'17:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(43, 19, N'Khung giờ vàng tối', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(44, 19, N'Suất tối muộn', N'22:00:00.0000000', N'23:59:59.0000000', 10000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(45, 19, N'Suất khuya', N'00:00:00.0000000', N'06:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(46, 20, N'Suất sáng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(47, 20, N'Suất chiều', N'12:00:00.0000000', N'17:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(48, 20, N'Khung giờ vàng tối', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(49, 20, N'Suất tối muộn', N'22:00:00.0000000', N'23:59:59.0000000', 10000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(50, 20, N'Suất khuya', N'00:00:00.0000000', N'06:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(51, 21, N'Suất sáng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(52, 21, N'Suất chiều', N'12:00:00.0000000', N'17:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(53, 21, N'Khung giờ vàng tối', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(54, 21, N'Suất tối muộn', N'22:00:00.0000000', N'23:59:59.0000000', 10000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(55, 21, N'Suất khuya', N'00:00:00.0000000', N'06:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(56, 22, N'Suất sáng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(57, 22, N'Suất chiều', N'12:00:00.0000000', N'17:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(58, 22, N'Khung giờ vàng tối', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(59, 22, N'Suất tối muộn', N'22:00:00.0000000', N'23:59:59.0000000', 10000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(60, 22, N'Suất khuya', N'00:00:00.0000000', N'06:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(61, 23, N'Suất sáng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(62, 23, N'Suất chiều', N'12:00:00.0000000', N'17:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(63, 23, N'Khung giờ vàng tối', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(64, 23, N'Suất tối muộn', N'22:00:00.0000000', N'23:59:59.0000000', 10000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(65, 23, N'Suất khuya', N'00:00:00.0000000', N'06:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(66, 24, N'Suất sáng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(67, 24, N'Suất chiều', N'12:00:00.0000000', N'17:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(68, 24, N'Khung giờ vàng tối', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(69, 24, N'Suất tối muộn', N'22:00:00.0000000', N'23:59:59.0000000', 10000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(70, 24, N'Suất khuya', N'00:00:00.0000000', N'06:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(71, 25, N'Suất sáng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(72, 25, N'Suất chiều', N'12:00:00.0000000', N'17:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(73, 25, N'Khung giờ vàng tối', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(74, 25, N'Suất tối muộn', N'22:00:00.0000000', N'23:59:59.0000000', 10000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(75, 25, N'Suất khuya', N'00:00:00.0000000', N'06:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(76, 26, N'Suất sáng', N'06:00:00.0000000', N'12:00:00.0000000', 0.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(77, 26, N'Suất chiều', N'12:00:00.0000000', N'17:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(78, 26, N'Khung giờ vàng tối', N'17:00:00.0000000', N'22:00:00.0000000', 15000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(79, 26, N'Suất tối muộn', N'22:00:00.0000000', N'23:59:59.0000000', 10000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(80, 26, N'Suất khuya', N'00:00:00.0000000', N'06:00:00.0000000', 5000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00');
+GO
+SET IDENTITY_INSERT TimeSlotPricing OFF;
+GO
+
+-- ====================================================================================
 -- Showtimes (18135 bản ghi)
 -- ====================================================================================
 SET IDENTITY_INSERT Showtimes ON;
@@ -18239,4 +23945,1012 @@ INSERT INTO Showtimes (ShowtimeID, MovieID, HallID, StartTime, EndTime, Cleaning
 (18989, 13, 91, '2026-11-30 21:00:00', '2026-11-30 22:51:00', 15, N'SCHEDULED', 3, '2026-10-17 21:58:19', NULL);
 GO
 SET IDENTITY_INSERT Showtimes OFF;
+GO
+
+-- ====================================================================================
+-- Surcharges (4 bản ghi)
+-- ====================================================================================
+SET IDENTITY_INSERT Surcharges ON;
+GO
+INSERT INTO Surcharges (SurchargeID, SurchargeName, SurchargeType, TargetValue, Amount, EffectiveFrom, EffectiveTo, UpdatedBy, CreatedAt) VALUES
+(1, N'Ghế VIP', N'SEAT', N'VIP', 20000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(2, N'Ghế Sweetbox đôi', N'SEAT', N'SWEETBOX', 50000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(3, N'Phòng chiếu 3D', N'HALL', N'3D', 20000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00'),
+(4, N'Phòng chiếu IMAX', N'HALL', N'IMAX', 40000.00, '2026-01-01 00:00:00', NULL, 4, '2026-01-01 00:00:00');
+GO
+SET IDENTITY_INSERT Surcharges OFF;
+GO
+
+-- ====================================================================================
+-- FnbCategories (3 bản ghi)
+-- ====================================================================================
+SET IDENTITY_INSERT FnbCategories ON;
+GO
+INSERT INTO FnbCategories (CategoryID, CategoryName, Status) VALUES
+(1, N'Popcorn', N'ACTIVE'),
+(2, N'Đồ uống', N'ACTIVE'),
+(3, N'Snack', N'ACTIVE');
+GO
+SET IDENTITY_INSERT FnbCategories OFF;
+GO
+
+-- ====================================================================================
+-- FnbItems (12 bản ghi)
+-- ====================================================================================
+SET IDENTITY_INSERT FnbItems ON;
+GO
+INSERT INTO FnbItems (FnbItemID, CategoryID, ItemName, Description, Price, ImageURL, Status, CreatedAt, UpdatedAt) VALUES
+(1, 1, N'Bắp rang bơ', N'Bắp rang bơ truyền thống', 50000.00, NULL, N'ACTIVE', '2026-10-03 23:08:30', NULL),
+(2, 1, N'Bắp caramel', N'Bắp caramel ngọt', 60000.00, NULL, N'ACTIVE', '2026-10-03 23:08:30', NULL),
+(3, 2, N'Coca Cola', N'Nước ngọt Coca Cola', 35000.00, NULL, N'ACTIVE', '2026-10-03 23:08:30', NULL),
+(4, 2, N'Sprite', N'Nước ngọt Sprite', 35000.00, NULL, N'ACTIVE', '2026-10-03 23:08:30', NULL),
+(5, 3, N'Snack khoai tây', N'Snack khoai tây', 30000.00, NULL, N'ACTIVE', '2026-10-03 23:08:30', NULL),
+(6, 1, N'Bắp phô mai', N'Bắp rang vị phô mai', 65000.00, NULL, N'ACTIVE', '2026-10-03 23:08:31', NULL),
+(7, 1, N'Bắp chocolate', N'Bắp rang vị chocolate', 70000.00, NULL, N'ACTIVE', '2026-10-03 23:08:31', NULL),
+(8, 2, N'Pepsi', N'Nước ngọt Pepsi', 35000.00, NULL, N'ACTIVE', '2026-10-03 23:08:31', NULL),
+(9, 2, N'Trà đào', N'Trà đào mát lạnh', 40000.00, NULL, N'ACTIVE', '2026-10-03 23:08:31', NULL),
+(10, 2, N'Nước suối', N'Nước suối đóng chai', 20000.00, NULL, N'ACTIVE', '2026-10-03 23:08:31', NULL),
+(11, 3, N'Xúc xích nướng', N'Xúc xích nướng ăn nhanh', 45000.00, NULL, N'ACTIVE', '2026-10-03 23:08:31', NULL),
+(12, 3, N'Khoai tây chiên', N'Khoai tây chiên giòn', 50000.00, NULL, N'ACTIVE', '2026-10-03 23:08:31', NULL);
+GO
+SET IDENTITY_INSERT FnbItems OFF;
+GO
+
+-- ====================================================================================
+-- FnbCombos (5 bản ghi)
+-- ====================================================================================
+SET IDENTITY_INSERT FnbCombos ON;
+GO
+INSERT INTO FnbCombos (ComboID, ComboName, Description, Price, ImageURL, Status, CreatedAt, UpdatedAt) VALUES
+(1, N'Combo Couple', N'1 bắp + 2 nước', 110000.00, NULL, N'ACTIVE', '2026-10-03 23:08:30', NULL),
+(2, N'Combo Family', N'2 bắp + 4 nước', 200000.00, NULL, N'ACTIVE', '2026-10-03 23:08:30', NULL),
+(3, N'Combo Movie Night', N'1 bắp phô mai + 2 nước ngọt', 125000.00, NULL, N'ACTIVE', '2026-10-03 23:08:31', NULL),
+(4, N'Combo Solo', N'1 bắp caramel + 1 nước ngọt', 85000.00, NULL, N'ACTIVE', '2026-10-03 23:08:31', NULL),
+(5, N'Combo Premium', N'2 bắp + 4 nước + 1 snack', 250000.00, NULL, N'ACTIVE', '2026-10-03 23:08:31', NULL);
+GO
+SET IDENTITY_INSERT FnbCombos OFF;
+GO
+
+-- ====================================================================================
+-- ComboItems (4 bản ghi)
+-- ====================================================================================
+SET IDENTITY_INSERT ComboItems ON;
+GO
+INSERT INTO ComboItems (ComboItemID, ComboID, FnbItemID, Quantity) VALUES
+(1, 1, 1, 1),
+(2, 1, 3, 2),
+(3, 2, 1, 2),
+(4, 2, 3, 4);
+GO
+SET IDENTITY_INSERT ComboItems OFF;
+GO
+
+-- ====================================================================================
+-- CentreFnbInventory (72 bản ghi)
+-- ====================================================================================
+SET IDENTITY_INSERT CentreFnbInventory ON;
+GO
+INSERT INTO CentreFnbInventory (InventoryID, CentreID, FnbItemID, StockQuantity, IsAvailable, UpdatedAt) VALUES
+(1, 1, 1, 100, 1, '2026-10-03 23:08:30'),
+(2, 1, 2, 100, 1, '2026-10-03 23:08:30'),
+(3, 1, 3, 200, 1, '2026-10-03 23:08:30'),
+(4, 1, 4, 200, 1, '2026-10-03 23:08:30'),
+(5, 1, 5, 100, 1, '2026-10-03 23:08:30'),
+(6, 2, 1, 100, 1, '2026-10-03 23:08:30'),
+(7, 2, 2, 100, 1, '2026-10-03 23:08:30'),
+(8, 2, 3, 200, 1, '2026-10-03 23:08:30'),
+(9, 2, 4, 200, 1, '2026-10-03 23:08:30'),
+(10, 2, 5, 100, 1, '2026-10-03 23:08:30'),
+(11, 1, 6, 150, 1, '2026-10-03 23:08:31'),
+(12, 1, 7, 150, 1, '2026-10-03 23:08:31'),
+(13, 1, 8, 150, 1, '2026-10-03 23:08:31'),
+(14, 1, 9, 150, 1, '2026-10-03 23:08:31'),
+(15, 1, 10, 150, 1, '2026-10-03 23:08:31'),
+(16, 1, 11, 150, 1, '2026-10-03 23:08:31'),
+(17, 1, 12, 150, 1, '2026-10-03 23:08:31'),
+(18, 2, 6, 150, 1, '2026-10-03 23:08:31'),
+(19, 2, 7, 150, 1, '2026-10-03 23:08:31'),
+(20, 2, 8, 150, 1, '2026-10-03 23:08:31'),
+(21, 2, 9, 150, 1, '2026-10-03 23:08:31'),
+(22, 2, 10, 150, 1, '2026-10-03 23:08:31'),
+(23, 2, 11, 150, 1, '2026-10-03 23:08:31'),
+(24, 2, 12, 150, 1, '2026-10-03 23:08:31'),
+(25, 3, 1, 150, 1, '2026-10-03 23:08:31'),
+(26, 3, 2, 150, 1, '2026-10-03 23:08:31'),
+(27, 3, 3, 150, 1, '2026-10-03 23:08:31'),
+(28, 3, 4, 150, 1, '2026-10-03 23:08:31'),
+(29, 3, 5, 150, 1, '2026-10-03 23:08:31'),
+(30, 3, 6, 150, 1, '2026-10-03 23:08:31'),
+(31, 3, 7, 150, 1, '2026-10-03 23:08:31'),
+(32, 3, 8, 150, 1, '2026-10-03 23:08:31'),
+(33, 3, 9, 150, 1, '2026-10-03 23:08:31'),
+(34, 3, 10, 150, 1, '2026-10-03 23:08:31'),
+(35, 3, 11, 150, 1, '2026-10-03 23:08:31'),
+(36, 3, 12, 150, 1, '2026-10-03 23:08:31'),
+(37, 4, 1, 150, 1, '2026-10-03 23:08:31'),
+(38, 4, 2, 150, 1, '2026-10-03 23:08:31'),
+(39, 4, 3, 150, 1, '2026-10-03 23:08:31'),
+(40, 4, 4, 150, 1, '2026-10-03 23:08:31'),
+(41, 4, 5, 150, 1, '2026-10-03 23:08:31'),
+(42, 4, 6, 150, 1, '2026-10-03 23:08:31'),
+(43, 4, 7, 150, 1, '2026-10-03 23:08:31'),
+(44, 4, 8, 150, 1, '2026-10-03 23:08:31'),
+(45, 4, 9, 150, 1, '2026-10-03 23:08:31'),
+(46, 4, 10, 150, 1, '2026-10-03 23:08:31'),
+(47, 4, 11, 150, 1, '2026-10-03 23:08:31'),
+(48, 4, 12, 150, 1, '2026-10-03 23:08:31'),
+(49, 5, 1, 150, 1, '2026-10-03 23:08:31'),
+(50, 5, 2, 150, 1, '2026-10-03 23:08:31'),
+(51, 5, 3, 150, 1, '2026-10-03 23:08:31'),
+(52, 5, 4, 150, 1, '2026-10-03 23:08:31'),
+(53, 5, 5, 150, 1, '2026-10-03 23:08:31'),
+(54, 5, 6, 150, 1, '2026-10-03 23:08:31'),
+(55, 5, 7, 150, 1, '2026-10-03 23:08:31'),
+(56, 5, 8, 150, 1, '2026-10-03 23:08:31'),
+(57, 5, 9, 150, 1, '2026-10-03 23:08:31'),
+(58, 5, 10, 150, 1, '2026-10-03 23:08:31'),
+(59, 5, 11, 150, 1, '2026-10-03 23:08:31'),
+(60, 5, 12, 150, 1, '2026-10-03 23:08:31'),
+(61, 6, 1, 150, 1, '2026-10-03 23:08:31'),
+(62, 6, 2, 150, 1, '2026-10-03 23:08:31'),
+(63, 6, 3, 150, 1, '2026-10-03 23:08:31'),
+(64, 6, 4, 150, 1, '2026-10-03 23:08:31'),
+(65, 6, 5, 150, 1, '2026-10-03 23:08:31'),
+(66, 6, 6, 150, 1, '2026-10-03 23:08:31'),
+(67, 6, 7, 150, 1, '2026-10-03 23:08:31'),
+(68, 6, 8, 150, 1, '2026-10-03 23:08:31'),
+(69, 6, 9, 150, 1, '2026-10-03 23:08:31'),
+(70, 6, 10, 150, 1, '2026-10-03 23:08:31'),
+(71, 6, 11, 150, 1, '2026-10-03 23:08:31'),
+(72, 6, 12, 150, 1, '2026-10-03 23:08:31');
+GO
+SET IDENTITY_INSERT CentreFnbInventory OFF;
+GO
+
+-- ====================================================================================
+-- Vouchers (4 bản ghi)
+-- ====================================================================================
+SET IDENTITY_INSERT Vouchers ON;
+GO
+INSERT INTO Vouchers (VoucherID, VoucherCode, VoucherName, Description, CentreID, CreatedBy, DiscountType, DiscountValue, MinimumOrderValue, MaximumDiscount, StartDate, EndDate, UsageLimit, UsedCount, PerCustomerLimit, Status) VALUES
+(1, N'WELCOME10', N'Giảm 10% cho khách hàng mới', N'Voucher chào mừng', NULL, 4, N'PERCENT', 10.00, 100000.00, 50000.00, '2026-01-01 00:00:00', '2026-12-31 00:00:00', 1000, 0, 1, N'ACTIVE'),
+(2, N'SAVE50000', N'Giảm 50.000đ', N'Voucher giảm trực tiếp', NULL, 4, N'FIXED', 50000.00, 200000.00, 50000.00, '2026-01-01 00:00:00', '2026-12-31 00:00:00', 500, 0, 1, N'ACTIVE'),
+(3, N'CINEFLOW20', N'Ưu đãi CineFlow 20%', N'Giảm 20% cho đơn hàng từ 150.000đ', NULL, 4, N'PERCENT', 20.00, 150000.00, 70000.00, '2026-01-01 00:00:00', '2026-12-31 00:00:00', 1000, 0, 1, N'ACTIVE'),
+(4, N'NEWUSER100', N'Khách hàng mới giảm 100.000đ', N'Áp dụng cho khách hàng mới', NULL, 4, N'FIXED', 100000.00, 300000.00, 100000.00, '2026-01-01 00:00:00', '2026-12-31 00:00:00', 500, 0, 1, N'ACTIVE');
+GO
+SET IDENTITY_INSERT Vouchers OFF;
+GO
+
+-- ====================================================================================
+-- Bookings (26 bản ghi)
+-- ====================================================================================
+SET IDENTITY_INSERT Bookings ON;
+GO
+INSERT INTO Bookings (BookingID, BookingCode, UserID, ShowtimeID, VoucherID, BookingType, BookingStatus, SubTotal, DiscountAmount, TotalAmount, CreatedAt, UpdatedAt) VALUES
+(1, N'CF-DEMO-0001', 1, 1, NULL, N'ONLINE', N'CONFIRMED', 80000.00, 0.00, 80000.00, '2026-10-03 23:08:31', NULL),
+(2, N'BK202610150001', 1, 941, NULL, N'ONLINE', N'CONFIRMED', 110000.00, 0.00, 110000.00, '2026-10-15 19:27:12', '2026-10-15 19:27:12'),
+(3, N'BK202610150002', 9, 940, NULL, N'ONLINE', N'CONFIRMED', 110000.00, 0.00, 110000.00, '2026-10-15 18:42:12', '2026-10-15 18:42:12'),
+(4, N'BK202610150003', 10, 939, NULL, N'COUNTER', N'CONFIRMED', 110000.00, 0.00, 110000.00, '2026-10-15 17:57:12', '2026-10-15 17:57:12'),
+(5, N'BK202610150004', 11, 938, NULL, N'ONLINE', N'CONFIRMED', 110000.00, 0.00, 110000.00, '2026-10-15 17:12:12', '2026-10-15 17:12:12'),
+(6, N'BK202610150005', 12, 937, NULL, N'ONLINE', N'CONFIRMED', 110000.00, 0.00, 110000.00, '2026-10-15 16:27:12', '2026-10-15 16:27:12'),
+(7, N'BK202610150006', 13, 936, NULL, N'COUNTER', N'CONFIRMED', 110000.00, 0.00, 110000.00, '2026-10-15 15:42:12', '2026-10-15 15:42:12'),
+(8, N'BK202610150007', 80, 935, NULL, N'ONLINE', N'CONFIRMED', 110000.00, 0.00, 110000.00, '2026-10-15 14:57:12', '2026-10-15 14:57:12'),
+(9, N'BK202610150008', 81, 934, NULL, N'ONLINE', N'CONFIRMED', 110000.00, 0.00, 110000.00, '2026-10-15 14:12:12', '2026-10-15 14:12:12'),
+(10, N'BK202610150009', 82, 933, NULL, N'COUNTER', N'CONFIRMED', 110000.00, 0.00, 110000.00, '2026-10-15 13:27:12', '2026-10-15 13:27:12'),
+(11, N'BK202610150010', 83, 932, NULL, N'ONLINE', N'CONFIRMED', 110000.00, 0.00, 110000.00, '2026-10-15 12:42:12', '2026-10-15 12:42:12'),
+(12, N'BK202610150011', 84, 931, NULL, N'ONLINE', N'CONFIRMED', 110000.00, 0.00, 110000.00, '2026-10-15 11:57:12', '2026-10-15 11:57:12'),
+(13, N'BK202610150012', 85, 930, NULL, N'COUNTER', N'CONFIRMED', 110000.00, 0.00, 110000.00, '2026-10-15 11:12:12', '2026-10-15 11:12:12'),
+(14, N'BK202610150013', 86, 929, NULL, N'ONLINE', N'CONFIRMED', 110000.00, 0.00, 110000.00, '2026-10-15 10:27:12', '2026-10-15 10:27:12'),
+(15, N'BK202610150014', 87, 928, NULL, N'ONLINE', N'CONFIRMED', 110000.00, 0.00, 110000.00, '2026-10-15 09:42:12', '2026-10-15 09:42:12'),
+(16, N'BK202610150015', 88, 927, NULL, N'COUNTER', N'CONFIRMED', 110000.00, 0.00, 110000.00, '2026-10-15 08:57:12', '2026-10-15 08:57:12'),
+(17, N'BK202610150016', 89, 926, NULL, N'ONLINE', N'CONFIRMED', 110000.00, 0.00, 110000.00, '2026-10-15 08:12:12', '2026-10-15 08:12:12'),
+(18, N'BK202610150017', 90, 925, NULL, N'ONLINE', N'CONFIRMED', 110000.00, 0.00, 110000.00, '2026-10-15 07:27:12', '2026-10-15 07:27:12'),
+(19, N'BK202610150018', 91, 924, NULL, N'COUNTER', N'CONFIRMED', 110000.00, 0.00, 110000.00, '2026-10-15 06:42:12', '2026-10-15 06:42:12'),
+(20, N'BK202610150019', 92, 923, NULL, N'ONLINE', N'CONFIRMED', 110000.00, 0.00, 110000.00, '2026-10-15 05:57:12', '2026-10-15 05:57:12'),
+(21, N'BK202610150020', 93, 922, NULL, N'ONLINE', N'CONFIRMED', 110000.00, 0.00, 110000.00, '2026-10-15 05:12:12', '2026-10-15 05:12:12'),
+(22, N'BK202610150021', 94, 921, NULL, N'COUNTER', N'CONFIRMED', 110000.00, 0.00, 110000.00, '2026-10-15 04:27:12', '2026-10-15 04:27:12'),
+(23, N'BK202610150022', 95, 920, NULL, N'ONLINE', N'CONFIRMED', 110000.00, 0.00, 110000.00, '2026-10-15 03:42:12', '2026-10-15 03:42:12'),
+(24, N'BK202610150023', 96, 919, NULL, N'ONLINE', N'CONFIRMED', 110000.00, 0.00, 110000.00, '2026-10-15 02:57:12', '2026-10-15 02:57:12'),
+(25, N'BK202610150024', 97, 918, NULL, N'COUNTER', N'CONFIRMED', 110000.00, 0.00, 110000.00, '2026-10-15 02:12:12', '2026-10-15 02:12:12'),
+(26, N'BK202610150025', 98, 917, NULL, N'ONLINE', N'CONFIRMED', 110000.00, 0.00, 110000.00, '2026-10-15 01:27:12', '2026-10-15 01:27:12');
+GO
+SET IDENTITY_INSERT Bookings OFF;
+GO
+
+-- ====================================================================================
+-- BookingSeats (46 bản ghi)
+-- ====================================================================================
+SET IDENTITY_INSERT BookingSeats ON;
+GO
+INSERT INTO BookingSeats (BookingSeatID, BookingID, SeatID, ShowtimeID, Price, SeatStatus, HoldUntil) VALUES
+(1, 1, 1, 1, 80000.00, N'CONFIRMED', NULL),
+(2, 2, 4641, 941, 110000.00, N'CONFIRMED', NULL),
+(3, 3, 4591, 940, 110000.00, N'CONFIRMED', NULL),
+(4, 4, 4491, 939, 110000.00, N'CONFIRMED', NULL),
+(5, 5, 4491, 938, 110000.00, N'CONFIRMED', NULL),
+(6, 6, 4441, 937, 110000.00, N'CONFIRMED', NULL),
+(7, 7, 4441, 936, 110000.00, N'CONFIRMED', NULL),
+(8, 8, 4341, 935, 110000.00, N'CONFIRMED', NULL),
+(9, 9, 4191, 934, 110000.00, N'CONFIRMED', NULL),
+(10, 10, 4141, 933, 110000.00, N'CONFIRMED', NULL),
+(11, 11, 3991, 932, 110000.00, N'CONFIRMED', NULL),
+(12, 12, 3991, 931, 110000.00, N'CONFIRMED', NULL),
+(13, 13, 3891, 930, 110000.00, N'CONFIRMED', NULL),
+(14, 14, 3841, 929, 110000.00, N'CONFIRMED', NULL),
+(15, 15, 1891, 928, 110000.00, N'CONFIRMED', NULL),
+(16, 16, 481, 927, 110000.00, N'CONFIRMED', NULL),
+(17, 17, 841, 926, 110000.00, N'CONFIRMED', NULL),
+(18, 18, 361, 925, 110000.00, N'CONFIRMED', NULL),
+(19, 19, 301, 924, 110000.00, N'CONFIRMED', NULL),
+(20, 20, 241, 923, 110000.00, N'CONFIRMED', NULL),
+(21, 21, 15, 922, 110000.00, N'CONFIRMED', NULL),
+(22, 22, 7, 921, 110000.00, N'CONFIRMED', NULL),
+(23, 23, 7, 920, 110000.00, N'CONFIRMED', NULL),
+(24, 24, 1, 919, 110000.00, N'CONFIRMED', NULL),
+(25, 25, 1, 918, 110000.00, N'CONFIRMED', NULL),
+(26, 26, 4641, 917, 110000.00, N'CONFIRMED', NULL),
+(27, 2, 4591, 941, 110000.00, N'CONFIRMED', NULL),
+(28, 3, 4491, 940, 110000.00, N'CONFIRMED', NULL),
+(29, 5, 4441, 938, 110000.00, N'CONFIRMED', NULL),
+(30, 7, 4341, 936, 110000.00, N'CONFIRMED', NULL),
+(31, 8, 4191, 935, 110000.00, N'CONFIRMED', NULL),
+(32, 9, 4141, 934, 110000.00, N'CONFIRMED', NULL),
+(33, 10, 3991, 933, 110000.00, N'CONFIRMED', NULL),
+(34, 12, 3891, 931, 110000.00, N'CONFIRMED', NULL),
+(35, 13, 3841, 930, 110000.00, N'CONFIRMED', NULL),
+(36, 14, 1891, 929, 110000.00, N'CONFIRMED', NULL),
+(37, 15, 481, 928, 110000.00, N'CONFIRMED', NULL),
+(38, 16, 841, 927, 110000.00, N'CONFIRMED', NULL),
+(39, 17, 361, 926, 110000.00, N'CONFIRMED', NULL),
+(40, 18, 301, 925, 110000.00, N'CONFIRMED', NULL),
+(41, 19, 241, 924, 110000.00, N'CONFIRMED', NULL),
+(42, 20, 15, 923, 110000.00, N'CONFIRMED', NULL),
+(43, 21, 7, 922, 110000.00, N'CONFIRMED', NULL),
+(44, 23, 1, 920, 110000.00, N'CONFIRMED', NULL),
+(45, 25, 4641, 918, 110000.00, N'CONFIRMED', NULL),
+(46, 26, 4591, 917, 110000.00, N'CONFIRMED', NULL);
+GO
+SET IDENTITY_INSERT BookingSeats OFF;
+GO
+
+-- ====================================================================================
+-- Tickets (45 bản ghi)
+-- ====================================================================================
+SET IDENTITY_INSERT Tickets ON;
+GO
+INSERT INTO Tickets (TicketID, BookingSeatID, TicketCode, QRCode, TicketStatus, CheckedInAt, CheckedInBy, CreatedAt) VALUES
+(1, 2, N'TKBK2026101500014641', N'QR_BK202610150001_4641', N'VALID', NULL, NULL, '2026-10-15 19:27:12'),
+(2, 3, N'TKBK2026101500024591', N'QR_BK202610150002_4591', N'USED', '2026-10-15 19:57:12', 75, '2026-10-15 18:42:12'),
+(3, 4, N'TKBK2026101500034491', N'QR_BK202610150003_4491', N'VALID', NULL, NULL, '2026-10-15 17:57:12'),
+(4, 5, N'TKBK2026101500044491', N'QR_BK202610150004_4491', N'USED', '2026-10-15 19:57:12', 70, '2026-10-15 17:12:12'),
+(5, 6, N'TKBK2026101500054441', N'QR_BK202610150005_4441', N'VALID', NULL, NULL, '2026-10-15 16:27:12'),
+(6, 7, N'TKBK2026101500064441', N'QR_BK202610150006_4441', N'USED', '2026-10-15 19:57:12', 70, '2026-10-15 15:42:12'),
+(7, 8, N'TKBK2026101500074341', N'QR_BK202610150007_4341', N'VALID', NULL, NULL, '2026-10-15 14:57:12'),
+(8, 9, N'TKBK2026101500084191', N'QR_BK202610150008_4191', N'USED', '2026-10-15 19:57:12', 60, '2026-10-15 14:12:12'),
+(9, 10, N'TKBK2026101500094141', N'QR_BK202610150009_4141', N'VALID', NULL, NULL, '2026-10-15 13:27:12'),
+(10, 11, N'TKBK2026101500103991', N'QR_BK202610150010_3991', N'USED', '2026-10-15 19:57:12', 55, '2026-10-15 12:42:12'),
+(11, 12, N'TKBK2026101500113991', N'QR_BK202610150011_3991', N'VALID', NULL, NULL, '2026-10-15 11:57:12'),
+(12, 13, N'TKBK2026101500123891', N'QR_BK202610150012_3891', N'USED', '2026-10-15 19:57:12', 5, '2026-10-15 11:12:12'),
+(13, 14, N'TKBK2026101500133841', N'QR_BK202610150013_3841', N'VALID', NULL, NULL, '2026-10-15 10:27:12'),
+(14, 15, N'TKBK2026101500141891', N'QR_BK202610150014_1891', N'USED', '2026-10-15 19:57:12', 46, '2026-10-15 09:42:12'),
+(15, 16, N'TKBK202610150015481', N'QR_BK202610150015_481', N'VALID', NULL, NULL, '2026-10-15 08:57:12'),
+(16, 17, N'TKBK202610150016841', N'QR_BK202610150016_841', N'USED', '2026-10-15 19:57:12', 41, '2026-10-15 08:12:12'),
+(17, 18, N'TKBK202610150017361', N'QR_BK202610150017_361', N'VALID', NULL, NULL, '2026-10-15 07:27:12'),
+(18, 19, N'TKBK202610150018301', N'QR_BK202610150018_301', N'USED', '2026-10-15 19:57:12', 32, '2026-10-15 06:42:12'),
+(19, 20, N'TKBK202610150019241', N'QR_BK202610150019_241', N'VALID', NULL, NULL, '2026-10-15 05:57:12'),
+(20, 21, N'TKBK20261015002015', N'QR_BK202610150020_15', N'USED', '2026-10-15 19:57:12', 6, '2026-10-15 05:12:12'),
+(21, 22, N'TKBK2026101500217', N'QR_BK202610150021_7', N'VALID', NULL, NULL, '2026-10-15 04:27:12'),
+(22, 23, N'TKBK2026101500227', N'QR_BK202610150022_7', N'USED', '2026-10-15 19:57:12', 2, '2026-10-15 03:42:12'),
+(23, 24, N'TKBK2026101500231', N'QR_BK202610150023_1', N'VALID', NULL, NULL, '2026-10-15 02:57:12'),
+(24, 25, N'TKBK2026101500241', N'QR_BK202610150024_1', N'USED', '2026-10-15 19:57:12', 2, '2026-10-15 02:12:12'),
+(25, 26, N'TKBK2026101500254641', N'QR_BK202610150025_4641', N'VALID', NULL, NULL, '2026-10-15 01:27:12'),
+(26, 27, N'TKBK2026101500014591', N'QR_BK202610150001_4591', N'VALID', NULL, NULL, '2026-10-15 19:27:12'),
+(27, 28, N'TKBK2026101500024491', N'QR_BK202610150002_4491', N'USED', '2026-10-15 19:57:43', 70, '2026-10-15 18:42:12'),
+(28, 29, N'TKBK2026101500044441', N'QR_BK202610150004_4441', N'USED', '2026-10-15 19:57:43', 70, '2026-10-15 17:12:12'),
+(29, 30, N'TKBK2026101500064341', N'QR_BK202610150006_4341', N'USED', '2026-10-15 19:57:43', 65, '2026-10-15 15:42:12'),
+(30, 31, N'TKBK2026101500074191', N'QR_BK202610150007_4191', N'VALID', NULL, NULL, '2026-10-15 14:57:12'),
+(31, 32, N'TKBK2026101500084141', N'QR_BK202610150008_4141', N'USED', '2026-10-15 19:57:43', 60, '2026-10-15 14:12:12'),
+(32, 33, N'TKBK2026101500093991', N'QR_BK202610150009_3991', N'VALID', NULL, NULL, '2026-10-15 13:27:12'),
+(33, 34, N'TKBK2026101500113891', N'QR_BK202610150011_3891', N'VALID', NULL, NULL, '2026-10-15 11:57:12'),
+(34, 35, N'TKBK2026101500123841', N'QR_BK202610150012_3841', N'USED', '2026-10-15 19:57:43', 5, '2026-10-15 11:12:12'),
+(35, 36, N'TKBK2026101500131891', N'QR_BK202610150013_1891', N'VALID', NULL, NULL, '2026-10-15 10:27:12'),
+(36, 37, N'TKBK202610150014481', N'QR_BK202610150014_481', N'USED', '2026-10-15 19:57:43', 46, '2026-10-15 09:42:12'),
+(37, 38, N'TKBK202610150015841', N'QR_BK202610150015_841', N'VALID', NULL, NULL, '2026-10-15 08:57:12'),
+(38, 39, N'TKBK202610150016361', N'QR_BK202610150016_361', N'USED', '2026-10-15 19:57:43', 8, '2026-10-15 08:12:12'),
+(39, 40, N'TKBK202610150017301', N'QR_BK202610150017_301', N'VALID', NULL, NULL, '2026-10-15 07:27:12'),
+(40, 41, N'TKBK202610150018241', N'QR_BK202610150018_241', N'USED', '2026-10-15 19:57:43', 32, '2026-10-15 06:42:12'),
+(41, 42, N'TKBK20261015001915', N'QR_BK202610150019_15', N'VALID', NULL, NULL, '2026-10-15 05:57:12'),
+(42, 43, N'TKBK2026101500207', N'QR_BK202610150020_7', N'USED', '2026-10-15 19:57:43', 2, '2026-10-15 05:12:12'),
+(43, 44, N'TKBK2026101500221', N'QR_BK202610150022_1', N'USED', '2026-10-15 19:57:43', 2, '2026-10-15 03:42:12'),
+(44, 45, N'TKBK2026101500244641', N'QR_BK202610150024_4641', N'USED', '2026-10-15 19:57:43', 75, '2026-10-15 02:12:12'),
+(45, 46, N'TKBK2026101500254591', N'QR_BK202610150025_4591', N'VALID', NULL, NULL, '2026-10-15 01:27:12');
+GO
+SET IDENTITY_INSERT Tickets OFF;
+GO
+
+-- ====================================================================================
+-- FnbOrders (10 bản ghi)
+-- ====================================================================================
+SET IDENTITY_INSERT FnbOrders ON;
+GO
+INSERT INTO FnbOrders (FnbOrderID, BookingID, CentreID, UserID, OrderCode, OrderType, OrderStatus, TotalAmount, CreatedAt, UpdatedAt) VALUES
+(1, NULL, 1, 1, N'FNB202610150001', N'COUNTER', N'DELIVERED', 50000.00, '2026-10-15 19:12:31', '2026-10-15 19:12:31'),
+(2, NULL, 1, 9, N'FNB202610150002', N'COUNTER', N'DELIVERED', 50000.00, '2026-10-15 18:12:31', '2026-10-15 18:12:31'),
+(3, NULL, 1, 10, N'FNB202610150003', N'COUNTER', N'DELIVERED', 50000.00, '2026-10-15 17:12:31', '2026-10-15 17:12:31'),
+(4, NULL, 1, 11, N'FNB202610150004', N'COUNTER', N'DELIVERED', 50000.00, '2026-10-15 16:12:31', '2026-10-15 16:12:31'),
+(5, NULL, 1, 12, N'FNB202610150005', N'COUNTER', N'DELIVERED', 50000.00, '2026-10-15 15:12:31', '2026-10-15 15:12:31'),
+(6, NULL, 1, 13, N'FNB202610150006', N'COUNTER', N'DELIVERED', 50000.00, '2026-10-15 14:12:31', '2026-10-15 14:12:31'),
+(7, NULL, 1, 80, N'FNB202610150007', N'COUNTER', N'DELIVERED', 50000.00, '2026-10-15 13:12:31', '2026-10-15 13:12:31'),
+(8, NULL, 1, 81, N'FNB202610150008', N'COUNTER', N'DELIVERED', 50000.00, '2026-10-15 12:12:31', '2026-10-15 12:12:31'),
+(9, NULL, 1, 82, N'FNB202610150009', N'COUNTER', N'DELIVERED', 50000.00, '2026-10-15 11:12:31', '2026-10-15 11:12:31'),
+(10, NULL, 1, 83, N'FNB202610150010', N'COUNTER', N'DELIVERED', 50000.00, '2026-10-15 10:12:31', '2026-10-15 10:12:31');
+GO
+SET IDENTITY_INSERT FnbOrders OFF;
+GO
+
+-- ====================================================================================
+-- FnbOrderItems (10 bản ghi)
+-- ====================================================================================
+SET IDENTITY_INSERT FnbOrderItems ON;
+GO
+INSERT INTO FnbOrderItems (FnbOrderItemID, FnbOrderID, FnbItemID, ComboID, Quantity, UnitPrice) VALUES
+(1, 1, 1, NULL, 1, 50000.00),
+(2, 2, 1, NULL, 1, 50000.00),
+(3, 3, 1, NULL, 1, 50000.00),
+(4, 4, 1, NULL, 1, 50000.00),
+(5, 5, 1, NULL, 1, 50000.00),
+(6, 6, 1, NULL, 1, 50000.00),
+(7, 7, 1, NULL, 1, 50000.00),
+(8, 8, 1, NULL, 1, 50000.00),
+(9, 9, 1, NULL, 1, 50000.00),
+(10, 10, 1, NULL, 1, 50000.00);
+GO
+SET IDENTITY_INSERT FnbOrderItems OFF;
+GO
+
+-- ====================================================================================
+-- Payments (36 bản ghi)
+-- ====================================================================================
+SET IDENTITY_INSERT Payments ON;
+GO
+INSERT INTO Payments (PaymentID, BookingID, FnbOrderID, TransactionCode, PaymentMethod, Amount, PaymentStatus, PaidAt, CreatedAt) VALUES
+(1, 1, NULL, N'TXN_CF-DEMO-0001_1', N'QR', 80000.00, N'PAID', '2026-10-03 23:08:31', '2026-10-03 23:08:31'),
+(2, 2, NULL, N'TXN_BK202610150001_2', N'QR', 110000.00, N'PAID', '2026-10-15 19:27:12', '2026-10-15 19:27:12'),
+(3, 3, NULL, N'TXN_BK202610150002_3', N'QR', 110000.00, N'PAID', '2026-10-15 18:42:12', '2026-10-15 18:42:12'),
+(4, 4, NULL, N'TXN_BK202610150003_4', N'CASH', 110000.00, N'PAID', '2026-10-15 17:57:12', '2026-10-15 17:57:12'),
+(5, 5, NULL, N'TXN_BK202610150004_5', N'QR', 110000.00, N'PAID', '2026-10-15 17:12:12', '2026-10-15 17:12:12'),
+(6, 6, NULL, N'TXN_BK202610150005_6', N'QR', 110000.00, N'PAID', '2026-10-15 16:27:12', '2026-10-15 16:27:12'),
+(7, 7, NULL, N'TXN_BK202610150006_7', N'CASH', 110000.00, N'PAID', '2026-10-15 15:42:12', '2026-10-15 15:42:12'),
+(8, 8, NULL, N'TXN_BK202610150007_8', N'QR', 110000.00, N'PAID', '2026-10-15 14:57:12', '2026-10-15 14:57:12'),
+(9, 9, NULL, N'TXN_BK202610150008_9', N'QR', 110000.00, N'PAID', '2026-10-15 14:12:12', '2026-10-15 14:12:12'),
+(10, 10, NULL, N'TXN_BK202610150009_10', N'CASH', 110000.00, N'PAID', '2026-10-15 13:27:12', '2026-10-15 13:27:12'),
+(11, 11, NULL, N'TXN_BK202610150010_11', N'QR', 110000.00, N'PAID', '2026-10-15 12:42:12', '2026-10-15 12:42:12'),
+(12, 12, NULL, N'TXN_BK202610150011_12', N'QR', 110000.00, N'PAID', '2026-10-15 11:57:12', '2026-10-15 11:57:12'),
+(13, 13, NULL, N'TXN_BK202610150012_13', N'CASH', 110000.00, N'PAID', '2026-10-15 11:12:12', '2026-10-15 11:12:12'),
+(14, 14, NULL, N'TXN_BK202610150013_14', N'QR', 110000.00, N'PAID', '2026-10-15 10:27:12', '2026-10-15 10:27:12'),
+(15, 15, NULL, N'TXN_BK202610150014_15', N'QR', 110000.00, N'PAID', '2026-10-15 09:42:12', '2026-10-15 09:42:12'),
+(16, 16, NULL, N'TXN_BK202610150015_16', N'CASH', 110000.00, N'PAID', '2026-10-15 08:57:12', '2026-10-15 08:57:12'),
+(17, 17, NULL, N'TXN_BK202610150016_17', N'QR', 110000.00, N'PAID', '2026-10-15 08:12:12', '2026-10-15 08:12:12'),
+(18, 18, NULL, N'TXN_BK202610150017_18', N'QR', 110000.00, N'PAID', '2026-10-15 07:27:12', '2026-10-15 07:27:12'),
+(19, 19, NULL, N'TXN_BK202610150018_19', N'CASH', 110000.00, N'PAID', '2026-10-15 06:42:12', '2026-10-15 06:42:12'),
+(20, 20, NULL, N'TXN_BK202610150019_20', N'QR', 110000.00, N'PAID', '2026-10-15 05:57:12', '2026-10-15 05:57:12'),
+(21, 21, NULL, N'TXN_BK202610150020_21', N'QR', 110000.00, N'PAID', '2026-10-15 05:12:12', '2026-10-15 05:12:12'),
+(22, 22, NULL, N'TXN_BK202610150021_22', N'CASH', 110000.00, N'PAID', '2026-10-15 04:27:12', '2026-10-15 04:27:12'),
+(23, 23, NULL, N'TXN_BK202610150022_23', N'QR', 110000.00, N'PAID', '2026-10-15 03:42:12', '2026-10-15 03:42:12'),
+(24, 24, NULL, N'TXN_BK202610150023_24', N'QR', 110000.00, N'PAID', '2026-10-15 02:57:12', '2026-10-15 02:57:12'),
+(25, 25, NULL, N'TXN_BK202610150024_25', N'CASH', 110000.00, N'PAID', '2026-10-15 02:12:12', '2026-10-15 02:12:12'),
+(26, 26, NULL, N'TXN_BK202610150025_26', N'QR', 110000.00, N'PAID', '2026-10-15 01:27:12', '2026-10-15 01:27:12'),
+(27, NULL, 1, N'TXN_FNB202610150001', N'CASH', 50000.00, N'PAID', '2026-10-15 19:12:31', '2026-10-15 19:12:31'),
+(28, NULL, 2, N'TXN_FNB202610150002', N'CASH', 50000.00, N'PAID', '2026-10-15 18:12:31', '2026-10-15 18:12:31'),
+(29, NULL, 3, N'TXN_FNB202610150003', N'CASH', 50000.00, N'PAID', '2026-10-15 17:12:31', '2026-10-15 17:12:31'),
+(30, NULL, 4, N'TXN_FNB202610150004', N'CASH', 50000.00, N'PAID', '2026-10-15 16:12:31', '2026-10-15 16:12:31'),
+(31, NULL, 5, N'TXN_FNB202610150005', N'CASH', 50000.00, N'PAID', '2026-10-15 15:12:31', '2026-10-15 15:12:31'),
+(32, NULL, 6, N'TXN_FNB202610150006', N'CASH', 50000.00, N'PAID', '2026-10-15 14:12:31', '2026-10-15 14:12:31'),
+(33, NULL, 7, N'TXN_FNB202610150007', N'CASH', 50000.00, N'PAID', '2026-10-15 13:12:31', '2026-10-15 13:12:31'),
+(34, NULL, 8, N'TXN_FNB202610150008', N'CASH', 50000.00, N'PAID', '2026-10-15 12:12:31', '2026-10-15 12:12:31'),
+(35, NULL, 9, N'TXN_FNB202610150009', N'CASH', 50000.00, N'PAID', '2026-10-15 11:12:31', '2026-10-15 11:12:31'),
+(36, NULL, 10, N'TXN_FNB202610150010', N'CASH', 50000.00, N'PAID', '2026-10-15 10:12:31', '2026-10-15 10:12:31');
+GO
+SET IDENTITY_INSERT Payments OFF;
+GO
+
+-- ====================================================================================
+-- CheckInLogs (23 bản ghi)
+-- ====================================================================================
+SET IDENTITY_INSERT CheckInLogs ON;
+GO
+INSERT INTO CheckInLogs (CheckInID, TicketID, CheckedBy, CheckInTime, Result, Note) VALUES
+(1, 2, 75, '2026-10-15 19:57:12', N'SUCCESS', N'Khách hàng quét mã QR qua cổng soát vé thành công'),
+(2, 4, 70, '2026-10-15 19:57:12', N'SUCCESS', N'Khách hàng quét mã QR qua cổng soát vé thành công'),
+(3, 6, 70, '2026-10-15 19:57:12', N'SUCCESS', N'Khách hàng quét mã QR qua cổng soát vé thành công'),
+(4, 8, 60, '2026-10-15 19:57:12', N'SUCCESS', N'Khách hàng quét mã QR qua cổng soát vé thành công'),
+(5, 10, 55, '2026-10-15 19:57:12', N'SUCCESS', N'Khách hàng quét mã QR qua cổng soát vé thành công'),
+(6, 12, 5, '2026-10-15 19:57:12', N'SUCCESS', N'Khách hàng quét mã QR qua cổng soát vé thành công'),
+(7, 14, 46, '2026-10-15 19:57:12', N'SUCCESS', N'Khách hàng quét mã QR qua cổng soát vé thành công'),
+(8, 16, 41, '2026-10-15 19:57:12', N'SUCCESS', N'Khách hàng quét mã QR qua cổng soát vé thành công'),
+(9, 18, 32, '2026-10-15 19:57:12', N'SUCCESS', N'Khách hàng quét mã QR qua cổng soát vé thành công'),
+(10, 20, 6, '2026-10-15 19:57:12', N'SUCCESS', N'Khách hàng quét mã QR qua cổng soát vé thành công'),
+(11, 22, 2, '2026-10-15 19:57:12', N'SUCCESS', N'Khách hàng quét mã QR qua cổng soát vé thành công'),
+(12, 24, 2, '2026-10-15 19:57:12', N'SUCCESS', N'Khách hàng quét mã QR qua cổng soát vé thành công'),
+(13, 27, 70, '2026-10-15 19:57:43', N'SUCCESS', N'Khách hàng quét mã QR qua cổng soát vé thành công'),
+(14, 28, 70, '2026-10-15 19:57:43', N'SUCCESS', N'Khách hàng quét mã QR qua cổng soát vé thành công'),
+(15, 29, 65, '2026-10-15 19:57:43', N'SUCCESS', N'Khách hàng quét mã QR qua cổng soát vé thành công'),
+(16, 31, 60, '2026-10-15 19:57:43', N'SUCCESS', N'Khách hàng quét mã QR qua cổng soát vé thành công'),
+(17, 34, 5, '2026-10-15 19:57:43', N'SUCCESS', N'Khách hàng quét mã QR qua cổng soát vé thành công'),
+(18, 36, 46, '2026-10-15 19:57:43', N'SUCCESS', N'Khách hàng quét mã QR qua cổng soát vé thành công'),
+(19, 38, 8, '2026-10-15 19:57:43', N'SUCCESS', N'Khách hàng quét mã QR qua cổng soát vé thành công'),
+(20, 40, 32, '2026-10-15 19:57:43', N'SUCCESS', N'Khách hàng quét mã QR qua cổng soát vé thành công'),
+(21, 42, 2, '2026-10-15 19:57:43', N'SUCCESS', N'Khách hàng quét mã QR qua cổng soát vé thành công'),
+(22, 43, 2, '2026-10-15 19:57:43', N'SUCCESS', N'Khách hàng quét mã QR qua cổng soát vé thành công'),
+(23, 44, 75, '2026-10-15 19:57:43', N'SUCCESS', N'Khách hàng quét mã QR qua cổng soát vé thành công');
+GO
+SET IDENTITY_INSERT CheckInLogs OFF;
+GO
+
+-- ====================================================================================
+-- MovieRatings (36 bản ghi)
+-- ====================================================================================
+SET IDENTITY_INSERT MovieRatings ON;
+GO
+INSERT INTO MovieRatings (RatingID, MovieID, UserID, Score, CreatedAt, UpdatedAt) VALUES
+(1, 9, 1, 5, '2026-10-12 09:24:29', '2026-10-12 09:24:46'),
+(2, 12, 1, 5, '2026-10-12 09:27:21', '2026-10-12 09:32:10'),
+(3, 1, 80, 5, '2026-10-12 20:10:56', '2026-10-12 20:10:56'),
+(4, 1, 81, 5, '2026-10-12 20:10:56', '2026-10-12 20:10:56'),
+(5, 1, 82, 4, '2026-10-12 20:10:56', '2026-10-12 20:10:56'),
+(6, 1, 83, 5, '2026-10-12 20:10:56', '2026-10-12 20:10:56'),
+(7, 2, 84, 5, '2026-10-09 20:10:56', '2026-10-09 20:10:56'),
+(8, 2, 85, 5, '2026-10-09 20:10:56', '2026-10-09 20:10:56'),
+(9, 2, 86, 4, '2026-10-09 20:10:56', '2026-10-09 20:10:56'),
+(10, 2, 87, 5, '2026-10-09 20:10:56', '2026-10-09 20:10:56'),
+(11, 4, 88, 4, '2026-10-03 20:10:56', '2026-10-03 20:10:56'),
+(12, 4, 89, 5, '2026-10-03 20:10:56', '2026-10-03 20:10:56'),
+(13, 4, 90, 4, '2026-10-03 20:10:56', '2026-10-03 20:10:56'),
+(14, 5, 91, 5, '2026-09-30 20:10:56', '2026-09-30 20:10:56'),
+(15, 5, 92, 5, '2026-09-30 20:10:56', '2026-09-30 20:10:56'),
+(16, 5, 93, 4, '2026-09-30 20:10:56', '2026-09-30 20:10:56'),
+(17, 5, 94, 5, '2026-09-30 20:10:56', '2026-09-30 20:10:56'),
+(18, 6, 95, 5, '2026-09-27 20:10:56', '2026-09-27 20:10:56'),
+(19, 6, 96, 5, '2026-09-27 20:10:56', '2026-09-27 20:10:56'),
+(20, 6, 97, 4, '2026-09-27 20:10:56', '2026-09-27 20:10:56'),
+(21, 7, 98, 4, '2026-10-14 20:10:56', '2026-10-14 20:10:56'),
+(22, 7, 99, 4, '2026-10-14 20:10:56', '2026-10-14 20:10:56'),
+(23, 7, 100, 5, '2026-10-14 20:10:56', '2026-10-14 20:10:56'),
+(24, 9, 101, 5, '2026-10-08 20:10:56', '2026-10-08 20:10:56'),
+(25, 9, 102, 5, '2026-10-08 20:10:56', '2026-10-08 20:10:56'),
+(26, 9, 103, 4, '2026-10-08 20:10:56', '2026-10-08 20:10:56'),
+(27, 9, 104, 5, '2026-10-08 20:10:56', '2026-10-08 20:10:56'),
+(28, 10, 105, 5, '2026-10-05 20:10:56', '2026-10-05 20:10:56'),
+(29, 10, 106, 5, '2026-10-05 20:10:56', '2026-10-05 20:10:56'),
+(30, 10, 107, 5, '2026-10-05 20:10:56', '2026-10-05 20:10:56'),
+(31, 11, 108, 4, '2026-10-02 20:10:56', '2026-10-02 20:10:56'),
+(32, 11, 109, 5, '2026-10-02 20:10:56', '2026-10-02 20:10:56'),
+(33, 11, 110, 4, '2026-10-02 20:10:56', '2026-10-02 20:10:56'),
+(34, 12, 111, 5, '2026-09-29 20:10:56', '2026-09-29 20:10:56'),
+(35, 12, 112, 5, '2026-09-29 20:10:56', '2026-09-29 20:10:56'),
+(36, 12, 113, 4, '2026-09-29 20:10:56', '2026-09-29 20:10:56');
+GO
+SET IDENTITY_INSERT MovieRatings OFF;
+GO
+
+/* ====================================================================================
+   KIỂM TRA TỔNG SỐ LƯỢNG BẢN GHI SAU KHI NẠP DỮ LIỆU
+   ==================================================================================== */
+SELECT 'Centres' AS Bang, COUNT(*) AS SoBanGhi FROM Centres
+UNION ALL SELECT 'Users', COUNT(*) FROM Users
+UNION ALL SELECT 'Halls', COUNT(*) FROM Halls
+UNION ALL SELECT 'Seats', COUNT(*) FROM Seats
+UNION ALL SELECT 'CentreManagerAssignments', COUNT(*) FROM CentreManagerAssignments
+UNION ALL SELECT 'StaffTransferHistory', COUNT(*) FROM StaffTransferHistory
+UNION ALL SELECT 'Movies', COUNT(*) FROM Movies
+UNION ALL SELECT 'CentreMovies', COUNT(*) FROM CentreMovies
+UNION ALL SELECT 'CentrePricing', COUNT(*) FROM CentrePricing
+UNION ALL SELECT 'TimeSlotPricing', COUNT(*) FROM TimeSlotPricing
+UNION ALL SELECT 'Showtimes', COUNT(*) FROM Showtimes
+UNION ALL SELECT 'Surcharges', COUNT(*) FROM Surcharges
+UNION ALL SELECT 'FnbCategories', COUNT(*) FROM FnbCategories
+UNION ALL SELECT 'FnbItems', COUNT(*) FROM FnbItems
+UNION ALL SELECT 'FnbCombos', COUNT(*) FROM FnbCombos
+UNION ALL SELECT 'ComboItems', COUNT(*) FROM ComboItems
+UNION ALL SELECT 'CentreFnbInventory', COUNT(*) FROM CentreFnbInventory
+UNION ALL SELECT 'Vouchers', COUNT(*) FROM Vouchers
+UNION ALL SELECT 'VoucherDays', COUNT(*) FROM VoucherDays
+UNION ALL SELECT 'VoucherMovies', COUNT(*) FROM VoucherMovies
+UNION ALL SELECT 'VoucherCentres', COUNT(*) FROM VoucherCentres
+UNION ALL SELECT 'Bookings', COUNT(*) FROM Bookings
+UNION ALL SELECT 'BookingSeats', COUNT(*) FROM BookingSeats
+UNION ALL SELECT 'Tickets', COUNT(*) FROM Tickets
+UNION ALL SELECT 'FnbOrders', COUNT(*) FROM FnbOrders
+UNION ALL SELECT 'FnbOrderItems', COUNT(*) FROM FnbOrderItems
+UNION ALL SELECT 'Payments', COUNT(*) FROM Payments
+UNION ALL SELECT 'CheckInLogs', COUNT(*) FROM CheckInLogs
+UNION ALL SELECT 'VoucherUsages', COUNT(*) FROM VoucherUsages
+UNION ALL SELECT 'MovieRatings', COUNT(*) FROM MovieRatings
+ORDER BY SoBanGhi DESC;
+GO
+
+
+/* =========================================================
+   F&B: nhân bản danh mục món/combo mẫu cho TỪNG Centre
+   (xem giải thích trong database/fnb_seed_per_centre.sql)
+   ========================================================= */
+SET XACT_ABORT ON;
+BEGIN TRANSACTION;
+
+/* 1) Bổ sung dòng combo cho combo gốc 3, 4, 5 (nếu chưa có) */
+INSERT INTO ComboItems (ComboID, FnbItemID, Quantity)
+SELECT v.ComboID, v.FnbItemID, v.Quantity
+FROM (VALUES
+    (3, 6, 1), (3, 3, 1), (3, 4, 1),   -- Combo Movie Night: 1 bắp phô mai + 2 nước ngọt
+    (4, 2, 1), (4, 3, 1),              -- Combo Solo: 1 bắp caramel + 1 nước ngọt
+    (5, 1, 2), (5, 3, 4), (5, 5, 1)    -- Combo Premium: 2 bắp + 4 nước + 1 snack
+) AS v(ComboID, FnbItemID, Quantity)
+WHERE EXISTS (SELECT 1 FROM FnbCombos WHERE ComboID = v.ComboID AND CentreID IS NULL)
+  AND EXISTS (SELECT 1 FROM FnbItems WHERE FnbItemID = v.FnbItemID AND CentreID IS NULL)
+  AND NOT EXISTS (SELECT 1 FROM ComboItems ci WHERE ci.ComboID = v.ComboID AND ci.FnbItemID = v.FnbItemID);
+
+/* 2) Nhân bản cho từng Centre */
+DECLARE @centreId INT;
+DECLARE centre_cursor CURSOR LOCAL FAST_FORWARD FOR
+    SELECT CentreID FROM Centres ORDER BY CentreID;
+OPEN centre_cursor;
+FETCH NEXT FROM centre_cursor INTO @centreId;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM FnbItems WHERE CentreID = @centreId)
+       AND NOT EXISTS (SELECT 1 FROM FnbCombos WHERE CentreID = @centreId)
+    BEGIN
+        DECLARE @itemMap TABLE (OldId INT PRIMARY KEY, NewId INT);
+        DECLARE @comboMap TABLE (OldId INT PRIMARY KEY, NewId INT);
+        DELETE FROM @itemMap;
+        DELETE FROM @comboMap;
+
+        /* Món: MERGE ... ON 1 = 0 để chèn mọi dòng và lấy lại ID mới */
+        MERGE FnbItems AS target
+        USING (SELECT FnbItemID, CategoryID, ItemName, Description, Price, ImageURL, Status
+               FROM FnbItems WHERE CentreID IS NULL) AS source
+        ON 1 = 0
+        WHEN NOT MATCHED THEN
+            INSERT (CategoryID, CentreID, ItemName, Description, Price, ImageURL, Status)
+            VALUES (source.CategoryID, @centreId, source.ItemName, source.Description,
+                    source.Price, source.ImageURL, source.Status)
+        OUTPUT source.FnbItemID, inserted.FnbItemID INTO @itemMap (OldId, NewId);
+
+        /* Combo */
+        MERGE FnbCombos AS target
+        USING (SELECT ComboID, ComboName, Description, Price, ImageURL, Status
+               FROM FnbCombos WHERE CentreID IS NULL) AS source
+        ON 1 = 0
+        WHEN NOT MATCHED THEN
+            INSERT (CentreID, ComboName, Description, Price, ImageURL, Status)
+            VALUES (@centreId, source.ComboName, source.Description,
+                    source.Price, source.ImageURL, source.Status)
+        OUTPUT source.ComboID, inserted.ComboID INTO @comboMap (OldId, NewId);
+
+        /* Dòng combo: đổi ID cũ sang ID mới của Centre này */
+        INSERT INTO ComboItems (ComboID, FnbItemID, Quantity)
+        SELECT cm.NewId, im.NewId, ci.Quantity
+        FROM ComboItems ci
+        JOIN @comboMap cm ON cm.OldId = ci.ComboID
+        JOIN @itemMap im ON im.OldId = ci.FnbItemID;
+
+        /* Tồn kho: mỗi món mới có sẵn 100 */
+        INSERT INTO CentreFnbInventory (CentreID, FnbItemID, StockQuantity, IsAvailable)
+        SELECT @centreId, NewId, 100, 1 FROM @itemMap;
+    END
+
+    FETCH NEXT FROM centre_cursor INTO @centreId;
+END
+
+CLOSE centre_cursor;
+DEALLOCATE centre_cursor;
+
+COMMIT TRANSACTION;
+GO
+
+/* Kiểm tra: mỗi Centre nên có 12 món và 5 combo */
+SELECT c.CentreID, c.CentreName,
+       (SELECT COUNT(*) FROM FnbItems i WHERE i.CentreID = c.CentreID) AS SoMon,
+       (SELECT COUNT(*) FROM FnbCombos co WHERE co.CentreID = c.CentreID) AS SoCombo
+FROM Centres c
+ORDER BY c.CentreID;
+GO
+
+/* =====================================================================================
+   DỮ LIỆU BỔ SUNG: 200 VOUCHERS (ADMIN TOÀN CHUỖI & 4 CHI NHÁNH)
+   ===================================================================================== */
+PRINT N'Bắt đầu nạp 200 voucher mẫu...';
+
+-- Phần 1: 80 Voucher toàn hệ thống cho Admin (CentreID = NULL)
+DECLARE @i INT = 1;
+WHILE @i <= 80
+BEGIN
+    DECLARE @code VARCHAR(50) = 'GLB' + RIGHT('0' + CAST(@i AS VARCHAR(2)), 2);
+    
+    IF NOT EXISTS (SELECT 1 FROM Vouchers WHERE VoucherCode = @code)
+    BEGIN
+        DECLARE @name NVARCHAR(150);
+        DECLARE @desc NVARCHAR(500);
+        DECLARE @type VARCHAR(20);
+        DECLARE @val DECIMAL(12,2);
+        DECLARE @minOrder DECIMAL(12,2);
+        DECLARE @maxDisc DECIMAL(12,2);
+        DECLARE @startDate DATETIME2 = '2026-01-01 00:00:00';
+        DECLARE @endDate DATETIME2 = '2026-12-31 23:59:59';
+        DECLARE @limit INT = 500;
+        DECLARE @used INT = 0;
+        DECLARE @status VARCHAR(20) = 'ACTIVE';
+
+        IF @i <= 20 
+        BEGIN
+            SET @type = 'PERCENT';
+            SET @val = 10.00 + ((@i - 1) * 2);
+            SET @name = N'Voucher Toàn Chuỗi Giảm ' + CAST(CAST(@val AS INT) AS NVARCHAR) + N'%';
+            SET @desc = N'Áp dụng cho mọi cụm rạp CineFlow toàn quốc';
+            SET @minOrder = 100000;
+            SET @maxDisc = 60000;
+        END
+        ELSE IF @i <= 40
+        BEGIN
+            SET @type = 'FIXED';
+            SET @val = 20000.00 + ((@i - 21) * 6500);
+            SET @name = N'Voucher Toàn Chuỗi Giảm ' + CAST(CAST(@val AS INT) AS NVARCHAR) + N'đ';
+            SET @desc = N'Giảm trực tiếp vào tổng hóa đơn vé xem phim';
+            SET @minOrder = 120000;
+            SET @maxDisc = @val;
+        END
+        ELSE IF @i <= 56
+        BEGIN
+            SET @type = CASE WHEN @i % 2 = 0 THEN 'PERCENT' ELSE 'FIXED' END;
+            SET @val = CASE WHEN @type = 'PERCENT' THEN 25.00 ELSE 30000.00 END;
+            SET @name = N'Ưu Đãi Mùa Lễ Toàn Chuỗi #' + CAST(@i AS NVARCHAR);
+            SET @desc = N'Chương trình khuyến mãi mùa trước đã kết thúc';
+            SET @minOrder = 80000;
+            SET @maxDisc = 50000;
+            SET @startDate = '2026-01-01 00:00:00';
+            SET @endDate = '2026-02-15 23:59:59';
+            SET @status = 'ACTIVE';
+        END
+        ELSE IF @i <= 68
+        BEGIN
+            SET @type = 'PERCENT';
+            SET @val = 50.00;
+            SET @name = N'Flash Sale 50% Toàn Chuỗi #' + CAST(@i AS NVARCHAR);
+            SET @desc = N'Số lượng có hạn, đã phát hết sạch lượt dùng';
+            SET @minOrder = 150000;
+            SET @maxDisc = 100000;
+            SET @limit = 100;
+            SET @used = 100;
+            SET @status = 'ACTIVE';
+        END
+        ELSE
+        BEGIN
+            SET @type = 'FIXED';
+            SET @val = 50000.00;
+            SET @name = N'Voucher Tạm Ngừng Phát Hành #' + CAST(@i AS NVARCHAR);
+            SET @desc = N'Voucher đã tạm ngừng theo chính sách ban quản trị';
+            SET @minOrder = 200000;
+            SET @maxDisc = 50000;
+            SET @status = 'INACTIVE';
+        END
+
+        INSERT INTO Vouchers (
+            VoucherCode, VoucherName, Description, CentreID, CreatedBy,
+            DiscountType, DiscountValue, MinimumOrderValue, MaximumDiscount,
+            StartDate, EndDate, UsageLimit, UsedCount, PerCustomerLimit, Status
+        ) VALUES (
+            @code, @name, @desc, NULL, 4,
+            @type, @val, @minOrder, @maxDisc,
+            @startDate, @endDate, @limit, @used, 1, @status
+        );
+    END
+    SET @i += 1;
+END
+GO
+
+-- Phần 2: 120 Voucher cho 4 Chi nhánh (30 voucher / rạp)
+DECLARE @BranchList TABLE (CentreId INT, Prefix VARCHAR(10), BranchName NVARCHAR(100));
+INSERT INTO @BranchList VALUES 
+(1, 'CGY', N'Cầu Giấy'),
+(2, 'HDO', N'Hà Đông'),
+(3, 'HKI', N'Hoàn Kiếm'),
+(4, 'Q01', N'Quận 1');
+
+DECLARE @curCentre INT, @curPrefix VARCHAR(10), @curName NVARCHAR(100);
+DECLARE branch_cursor CURSOR LOCAL FAST_FORWARD FOR SELECT CentreId, Prefix, BranchName FROM @BranchList;
+
+OPEN branch_cursor;
+FETCH NEXT FROM branch_cursor INTO @curCentre, @curPrefix, @curName;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    DECLARE @j INT = 1;
+    WHILE @j <= 30
+    BEGIN
+        DECLARE @bCode VARCHAR(50) = @curPrefix + RIGHT('0' + CAST(@j AS VARCHAR(2)), 2);
+        
+        IF NOT EXISTS (SELECT 1 FROM Vouchers WHERE VoucherCode = @bCode)
+        BEGIN
+            DECLARE @bType VARCHAR(20) = CASE WHEN @j % 2 = 0 THEN 'PERCENT' ELSE 'FIXED' END;
+            DECLARE @bVal DECIMAL(12,2) = CASE WHEN @bType = 'PERCENT' THEN 10.00 + (@j * 1.5) ELSE 15000.00 + (@j * 2500) END;
+            DECLARE @bEndDate DATETIME2 = CASE WHEN @j <= 6 THEN '2026-02-01' ELSE '2026-12-31' END;
+            DECLARE @bLimit INT = CASE WHEN @j IN (7, 8) THEN 50 ELSE 200 END;
+            DECLARE @bUsed INT = CASE WHEN @j IN (7, 8) THEN 50 ELSE @j * 2 END;
+            DECLARE @bStatus VARCHAR(20) = CASE WHEN @j IN (9, 10) THEN 'INACTIVE' ELSE 'ACTIVE' END;
+            DECLARE @bTitle NVARCHAR(150) = N'Ưu Đãi Rạp ' + @curName + N' #' + RIGHT('0' + CAST(@j AS VARCHAR(2)), 2);
+            DECLARE @bDesc NVARCHAR(500) = N'Chỉ áp dụng khi xem phim trực tiếp tại CineFlow ' + @curName;
+
+            INSERT INTO Vouchers (
+                VoucherCode, VoucherName, Description, CentreID, CreatedBy,
+                DiscountType, DiscountValue, MinimumOrderValue, MaximumDiscount,
+                StartDate, EndDate, UsageLimit, UsedCount, PerCustomerLimit, Status
+            ) VALUES (
+                @bCode, @bTitle, @bDesc, @curCentre, 4,
+                @bType, @bVal, 80000, 50000,
+                '2026-01-01', @bEndDate, @bLimit, @bUsed, 1, @bStatus
+            );
+        END
+        SET @j += 1;
+    END
+    FETCH NEXT FROM branch_cursor INTO @curCentre, @curPrefix, @curName;
+END
+
+CLOSE branch_cursor;
+DEALLOCATE branch_cursor;
+GO
+
+
+/* =====================================================================================
+   DỮ LIỆU BỔ SUNG: TỒN KHO F&B VÀ NHẬT KÝ SOÁT VÉ DEMO
+   ===================================================================================== */
+-- Cập nhật tồn kho bắp nước chi nhánh (Centre 1 và Centre 2) để luôn sẵn sàng bán
+UPDATE CentreFnbInventory
+SET IsAvailable = 1, StockQuantity = 150
+WHERE CentreID IN (1, 2);
+GO
+
+-- Thêm các bản ghi nhật ký soát vé (CheckInLogs) mẫu
+INSERT INTO CheckInLogs (TicketID, CheckedBy, CheckInTime, Result, Note)
+VALUES
+    (20, 6, DATEADD(minute, -30, GETDATE()), 'SUCCESS', N'Quét mã QR qua cổng soát vé thành công'),
+    (NULL, 6, DATEADD(minute, -25, GETDATE()), 'REJECTED', N'Không tìm thấy vé với mã này.'),
+    (20, 6, DATEADD(minute, -20, GETDATE()), 'REJECTED', N'Vé đã được sử dụng trước đó.'),
+    (1, 6, DATEADD(minute, -15, GETDATE()), 'REJECTED', N'Vé thuộc Centre khác (CineFlow Cẩm Lệ).'),
+    (20, 6, DATEADD(minute, -10, GETDATE()), 'SUCCESS', N'Nhân viên xác thực vé thủ công'),
+    (NULL, 6, DATEADD(minute, -5, GETDATE()), 'REJECTED', N'Không tìm thấy vé với mã này.'),
+    (20, 6, DATEADD(minute, -2, GETDATE()), 'SUCCESS', N'Quét mã vé thành công'),
+    (NULL, 25, DATEADD(minute, -40, GETDATE()), 'REJECTED', N'Không tìm thấy vé với mã này.'),
+    (NULL, 25, DATEADD(minute, -35, GETDATE()), 'REJECTED', N'Mã vé không đúng định dạng.'),
+    (1, 25, DATEADD(minute, -18, GETDATE()), 'REJECTED', N'Vé thuộc Centre khác.'),
+    (NULL, 25, DATEADD(minute, -5, GETDATE()), 'REJECTED', N'Không tìm thấy vé với mã này.');
+GO
+
+
+/* =====================================================================================
+   DỮ LIỆU BỔ SUNG: DEMO ĐẶT GHẾ SƠ ĐỒ PHÒNG CHIẾU
+   ===================================================================================== */
+DECLARE @Now datetime2 = SYSDATETIME();
+DECLARE @StartDate date = DATEADD(day, 1, CAST(@Now AS date));
+DECLARE @Days int = 3;
+DECLARE @Created TABLE (BookingID int, BookingCode varchar(30), ShowtimeID int, Seats int);
+
+DECLARE @Shows TABLE (ShowtimeID int PRIMARY KEY, CentreID int, HallID int, HallType varchar(30), StartTime datetime2);
+;WITH candidates AS (
+    SELECT s.ShowtimeID, h.CentreID, s.HallID, h.HallType, s.StartTime,
+           ROW_NUMBER() OVER(PARTITION BY h.CentreID, CAST(s.StartTime AS date) ORDER BY s.StartTime, s.ShowtimeID) rn
+    FROM dbo.Showtimes s
+    JOIN dbo.Halls h ON h.HallID = s.HallID
+    JOIN dbo.Centres ce ON ce.CentreID = h.CentreID
+    JOIN dbo.Movies m ON m.MovieID = s.MovieID
+    WHERE s.Status = 'SCHEDULED' AND s.StartTime >= @StartDate AND s.StartTime < DATEADD(day, @Days, @StartDate)
+      AND ce.Status = 'ACTIVE' AND m.Status = 'NOW_SHOWING'
+      AND CAST(s.StartTime AS time) >= '09:00' AND CAST(s.StartTime AS time) <= '22:00'
+      AND h.Status = 'AVAILABLE'
+      AND (SELECT COUNT(*) FROM dbo.Seats se WHERE se.HallID = s.HallID AND se.Status = 'AVAILABLE') >= 6
+)
+INSERT INTO @Shows SELECT ShowtimeID, CentreID, HallID, HallType, StartTime FROM candidates WHERE rn <= 3;
+
+DECLARE @Show int, @Centre int, @Hall int, @HallType varchar(30), @Start datetime2, @Booking int, @Code varchar(30);
+DECLARE @Seats TABLE (SeatID int PRIMARY KEY, Price decimal(12,2));
+DECLARE show_cursor CURSOR LOCAL FAST_FORWARD FOR SELECT ShowtimeID, CentreID, HallID, HallType, StartTime FROM @Shows ORDER BY CentreID, StartTime;
+OPEN show_cursor;
+FETCH NEXT FROM show_cursor INTO @Show, @Centre, @Hall, @HallType, @Start;
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    SET @Code = CONCAT('DEMOSEAT-', @Show);
+    IF NOT EXISTS(SELECT 1 FROM dbo.Bookings WHERE BookingCode = @Code)
+    BEGIN
+        DELETE FROM @Seats;
+        INSERT INTO @Seats
+        SELECT TOP 6 se.SeatID, base.BasePrice + ISNULL(ts.Surcharge, 0) + ISNULL(ss.Amount, 0) + ISNULL(hs.Amount, 0)
+        FROM dbo.Seats se
+        CROSS APPLY(SELECT TOP 1 BasePrice FROM dbo.CentrePricing WHERE CentreID = @Centre AND EffectiveFrom <= @Start AND (EffectiveTo IS NULL OR EffectiveTo > @Start) ORDER BY EffectiveFrom DESC, CentrePricingID DESC) base
+        OUTER APPLY(SELECT TOP 1 Surcharge FROM dbo.TimeSlotPricing WHERE CentreID = @Centre AND EffectiveFrom <= @Start AND (EffectiveTo IS NULL OR EffectiveTo > @Start) AND CAST(@Start AS time) BETWEEN StartTime AND EndTime ORDER BY StartTime DESC) ts
+        OUTER APPLY(SELECT SUM(Amount) Amount FROM dbo.Surcharges WHERE SurchargeType = 'SEAT' AND TargetValue = se.SeatType AND EffectiveFrom <= @Start AND (EffectiveTo IS NULL OR EffectiveTo > @Start)) ss
+        OUTER APPLY(SELECT SUM(Amount) Amount FROM dbo.Surcharges WHERE SurchargeType = 'HALL' AND TargetValue = @HallType AND EffectiveFrom <= @Start AND (EffectiveTo IS NULL OR EffectiveTo > @Start)) hs
+        WHERE se.HallID = @Hall AND se.Status = 'AVAILABLE'
+          AND NOT EXISTS (SELECT 1 FROM dbo.BookingSeats bs WHERE bs.ShowtimeID = @Show AND bs.SeatID = se.SeatID AND bs.SeatStatus IN ('HELD', 'CONFIRMED'))
+        ORDER BY CASE WHEN se.SeatRow IN ('D', 'E') THEN 0 ELSE 1 END, CASE WHEN se.SeatNumber BETWEEN 4 AND 9 THEN 0 ELSE 1 END, se.SeatRow, se.SeatNumber;
+        
+        IF (SELECT COUNT(*) FROM @Seats) = 6
+        BEGIN
+            INSERT INTO dbo.Bookings(BookingCode, UserID, ShowtimeID, BookingType, BookingStatus, SubTotal, DiscountAmount, TotalAmount)
+            SELECT @Code, NULL, @Show, 'COUNTER', 'CONFIRMED', SUM(Price), 0, SUM(Price) FROM @Seats;
+            SET @Booking = CAST(SCOPE_IDENTITY() AS int);
+            INSERT INTO dbo.BookingSeats(BookingID, ShowtimeID, SeatID, Price, SeatStatus, HoldUntil)
+            SELECT @Booking, @Show, SeatID, Price, 'CONFIRMED', NULL FROM @Seats;
+        END;
+    END;
+    FETCH NEXT FROM show_cursor INTO @Show, @Centre, @Hall, @HallType, @Start;
+END;
+CLOSE show_cursor;
+DEALLOCATE show_cursor;
+GO
+
+
+/* =====================================================================================
+   BỔ SUNG 200 VOUCHERS PHỤC VỤ QUẢN LÝ (ADMIN & MANAGER)
+   Phân bổ: 80 Voucher toàn hệ thống (GLB01 - GLB80) + 120 Voucher chi nhánh riêng
+   ===================================================================================== */
+SET NOCOUNT ON;
+
+PRINT N'Bắt đầu thêm 200 voucher mẫu...';
+
+-- =====================================================================================
+-- PHẦN 1: 80 VOUCHER TOÀN HỆ THỐNG CHO ADMIN (CentreID = NULL)
+-- =====================================================================================
+DECLARE @i INT = 1;
+WHILE @i <= 80
+BEGIN
+    DECLARE @code VARCHAR(50) = 'GLB' + RIGHT('0' + CAST(@i AS VARCHAR(2)), 2);
+    
+    IF NOT EXISTS (SELECT 1 FROM Vouchers WHERE VoucherCode = @code)
+    BEGIN
+        DECLARE @name NVARCHAR(150);
+        DECLARE @desc NVARCHAR(500);
+        DECLARE @type VARCHAR(20);
+        DECLARE @val DECIMAL(12,2);
+        DECLARE @minOrder DECIMAL(12,2);
+        DECLARE @maxDisc DECIMAL(12,2);
+        DECLARE @startDate DATETIME2 = '2026-01-01 00:00:00';
+        DECLARE @endDate DATETIME2 = '2026-12-31 23:59:59';
+        DECLARE @limit INT = 500;
+        DECLARE @used INT = 0;
+        DECLARE @status VARCHAR(20) = 'ACTIVE';
+
+        IF @i <= 20 
+        BEGIN
+            -- 20 Voucher giảm % đang hoạt động (10% -> 48%)
+            SET @type = 'PERCENT';
+            SET @val = 10.00 + ((@i - 1) * 2);
+            SET @name = N'Voucher Toàn Chuỗi Giảm ' + CAST(CAST(@val AS INT) AS NVARCHAR) + N'%';
+            SET @desc = N'Áp dụng cho mọi cụm rạp CineFlow toàn quốc';
+            SET @minOrder = 100000;
+            SET @maxDisc = 60000;
+        END
+        ELSE IF @i <= 40
+        BEGIN
+            -- 20 Voucher giảm tiền mặt đang hoạt động (20k -> 143.5k)
+            SET @type = 'FIXED';
+            SET @val = 20000.00 + ((@i - 21) * 6500);
+            SET @name = N'Voucher Toàn Chuỗi Giảm ' + CAST(CAST(@val AS INT) AS NVARCHAR) + N'đ';
+            SET @desc = N'Giảm trực tiếp vào tổng hóa đơn vé xem phim';
+            SET @minOrder = 120000;
+            SET @maxDisc = @val;
+        END
+        ELSE IF @i <= 56
+        BEGIN
+            -- 16 Voucher đã hết hạn (EXPIRED: EndDate quá khứ)
+            SET @type = CASE WHEN @i % 2 = 0 THEN 'PERCENT' ELSE 'FIXED' END;
+            SET @val = CASE WHEN @type = 'PERCENT' THEN 25.00 ELSE 30000.00 END;
+            SET @name = N'Ưu đãi Mùa Lễ Toàn Chuỗi #' + CAST(@i AS NVARCHAR);
+            SET @desc = N'Chương trình khuyến mãi mùa trước đã kết thúc';
+            SET @minOrder = 80000;
+            SET @maxDisc = 50000;
+            SET @startDate = '2026-01-01 00:00:00';
+            SET @endDate = '2026-02-15 23:59:59';
+            SET @status = 'ACTIVE';
+        END
+        ELSE IF @i <= 68
+        BEGIN
+            -- 12 Voucher đã hết lượt sử dụng (EXHAUSTED)
+            SET @type = 'PERCENT';
+            SET @val = 50.00;
+            SET @name = N'Flash Sale 50% Toàn Chuỗi #' + CAST(@i AS NVARCHAR);
+            SET @desc = N'Số lượng có hạn, đã phát hết sạch lượt dùng';
+            SET @minOrder = 150000;
+            SET @maxDisc = 100000;
+            SET @limit = 100;
+            SET @used = 100;
+            SET @status = 'ACTIVE';
+        END
+        ELSE
+        BEGIN
+            -- 12 Voucher tạm ngừng (INACTIVE)
+            SET @type = 'FIXED';
+            SET @val = 50000.00;
+            SET @name = N'Voucher Tạm Ngừng Phát Hành #' + CAST(@i AS NVARCHAR);
+            SET @desc = N'Voucher đã tạm ngưng theo chính sách ban quản trị';
+            SET @minOrder = 200000;
+            SET @maxDisc = 50000;
+            SET @status = 'INACTIVE';
+        END
+
+        INSERT INTO Vouchers (
+            VoucherCode, VoucherName, Description, CentreID, CreatedBy,
+            DiscountType, DiscountValue, MinimumOrderValue, MaximumDiscount,
+            StartDate, EndDate, UsageLimit, UsedCount, PerCustomerLimit, Status
+        ) VALUES (
+            @code, @name, @desc, NULL, 1,
+            @type, @val, @minOrder, @maxDisc,
+            @startDate, @endDate, @limit, @used, 1, @status
+        );
+    END
+    SET @i += 1;
+END
+PRINT N'-> Đã hoàn thành 80 voucher toàn hệ thống cho Admin!';
+
+-- =====================================================================================
+-- PHẦN 2: 120 VOUCHER CHO 4 CHI NHÁNH (30 VOUCHER / RẠP)
+-- =====================================================================================
+DECLARE @BranchList TABLE (CentreId INT, Prefix VARCHAR(10), BranchName NVARCHAR(100));
+INSERT INTO @BranchList VALUES 
+(1, 'CGY', N'Cầu Giấy'),
+(2, 'HDO', N'Hà Đông'),
+(3, 'HKI', N'Hoàn Kiếm'),
+(4, 'Q01', N'Quận 1');
+
+DECLARE @curCentre INT, @curPrefix VARCHAR(10), @curName NVARCHAR(100);
+DECLARE branch_cursor CURSOR FOR SELECT CentreId, Prefix, BranchName FROM @BranchList;
+
+OPEN branch_cursor;
+FETCH NEXT FROM branch_cursor INTO @curCentre, @curPrefix, @curName;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    DECLARE @j INT = 1;
+    WHILE @j <= 30
+    BEGIN
+        DECLARE @bCode VARCHAR(50) = @curPrefix + RIGHT('0' + CAST(@j AS VARCHAR(2)), 2);
+        
+        IF NOT EXISTS (SELECT 1 FROM Vouchers WHERE VoucherCode = @bCode)
+        BEGIN
+            DECLARE @bType VARCHAR(20) = CASE WHEN @j % 2 = 0 THEN 'PERCENT' ELSE 'FIXED' END;
+            DECLARE @bVal DECIMAL(12,2) = CASE WHEN @bType = 'PERCENT' THEN 10.00 + (@j * 1.5) ELSE 15000.00 + (@j * 2500) END;
+            DECLARE @bEndDate DATETIME2 = CASE WHEN @j <= 6 THEN '2026-02-01' ELSE '2026-12-31' END;
+            DECLARE @bLimit INT = CASE WHEN @j IN (7, 8) THEN 50 ELSE 200 END;
+            DECLARE @bUsed INT = CASE WHEN @j IN (7, 8) THEN 50 ELSE @j * 2 END;
+            DECLARE @bStatus VARCHAR(20) = CASE WHEN @j IN (9, 10) THEN 'INACTIVE' ELSE 'ACTIVE' END;
+            DECLARE @bTitle NVARCHAR(150) = N'Ưu Đãi Rạp ' + @curName + N' #' + RIGHT('0' + CAST(@j AS VARCHAR(2)), 2);
+            DECLARE @bDesc NVARCHAR(500) = N'Chỉ áp dụng khi xem phim trực tiếp tại CineFlow ' + @curName;
+
+            INSERT INTO Vouchers (
+                VoucherCode, VoucherName, Description, CentreID, CreatedBy,
+                DiscountType, DiscountValue, MinimumOrderValue, MaximumDiscount,
+                StartDate, EndDate, UsageLimit, UsedCount, PerCustomerLimit, Status
+            ) VALUES (
+                @bCode, @bTitle, @bDesc, @curCentre, NULL,
+                @bType, @bVal, 80000, 50000,
+                '2026-01-01', @bEndDate, @bLimit, @bUsed, 1, @bStatus
+            );
+        END
+        SET @j += 1;
+    END
+
+    PRINT N'-> Đã hoàn thành 30 voucher cho chi nhánh ' + @curName;
+    FETCH NEXT FROM branch_cursor INTO @curCentre, @curPrefix, @curName;
+END
+
+CLOSE branch_cursor;
+DEALLOCATE branch_cursor;
+
+PRINT N'======================================================';
+PRINT N'TẤT CẢ 200 VOUCHER MẪU ĐÃ ĐƯỢC THÊM THÀNH CÔNG!';
+PRINT N'======================================================';
+
+SELECT COUNT(*) AS [Tổng Số Voucher Trong Database] FROM Vouchers;
+GO
+
+PRINT N'Hoàn tất nạp toàn bộ cấu trúc và dữ liệu CineFlow!';
 GO

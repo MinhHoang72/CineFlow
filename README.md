@@ -6,9 +6,9 @@
 
 ## 🚀 Hướng Dẫn Chạy Dự Án
 
-1. **Cơ sở dữ liệu (SQL Server)**: Chạy file `database/Cine_Flow.sql` bằng SSMS hoặc `sqlcmd` (bắt buộc có cờ `-I` để đảm bảo định danh trích dẫn):
+1. **Cơ sở dữ liệu (SQL Server)**: Chạy file `database/CineFlow.sql` bằng SSMS hoặc `sqlcmd` (bắt buộc có cờ `-I` để đảm bảo định danh trích dẫn):
    ```bash
-   sqlcmd -S localhost -U sa -P <mật_khẩu> -C -I -f 65001 -i database/Cine_Flow.sql
+   sqlcmd -S localhost -U sa -P <mật_khẩu> -C -I -f 65001 -i database/CineFlow.sql
    ```
    *Ghi chú*: Script sẽ khởi tạo database `CineFlowDB` và nạp sẵn dữ liệu mẫu. Cấu hình chuỗi kết nối tại `src/main/java/utils/DBContext.java` (mặc định: `localhost:1433`, user: `sa`).
 
@@ -59,10 +59,10 @@ Phụ trách các phân hệ cốt lõi về **Quản trị Người dùng & Nh�
 | **Suất chiếu & Bảng giá** | `/showtimes`<br>`/pricing` | Admin, Manager | Lập lịch chiếu phim theo phòng, cấu hình bảng giá vé theo khung giờ và phụ thu loại ghế. |
 | **Đặt vé & Thanh toán** | `/booking`<br>`/payment` | Customer, Staff (Counter) | Chọn suất chiếu, sơ đồ ghế ngồi trực quan, áp dụng voucher, thanh toán VNPay và in vé tại quầy. |
 
-*Lưu ý*: Nếu cơ sở dữ liệu đã nạp nhưng danh mục F&B chưa có dữ liệu, hãy chạy thêm script phụ `database/fnb_seed_per_centre.sql`.
+*Lưu ý*: Nếu cơ sở dữ liệu đã nạp nhưng danh mục F&B chưa có dữ liệu, hãy chạy thêm script phụ `database/CineFlow.sql (đã tích hợp sẵn)`.
 
 ## Chuyển database hiện có sang tên Centre
 
 Source hiện tại sử dụng bảng `CentrePricing`, khóa `CentrePricingID` và cột `CentreID` trong cả `CentrePricing` lẫn `TimeSlotPricing`.
-Nếu database được tạo từ phiên bản trước, chạy `database/migrate_centre_naming.sql` trước khi triển khai source mới. Script đổi tên tại chỗ trong transaction, giữ dữ liệu và có thể chạy lại.
-Nếu cài mới bằng `database/Cine_Flow.sql` hiện tại thì không cần migration này. Không chạy lại script khởi tạo trên database cần giữ dữ liệu.
+Nếu database được tạo từ phiên bản trước, chạy `database/CineFlow.sql (đã tích hợp sẵn)` trước khi triển khai source mới. Script đổi tên tại chỗ trong transaction, giữ dữ liệu và có thể chạy lại.
+Nếu cài mới bằng `database/CineFlow.sql` hiện tại thì không cần migration này. Không chạy lại script khởi tạo trên database cần giữ dữ liệu.
