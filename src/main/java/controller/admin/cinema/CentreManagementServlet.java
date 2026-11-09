@@ -221,23 +221,23 @@ public class CentreManagementServlet extends HttpServlet {
         }
 
         // 3. Validate độ dài Địa chỉ (5 - 200 ký tự)
-        if (address.length() < 5 || address.length() > 200) {
+        if (address.length() < 3 || address.length() > 100) {
             response.sendRedirect(returnPrefix + "invalid_address");
             return;
         }
 
-        // 4. Validate Số điện thoại Hotline: Phải bắt đầu bằng số 0, gồm 10 đến 11 chữ số
+        // 4. Validate Số điện thoại Hotline: Phải bắt đầu bằng số 0, gồm 10 đến 11 chữ số {} số lần xuát hiện tối thiểu 
         if (!phone.matches("^0[0-9]{9,10}$")) {
             response.sendRedirect(returnPrefix + "invalid_phone");
             return;
         }
 
         // 5. Validate Tên thành phố (2 - 50 ký tự)
-        if (city.length() < 2 || city.length() > 50) {
+        if (city.length() < 3 || city.length() > 100) {
             response.sendRedirect(returnPrefix + "invalid_city");
             return;
         }
-
+// create
         if ("create".equalsIgnoreCase(action)) {
             // Kiểm tra trùng tên cụm rạp
             if (centreDAO.isCentreNameExists(centreName, 0)) {
@@ -254,7 +254,7 @@ public class CentreManagementServlet extends HttpServlet {
 
             boolean ok = centreDAO.addCentre(centre);
             response.sendRedirect(ok ? (base + "?success=created") : (base + "?action=create&error=failed"));
-
+//update
         } else {
             // Update
             int centreId;
