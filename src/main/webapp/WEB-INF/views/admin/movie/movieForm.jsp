@@ -24,6 +24,11 @@
     String posterUrl = editing && movie.getPosterUrl() != null ? movie.getPosterUrl() : "";
     String trailerUrl = editing && movie.getTrailerUrl() != null ? movie.getTrailerUrl() : "";
     String errorParam = request.getParameter("error");
+    if ("extend_end_date_required".equals(errorParam)) {
+        status = "NOW_SHOWING";
+    } else if ("reissue_dates_required".equals(errorParam)) {
+        status = "COMING_SOON";
+    }
 
     request.setAttribute("activeNav", "movies");
     request.setAttribute("pageTitle", editing ? "Chỉnh sửa phim: " + movie.getTitle() : "Tạo phim mới");
@@ -40,10 +45,45 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/buttons.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/badges.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/forms.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/alerts.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/alerts.css?v=<%= System.currentTimeMillis() %>">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/manager/shell.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin/dashboard.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin/movie-form.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin/movie-form.css?v=<%= System.currentTimeMillis() %>">
+    <style>
+        /* CANH BAO DO TUONG PHAN CAO (HIGH CONTRAST RED WARNING) */
+        .cf-alert.cf-alert-danger,
+        .cf-alert.cf-alert-error,
+        .cf-alert-danger,
+        .cf-alert-error {
+            background-color: #FEF2F2 !important;
+            border: 2px solid #EF4444 !important;
+            border-left: 6px solid #DC2626 !important;
+            color: #991B1B !important;
+            font-weight: 600 !important;
+            font-size: 14px !important;
+            line-height: 1.5 !important;
+            padding: 14px 18px !important;
+            border-radius: 8px !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 12px !important;
+            box-shadow: 0 4px 14px rgba(220, 38, 38, 0.12) !important;
+        }
+        .cf-alert.cf-alert-danger strong,
+        .cf-alert.cf-alert-error strong,
+        .cf-alert-danger strong {
+            color: #7F1D1D !important;
+            font-weight: 800 !important;
+        }
+        .cf-alert.cf-alert-danger span,
+        .cf-alert.cf-alert-error span,
+        .cf-alert-danger span {
+            color: #DC2626 !important;
+            font-weight: 900 !important;
+            font-size: 20px !important;
+            flex-shrink: 0 !important;
+        }
+    </style>
 </head>
 <body>
 <div class="cf-manager-shell">
@@ -82,6 +122,10 @@
                 <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
                     <span>⚠</span> <strong>Lỗi:</strong> Trạng thái phát hành không hợp lệ.
                 </div>
+            <% } else if ("missing_dates".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
+                    <span>⚠</span> <strong>Lỗi:</strong> Vui lòng nhập đầy đủ <strong>Ngày khởi chiếu</strong> và <strong>Ngày kết thúc</strong>.
+                </div>
             <% } else if ("invalid_date_range".equals(errorParam)) { %>
                 <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
                     <span>⚠</span> <strong>Lỗi:</strong> Khoảng thời gian phát hành không hợp lệ: Ngày kết thúc phải sau hoặc bằng ngày khởi chiếu.
@@ -105,6 +149,15 @@
             <% } else if ("reissue_dates_required".equals(errorParam)) { %>
                 <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
                     <span>⚠</span> <strong>Lỗi ngày phát hành:</strong> Phim đang ở trạng thái <%= editing && "ARCHIVED".equalsIgnoreCase(movie.getStatus()) ? "Lưu trữ (ARCHIVED)" : "Đã kết thúc (ENDED)" %>. Khi chuyển sang "Sắp khởi chiếu" (COMING SOON), bạn bắt buộc phải thiết lập lại <strong>Ngày khởi chiếu</strong> (trong tương lai) và <strong>Ngày kết thúc</strong> mới trước khi lưu thay đổi.
+                </div>
+
+            <% } else if ("extend_end_date_required".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
+                    <span>⚠</span> <strong>Gia hạn đợt chiếu:</strong> Phim đã kết thúc đợt chiếu. Khi chuyển sang "Đang chiếu" (NOW SHOWING), bạn <strong>bắt buộc phải thiết lập lại Ngày kết thúc</strong> mới từ hôm nay trở đi.
+                </div>
+            <% } else if ("cannot_reopen_to_now_showing".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
+                    <span>⚠</span> Phim đã lưu trữ (ARCHIVED) không thể chuyển trực tiếp sang "Đang chiếu" (NOW SHOWING). Vui lòng chọn "Sắp khởi chiếu" và thiết lập lại ngày chiếu mới.
                 </div>
             <% } else if (errorParam != null) { %>
                 <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
@@ -169,7 +222,7 @@
                                 <label class="cf-form-label">Trạng thái phát hành <span class="req">*</span></label>
                                 <select class="cf-form-control" name="status">
                                     <option value="COMING_SOON" <%= "COMING_SOON".equals(status) ? "selected" : "" %>>Sắp khởi chiếu (COMING_SOON)</option>
-                                    <option value="NOW_SHOWING" <%= "NOW_SHOWING".equals(status) ? "selected" : "" %>>Đang chiếu (NOW_SHOWING)</option>
+                                    <option value="NOW_SHOWING" <%= "NOW_SHOWING".equals(status) ? "selected" : "" %> <%= (editing && "ARCHIVED".equalsIgnoreCase(movie.getStatus())) ? "disabled style='opacity: 0.5; cursor: not-allowed;' title='Phim đã lưu trữ, vui lòng chọn Sắp khởi chiếu để tái phát hành'" : "" %>>Đang chiếu (NOW_SHOWING)</option>
                                     <option value="ENDED" <%= "ENDED".equals(status) ? "selected" : "" %>>Đã kết thúc (ENDED)</option>
                                     <option value="ARCHIVED" <%= "ARCHIVED".equals(status) ? "selected" : "" %>>Lưu trữ (ARCHIVED)</option>
                                 </select>
@@ -196,13 +249,13 @@
 
                         <div class="cf-fields-grid">
                             <div class="cf-form-group">
-                                <label class="cf-form-label">Ngày khởi chiếu</label>
-                                <input class="cf-form-control" name="releaseDate" type="date" value="<%= editing && movie.getReleaseDate() != null ? movie.getReleaseDate() : "" %>">
+                                <label class="cf-form-label">Ngày khởi chiếu <span class="req">*</span></label>
+                                <input class="cf-form-control" name="releaseDate" type="date" value="<%= editing && movie.getReleaseDate() != null ? movie.getReleaseDate() : "" %>" required>
                             </div>
 
                             <div class="cf-form-group">
-                                <label class="cf-form-label">Ngày kết thúc dự kiến</label>
-                                <input class="cf-form-control" name="endDate" type="date" value="<%= editing && movie.getEndDate() != null ? movie.getEndDate() : "" %>">
+                                <label class="cf-form-label">Ngày kết thúc dự kiến <span class="req">*</span></label>
+                                <input class="cf-form-control" name="endDate" type="date" value="<%= editing && movie.getEndDate() != null && !"extend_end_date_required".equals(errorParam) ? movie.getEndDate() : "" %>" required>
                             </div>
                         </div>
 
@@ -345,62 +398,124 @@
 
 <!-- MÃ JAVASCRIPT ĐIỀU KHIỂN PHÍA CLIENT -->
 <script>
+
 document.addEventListener('DOMContentLoaded', function() {
     const urlInput = document.getElementById('posterUrlInput');
     const fileInput = document.getElementById('posterFileInput');
     const frame = document.getElementById('posterPreviewFrame');
     const posterFileName = document.getElementById('posterFileName');
+
     const trailerFileInput = document.getElementById('trailerFileInput');
     const trailerFileName = document.getElementById('trailerFileName');
+
     const movieForm = document.getElementById('movieForm');
     const btnSubmitMovie = document.getElementById('btnSubmitMovie');
-
-    function updatePosterPreview(src) {
-        if (!src) {
-            frame.innerHTML = '<div class="cf-poster-placeholder" id="posterPlaceholder">' +
-                '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>' +
-                '<span>Chưa có ảnh</span></div>';
-            return;
-        }
-        frame.innerHTML = '<img src="' + src + '" alt="Poster preview" id="posterPreviewImg" onerror="handlePosterError()">';
-    }
-
-    window.handlePosterError = function() {
-        frame.innerHTML = '<div class="cf-poster-placeholder" style="color: var(--cf-danger);">' +
-            '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>' +
-            '<span>Lỗi tải ảnh</span></div>';
-    };
-
-    if (fileInput) {
-        fileInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const sizeKB = Math.round(file.size / 1024);
-                const sizeDisplay = sizeKB > 1024 ? (sizeKB / 1024).toFixed(1) + ' MB' : sizeKB + ' KB';
-                if (posterFileName) {
-                    posterFileName.style.display = 'flex';
-                    posterFileName.innerHTML = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <span>' + file.name + ' (' + sizeDisplay + ')</span>';
-                }
-                const reader = new FileReader();
-                reader.onload = function(evt) {
-                    updatePosterPreview(evt.target.result);
-                };
-                reader.readAsDataURL(file);
-            } else {
-                if (posterFileName) posterFileName.style.display = 'none';
-            }
-        });
-    }
 
     const trailerUrlInput = document.getElementById('trailerUrlInput');
     const trailerFrame = document.getElementById('trailerPreviewFrame');
 
+    const statusSelect = document.querySelector('select[name="status"]');
+    const releaseDateInput = document.querySelector('input[name="releaseDate"]');
+    const endDateInput = document.querySelector('input[name="endDate"]');
+
+    // Trạng thái ban đầu lấy từ dữ liệu phim trên server.
+    const originalStatus = '<%= editing && movie.getStatus() != null ? movie.getStatus() : "" %>';
+
+    // 1. LẤY NGÀY HIỆN TẠI THEO MÚI GIỜ LOCAL
+
+    function getLocalToday() {
+        const now = new Date();
+        const offset = now.getTimezoneOffset() * 60000;
+
+        return new Date(now.getTime() - offset)
+            .toISOString()
+            .split('T')[0];
+    }
+
+    // 2. POSTER PREVIEW
+
+    function updatePosterPreview(src) {
+        if (!src) {
+            frame.innerHTML =
+                '<div class="cf-poster-placeholder" id="posterPlaceholder">' +
+                '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5">' +
+                '<rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>' +
+                '<circle cx="8.5" cy="8.5" r="1.5"></circle>' +
+                '<polyline points="21 15 16 10 5 21"></polyline>' +
+                '</svg>' +
+                '<span>Chưa có ảnh</span></div>';
+            return;
+        }
+
+        const img = document.createElement('img');
+        img.id = 'posterPreviewImg';
+        img.alt = 'Poster preview';
+        img.src = src;
+        img.onerror = handlePosterError;
+
+        frame.replaceChildren(img);
+    }
+
+    function handlePosterError() {
+        frame.innerHTML =
+            '<div class="cf-poster-placeholder" style="color: var(--cf-danger);">' +
+            '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5">' +
+            '<circle cx="12" cy="12" r="10"></circle>' +
+            '<line x1="12" y1="8" x2="12" y2="12"></line>' +
+            '<line x1="12" y1="16" x2="12.01" y2="16"></line>' +
+            '</svg>' +
+            '<span>Lỗi tải ảnh</span></div>';
+    }
+
+    window.handlePosterError = handlePosterError;
+
+    if (fileInput) {
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+
+            if (file) {
+                const sizeKB = Math.round(file.size / 1024);
+                const sizeDisplay = sizeKB > 1024
+                    ? (sizeKB / 1024).toFixed(1) + ' MB'
+                    : sizeKB + ' KB';
+
+                if (posterFileName) {
+                    posterFileName.style.display = 'flex';
+
+                    const span = document.createElement('span');
+                    span.textContent = file.name + ' (' + sizeDisplay + ')';
+
+                    posterFileName.replaceChildren(span);
+                }
+
+                const reader = new FileReader();
+
+                reader.onload = function(evt) {
+                    updatePosterPreview(evt.target.result);
+                };
+
+                reader.readAsDataURL(file);
+            } else if (posterFileName) {
+                posterFileName.style.display = 'none';
+            }
+        });
+    }
+
+    // 3. TRAILER PREVIEW
+
     function extractYouTubeId(url) {
         if (!url) return null;
+
         url = url.trim();
-        const regExp = /^.*(?:youtu\.be\/|v\/|u\/\w\/|embed\/|shorts\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+
+        const regExp =
+            /^.*(?:youtu\.be\/|v\/|u\/\w\/|embed\/|shorts\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+
         const match = url.match(regExp);
-        return (match && match[1].length === 11) ? match[1] : null;
+
+        return (match && match[1].length === 11)
+            ? match[1]
+            : null;
     }
 
     function isDirectVideo(url) {
@@ -411,61 +526,100 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!trailerFrame) return;
 
         if (!src) {
-            trailerFrame.innerHTML = '<div class="cf-trailer-placeholder" id="trailerPlaceholder">' +
+            trailerFrame.innerHTML =
+                '<div class="cf-trailer-placeholder" id="trailerPlaceholder">' +
                 '<span>Xem trước trailer</span></div>';
             return;
         }
 
         if (isLocalFile) {
-            trailerFrame.innerHTML = '<video controls playsinline preload="metadata" style="width:100%;height:100%;background:#000;display:block;">' +
-                '<source src="' + src + '">' +
-                'Trình duyệt không hỗ trợ phát video này.' +
-                '</video>';
+            const video = document.createElement('video');
+            video.controls = true;
+            video.playsInline = true;
+            video.preload = 'metadata';
+            video.style.cssText =
+                'width:100%;height:100%;background:#000;display:block;';
+
+            const source = document.createElement('source');
+            source.src = src;
+
+            video.appendChild(source);
+            trailerFrame.replaceChildren(video);
             return;
         }
 
         const ytId = extractYouTubeId(src);
+
         if (ytId) {
-            trailerFrame.innerHTML = '<iframe src="https://www.youtube-nocookie.com/embed/' + ytId + '?rel=0&enablejsapi=1" ' +
-                'title="Trailer YouTube Preview" ' +
-                'frameborder="0" ' +
-                'allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" ' +
-                'allowfullscreen ' +
-                'style="width:100%;height:100%;border:none;display:block;"></iframe>';
+            const iframe = document.createElement('iframe');
+
+            iframe.src =
+                'https://www.youtube-nocookie.com/embed/' +
+                encodeURIComponent(ytId) + '?rel=0&enablejsapi=1';
+
+            iframe.title = 'Trailer YouTube Preview';
+            iframe.allowFullscreen = true;
+            iframe.setAttribute(
+                'allow',
+                'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share'
+            );
+
+            iframe.style.cssText =
+                'width:100%;height:100%;border:none;display:block;';
+
+            trailerFrame.replaceChildren(iframe);
             return;
         }
 
         if (isDirectVideo(src) || src.startsWith('/') || src.startsWith('http')) {
-            trailerFrame.innerHTML = '<video controls playsinline preload="metadata" style="width:100%;height:100%;background:#000;display:block;">' +
-                '<source src="' + src + '">' +
-                'Trình duyệt không hỗ trợ phát video này.' +
-                '</video>';
+            const video = document.createElement('video');
+            video.controls = true;
+            video.playsInline = true;
+            video.preload = 'metadata';
+            video.style.cssText =
+                'width:100%;height:100%;background:#000;display:block;';
+
+            const source = document.createElement('source');
+            source.src = src;
+
+            video.appendChild(source);
+            trailerFrame.replaceChildren(video);
             return;
         }
 
-        trailerFrame.innerHTML = '<div class="cf-trailer-placeholder">' +
+        trailerFrame.innerHTML =
+            '<div class="cf-trailer-placeholder">' +
             '<span>Xem trước trailer</span></div>';
     }
 
-    // Khởi tạo xem trước trailer ban đầu (nếu đã có dữ liệu)
+    // Khởi tạo trailer đã lưu.
     if (trailerUrlInput && trailerUrlInput.value.trim()) {
         updateTrailerPreview(trailerUrlInput.value.trim(), false);
     }
 
-    // Lắng nghe khi tải lên tệp video
     if (trailerFileInput) {
         trailerFileInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
+
             if (file) {
                 const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+
                 if (trailerFileName) {
                     trailerFileName.style.display = 'flex';
-                    trailerFileName.innerHTML = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> <span>' + file.name + ' (' + sizeMB + ' MB)</span>';
+
+                    const span = document.createElement('span');
+                    span.textContent = file.name + ' (' + sizeMB + ' MB)';
+
+                    trailerFileName.replaceChildren(span);
                 }
+
                 const objectUrl = URL.createObjectURL(file);
                 updateTrailerPreview(objectUrl, true);
             } else {
-                if (trailerFileName) trailerFileName.style.display = 'none';
+                if (trailerFileName) {
+                    trailerFileName.style.display = 'none';
+                }
+
                 if (trailerUrlInput && trailerUrlInput.value.trim()) {
                     updateTrailerPreview(trailerUrlInput.value.trim(), false);
                 } else {
@@ -475,64 +629,216 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Nghiệp vụ: Tự động gán ngày kết thúc khi chọn trạng thái "Đã kết thúc" (ENDED) hoặc "Lưu trữ" (ARCHIVED)
-    const statusSelect = document.querySelector('select[name="status"]');
-    const releaseDateInput = document.querySelector('input[name="releaseDate"]');
-    const endDateInput = document.querySelector('input[name="endDate"]');
-    const originalStatus = '<%= editing && movie.getStatus() != null ? movie.getStatus() : "" %>';
+    // 4. NGHIỆP VỤ CHUYỂN TRẠNG THÁI PHIM
 
     if (statusSelect && endDateInput) {
+
         statusSelect.addEventListener('change', function() {
-            const todayStr = new Date().toISOString().split('T')[0];
-            if (this.value === 'ENDED' || this.value === 'ARCHIVED') {
-                endDateInput.value = todayStr;
-            } else if ((originalStatus === 'ARCHIVED' || originalStatus === 'ENDED') && this.value === 'COMING_SOON') {
-                // Nhắc nhở người dùng cần cập nhật lại ngày khởi chiếu và ngày kết thúc
-                if (releaseDateInput && releaseDateInput.value <= todayStr) {
+            const selectedStatus = this.value;
+            const todayStr = getLocalToday();
+
+            // A. ADMIN CHỦ ĐỘNG KẾT THÚC PHIM
+
+            if (selectedStatus === 'ENDED' ||
+                selectedStatus === 'ARCHIVED') {
+
+                /*
+                 * Nếu chưa có ngày kết thúc hoặc ngày kết thúc
+                 * nằm trong tương lai thì chốt ngày hôm nay.
+                 *
+                 * Nếu ngày kết thúc đã ở quá khứ thì giữ nguyên
+                 * để bảo toàn lịch sử phát hành.
+                 */
+
+                if (!endDateInput.value ||
+                    endDateInput.value > todayStr) {
+
+                    endDateInput.value = todayStr;
+                }
+            }
+
+            // B. TÁI PHÁT HÀNH PHIM ĐÃ ENDED / ARCHIVED
+
+            else if (
+                (originalStatus === 'ARCHIVED' ||
+                 originalStatus === 'ENDED') &&
+                selectedStatus === 'COMING_SOON'
+            ) {
+                // Ngày cũ không còn phù hợp với đợt phát hành mới.
+                if (releaseDateInput &&
+                    releaseDateInput.value <= todayStr) {
+
                     releaseDateInput.value = '';
                 }
-                if (endDateInput && endDateInput.value <= todayStr) {
+
+                if (endDateInput.value <= todayStr) {
                     endDateInput.value = '';
                 }
             }
+
+            // C. GIA HẠN PHIM ĐÃ ENDED
+
+            else if (
+                originalStatus === 'ENDED' &&
+                selectedStatus === 'NOW_SHOWING'
+            ) {
+                // Bắt buộc nhập ngày kết thúc mới.
+                endDateInput.value = '';
+                endDateInput.focus();
+            }
         });
     }
+    // 5. VALIDATION TRƯỚC KHI SUBMIT
 
     if (movieForm && btnSubmitMovie) {
-        movieForm.addEventListener('submit', function(e) {
-            const status = statusSelect ? statusSelect.value : '';
-            const relVal = releaseDateInput ? releaseDateInput.value : '';
-            const endVal = endDateInput ? endDateInput.value : '';
-            const todayStr = new Date().toISOString().split('T')[0];
 
-            // Nghiệp vụ: Chuyển từ ARCHIVED hoặc ENDED sang COMING_SOON phải validation ngày tháng
-            if ((originalStatus === 'ARCHIVED' || originalStatus === 'ENDED') && status === 'COMING_SOON') {
-                if (!relVal || !endVal || relVal < todayStr || endVal < relVal || endVal <= todayStr) {
-                    alert('Phim đang ở trạng thái ' + (originalStatus === 'ARCHIVED' ? 'Lưu trữ (ARCHIVED)' : 'Đã kết thúc (ENDED)') + '. Khi chuyển sang "Sắp khởi chiếu" (COMING SOON), bạn bắt buộc phải thiết lập lại Ngày khởi chiếu (trong tương lai) và Ngày kết thúc mới trước khi lưu.');
-                    if (releaseDateInput) releaseDateInput.focus();
+        movieForm.addEventListener('submit', function(e) {
+
+            const status = statusSelect ? statusSelect.value : '';
+
+            const relVal = releaseDateInput
+                ? releaseDateInput.value
+                : '';
+
+            const endVal = endDateInput
+                ? endDateInput.value
+                : '';
+
+            const todayStr = getLocalToday();
+
+            // A. KHÔNG CHO PHIM ARCHIVED CHUYỂN THẲNG NOW_SHOWING
+
+            if (originalStatus === 'ARCHIVED' &&
+                status === 'NOW_SHOWING') {
+
+                alert(
+                    'Phim đang ở trạng thái Lưu trữ (ARCHIVED). ' +
+                    'Không thể chuyển trực tiếp sang "Đang chiếu" ' +
+                    '(NOW SHOWING). Vui lòng chọn "Sắp khởi chiếu" ' +
+                    'và thiết lập lại ngày chiếu mới.'
+                );
+
+                statusSelect.focus();
+                e.preventDefault();
+                return;
+            }
+
+            // B. ENDED -> NOW_SHOWING
+
+            if (originalStatus === 'ENDED' &&
+                status === 'NOW_SHOWING') {
+
+                if (!endVal || endVal < todayStr) {
+
+                    alert(
+                        'Phim đã kết thúc đợt chiếu. Khi chuyển sang ' +
+                        '"Đang chiếu" (NOW SHOWING), bạn bắt buộc phải ' +
+                        'thiết lập Ngày kết thúc mới từ hôm nay trở đi.'
+                    );
+
+                    endDateInput.focus();
                     e.preventDefault();
                     return;
                 }
             }
 
-            if (relVal && endVal && endVal < relVal) {
-                alert('Ngày kết thúc phải lớn hơn hoặc bằng ngày khởi chiếu.');
+            // C. ENDED / ARCHIVED -> COMING_SOON
+
+            if (
+                (originalStatus === 'ARCHIVED' ||
+                 originalStatus === 'ENDED') &&
+                status === 'COMING_SOON'
+            ) {
+
+                if (
+                    !relVal ||
+                    !endVal ||
+                    relVal < todayStr ||
+                    endVal < relVal ||
+                    endVal <= todayStr
+                ) {
+
+                    alert(
+                        'Phim đang ở trạng thái ' +
+                        (originalStatus === 'ARCHIVED'
+                            ? 'Lưu trữ (ARCHIVED)'
+                            : 'Đã kết thúc (ENDED)') +
+                        '. Khi chuyển sang "Sắp khởi chiếu" ' +
+                        '(COMING SOON), bạn bắt buộc phải thiết lập lại ' +
+                        'Ngày khởi chiếu (trong tương lai) và Ngày kết thúc mới.'
+                    );
+
+                    releaseDateInput.focus();
+                    e.preventDefault();
+                    return;
+                }
+            }
+
+            // D. BẮT BUỘC NHẬP ĐỦ NGÀY
+
+            if (!relVal || !endVal) {
+
+                alert(
+                    'Vui lòng nhập đầy đủ Ngày khởi chiếu và Ngày kết thúc.'
+                );
+
+                if (!relVal && releaseDateInput) {
+                    releaseDateInput.focus();
+                } else if (endDateInput) {
+                    endDateInput.focus();
+                }
+
                 e.preventDefault();
                 return;
             }
 
-            if (status === 'COMING_SOON' && relVal && relVal < todayStr) {
-                alert('Phim có ngày khởi chiếu trong quá khứ không thể đặt trạng thái "Sắp khởi chiếu". Vui lòng chọn ngày tương lai hoặc đổi sang "Đang chiếu".');
+            // E. KIỂM TRA KHOẢNG NGÀY
+
+            if (endVal < relVal) {
+
+                alert(
+                    'Ngày kết thúc phải lớn hơn hoặc bằng ngày khởi chiếu.'
+                );
+
+                endDateInput.focus();
                 e.preventDefault();
                 return;
             }
 
-            if (status === 'NOW_SHOWING' && relVal && relVal > todayStr) {
-                alert('Phim có ngày khởi chiếu ở tương lai chưa thể đặt trạng thái "Đang chiếu". Vui lòng chọn trạng thái "Sắp khởi chiếu".');
+            // F. COMING_SOON KHÔNG ĐƯỢC CÓ NGÀY KHỞI CHIẾU QUÁ KHỨ
+
+            if (status === 'COMING_SOON' &&
+                relVal < todayStr) {
+
+                alert(
+                    'Phim có ngày khởi chiếu trong quá khứ không thể đặt ' +
+                    'trạng thái "Sắp khởi chiếu". Vui lòng chọn ngày ' +
+                    'tương lai hoặc đổi sang "Đang chiếu".'
+                );
+
+                releaseDateInput.focus();
                 e.preventDefault();
                 return;
             }
 
+           // G. NOW_SHOWING KHÔNG ĐƯỢC CÓ NGÀY KHỞI CHIẾU TƯƠNG LAI
+
+            if (status === 'NOW_SHOWING' &&
+                relVal > todayStr) {
+
+                alert(
+                    'Phim có ngày khởi chiếu ở tương lai chưa thể đặt ' +
+                    'trạng thái "Đang chiếu". Vui lòng chọn trạng thái ' +
+                    '"Sắp khởi chiếu".'
+                );
+
+                releaseDateInput.focus();
+                e.preventDefault();
+                return;
+            }
+            
+            // H. SUBMIT THÀNH CÔNG VỀ MẶT VALIDATION CLIENT
+            
             btnSubmitMovie.classList.add('is-submitting');
             btnSubmitMovie.textContent = 'Đang lưu phim...';
         });

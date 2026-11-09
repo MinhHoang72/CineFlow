@@ -6,9 +6,10 @@ import java.time.LocalDateTime;
 public class Voucher {
 
     private int voucherId;
-    private String voucherCode;// unqiue
+    private String voucherCode; // unique
     private String voucherName;
     private String description;
+    private String imageUrl;
     private String discountType;
     private BigDecimal discountValue;
     private BigDecimal minimumOrderValue;
@@ -87,6 +88,14 @@ public class Voucher {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 
     public String getDiscountType() {

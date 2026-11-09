@@ -25,14 +25,15 @@
         if (c.getCity() != null && !c.getCity().isBlank()) {
             cities.add(c.getCity().trim());
         }
-        if ("ACTIVE".equalsIgnoreCase(c.getStatus())) {
+        boolean isEligible = "ACTIVE".equalsIgnoreCase(c.getStatus()) || "SUSPENDED".equalsIgnoreCase(c.getStatus()) || "TEMPORARILY_CLOSED".equalsIgnoreCase(c.getStatus());
+        if (isEligible) {
             totalActiveCentres++;
-            if (c.isDistributed()) {
-                totalDistributed++;
-            }
+        }
+        if (c.isDistributed()) {
+            totalDistributed++;
         }
     }
-    boolean isAllDistributed = (totalActiveCentres > 0 && totalDistributed == totalActiveCentres);
+    boolean isAllDistributed = (totalActiveCentres > 0 && totalDistributed >= totalActiveCentres);
 
     request.setAttribute("activeNav", "distribution");
 %>
@@ -106,7 +107,7 @@
                                     <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                                     </svg>
                                 </span>
-                                
+
                                 <%--Tìm kiếm phim--%>
                                 <input type="text"
                                        id="movieSearchInput"
@@ -133,7 +134,7 @@
                                     <% } else {
                                         for (Movie m : allMovies) {
                                             boolean isSelected = (movie != null && m.getMovieId() == movie.getMovieId());
-                                            String mCode = "CF-" + String.format("%04d", m.getMovieId());
+                                            String mCode = "Mã phim: " + m.getMovieId();
                                             String st = m.getStatus();
                                             String stText = "NOW_SHOWING".equals(st) ? "Đang chiếu" :
                                                             "COMING_SOON".equals(st) ? "Sắp khởi chiếu" :
@@ -145,7 +146,7 @@
                                     <div class="cf-movie-option <%= isSelected ? "is-selected" : "" %>"
                                          data-movie-id="<%= m.getMovieId() %>"
                                          data-title="<%= m.getTitle() != null ? m.getTitle().toLowerCase().replace("\"", "&quot;") : "" %>"
-                                         data-code="<%= mCode.toLowerCase() %>"
+                                         data-code="<%= m.getMovieId() %> <%= mCode.toLowerCase() %>"
                                          onclick="selectMovie(<%= m.getMovieId() %>)">
                                         <div class="cf-movie-opt-poster">
                                             <% if (m.getPosterUrl() != null && !m.getPosterUrl().isBlank()) { %>
@@ -200,7 +201,7 @@
                                     <span class="cf-badge <%= badgeClass %>"><%= stText %></span>
                                 </div>
                                 <div class="cf-movie-card-meta">
-                                    Mã phim: CF-<%= String.format("%04d", movie.getMovieId()) %> · Thể loại: <%= movie.getGenre() != null ? movie.getGenre() : "Chưa cập nhật" %>
+                                    Mã phim: <%= movie.getMovieId() %> · Thể loại: <%= movie.getGenre() != null ? movie.getGenre() : "Chưa cập nhật" %>
                                 </div>
                                 <div class="cf-movie-card-meta" style="margin-top: 3px;">
                                     Thời lượng: <%= movie.getDuration() %> phút · Khởi chiếu: <%= movie.getReleaseDate() != null ? movie.getReleaseDate() : "—" %>
@@ -217,6 +218,7 @@
                                 </a>
                             </div>
                         </div>
+                        <%--Phim không còn được phân phối: Phim đang ở trạng thái Đã kết thúc hoặc Lưu Trữ--%>
                         <% boolean isEndedOrArchived = ("ARCHIVED".equalsIgnoreCase(movie.getStatus()) || "ENDED".equalsIgnoreCase(movie.getStatus()));
                            if (isEndedOrArchived) { %>
                         <div class="cf-alert" style="margin-top: 14px; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.35); color: #f87171; display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-radius: 8px;">
@@ -294,22 +296,29 @@
                                     </thead>
                                     <tbody id="centreTableBody">
                                         <% for (Centre c : centres) {
+                                            // Lấy và chuẩn hóa trạng thái cụm rạp
+                                            // Nếu trạng thái không xác định (null), mặc định là ACTIVE để đảm bảo an toàn.
                                             String rawStatus = c.getStatus() != null ? c.getStatus().trim().toUpperCase() : "ACTIVE";
+                                                // Xác định cụm rạp đang hoạt động hoặc tạm ngưng
                                             boolean isActive = "ACTIVE".equals(rawStatus);
                                             boolean isSuspended = "SUSPENDED".equals(rawStatus) || "TEMPORARILY_CLOSED".equals(rawStatus);
+                                            boolean isInactive = !isActive && !isSuspended;
+                                                // Lấy trạng thái phân phối phim tại cụm rạp hiện tại
                                             boolean isDistributed = c.isDistributed();
+                                                // Lấy số suất chiếu tương lai và số vé đã bán để phục vụ cảnh báo khi tắt phân phối
                                             int futureCount = c.getFutureShowtimeCount();
                                             int soldCount = c.getSoldTicketCount();
+                                                // Lấy thành phố của cụm rạp, tránh giá trị null
                                             String cCity = c.getCity() != null ? c.getCity() : "";
-
-                                            String badgeText = isActive ? "Hoạt động" : (isSuspended ? "Tạm ngưng (SUSPENDED)" : "Ngừng HĐ (INACTIVE)");
+                                                // Xác định nội dung nhãn trạng thái và chú thích của Switch
+                                            String badgeText = isActive ? "Hoạt động" : (isSuspended ? "Tạm ngưng" : "Ngừng HĐ");
                                             String switchTitle = isActive ? "Bật/Tắt phân phối chiếu" :
-                                                                 (isSuspended ? "Cụm rạp đang tạm ngưng (SUSPENDED), phân phối tạm mất hiệu lực và không thể tạo mới" :
+                                                                 (isSuspended ? "Cụm rạp đang tạm ngưng, vẫn cho phép phân phối để có sẵn phim khi mở lại" :
                                                                  "Cụm rạp đang ngừng hoạt động (INACTIVE), phân phối đã bị hủy");
                                         %>
-                                        <tr class="cf-centre-row <%= !isActive ? "is-disabled" : "" %>"
+                                        <tr class="cf-centre-row <%= isInactive ? "is-disabled" : "" %>"
                                             data-id="<%= c.getCentreId() %>"
-                                            data-active="<%= isActive ? "1" : "0" %>"
+                                            data-active="<%= (isActive || isSuspended) ? "1" : "0" %>"
                                             data-name="<%= c.getCentreName().toLowerCase() %>"
                                             data-centre-name="<%= c.getCentreName() %>"
                                             data-city="<%= cCity.toLowerCase() %>"
@@ -355,9 +364,13 @@
                                                 <% } %>
                                             </td>
                                             <td>
+                                                <%--Chỉ cho phép phân phối phim tại các cụm rạp đang hoạt động (ACTIVE)
+                                                    và phim chưa kết thúc (ENDED) hoặc lưu trữ (ARCHIVED).
+                                                    Nếu cụm rạp không hoạt động hoặc phim không còn được phân phối,
+                                                    Switch sẽ tự động tắt và không cho phép thao tác.--%>
                                                 <div class="cf-switch-cell-wrap">
                                                     <% boolean isMovieArchivedOrEnded = (movie != null && ("ARCHIVED".equalsIgnoreCase(movie.getStatus()) || "ENDED".equalsIgnoreCase(movie.getStatus())));
-                                                       boolean canToggleSwitch = isActive && !isMovieArchivedOrEnded; %>
+                                                       boolean canToggleSwitch = (isActive || isSuspended) && !isMovieArchivedOrEnded; %>
                                                     <label class="cf-switch <%= !canToggleSwitch ? "is-disabled" : "" %>"
                                                            title="<%= isMovieArchivedOrEnded ? "Phim ở trạng thái ARCHIVED/ENDED, không thể phân phối" : switchTitle %>">
                                                         <input type="checkbox"
@@ -459,7 +472,7 @@
         <script>
             //xu ly thong bao
             document.addEventListener('DOMContentLoaded', function () {
-               
+
                 const alert = document.getElementById('saveSuccessAlert');
 
                 if (alert) {
@@ -473,7 +486,7 @@
                         }, 400);
                     }, 1000);
                 }
-                 // === 1. XỬ LÝ CHỌN PHIM COMBOBOX TÌM KIẾM THÔNG MINH ===
+                // === 1. XỬ LÝ CHỌN PHIM COMBOBOX TÌM KIẾM THÔNG MINH ===
                 const moviePickerContainer = document.getElementById('moviePickerContainer');
                 const movieInputBox = document.getElementById('movieInputBox');
                 const movieSearchInput = document.getElementById('movieSearchInput');

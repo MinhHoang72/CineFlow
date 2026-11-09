@@ -104,6 +104,11 @@ public class HallManagementServlet extends HttpServlet {
         PageDTO<Hall> pageResult = cinemaService.searchHalls(targetCentreId, search, status, page, 6);
         CinemaService.HallKpi kpi = cinemaService.getHallsKpi(targetCentreId);
 
+        String base = request.getContextPath() + "/manager/halls";
+        String filters = "search=" + URLEncoder.encode(search != null ? search.trim() : "", StandardCharsets.UTF_8)
+                + "&status=" + URLEncoder.encode(status, StandardCharsets.UTF_8);
+
+        request.setAttribute("result", pageResult);
         request.setAttribute("page", pageResult);
         request.setAttribute("currentCentre", currentCentre);
         request.setAttribute("targetCentreId", targetCentreId);
@@ -116,6 +121,9 @@ public class HallManagementServlet extends HttpServlet {
         request.setAttribute("activeHalls", kpi.activeHalls());
         request.setAttribute("inactiveHalls", kpi.inactiveHalls());
         request.setAttribute("totalCapacity", kpi.totalCapacity());
+        request.setAttribute("pagerBase", base + "?" + filters + "&page=");
+        request.setAttribute("backQuery", filters + "&page=" + pageResult.getPage());
+        request.setAttribute("baseUrl", base);
         request.setAttribute("activeNav", "halls");
         request.setAttribute("pageTitle", "Quản lý Phòng chiếu");
 
@@ -143,19 +151,25 @@ public class HallManagementServlet extends HttpServlet {
             return;
         }
 
-        StringBuilder redirectUrl = new StringBuilder(request.getContextPath() + "/manager/halls?");
-
         String filterSearch = request.getParameter("search");
         String filterStatus = request.getParameter("status");
         String pageParam = request.getParameter("page");
-        if (filterSearch != null && !filterSearch.trim().isEmpty()) {
-            redirectUrl.append("search=").append(URLEncoder.encode(filterSearch.trim(), StandardCharsets.UTF_8)).append("&");
-        }
-        if (filterStatus != null && !filterStatus.trim().isEmpty()) {
-            redirectUrl.append("status=").append(URLEncoder.encode(filterStatus.trim(), StandardCharsets.UTF_8)).append("&");
-        }
-        if (pageParam != null && !pageParam.trim().isEmpty()) {
-            redirectUrl.append("page=").append(URLEncoder.encode(pageParam.trim(), StandardCharsets.UTF_8)).append("&");
+        String back = request.getParameter("back");
+
+        StringBuilder redirectUrl;
+        if (back != null && !back.trim().isEmpty()) {
+            redirectUrl = new StringBuilder(request.getContextPath() + "/manager/halls?" + back.replaceAll("[^A-Za-z0-9%&=._~+-]", "") + "&");
+        } else {
+            redirectUrl = new StringBuilder(request.getContextPath() + "/manager/halls?");
+            if (filterSearch != null && !filterSearch.trim().isEmpty()) {
+                redirectUrl.append("search=").append(URLEncoder.encode(filterSearch.trim(), StandardCharsets.UTF_8)).append("&");
+            }
+            if (filterStatus != null && !filterStatus.trim().isEmpty()) {
+                redirectUrl.append("status=").append(URLEncoder.encode(filterStatus.trim(), StandardCharsets.UTF_8)).append("&");
+            }
+            if (pageParam != null && !pageParam.trim().isEmpty()) {
+                redirectUrl.append("page=").append(URLEncoder.encode(pageParam.trim(), StandardCharsets.UTF_8)).append("&");
+            }
         }
 
         String action = request.getParameter("action");

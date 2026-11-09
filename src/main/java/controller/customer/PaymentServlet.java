@@ -75,7 +75,7 @@ public class PaymentServlet extends HttpServlet {
                 resp.sendError(HttpServletResponse.SC_NOT_FOUND);
                 return;
             }
-            if ("CONFIRMED".equals(booking.getStatus())) {
+            if (booking.isPaid()) {
                 resp.sendRedirect(detailUrl(req, booking));
                 return;
             }

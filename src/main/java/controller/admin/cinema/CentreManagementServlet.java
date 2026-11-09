@@ -83,6 +83,11 @@ public class CentreManagementServlet extends HttpServlet {
         PageDTO<Centre> pageResult = cinemaService.searchCentres(search, status, page, PAGE_SIZE);
         CinemaService.CentreKpi kpi = cinemaService.getCentresKpi();
 
+        String base = request.getContextPath() + "/admin/centres";
+        String filters = "search=" + URLEncoder.encode(search != null ? search.trim() : "", StandardCharsets.UTF_8)
+                + "&status=" + URLEncoder.encode(status, StandardCharsets.UTF_8);
+
+        request.setAttribute("result", pageResult);
         request.setAttribute("page", pageResult);
         request.setAttribute("centres", pageResult.getItems());
         request.setAttribute("totalCentres", kpi.totalCentres());
@@ -92,6 +97,9 @@ public class CentreManagementServlet extends HttpServlet {
         request.setAttribute("totalHalls", kpi.totalHalls());
         request.setAttribute("currentSearch", search != null ? search.trim() : "");
         request.setAttribute("currentStatus", status);
+        request.setAttribute("pagerBase", base + "?" + filters + "&page=");
+        request.setAttribute("backQuery", filters + "&page=" + pageResult.getPage());
+        request.setAttribute("baseUrl", base);
         request.setAttribute("activeNav", "centres");
         request.setAttribute("pageTitle", "Quản lý Cụm rạp");
 
@@ -113,14 +121,20 @@ public class CentreManagementServlet extends HttpServlet {
         String search    = request.getParameter("search");
         String status    = request.getParameter("status");
         String pageParam = request.getParameter("page");
+        String back      = request.getParameter("back");
 
-        StringBuilder redirectUrl = new StringBuilder(request.getContextPath() + "/admin/centres?");
-        if (search != null && !search.trim().isEmpty())
-            redirectUrl.append("search=").append(URLEncoder.encode(search.trim(), StandardCharsets.UTF_8)).append("&");
-        if (status != null && !status.trim().isEmpty())
-            redirectUrl.append("status=").append(URLEncoder.encode(status.trim(), StandardCharsets.UTF_8)).append("&");
-        if (pageParam != null && !pageParam.trim().isEmpty())
-            redirectUrl.append("page=").append(URLEncoder.encode(pageParam.trim(), StandardCharsets.UTF_8)).append("&");
+        StringBuilder redirectUrl;
+        if (back != null && !back.trim().isEmpty()) {
+            redirectUrl = new StringBuilder(request.getContextPath() + "/admin/centres?" + back.replaceAll("[^A-Za-z0-9%&=._~+-]", "") + "&");
+        } else {
+            redirectUrl = new StringBuilder(request.getContextPath() + "/admin/centres?");
+            if (search != null && !search.trim().isEmpty())
+                redirectUrl.append("search=").append(URLEncoder.encode(search.trim(), StandardCharsets.UTF_8)).append("&");
+            if (status != null && !status.trim().isEmpty())
+                redirectUrl.append("status=").append(URLEncoder.encode(status.trim(), StandardCharsets.UTF_8)).append("&");
+            if (pageParam != null && !pageParam.trim().isEmpty())
+                redirectUrl.append("page=").append(URLEncoder.encode(pageParam.trim(), StandardCharsets.UTF_8)).append("&");
+        }
 
         // Thêm Centre mới
         if ("create".equalsIgnoreCase(action)) {

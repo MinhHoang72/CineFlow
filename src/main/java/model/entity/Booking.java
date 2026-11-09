@@ -75,6 +75,9 @@ public class Booking {
 
     public boolean isPending() { return "PENDING".equals(status); }
 
+    /** Da thanh toan: CONFIRMED, hoac COMPLETED khi moi ghe da soat ve. */
+    public boolean isPaid() { return "CONFIRMED".equals(status) || "COMPLETED".equals(status); }
+
     /** Trang thai hien thi: don PENDING da qua gio giu ghe coi nhu het han. */
     public String getStatusLabel() {
         if (isPending()) return isHoldActive() ? "Chờ thanh toán" : "Hết hạn";
@@ -96,9 +99,6 @@ public class Booking {
             default -> "bg-secondary";
         };
     }
-
-    /** Noi dung ma QR cua ca don (mot ma cho tat ca ghe; sau nay dung chung cho F&B). */
-    public String getQrContent() { return "CINEFLOW-BOOKING:" + code; }
 
     public boolean isHoldActive() {
         return isPending() && holdUntil != null && holdUntil.getTime() > System.currentTimeMillis();

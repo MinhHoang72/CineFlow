@@ -218,11 +218,10 @@
                             <table class="cf-table customer-table">
                                 <thead>
                                     <tr>
+                                        <th class="th-cust-code">Mã KH</th>
                                         <th>Khách hàng</th>
                                         <th>Email &amp; Xác minh</th>
                                         <th>Số điện thoại</th>
-                                        <th>Đơn đặt vé</th>
-                                        <th>Tổng chi tiêu</th>
                                         <th>Trạng thái</th>
                                         <th>Thao tác</th>
                                     </tr>
@@ -230,7 +229,7 @@
 
                                 <tbody id="customerTableBody">
                                     <tr class="empty-row" id="customerTableEmptyRow" style="display: none;">
-                                        <td colspan="7" class="cf-empty-state customer-empty-cell">
+                                        <td colspan="6" class="cf-empty-state customer-empty-cell">
                                             <div class="customer-empty-icon">🔍</div>
                                             <strong>Không tìm thấy khách hàng nào phù hợp</strong>
                                             <p class="customer-empty-sub">Hãy thử tìm kiếm với từ khóa khác hoặc chọn hiển thị tất cả.</p>
@@ -238,7 +237,7 @@
                                     </tr>
                                     <% if (customers == null || customers.isEmpty()) { %>
                                     <tr>
-                                        <td colspan="7" class="cf-empty-state customer-empty-cell">
+                                        <td colspan="6" class="cf-empty-state customer-empty-cell">
                                             <div class="customer-empty-icon">
                                                 🔍
                                             </div>
@@ -263,6 +262,11 @@
                                     %>
 
                                     <tr class="customer-row" data-status="<%= esc(c.getStatus()) %>" data-search="<%= esc(c.getFullName()) %> <%= esc(c.getCustomerCode()) %> <%= esc(c.getAccount()) %> <%= esc(c.getEmail()) %> <%= esc(c.getPhone() != null ? c.getPhone() : "") %>">
+                                        <!-- MÃ KHÁCH HÀNG -->
+                                        <td>
+                                            <code class="cf-badge cf-badge-primary cf-badge-cust-code"><%= esc(c.getCustomerCode()) %></code>
+                                        </td>
+
                                         <!-- KHÁCH HÀNG -->
                                         <td>
                                             <div class="user-cell">
@@ -281,10 +285,9 @@
                                                         <%= esc(c.getFullName()) %>
                                                     </div>
 
-                                                    <div class="user-code-tag">
-                                                        <%= esc(c.getCustomerCode()) %>
-                                                        · @<%= esc(c.getAccount()) %>
-                                                    </div>
+                                                    <small class="user-account-tag" style="color: var(--cf-muted); font-size: 12px;">
+                                                        @<%= esc(c.getAccount()) %>
+                                                    </small>
                                                 </div>
                                             </div>
                                         </td>
@@ -315,18 +318,7 @@
                                                 : "—" %>
                                         </td>
 
-                                        <!-- ĐƠN ĐẶT VÉ -->
-                                        <td>
-                                            <strong><%= c.getBookingCount() %></strong>
-                                            đơn
-                                        </td>
 
-                                        <!-- TỔNG CHI TIÊU -->
-                                        <td>
-                                            <strong class="customer-total-spent">
-                                                <%= money(c.getTotalSpent()) %>
-                                            </strong>
-                                        </td>
 
                                         <!-- TRẠNG THÁI -->
                                         <td>

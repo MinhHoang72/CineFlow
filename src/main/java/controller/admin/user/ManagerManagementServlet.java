@@ -225,11 +225,11 @@ public class ManagerManagementServlet extends HttpServlet {
                 String status = request.getParameter("status");
 
                 // Gọi Service để cập nhật trạng thái hoạt động của quản lý
-                boolean ok = userService.toggleManagerStatus(userId, status, sessionUserId);
-                if (ok) {
-                    response.sendRedirect(request.getContextPath() + "/admin/managers?success=status_updated");
-                } else {
-                    response.sendRedirect(request.getContextPath() + "/admin/managers?error=not_manager");
+                UserService.ManagerStatusResult result = userService.toggleManagerStatus(userId, status, sessionUserId);
+                switch (result) {
+                    case SUCCESS -> response.sendRedirect(request.getContextPath() + "/admin/managers?success=status_updated");
+                    case NOT_MANAGER, NOT_FOUND -> response.sendRedirect(request.getContextPath() + "/admin/managers?error=not_manager");
+                    case FAILED -> response.sendRedirect(request.getContextPath() + "/admin/managers?error=status_failed");
                 }
                 return;
             } catch (Exception e) {

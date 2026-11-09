@@ -233,7 +233,7 @@ function initAdminPagination(options) {
     // Lưu trữ metadata của phim để tìm kiếm tức thì
     const movieDataList = tableRows.map(row => {
         const id = row.dataset.movieId || '';
-        const code = row.dataset.code || ('CF-' + id.padStart(4, '0'));
+        const code = row.dataset.code || id;
         const title = row.dataset.title || '';
         const genre = row.dataset.genre || '';
         const director = row.dataset.director || '';
@@ -566,7 +566,11 @@ function initTablePagination(options) {
             // Filter by status if applicable
             if (statusUpper !== 'ALL') {
                 const rowStatus = (row.dataset.status || '').toUpperCase();
-                if (rowStatus && rowStatus !== statusUpper) {
+                if (statusUpper === 'INACTIVE') {
+                    if (rowStatus !== 'INACTIVE') return false;
+                } else if (statusUpper === 'LOCKED') {
+                    if (rowStatus !== 'LOCKED') return false;
+                } else if (!rowStatus || rowStatus !== statusUpper) {
                     return false;
                 }
             }

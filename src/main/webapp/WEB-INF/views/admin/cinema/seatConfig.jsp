@@ -301,7 +301,7 @@
 
                 <!-- Thanh tìm kiếm & bộ lọc ghế -->
                 <div class="cf-filter-card" style="margin-top: 16px;">
-                    <form class="cf-filter-form" method="GET" action="${pageContext.request.contextPath}/manager/seat-config">
+                    <form class="cf-filter-form" method="GET" action="${baseUrl}">
                         <input type="hidden" name="hallId" value="<%= hall != null ? hall.getHallId() : 0 %>">
 
                         <div class="cf-search-box">
@@ -395,11 +395,12 @@
                                     <% if (isUnavail) { %>
                                         <span style="color: #64748B; font-size: 13px; font-style: italic;">Lối đi / Trống</span>
                                     <% } else { %>
-                                        <form method="POST" action="${pageContext.request.contextPath}/manager/seat-config" style="display: inline-block; margin: 0;"
+                                        <form method="POST" action="${baseUrl}" style="display: inline-block; margin: 0;"
                                               onsubmit="return confirm('<%= isAvailable ? ("Khóa bảo trì ghế " + s.getLabel() + "? Ghế này sẽ không thể đặt vé cho đến khi mở lại.") : ("Mở bảo trì lại ghế " + s.getLabel() + "?") %>');">
                                             <input type="hidden" name="action" value="toggleMaintenance">
                                             <input type="hidden" name="hallId" value="<%= hall != null ? hall.getHallId() : 0 %>">
                                             <input type="hidden" name="seatId" value="<%= s.getSeatId() %>">
+                                            <input type="hidden" name="back" value="${backQuery}">
                                             <input type="hidden" name="search" value="<%= currentSearch != null ? currentSearch : "" %>">
                                             <input type="hidden" name="seatType" value="<%= currentSeatType != null ? currentSeatType : "ALL" %>">
                                             <input type="hidden" name="seatStatus" value="<%= currentSeatStatus != null ? currentSeatStatus : "ALL" %>">
@@ -431,31 +432,17 @@
                         </tbody>
                     </table>
 
-                    <% if (totalFilteredSeats != null && totalFilteredSeats > 0) { 
-                        int startItem = (currentPage - 1) * pageSize + 1;
-                        int endItem = Math.min(currentPage * pageSize, totalFilteredSeats);
-
-                        String baseParams = "&hallId=" + (hall != null ? hall.getHallId() : 0);
-                        if (currentSearch != null && !currentSearch.trim().isEmpty()) {
-                            baseParams += "&search=" + java.net.URLEncoder.encode(currentSearch.trim(), "UTF-8");
-                        }
-                        if (currentSeatType != null && !currentSeatType.trim().isEmpty()) {
-                            baseParams += "&seatType=" + java.net.URLEncoder.encode(currentSeatType.trim(), "UTF-8");
-                        }
-                        if (currentSeatStatus != null && !currentSeatStatus.trim().isEmpty()) {
-                            baseParams += "&seatStatus=" + java.net.URLEncoder.encode(currentSeatStatus.trim(), "UTF-8");
-                        }
-                    %>
+                    <% if (totalFilteredSeats != null && totalFilteredSeats > 0) { %>
                     <!-- THANH PHÂN TRANG (PAGINATION) -->
                     <div class="cf-pagination-bar">
                         <div class="cf-pagination-info">
-                            Hiển thị <strong><%= startItem %> - <%= endItem %></strong> trên tổng số <strong><%= totalFilteredSeats %></strong> vị trí ghế
+                            Hiển thị <strong>${result.from} - ${result.to}</strong> trên tổng số <strong>${result.total}</strong> vị trí ghế
                         </div>
                         <% if (totalPages > 1) { %>
                         <div class="cf-pagination-controls">
                             <!-- Nút trang trước (Previous) -->
                             <% if (currentPage > 1) { %>
-                                <a href="${pageContext.request.contextPath}/manager/seat-config?page=<%= currentPage - 1 %><%= baseParams %>" 
+                                <a href="${pagerBase}<%= currentPage - 1 %>" 
                                    class="cf-page-btn" title="Trang trước">«</a>
                             <% } else { %>
                                 <span class="cf-page-btn disabled" title="Trang trước">«</span>
@@ -468,7 +455,7 @@
                                 <% if (i == currentPage) { %>
                                     <span class="cf-page-btn active"><%= i %></span>
                                 <% } else { %>
-                                    <a href="${pageContext.request.contextPath}/manager/seat-config?page=<%= i %><%= baseParams %>" 
+                                    <a href="${pagerBase}<%= i %>" 
                                        class="cf-page-btn"><%= i %></a>
                                 <% } %>
                             <% 
@@ -482,7 +469,7 @@
 
                             <!-- Nút trang sau (Next) -->
                             <% if (currentPage < totalPages) { %>
-                                <a href="${pageContext.request.contextPath}/manager/seat-config?page=<%= currentPage + 1 %><%= baseParams %>" 
+                                <a href="${pagerBase}<%= currentPage + 1 %>" 
                                    class="cf-page-btn" title="Trang sau">»</a>
                             <% } else { %>
                                 <span class="cf-page-btn disabled" title="Trang sau">»</span>

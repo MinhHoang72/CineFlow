@@ -14,10 +14,10 @@ import model.entity.User;
 import utils.MediaStorage;
 import utils.ValidationUtil;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Date;
-import java.time.LocalDate;
 import java.util.UUID;
 
 /**
@@ -113,6 +113,8 @@ public class MovieManagementServlet extends HttpServlet {
      */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        request.setCharacterEncoding("UTF-8");
+
         // 1. Kiểm tra quyền hạn Admin trước khi xử lý bất kỳ thao tác thay đổi dữ liệu nào
         if (!allowed(request.getSession(false))) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN);
@@ -176,58 +178,21 @@ public class MovieManagementServlet extends HttpServlet {
                 return;
             }
 
-            // 2.7. Kiểm tra khoảng thời gian chiếu (Ngày kết thúc phải lớn hơn hoặc bằng ngày khởi chiếu)
+            // 2.7. Đọc ngày khởi chiếu và ngày kết thúc
             Date releaseDate = parseDate(releaseDateStr);
             Date endDate = parseDate(endDateStr);
-            Date today = Date.valueOf(LocalDate.now());
 
-            // Nghiệp vụ 1: Khi ấn archive hoặc end phim thì ngày kết thúc sẽ ngay lập tức kích hoạt lúc đó
-            if ("ARCHIVED".equals(status) || "ENDED".equals(status)) {
-                endDate = today;
-            }
-
-            // Nghiệp vụ 2: Khi phim chuyển từ ARCHIVED hoặc ENDED sang COMING_SOON, bắt buộc phải validation ngày phát hành và kết thúc không được lưu thay đổi khi chưa set lại ngày tháng
-            if (movieId > 0) {
-                Movie existing = movieService.getMovieById(movieId);
-                if (existing != null) {
-                    String oldStatus = existing.getStatus() != null ? existing.getStatus().toUpperCase() : "";
-                    String dateErr = ValidationUtil.validateTransitionToComingSoon(oldStatus, status, releaseDate, endDate);
-                    if (dateErr != null) {
-                        response.sendRedirect(redirectTarget + sep + "error=" + dateErr);
-                        return;
-                    }
-                    if (("ARCHIVED".equals(oldStatus) || "ENDED".equals(oldStatus)) && "COMING_SOON".equals(status)) {
-                        if (existing.getEndDate() != null && !existing.getEndDate().toLocalDate().isAfter(LocalDate.now())) {
-                            if (endDate != null && endDate.equals(existing.getEndDate())) {
-                                response.sendRedirect(redirectTarget + sep + "error=reissue_dates_required");
-                                return;
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (!ValidationUtil.isValidDateRange(releaseDate, endDate)) {
-                response.sendRedirect(redirectTarget + sep + "error=invalid_date_range");
-                return;
-            }
-
-            // Nghiệp vụ trạng thái theo ngày phát hành (COMING_SOON không được ở quá khứ, NOW_SHOWING không được ở tương lai)
-            String dateConsistencyError = ValidationUtil.validateMovieStatusDateConsistency(status, releaseDate, today);
-            if (dateConsistencyError != null) {
-                response.sendRedirect(redirectTarget + sep + "error=" + dateConsistencyError);
-                return;
-            }
-
+            String posterUrl = null;
+            String trailerUrl = null;
             try {
-                // 2.8. Đóng gói thông tin form vào đối tượng Movie POJO
-                Movie movie = readMovie(request);
+                // 2.8. Đóng gói thông tin form vào đối tượng Movie POJO (truyền duration đã validate)
+                Movie movie = readMovie(request, duration);
                 movie.setReleaseDate(releaseDate);
                 movie.setEndDate(endDate);
 
                 // 2.9. Xử lý lưu trữ tệp tin Poster và Trailer tải lên thư mục máy chủ nếu có
-                String posterUrl = saveUpload(request, "posterFile", "poster");
-                String trailerUrl = saveUpload(request, "trailerFile", "trailer");
+                posterUrl = saveUpload(request, "posterFile", "poster");
+                trailerUrl = saveUpload(request, "trailerFile", "trailer");
                 if (posterUrl != null) {
                     movie.setPosterUrl(posterUrl);
                 }
@@ -236,13 +201,23 @@ public class MovieManagementServlet extends HttpServlet {
                 }
 
                 // 2.10. Phân nhánh: Tạo mới (INSERT) nếu movieId == 0, Cập nhật (UPDATE) nếu movieId > 0
-                movieService.saveMovie(movie);
+                int savedId = movieService.saveMovie(movie);
+                if (savedId <= 0) {
+                    deleteUploadedFileSilently(posterUrl);
+                    deleteUploadedFileSilently(trailerUrl);
+                    response.sendRedirect(redirectTarget + sep + "error=save_failed");
+                    return;
+                }
 
                 // 2.11. Chuyển hướng về trang danh sách phim kèm thông báo thành công
                 response.sendRedirect(request.getContextPath() + "/admin/movies?success=saved");
             } catch (IllegalArgumentException e) {
+                deleteUploadedFileSilently(posterUrl);
+                deleteUploadedFileSilently(trailerUrl);
                 response.sendRedirect(redirectTarget + sep + "error=" + e.getMessage());
             } catch (Exception e) {
+                deleteUploadedFileSilently(posterUrl);
+                deleteUploadedFileSilently(trailerUrl);
                 response.sendRedirect(redirectTarget + sep + "error=save_failed");
             }
             return;
@@ -257,21 +232,17 @@ public class MovieManagementServlet extends HttpServlet {
                     int movieId = Integer.parseInt(movieIdParam.trim());
                     String targetStatus = newStatus.trim().toUpperCase();
                     if (ValidationUtil.isValidMovieStatus(targetStatus)) {
-                        Movie curr = movieService.getMovieById(movieId);
-                        if (curr != null) {
-                            String currStatus = curr.getStatus() != null ? curr.getStatus().toUpperCase() : "";
-                            // Chặn đổi nhanh sang COMING_SOON nếu phim đang là ARCHIVED hoặc ENDED (phải set lại ngày tháng mới)
-                            if (("ARCHIVED".equals(currStatus) || "ENDED".equals(currStatus)) && "COMING_SOON".equals(targetStatus)) {
-                                response.sendRedirect(request.getContextPath() + "/admin/movies?error=reissue_dates_required");
+                        try {
+                            boolean ok = movieService.updateMovieStatus(movieId, targetStatus);
+                            if (ok) {
+                                response.sendRedirect(request.getContextPath() + "/admin/movies?success=statusUpdated");
+                                return;
+                            } else {
+                                response.sendRedirect(request.getContextPath() + "/admin/movies?error=update_failed");
                                 return;
                             }
-                        }
-                        boolean ok = movieService.updateMovieStatus(movieId, targetStatus);
-                        if (ok) {
-                            response.sendRedirect(request.getContextPath() + "/admin/movies?success=statusUpdated");
-                            return;
-                        } else {
-                            response.sendRedirect(request.getContextPath() + "/admin/movies?error=reissue_dates_required");
+                        } catch (IllegalArgumentException e) {
+                            response.sendRedirect(request.getContextPath() + "/admin/movies?error=" + e.getMessage());
                             return;
                         }
                     }
@@ -287,20 +258,40 @@ public class MovieManagementServlet extends HttpServlet {
     }
 
     /**
+     * Xóa tệp tải lên nếu lưu DB thất bại hoặc ném ngoại lệ.
+     * Chỉ xóa các file mới tạo trong lần gọi này dựa trên URL trả về từ saveUpload.
+     */
+    private void deleteUploadedFileSilently(String url) {
+        if (url == null || !url.contains("/uploads/movies/")) {
+            return;
+        }
+        try {
+            String fileName = url.substring(url.lastIndexOf('/') + 1);
+            Path directory = MediaStorage.uploadDirectory(getServletContext(), "movies");
+            Files.deleteIfExists(directory.resolve(fileName));
+        } catch (Exception ignored) {
+        }
+    }
+
+    /**
      * Đọc và trích xuất dữ liệu của bộ phim từ các tham số trong HttpServletRequest.
      *
-     * @param request đối tượng yêu cầu HTTP
+     * @param request  đối tượng yêu cầu HTTP
+     * @param duration thời lượng phim đã được kiểm tra tính hợp lệ
      * @return đối tượng Movie đã được thiết lập đầy đủ thông tin
      */
-    private Movie readMovie(HttpServletRequest request) {
+    private Movie readMovie(HttpServletRequest request, int duration) {
         Movie movie = new Movie();
         String id = request.getParameter("movieId");
         if (id != null && !id.isBlank()) {
-            movie.setMovieId(Integer.parseInt(id));
+            try {
+                movie.setMovieId(Integer.parseInt(id.trim()));
+            } catch (NumberFormatException ignored) {
+            }
         }
         movie.setTitle(request.getParameter("title"));
         movie.setDescription(request.getParameter("description"));
-        movie.setDuration(Integer.parseInt(request.getParameter("duration")));
+        movie.setDuration(duration);
         movie.setGenre(request.getParameter("genre"));
         movie.setDirector(request.getParameter("director"));
         movie.setCast(request.getParameter("cast"));

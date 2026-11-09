@@ -248,7 +248,7 @@ public class PaymentService {
      * PAYMENT_FAILED (giao dịch VNPay gần nhất thất bại); null nếu đơn vẫn thanh toán được bình thường.
      */
     public String getFailureReason(Booking booking) throws SQLException {
-        if ("CONFIRMED".equals(booking.getStatus())) return "CONFIRMED";
+        if (booking.isPaid()) return "CONFIRMED";
         if ("CANCELLED".equals(booking.getStatus())) return "CANCELLED";
         if (!booking.isHoldActive()) return "EXPIRED";
         if ("FAILED".equals(paymentDAO.latestQrStatus(booking.getId()))) return "PAYMENT_FAILED";
@@ -259,14 +259,27 @@ public class PaymentService {
         return paymentDAO.getTickets(bookingId);
     }
 
+    /** Tiền thối = tiền khách đưa - số tiền giao dịch; null nếu không phải tiền mặt. */
+    static BigDecimal calculateChange(BigDecimal amount, BigDecimal cashReceived) {
+        return cashReceived == null ? null : cashReceived.subtract(amount);
+    }
+
+    /** Điền tiền thối cho các giao dịch trước khi trả về cho servlet / JSP. */
+    static List<PaymentTransaction> withChange(List<PaymentTransaction> transactions) {
+        for (PaymentTransaction p : transactions) {
+            p.setChange(calculateChange(p.getAmount(), p.getCashReceived()));
+        }
+        return transactions;
+    }
+
     public List<PaymentTransaction> getTransactions(int bookingId) throws SQLException {
-        return paymentDAO.getTransactions(bookingId);
+        return withChange(paymentDAO.getTransactions(bookingId));
     }
 
     /** Giao dịch đã thanh toán gần nhất của đơn (in hoá đơn), null nếu chưa có. */
     public PaymentTransaction getPaidTransaction(int bookingId) throws SQLException {
         PaymentTransaction paid = null;
-        for (PaymentTransaction p : paymentDAO.getTransactions(bookingId)) {
+        for (PaymentTransaction p : getTransactions(bookingId)) {
             if ("PAID".equals(p.getStatus())) paid = p;
         }
         return paid;

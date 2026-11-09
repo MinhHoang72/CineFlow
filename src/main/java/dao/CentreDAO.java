@@ -38,8 +38,12 @@ public class CentreDAO {
         List<Object> params = new ArrayList<>();
 
         if (search != null && !search.trim().isEmpty()) {
-            where.append("AND (LOWER(c.CentreName) LIKE ? OR LOWER(c.Address) LIKE ? OR c.Phone LIKE ? OR LOWER(c.City) LIKE ?) ");
-            String kw = "%" + search.trim().toLowerCase() + "%";
+            where.append("AND (c.CentreName COLLATE Latin1_General_100_CI_AI LIKE ? "
+                    + "OR c.Address COLLATE Latin1_General_100_CI_AI LIKE ? "
+                    + "OR c.Phone LIKE ? "
+                    + "OR c.City COLLATE Latin1_General_100_CI_AI LIKE ?) ");
+            String safeKey = search.trim().replace("[", "[[]").replace("%", "[%]").replace("_", "[_]");
+            String kw = "%" + safeKey + "%";
             params.add(kw); params.add(kw); params.add(kw); params.add(kw);
         }
         if (status != null && !status.trim().isEmpty() && !"ALL".equalsIgnoreCase(status)) {
@@ -576,7 +580,7 @@ public class CentreDAO {
                     }
                 } else if ("ACTIVE".equals(to)) {
                     if ("SUSPENDED".equals(from) || "TEMPORARILY_CLOSED".equals(from)) {
-                        // Khôi phục các bản ghi SUSPENDED -> ACTIVE, CHỈ KHÔI PHỤC NẾU CHƯA QUÁ endDate của phim!
+                        // Khôi phục các bản ghi cũ nếu từng có Status = 'SUSPENDED' (chưa quá endDate)
                         String restoreActiveSql = "UPDATE cm SET cm.Status = 'ACTIVE', cm.IsActive = 1, cm.UpdatedAt = GETDATE() "
                                                 + "FROM CentreMovies cm JOIN Movies m ON cm.MovieID = m.MovieID "
                                                 + "WHERE cm.CentreID = ? AND cm.Status = 'SUSPENDED' "

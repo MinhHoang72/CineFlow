@@ -52,6 +52,7 @@
         <table class="cf-table">
             <thead>
                 <tr>
+                    <th style="width: 54px; text-align: center;">Ảnh</th>
                     <th>Mã</th>
                     <th>Tên</th>
                     <th>Giảm</th>
@@ -65,11 +66,28 @@
             </thead>
             <tbody>
             <c:if test="${empty result.items}">
-                <tr><td colspan="${isAdminScope ? 9 : 8}" class="cf-empty">Không có voucher nào.</td></tr>
+                <tr><td colspan="${isAdminScope ? 10 : 9}" class="cf-empty">Không có voucher nào.</td></tr>
             </c:if>
 
             <c:forEach items="${result.items}" var="v">
                 <tr>
+                    <td style="text-align: center;">
+                        <c:choose>
+                            <c:when test="${not empty v.imageUrl}">
+                                <img src="${v.imageUrl}" alt="Voucher" 
+                                     style="width: 44px; height: 30px; object-fit: cover; border-radius: 4px; border: 1px solid #cbd5e1; display: inline-block; vertical-align: middle;" 
+                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';">
+                                <span style="display: none; width: 44px; height: 30px; background: #f1f5f9; border-radius: 4px; align-items: center; justify-content: center; color: #94a3b8; vertical-align: middle;">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/></svg>
+                                </span>
+                            </c:when>
+                            <c:otherwise>
+                                <span style="display: inline-flex; width: 44px; height: 30px; background: #f1f5f9; border-radius: 4px; align-items: center; justify-content: center; color: #94a3b8; vertical-align: middle;">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/></svg>
+                                </span>
+                            </c:otherwise>
+                        </c:choose>
+                    </td>
                     <td><strong>${v.voucherCode}</strong></td>
                     <td>${v.voucherName}</td>
                     <td>
@@ -87,8 +105,8 @@
                     </td>
                     <td><%= money(((model.entity.Voucher)pageContext.findAttribute("v")).getMinimumOrderValue()) %></td>
                     <td>
-                        <br>
-                        
+                        ${v.startDate.format(dateFmt)}<br>
+                        ${v.endDate.format(dateFmt)}
                     </td>
                     <td>${v.usedCount}${not empty v.usageLimit ? ' / '.concat(v.usageLimit) : ''}</td>
 

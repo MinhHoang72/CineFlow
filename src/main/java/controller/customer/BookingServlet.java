@@ -237,7 +237,7 @@ public class BookingServlet extends HttpServlet {
             resp.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;
         }
-        if ("CONFIRMED".equals(booking.getStatus())) {
+        if (booking.isPaid()) {
             resp.sendRedirect(req.getContextPath() + "/booking?action=detail&bookingId=" + booking.getId());
             return;
         }
@@ -314,13 +314,20 @@ public class BookingServlet extends HttpServlet {
         req.setAttribute("tickets", tickets);
         req.setAttribute("transactions", paymentService.getTransactions(booking.getId()));
         req.setAttribute("isOwner", booking.getUserId() != null && booking.getUserId() == user.getUserId());
-        if (!tickets.isEmpty()) req.setAttribute("bookingQr", QrUtil.toDataUri(booking.getQrContent()));
+        req.setAttribute("ticketQrs", ticketQrs(tickets));
         req.getRequestDispatcher(VIEW_DIR + "booking/bookingDetail.jsp").forward(req, resp);
     }
 
     private Booking loadOwnBooking(HttpServletRequest req, User user) throws SQLException {
         Integer bookingId = WebUtil.parseInt(req.getParameter("bookingId"));
         return bookingId == null ? null : bookingService.getOwnBooking(bookingId, user.getUserId());
+    }
+
+    /** Anh QR rieng cua tung ve (TicketCode -> data URI), dung chung cho ve dien tu va in ve tai quay. */
+    public static Map<String, String> ticketQrs(List<Ticket> tickets) {
+        Map<String, String> qrs = new LinkedHashMap<>();
+        for (Ticket t : tickets) qrs.put(t.getCode(), QrUtil.toDataUri(t.getQrContent()));
+        return qrs;
     }
 
     /** Cac seatId hop le gui tu form chon ghe. */

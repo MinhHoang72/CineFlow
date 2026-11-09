@@ -193,15 +193,15 @@
             <div class="cf-kpi-grid staff-kpi-grid">
                 <div class="cf-kpi-card">
                     <span class="cf-kpi-label">Tổng số nhân viên</span>
-                    <div class="cf-kpi-value"><%= totalStaff %></div>
+                    <div class="cf-kpi-value" id="kpiTotalStaff"><%= totalStaff %></div>
                 </div>
                 <div class="cf-kpi-card">
                     <span class="cf-kpi-label">Đang hoạt động</span>
-                    <div class="cf-kpi-value" style="color: #10b981;"><%= activeStaffCount %></div>
+                    <div class="cf-kpi-value" id="kpiActiveStaff" style="color: #10b981;"><%= activeStaffCount %></div>
                 </div>
                 <div class="cf-kpi-card">
                     <span class="cf-kpi-label">Tạm ngưng / Đã khóa</span>
-                    <div class="cf-kpi-value" style="color: #ef4444;"><%= inactiveStaffCount %></div>
+                    <div class="cf-kpi-value" id="kpiInactiveStaff" style="color: #ef4444;"><%= inactiveStaffCount %></div>
                 </div>
                 <div class="cf-kpi-card">
                     <span class="cf-kpi-label">Nhân viên Bán vé</span>
@@ -245,10 +245,10 @@
 
                         <div class="staff-select-wrap">
                             <select id="staffStatusFilter" aria-label="Lọc theo trạng thái">
-                                <option value="">Tất cả trạng thái</option>
-                                <option value="st-active">Hoạt động</option>
-                                <option value="st-inactive">Tạm ngưng</option>
-                                <option value="st-locked">Đã khóa</option>
+                                <option value="ALL">Tất cả trạng thái</option>
+                                <option value="ACTIVE">Hoạt động</option>
+                                <option value="INACTIVE">Tạm ngưng</option>
+                                <option value="LOCKED">Đã khóa</option>
                             </select>
                         </div>
 
@@ -263,7 +263,9 @@
                                 <input type="search" name="search" id="staffFilterInput"
                                        value="<%= searchParam != null ? searchParam : "" %>"
                                        placeholder="Tìm mã, họ tên, tài khoản..."
-                                       aria-label="Tìm nhân viên">
+                                       aria-label="Tìm nhân viên"
+                                       autocomplete="off">
+                                <button type="button" id="staffSearchClearBtn" class="staff-search-clear-btn" style="display: none;" title="Xóa tìm kiếm">✕</button>
                             </div>
 
                             <% if (searchParam != null && !searchParam.trim().isEmpty()) { %>
@@ -273,6 +275,19 @@
                         </form>
 
                         <button type="submit" form="staffSearchForm" class="staff-control-btn">Tìm</button>
+
+                        <div class="staff-page-size-wrap">
+                            <span>Hiển thị:</span>
+                            <div class="staff-select-wrap">
+                                <select id="staffPageSizeSelect" class="cf-select-sm" aria-label="Số nhân viên mỗi trang">
+                                    <option value="5">5 nhân viên</option>
+                                    <option value="10" selected>10 nhân viên</option>
+                                    <option value="20">20 nhân viên</option>
+                                    <option value="50">50 nhân viên</option>
+                                    <option value="ALL">Tất cả</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -291,7 +306,12 @@
                                 <th class="col-actions">Thao tác</th>
                             </tr>
                             </thead>
-                            <tbody>
+                            <tbody id="staffTableBody">
+                                <tr id="staffTableEmptyRow" style="display: none;">
+                                    <td colspan="8" class="cf-empty" style="text-align: center; padding: 32px 16px; color: var(--cf-muted);">
+                                        Không tìm thấy nhân viên nào phù hợp với bộ lọc.
+                                    </td>
+                                </tr>
                             <% if (staff == null || staff.isEmpty()) { %>
                                 <tr>
                                     <td colspan="8" class="cf-empty">
@@ -317,7 +337,7 @@
                                     String itemCentreName = item.getCentreName() != null
                                         ? item.getCentreName() : currentCentreName;
                             %>
-                                <tr class="staff-row <%= stClass %> <%= roleClass %>" data-search="<%= searchVal %>">
+                                <tr class="staff-row <%= stClass %> <%= roleClass %>" data-search="<%= searchVal %>" data-status="<%= st.toUpperCase() %>" data-role="<%= roleClass %>">
                                     <td class="col-code">
                                         <code class="cf-badge cf-badge-info"><%= employeeCode %></code>
                                     </td>
@@ -377,6 +397,16 @@
                                } %>
                             </tbody>
                         </table>
+                    </div>
+                </div>
+
+                <!-- THANH PHÂN TRANG -->
+                <div class="cf-pagination-bar">
+                    <div class="cf-pagination-info" id="staffPaginationInfo">
+                        Đang nạp danh sách nhân viên...
+                    </div>
+                    <div class="cf-pagination-controls" id="staffPaginationControls">
+                        <!-- Các nút phân trang được sinh động bởi JS -->
                     </div>
                 </div>
             </section>
@@ -522,6 +552,7 @@
 
 <div id="cf-toast-container" aria-live="polite" aria-atomic="false"></div>
 
+<script src="${pageContext.request.contextPath}/js/admin-pagination.js?v=<%= System.currentTimeMillis() %>"></script>
 <script>
     function openCreateStaffModal() {
         document.getElementById('createStaffModal').classList.add('active');
@@ -563,38 +594,56 @@
         }
     });
 
+    var staffPagination = null;
+
     document.addEventListener('DOMContentLoaded', function() {
-        var searchInput = document.getElementById('staffFilterInput');
-        var roleFilter = document.getElementById('staffRoleFilter');
-        var statusFilter = document.getElementById('staffStatusFilter');
-        var rows = document.querySelectorAll('.staff-row');
         var countLabel = document.getElementById('staffCountLabel');
+        var roleFilter = document.getElementById('staffRoleFilter');
+        var searchInput = document.getElementById('staffFilterInput');
+        var searchForm = document.getElementById('staffSearchForm');
 
-        function filterRows() {
-            var query = searchInput ? searchInput.value.toLowerCase().trim() : '';
-            var roleVal = roleFilter ? roleFilter.value : '';
-            var statusVal = statusFilter ? statusFilter.value : '';
-            var visible = 0;
-
-            rows.forEach(function(row) {
-                var searchVal = row.getAttribute('data-search') || '';
-                var matchText = !query || searchVal.indexOf(query) !== -1;
-                var matchRole = !roleVal || row.classList.contains(roleVal);
-                var matchStatus = !statusVal || row.classList.contains(statusVal);
-                var showRow = matchText && matchRole && matchStatus;
-
-                row.style.display = showRow ? '' : 'none';
-                if (showRow) visible++;
-            });
-
-            if (countLabel) {
-                countLabel.textContent = visible + ' tài khoản đang hiển thị.';
+        staffPagination = initTablePagination({
+            tableBodyId: 'staffTableBody',
+            rowSelector: 'tr.staff-row',
+            emptyRowId: 'staffTableEmptyRow',
+            paginationId: 'staffPaginationControls',
+            infoDisplayId: 'staffPaginationInfo',
+            pageSizeSelectId: 'staffPageSizeSelect',
+            searchInputId: 'staffFilterInput',
+            searchClearBtnId: 'staffSearchClearBtn',
+            statusFilterSelectId: 'staffStatusFilter',
+            itemLabel: 'nhân viên',
+            defaultPageSize: 10,
+            customFilter: function(row) {
+                var roleVal = roleFilter ? roleFilter.value : '';
+                if (roleVal && !row.classList.contains(roleVal)) {
+                    return false;
+                }
+                return true;
+            },
+            onPageChange: function(state) {
+                if (countLabel) {
+                    countLabel.textContent = state.totalFiltered + ' tài khoản đang hiển thị.';
+                }
             }
+        });
+
+        if (roleFilter) {
+            roleFilter.addEventListener('change', function() {
+                if (staffPagination) {
+                    staffPagination.setPage(1);
+                }
+            });
         }
 
-        if (searchInput) searchInput.addEventListener('input', filterRows);
-        if (roleFilter) roleFilter.addEventListener('change', filterRows);
-        if (statusFilter) statusFilter.addEventListener('change', filterRows);
+        if (searchForm) {
+            searchForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                if (staffPagination && searchInput) {
+                    staffPagination.setSearch(searchInput.value);
+                }
+            });
+        }
 
         document.querySelectorAll('.cf-alert-success, .cf-alert-danger').forEach(function(alert) {
             setTimeout(function() {
@@ -664,7 +713,19 @@
             if (row) {
                 row.classList.remove('st-active', 'st-inactive', 'st-locked');
                 row.classList.add('st-' + newStatus.toLowerCase());
+                row.setAttribute('data-status', newStatus.toUpperCase());
             }
+
+            if (staffPagination) {
+                staffPagination.refreshRows();
+            }
+
+            var activeRows = document.querySelectorAll('.staff-row[data-status="ACTIVE"]').length;
+            var inactiveRows = document.querySelectorAll('.staff-row[data-status="INACTIVE"], .staff-row[data-status="LOCKED"]').length;
+            var kpiActive = document.getElementById('kpiActiveStaff');
+            var kpiInactive = document.getElementById('kpiInactiveStaff');
+            if (kpiActive) kpiActive.textContent = activeRows;
+            if (kpiInactive) kpiInactive.textContent = inactiveRows;
 
             var statusLabel = newStatus === 'ACTIVE' ? 'Hoạt động'
                 : (newStatus === 'INACTIVE' ? 'Tạm ngưng' : 'Đã khóa');

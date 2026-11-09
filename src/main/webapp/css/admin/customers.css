@@ -257,52 +257,52 @@
                 border-collapse: collapse;
             }
 
-            /* Khách hàng */
+            /* Mã KH */
             .customer-table th:nth-child(1),
             .customer-table td:nth-child(1) {
-                width: 18%;
+                width: 10%;
+                white-space: nowrap;
             }
 
-            /* Email */
+            /* Khách hàng */
             .customer-table th:nth-child(2),
             .customer-table td:nth-child(2) {
-                width: 16%;
+                width: 28%;
+            }
+
+            /* Email & Xác minh */
+            .customer-table th:nth-child(3),
+            .customer-table td:nth-child(3) {
+                width: 26%;
             }
 
             /* Số điện thoại */
-            .customer-table th:nth-child(3),
-            .customer-table td:nth-child(3) {
-                width: 10%;
-            }
-
-            /* Đơn đặt vé */
             .customer-table th:nth-child(4),
             .customer-table td:nth-child(4) {
-                width: 8%;
-            }
-
-            /* Tổng chi tiêu */
-            .customer-table th:nth-child(5),
-            .customer-table td:nth-child(5) {
-                width: 11%;
-            }
-
-            /* Lịch sử đặt vé */
-            .customer-table th:nth-child(6),
-            .customer-table td:nth-child(6) {
-                width: 12%;
+                width: 14%;
+                white-space: nowrap;
             }
 
             /* Trạng thái */
-            .customer-table th:nth-child(7),
-            .customer-table td:nth-child(7) {
-                width: 13%;
+            .customer-table th:nth-child(5),
+            .customer-table td:nth-child(5) {
+                width: 11%;
+                text-align: center;
+                white-space: nowrap;
             }
 
             /* Thao tác */
-            .customer-table th:nth-child(8),
-            .customer-table td:nth-child(8) {
-                width: 12%;
+            .customer-table th:nth-child(6),
+            .customer-table td:nth-child(6) {
+                width: 11%;
+                text-align: center;
+                white-space: nowrap;
+            }
+
+            .cf-badge-cust-code {
+                font-size: 12px !important;
+                font-weight: 700 !important;
+                letter-spacing: 0.5px;
             }
 
             .customer-table th,
@@ -321,20 +321,14 @@
             }
 
             /* Giữ nội dung các cột này trên cùng một dòng */
-            .customer-table td:nth-child(3),
+            .customer-table td:nth-child(1),
             .customer-table td:nth-child(4),
             .customer-table td:nth-child(5),
-            .customer-table td:nth-child(6),
-            .customer-table td:nth-child(7) {
+            .customer-table td:nth-child(6) {
                 overflow-wrap: normal;
             }
 
-            /* Nút lịch sử vé */
-            .customer-table td:nth-child(6) .cf-btn {
-                white-space: nowrap;
-                padding: 7px 8px;
-                font-size: 12px;
-            }
+
 
             /* Căn nút thao tác gọn trong cột */
             .customer-table th:last-child,
@@ -521,7 +515,7 @@
                 }
 
                 .customer-table {
-                    min-width: 1100px;
+                    min-width: 780px;
                     table-layout: fixed;
                 }
 

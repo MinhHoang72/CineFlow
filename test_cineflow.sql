@@ -444,6 +444,8 @@ CREATE TABLE Vouchers (
 
     Description NVARCHAR(500) NULL,
 
+    ImageURL NVARCHAR(500) NULL,
+
     CentreID INT NULL,
 
     CreatedBy INT NULL,
@@ -1295,7 +1297,22 @@ INSERT INTO Users (UserID, FullName, Account, Email, Password, Phone, Avatar, Ro
 (122, N'Uyên Linh', N'cust_43', N'uyenlinh@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000043', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-02 20:10:06', '2026-10-15 20:10:06'),
 (123, N'Trung Quân Idol', N'cust_44', N'trungquan@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000044', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-09-01 20:10:06', '2026-10-15 20:10:06'),
 (127, N'Dương quyết thái', N'quyetthai', N'quyetthaix22@gmail.com', N'$2a$10$SXAro67oi3IuXv8s.LO6tuSi/zg8XeB0mp/jiTbcOcKU7JQwCDgOu', N'0972049598', NULL, N'MANAGER', N'ACTIVE', 24, NULL, NULL, 1, 0, NULL, '2026-10-26 18:39:48', NULL),
-(128, N'Trần Thị Cúc', N'customer1', N'customer1@gmail.com', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0900000011', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 0, NULL, '2026-10-24 15:00:00', NULL);
+(128, N'Trần Thị Cúc', N'customer1', N'customer1@gmail.com', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0900000011', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 0, NULL, '2026-10-24 15:00:00', NULL),
+(136, N'Nguyễn Hoàng Nam', N'staff_tk_01', N'staff.tk01@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230001', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
+(137, N'Trần Thị Thùy Dung', N'staff_tk_02', N'staff.tk02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230002', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
+(138, N'Lê Quốc Bảo', N'staff_tk_03', N'staff.tk03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230003', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
+(139, N'Phạm Minh Thư', N'staff_tk_04', N'staff.tk04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230004', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
+(140, N'Đặng Tuấn Kiệt', N'staff_tk_05', N'staff.tk05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230005', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
+(141, N'Huỳnh Mai Phương', N'staff_tk_06', N'staff.tk06@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230006', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
+(142, N'Võ Thành Đạt', N'staff_tk_07', N'staff.tk07@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230007', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
+(143, N'Bùi Thảo Nhi', N'staff_tk_08', N'staff.tk08@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230008', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
+(144, N'Đỗ Gia Huy', N'staff_tk_09', N'staff.tk09@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230009', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
+(145, N'Trương Bảo Châu', N'staff_tk_10', N'staff.tk10@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230010', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
+(146, N'Ngô Đình Khang', N'staff_tk_11', N'staff.tk11@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230011', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
+(147, N'Hoàng Ngọc Ánh', N'staff_tk_12', N'staff.tk12@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230012', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
+(148, N'Phan Nhật Anh', N'staff_tk_13', N'staff.tk13@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230013', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
+(149, N'Lâm Quỳnh Như', N'staff_tk_14', N'staff.tk14@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230014', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
+(150, N'Vũ Đức Hải', N'staff_tk_15', N'staff.tk15@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230015', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00');
 GO
 SET IDENTITY_INSERT Users OFF;
 GO

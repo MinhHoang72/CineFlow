@@ -79,6 +79,8 @@
                 </div>
             </div>
 
+            <div id="dynamicAlertContainer"></div>
+
             <% if ("manager_assigned".equals(successParam)) { %>
                 <div class="cf-alert cf-alert-success">
                     <span>✓</span> <strong>Thành công!</strong> Đã bổ nhiệm Quản lý phụ trách trung tâm và ghi nhận vào lịch sử phân công.
@@ -122,7 +124,7 @@
                 </div>
             <% } else if ("centre_inactive".equals(errorParam)) { %>
                 <div class="cf-alert cf-alert-danger">
-                    <span>⚠</span> <strong>Từ chối:</strong> Trung tâm chiếu phim được chọn hiện đang tạm ngưng hoạt động hoặc bảo trì, không thể tiếp nhận nhân sự.
+                    <span>⚠</span> <strong>Từ chối:</strong> Rạp đã ngừng hoạt động không thể bổ nhiệm.
                 </div>
             <% } else if ("user_inactive".equals(errorParam)) { %>
                 <div class="cf-alert cf-alert-danger">
@@ -191,6 +193,13 @@
                                 <option value="UNASSIGNED">Chưa có Quản lý</option>
                             </select>
 
+                            <select id="centreOperatingStatusFilterSelect" class="select-dark" title="Lọc theo trạng thái hoạt động của rạp">
+                                <option value="ALL">Tất cả trạng thái rạp</option>
+                                <option value="ACTIVE">Đang hoạt động</option>
+                                <option value="SUSPENDED">Tạm ngưng</option>
+                                <option value="INACTIVE">Ngừng hoạt động</option>
+                            </select>
+
                             <select id="centreCityFilterSelect" class="select-dark" title="Lọc theo khu vực/tỉnh thành">
                                 <option value="ALL">Tất cả khu vực</option>
                                 <% for (String city : distinctCities) { %>
@@ -231,12 +240,17 @@
                                         <tr><td colspan="7" class="cf-empty">Chưa có trung tâm nào trong hệ thống.</td></tr>
                                     <% } else for (Centre b : centresWithManager) {
                                         boolean isActiveManager = b.hasActiveManager();
-                                        boolean isCentreActive = "ACTIVE".equalsIgnoreCase(b.getStatus());
+                                        String cStatus = b.getStatus() != null ? b.getStatus().trim().toUpperCase() : "INACTIVE";
+                                        boolean isCentreActive = "ACTIVE".equals(cStatus);
+                                        boolean isCentreSuspended = "SUSPENDED".equals(cStatus) || "TEMPORARILY_CLOSED".equals(cStatus);
+                                        String centreStatusBadgeClass = isCentreActive ? "cf-badge-success" : (isCentreSuspended ? "cf-badge-warning" : "cf-badge-danger");
+                                        String centreStatusLabel = isCentreActive ? "Đang hoạt động" : (isCentreSuspended ? "Tạm ngưng" : "Ngừng hoạt động");
                                         String mPhone = b.getManagerPhone();
                                         String formattedStartDate = b.getFormattedStartDate();
                                     %>
                                         <tr class="centre-row"
                                             data-status="<%= isActiveManager ? "ASSIGNED" : "UNASSIGNED" %>"
+                                            data-centre-status="<%= b.getStatus() != null ? b.getStatus().trim().toUpperCase() : "INACTIVE" %>"
                                             data-city="<%= b.getCity() != null ? b.getCity().trim() : "" %>"
                                             data-mgr-id="<%= isActiveManager ? b.getManagerId() : 999999 %>"
                                             data-search="<%= ((b.getCentreName() != null ? b.getCentreName() : "") + " " +
@@ -287,8 +301,8 @@
                                                 <% } %>
                                             </td>
                                             <td>
-                                                <span class="cf-badge <%= isCentreActive ? "cf-badge-success" : "cf-badge-danger" %>">
-                                                    <%= b.getStatus() %>
+                                                <span class="cf-badge <%= centreStatusBadgeClass %>">
+                                                    <%= centreStatusLabel %>
                                                 </span>
                                             </td>
                                             <td>
@@ -299,11 +313,15 @@
                                                                 onclick="openUnassignManagerModal(<%= b.getCentreId() %>, '<%= b.getCentreName().replace("'", "\\'") %>', <%= b.getManagerId() %>, '<%= String.format("QL%05d", b.getManagerId()) %>', '<%= b.getManagerName().replace("'", "\\'") %>')">
                                                             Miễn nhiệm
                                                         </button>
-                                                    <% } else { %>
-                                                        <button type="button" class="cf-btn cf-btn-sm assignment-action-btn assign-btn"
-                                                                <%= !isCentreActive ? "disabled class=\"btn-disabled-action\"" : "" %>
-                                                                title="<%= !isCentreActive ? "Trung tâm đang ngừng hoạt động/bảo trì, không thể bổ nhiệm" : "Bổ nhiệm Quản lý mới cho trung tâm" %>"
-                                                                onclick="<%= isCentreActive ? "openAssignManagerModal(" + b.getCentreId() + ", '" + b.getCentreName().replace("'", "\\'") + "')" : "" %>">
+                                                    <% } else { 
+                                                        String disabledAlertMsg = isCentreSuspended ? "Rạp đang tạm ngưng không thể bổ nhiệm" : "Rạp đã ngừng hoạt động không thể bổ nhiệm";
+                                                    %>
+                                                        <button type="button" class="cf-btn cf-btn-sm assignment-action-btn assign-btn <%= !isCentreActive ? "btn-inactive-assign" : "" %>"
+                                                                title="<%= !isCentreActive ? disabledAlertMsg : "Bổ nhiệm Quản lý mới cho trung tâm" %>"
+                                                                onclick="<%= isCentreActive 
+                                                                    ? "openAssignManagerModal(" + b.getCentreId() + ", '" + b.getCentreName().replace("'", "\\'") + "')"
+                                                                    : "showDisabledCentreAlert('" + b.getCentreName().replace("'", "\\'") + "', '" + (isCentreSuspended ? "SUSPENDED" : "INACTIVE") + "')"
+                                                                %>">
                                                             Bổ nhiệm
                                                         </button>
                                                     <% } %>
@@ -683,6 +701,69 @@
         document.getElementById('unassignManagerModal').classList.remove('active');
     }
 
+    function showToast(message, type) {
+        var container = document.getElementById('cf-toast-container');
+        if (!container) return;
+
+        var toast = document.createElement('div');
+        toast.className = 'cf-toast' + (type === 'error' ? ' cf-toast-error' : '');
+        var icon = document.createElement('span');
+        icon.innerHTML = type === 'error' ? '⚠️' : '✓';
+        var text = document.createElement('div');
+        text.innerHTML = message;
+        toast.appendChild(icon);
+        toast.appendChild(text);
+        container.appendChild(toast);
+
+        setTimeout(function() {
+            toast.classList.add('cf-toast-fadeout');
+            setTimeout(function() {
+                if (toast.parentNode) toast.parentNode.removeChild(toast);
+            }, 400);
+        }, 3500);
+    }
+
+function showDisabledCentreAlert(centreName, status) {
+    var safeName = centreName ? escapeHtml(centreName) : '';
+    var isSuspended = (status === 'SUSPENDED');
+
+    var reasonText = isSuspended
+        ? 'đang tạm ngưng hoạt động, không thể bổ nhiệm.'
+        : 'đã ngừng hoạt động, không thể bổ nhiệm.';
+
+    var container = document.getElementById('dynamicAlertContainer');
+
+    if (container) {
+        container.innerHTML =
+            '<div class="cf-alert cf-alert-danger">' +
+                '<span>⚠️</span>' +
+                '<div><strong>Từ chối bổ nhiệm:</strong> Rạp <strong>' +
+                safeName + '</strong> ' + reasonText +
+                '</div>' +
+            '</div>';
+
+        container.scrollIntoView({
+            behavior: 'smooth',
+            block: 'nearest'
+        });
+
+        setTimeout(function() {
+            var alertEl = container.querySelector('.cf-alert');
+
+            if (alertEl) {
+                alertEl.style.transition =
+                    'opacity 0.4s ease, transform 0.4s ease';
+
+                alertEl.style.opacity = '0';
+                alertEl.style.transform = 'translateY(-8px)';
+
+                setTimeout(function() {
+                    container.innerHTML = '';
+                }, 400);
+            }
+        }, 1000);
+    }
+}
     // Modal Bổ nhiệm Manager
     function openAssignManagerModal(centreId, centreName) {
         document.getElementById('assignCentreId').value = centreId;
@@ -851,6 +932,7 @@
         });
 
         var citySelect = document.getElementById('centreCityFilterSelect');
+        var centreOperatingStatusSelect = document.getElementById('centreOperatingStatusFilterSelect');
 
         centrePager = initTablePagination({
             tableBodyId: 'centreTableBody',
@@ -863,10 +945,28 @@
             searchClearBtnId: 'centreSearchClearBtn',
             statusFilterSelectId: 'centreStatusFilterSelect',
             customFilter: function(row) {
-                if (!citySelect) return true;
-                var selectedCity = citySelect.value;
-                if (!selectedCity || selectedCity === 'ALL') return true;
-                return (row.getAttribute('data-city') || '').trim() === selectedCity.trim();
+                if (citySelect) {
+                    var selectedCity = citySelect.value;
+                    if (selectedCity && selectedCity !== 'ALL' && (row.getAttribute('data-city') || '').trim() !== selectedCity.trim()) {
+                        return false;
+                    }
+                }
+                if (centreOperatingStatusSelect) {
+                    var selectedCentreStatus = centreOperatingStatusSelect.value;
+                    if (selectedCentreStatus && selectedCentreStatus !== 'ALL') {
+                        var rowCentreStatus = (row.getAttribute('data-centre-status') || '').trim().toUpperCase();
+                        if (selectedCentreStatus === 'ACTIVE') {
+                            if (rowCentreStatus !== 'ACTIVE') return false;
+                        } else if (selectedCentreStatus === 'SUSPENDED') {
+                            if (rowCentreStatus !== 'SUSPENDED' && rowCentreStatus !== 'TEMPORARILY_CLOSED') return false;
+                        } else if (selectedCentreStatus === 'INACTIVE') {
+                            if (rowCentreStatus !== 'INACTIVE') return false;
+                        } else {
+                            if (rowCentreStatus !== selectedCentreStatus) return false;
+                        }
+                    }
+                }
+                return true;
             },
             itemLabel: 'cụm rạp',
             defaultPageSize: 10
@@ -874,6 +974,11 @@
 
         if (citySelect && centrePager) {
             citySelect.addEventListener('change', function() {
+                centrePager.setPage(1);
+            });
+        }
+        if (centreOperatingStatusSelect && centrePager) {
+            centreOperatingStatusSelect.addEventListener('change', function() {
                 centrePager.setPage(1);
             });
         }
@@ -892,5 +997,6 @@
         });
     });
 </script>
+<div id="cf-toast-container" aria-live="polite" aria-atomic="false"></div>
 </body>
 </html>

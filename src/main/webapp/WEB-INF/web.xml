@@ -41,6 +41,26 @@
         <url-pattern>/account/*</url-pattern>
     </filter-mapping>
 
+    <filter-mapping>
+        <filter-name>AuthenticationFilter</filter-name>
+        <url-pattern>/profile</url-pattern>
+    </filter-mapping>
+
+    <filter-mapping>
+        <filter-name>AuthenticationFilter</filter-name>
+        <url-pattern>/dashboard</url-pattern>
+    </filter-mapping>
+
+    <filter-mapping>
+        <filter-name>AuthenticationFilter</filter-name>
+        <url-pattern>/auth/change-password</url-pattern>
+    </filter-mapping>
+
+    <filter-mapping>
+        <filter-name>AuthenticationFilter</filter-name>
+        <url-pattern>/auth/change-password.jsp</url-pattern>
+    </filter-mapping>
+
     <!-- ===================================================== -->
     <!-- 2. ADMIN AUTHORIZATION FILTER -->
     <!-- ===================================================== -->
@@ -104,6 +124,21 @@
         <url-pattern>/pricing/*</url-pattern>
     </filter-mapping>
 
+    <filter-mapping>
+        <filter-name>ManagerFilter</filter-name>
+        <url-pattern>/staffList</url-pattern>
+    </filter-mapping>
+
+    <filter-mapping>
+        <filter-name>ManagerFilter</filter-name>
+        <url-pattern>/report</url-pattern>
+    </filter-mapping>
+
+    <filter-mapping>
+        <filter-name>ManagerFilter</filter-name>
+        <url-pattern>/report/*</url-pattern>
+    </filter-mapping>
+
     <!-- ===================================================== -->
     <!-- 4. STAFF AUTHORIZATION FILTER -->
     <!-- ===================================================== -->
@@ -126,6 +161,26 @@
     <filter-mapping>
         <filter-name>StaffFilter</filter-name>
         <url-pattern>/staff/*</url-pattern>
+    </filter-mapping>
+
+    <filter-mapping>
+        <filter-name>StaffFilter</filter-name>
+        <url-pattern>/checkin</url-pattern>
+    </filter-mapping>
+
+    <filter-mapping>
+        <filter-name>StaffFilter</filter-name>
+        <url-pattern>/checkin/*</url-pattern>
+    </filter-mapping>
+
+    <filter-mapping>
+        <filter-name>StaffFilter</filter-name>
+        <url-pattern>/fnb</url-pattern>
+    </filter-mapping>
+
+    <filter-mapping>
+        <filter-name>StaffFilter</filter-name>
+        <url-pattern>/fnb/*</url-pattern>
     </filter-mapping>
 
     <!-- ===================================================== -->

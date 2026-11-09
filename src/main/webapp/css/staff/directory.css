@@ -791,3 +791,103 @@
         @media (max-width: 420px) {
             .staff-kpi-grid { grid-template-columns: 1fr; }
         }
+
+
+        /* =====================================================
+           THANH PHAN TRANG & BO LOC HIEN THI TRANG NHAN VIEN
+           ===================================================== */
+        .cf-card .cf-pagination-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 14px;
+            padding: 14px 20px;
+            background: var(--staff-panel-soft, #111720);
+            border-top: 1px solid var(--staff-border, #2a3341);
+        }
+
+        .staff-page-size-wrap {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: var(--staff-muted, #94a3b8);
+            white-space: nowrap;
+        }
+
+        #staffPageSizeSelect {
+            appearance: none;
+            -webkit-appearance: none;
+            box-sizing: border-box;
+            height: 36px;
+            padding: 0 26px 0 10px;
+            border: 1px solid #303b4b;
+            border-radius: 8px;
+            outline: none;
+            background: var(--staff-panel-soft);
+            color: #e2e8f0;
+            font-family: inherit;
+            font-size: 12px;
+            cursor: pointer;
+            transition: border-color .2s, background .2s, box-shadow .2s;
+        }
+
+        #staffPageSizeSelect:hover {
+            border-color: #465267;
+        }
+
+        #staffPageSizeSelect:focus {
+            border-color: var(--staff-accent);
+            box-shadow: 0 0 0 2.5px rgba(255, 40, 85, .15);
+        }
+
+        .staff-search-clear-btn {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--staff-muted, #94a3b8);
+            font-size: 10px;
+            cursor: pointer;
+            display: grid;
+            place-items: center;
+            padding: 0;
+            transition: all .15s ease;
+        }
+
+        .staff-search-clear-btn:hover {
+            background: rgba(255, 40, 85, 0.2);
+            color: #fff;
+        }
+
+        /* Light theme overrides */
+        html[data-theme="light"].cf-css-staff-directory .cf-card .cf-pagination-bar {
+            background: #ffffff;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        html[data-theme="light"].cf-css-staff-directory #staffPageSizeSelect {
+            background: #ffffff;
+            border-color: #cbd5e1;
+            color: #0f172a;
+        }
+
+        html[data-theme="light"].cf-css-staff-directory .staff-page-size-wrap {
+            color: #64748b;
+        }
+
+        html[data-theme="light"].cf-css-staff-directory .staff-search-clear-btn {
+            background: #e2e8f0;
+            color: #64748b;
+        }
+
+        html[data-theme="light"].cf-css-staff-directory .staff-search-clear-btn:hover {
+            background: #cbd5e1;
+            color: #0f172a;
+        }

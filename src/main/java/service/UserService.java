@@ -3,6 +3,8 @@ package service;
 import dao.CinemaDAO;
 import dao.UserDAO;
 import model.entity.Centre;
+import model.entity.ManagerAssignment;
+import model.entity.StaffTransfer;
 import model.entity.User;
 import utils.PasswordUtil;
 import utils.ValidationUtil;
@@ -377,23 +379,27 @@ public class UserService {
         }
     }
 
-    public boolean toggleManagerStatus(int userId, String status, int sessionAdminId) {
+    public enum ManagerStatusResult {
+        SUCCESS,
+        NOT_FOUND,
+        NOT_MANAGER,
+        FAILED
+    }
+
+    public ManagerStatusResult toggleManagerStatus(int userId, String status, int sessionAdminId) {
         if (!ValidationUtil.isValidUserStatus(status)) {
             status = "ACTIVE";
         }
         User target = userDAO.getUserById(userId);
-        if (target == null || !"MANAGER".equalsIgnoreCase(target.getRole())) {
-            return false;
+        if (target == null) {
+            return ManagerStatusResult.NOT_FOUND;
         }
-    // 1. Cập nhật Status trong bảng Users
+        if (!"MANAGER".equalsIgnoreCase(target.getRole())) {
+            return ManagerStatusResult.NOT_MANAGER;
+        }
         String newStatus = status.toUpperCase();
-        userDAO.updateUserStatus(userId, newStatus);
-    // 2. NẾU BỊ TẠM NGƯNG -> TỰ ĐỘNG GỠ BỎ QUYỀN QUẢN LÝ KHỎI CỤM RẠP!
-        if (!"ACTIVE".equalsIgnoreCase(newStatus)) {
-            userDAO.unassignManagerByUserId(userId, sessionAdminId, "Tài khoản Quản lý bị khóa/tạm ngưng");
-        }
-        userDAO.syncLockedManagersAssignments();
-        return true;
+        boolean ok = userDAO.toggleManagerStatusTx(userId, newStatus, sessionAdminId);
+        return ok ? ManagerStatusResult.SUCCESS : ManagerStatusResult.FAILED;
     }
 
     // ==============================================================
@@ -433,6 +439,130 @@ public class UserService {
 
         boolean updated = userDAO.updateUserStatus(userId, normalizedStatus);
         return updated ? CustomerStatusResult.SUCCESS : CustomerStatusResult.FAILED;
+    }
+
+    // ==============================================================
+    // NGHIỆP VỤ BỔ NHIỆM, ĐIỀU CHUYỂN & LỊCH SỬ NHÂN SỰ
+    // ==============================================================
+
+    public record TransferKpi(int totalCentres, int assignedCentres, int unassignedCentres, int unassignedManagers) {}
+
+    public record TransferPageData(
+            List<Centre> centresWithManager,
+            List<Centre> activeCentres,
+            List<User> managers,
+            List<ManagerAssignment> managerAssignments,
+            List<User> staffList,
+            List<StaffTransfer> transferHistory,
+            TransferKpi kpi
+    ) {}
+
+    public TransferPageData getTransferPageData(Integer centreFilter, String searchParam, String roleFilter) {
+        syncLockedManagersAssignments();
+        List<Centre> centresWithManager = cinemaDAO.getAllCentresWithManager();
+        List<Centre> activeCentres = cinemaDAO.getActiveCentres();
+        List<User> managers = userDAO.getManagers();
+        List<ManagerAssignment> managerAssignments = userDAO.getManagerAssignmentHistory(centreFilter, null);
+        List<User> staffList = userDAO.getTransferableUsers(centreFilter, searchParam, roleFilter);
+        List<StaffTransfer> transferHistory = userDAO.getTransferHistory(centreFilter, null);
+
+        int totalCentres = centresWithManager != null ? centresWithManager.size() : 0;
+        int assignedCentres = 0;
+        int unassignedCentres = 0;
+        if (centresWithManager != null) {
+            for (Centre c : centresWithManager) {
+                if (c.hasActiveManager()) {
+                    assignedCentres++;
+                } else if ("ACTIVE".equalsIgnoreCase(c.getStatus())) {
+                    unassignedCentres++;
+                }
+            }
+        }
+
+        int unassignedManagers = 0;
+        if (managers != null) {
+            for (User m : managers) {
+                if ("ACTIVE".equalsIgnoreCase(m.getStatus()) && (m.getCentreId() == null || m.getCentreId() <= 0)) {
+                    unassignedManagers++;
+                }
+            }
+        }
+        TransferKpi kpi = new TransferKpi(totalCentres, assignedCentres, unassignedCentres, unassignedManagers);
+        return new TransferPageData(centresWithManager, activeCentres, managers, managerAssignments, staffList, transferHistory, kpi);
+    }
+
+    public String assignManager(int centreId, int managerId, int adminId, String notes) {
+        return userDAO.assignManager(centreId, managerId, adminId, notes);
+    }
+
+    public boolean unassignManager(int centreId, int managerId, int adminId, String reason) {
+        if (reason == null || reason.trim().isEmpty()) {
+            return false;
+        }
+        return userDAO.unassignManager(centreId, managerId, adminId, reason.trim());
+    }
+
+    public String transferStaff(int userId, int toCentreId, int adminId, String reason, String notes, String effectiveDateParam, String newRoleParam) {
+        User targetUser = userDAO.getUserById(userId);
+        if (targetUser == null) {
+            return "USER_NOT_FOUND";
+        }
+        if ("MANAGER".equalsIgnoreCase(targetUser.getRole()) || targetUser.isManager()) {
+            return "MANAGER_TRANSFER_NOT_ALLOWED";
+        }
+
+        String finalRole = (newRoleParam != null && !newRoleParam.trim().isEmpty() && !"KEEP".equalsIgnoreCase(newRoleParam.trim()))
+                ? newRoleParam.trim().toUpperCase()
+                : targetUser.getRole();
+
+        if ("MANAGER".equalsIgnoreCase(finalRole)) {
+            return "MANAGER_TRANSFER_NOT_ALLOWED";
+        }
+
+        java.sql.Date effectiveDate = null;
+        if (effectiveDateParam != null && !effectiveDateParam.trim().isEmpty()) {
+            try {
+                effectiveDate = java.sql.Date.valueOf(effectiveDateParam.trim());
+            } catch (Exception ignored) {
+            }
+        }
+        if (effectiveDate == null) {
+            effectiveDate = new java.sql.Date(System.currentTimeMillis());
+        }
+
+        String transferReason = reason != null ? reason.trim() : "";
+        String transferNotes = notes != null ? notes.trim() : "";
+        return userDAO.transferRegularStaff(userId, toCentreId, adminId, transferReason, transferNotes, effectiveDate, finalRole);
+    }
+
+    public record HistoryKpi(int totalAssignments, int activeAssignments, int totalTransfers) {}
+
+    public record HistoryPageData(
+            List<Centre> activeCentres,
+            List<ManagerAssignment> managerAssignments,
+            List<StaffTransfer> transferHistory,
+            HistoryKpi kpi
+    ) {}
+
+    public HistoryPageData getHistoryPageData(Integer centreFilter) {
+        syncLockedManagersAssignments();
+        List<Centre> activeCentres = cinemaDAO.getActiveCentres();
+        List<ManagerAssignment> managerAssignments = userDAO.getManagerAssignmentHistory(centreFilter, null);
+        List<StaffTransfer> transferHistory = userDAO.getTransferHistory(centreFilter, null);
+
+        int totalAssignments = managerAssignments != null ? managerAssignments.size() : 0;
+        int activeAssignments = 0;
+        if (managerAssignments != null) {
+            for (ManagerAssignment ma : managerAssignments) {
+                if ("ACTIVE".equalsIgnoreCase(ma.getStatus()) && ma.getEndDate() == null) {
+                    activeAssignments++;
+                }
+            }
+        }
+        int totalTransfers = transferHistory != null ? transferHistory.size() : 0;
+        HistoryKpi kpi = new HistoryKpi(totalAssignments, activeAssignments, totalTransfers);
+
+        return new HistoryPageData(activeCentres, managerAssignments, transferHistory, kpi);
     }
 
 }

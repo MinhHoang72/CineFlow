@@ -462,3 +462,52 @@
     cursor: wait;
     pointer-events: none;
 }
+
+
+/* ==========================================================================
+   Cảnh báo & Thông báo (High Contrast Alerts)
+   ========================================================================== */
+.cf-alert {
+    padding: 14px 18px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.cf-alert-danger,
+.cf-alert-error {
+    background-color: #FEF2F2 !important;
+    border: 2px solid #EF4444 !important;
+    border-left: 6px solid #DC2626 !important;
+    color: #991B1B !important;
+    font-weight: 600 !important;
+}
+
+.cf-alert-danger strong,
+.cf-alert-error strong {
+    color: #7F1D1D !important;
+    font-weight: 800 !important;
+}
+
+.cf-alert-danger span,
+.cf-alert-error span {
+    color: #DC2626 !important;
+    font-weight: 900 !important;
+    font-size: 18px !important;
+}
+
+.cf-alert-success {
+    background-color: #ECFDF5 !important;
+    border: 1.5px solid #10B981 !important;
+    color: #065F46 !important;
+    font-weight: 500 !important;
+}
+
+.cf-alert-success strong {
+    color: #064E3B !important;
+    font-weight: 700 !important;
+}

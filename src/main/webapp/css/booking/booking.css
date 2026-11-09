@@ -282,3 +282,5 @@ html[data-theme="light"].cf-css-booking-booking body.cf-booking .legend .seat-ta
 }
 .cf-booking .qr-box { max-width: 200px; margin: 0 auto; }
 .cf-booking .ticket-stub { border-left: 2px dashed #CBD5E1; }
+.cf-booking .seat-ticket { break-inside: avoid; }
+.cf-booking .seat-ticket .qr { width: 100%; max-width: 170px; }

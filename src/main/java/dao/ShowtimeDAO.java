@@ -286,9 +286,11 @@ public class ShowtimeDAO {
 
         String sql
                 = "SELECT 1 "
-                + "FROM Halls "
-                + "WHERE HallID = ? "
-                + "AND Status = 'AVAILABLE'";
+                + "FROM Halls h "
+                + "JOIN Centres c ON c.CentreID = h.CentreID "
+                + "WHERE h.HallID = ? "
+                + "AND h.Status = 'AVAILABLE' "
+                + "AND c.Status = 'ACTIVE'";
 
         try (Connection connection = DBContext.getConnection();
              PreparedStatement ps = connection.prepareStatement(sql)) {

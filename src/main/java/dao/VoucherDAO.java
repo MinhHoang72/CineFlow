@@ -22,7 +22,7 @@ public class VoucherDAO {
      *   - Manager CRUD voucher chi nhánh của mình (CentreID = centreId của manager)
      */
     private static final String COLUMNS =
-            "v.VoucherID, v.VoucherCode, v.VoucherName, v.Description, v.CentreID, v.CreatedBy, "
+            "v.VoucherID, v.VoucherCode, v.VoucherName, v.Description, v.ImageURL, v.CentreID, v.CreatedBy, "
             + "v.DiscountType, v.DiscountValue, v.MinimumOrderValue, v.MaximumDiscount, "
             + "v.StartDate, v.EndDate, v.UsageLimit, v.UsedCount, v.Status, "
             + "c.CentreName";
@@ -30,11 +30,9 @@ public class VoucherDAO {
     private static final String FROM_JOIN =
             " FROM Vouchers v LEFT JOIN Centres c ON v.CentreID = c.CentreID";
 
- // trả về 1 trang page dto nên nó phải có 3 4 yếu tố 
     public PageDTO<Voucher> search(String key, String status, String type,
                                    Integer scopeCentreId, int page, int size) {
         StringBuilder where = new StringBuilder(" WHERE 1=1");
-        //params lưu giá trị các dấu ? 
         List<Object> params = new ArrayList<>();
 
         // Phân quyền scope: Manager chỉ thấy voucher của chi nhánh mình
@@ -44,8 +42,6 @@ public class VoucherDAO {
         }
 
         if (key != null && !key.isEmpty()) {
-            
-            //CI không phân biệt hoa thường , AI k phân biệt dấu 
             where.append(" AND (v.VoucherCode COLLATE Latin1_General_100_CI_AI LIKE ?"
                     + " OR v.VoucherName COLLATE Latin1_General_100_CI_AI LIKE ?)");
             String like = "%" + key.replace("[", "[[]").replace("%", "[%]").replace("_", "[_]") + "%";
@@ -73,32 +69,24 @@ public class VoucherDAO {
             try (PreparedStatement statement = connection.prepareStatement(
                     "SELECT COUNT(*)" + FROM_JOIN + where)) {
                 for (int i = 0; i < params.size(); i++) {
-                    //đang thiếu dấu ? setobject vào cho ? 
                     statement.setObject(i + 1, params.get(i));
                 }
                 try (ResultSet rs = statement.executeQuery()) {
                     if (rs.next()) {
-                        //lấy dòng đầu tiên 
-                        total = rs.getInt(1);//45 phần từ 
+                        total = rs.getInt(1);
                     }
                 }
             }
-            // pages là số trang tính đc
             int pages = Math.max(1, (total + size - 1) / size); 
-            // page này do người dùng nhập 
-            //lọc người dùng nhập vào 
             int current = Math.min(Math.max(1, page), pages);
             String sql = "SELECT " + COLUMNS + FROM_JOIN + where
-                   
                     + " ORDER BY v.VoucherID DESC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
                 int index = 1;
                 for (Object param : params) {
                     statement.setObject(index++, param);
                 }
-                //tính 1 trang bao nhiêu dòng ,cút bn dòng 
                 statement.setInt(index++, (current - 1) * size);
-                //
                 statement.setInt(index, size);
                 try (ResultSet rs = statement.executeQuery()) {
                     while (rs.next()) {
@@ -112,10 +100,6 @@ public class VoucherDAO {
             return new PageDTO<>(rows, 1, size, 0);
         }
     }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // FIND
-    // ─────────────────────────────────────────────────────────────────────────
 
     public List<Voucher> findActiveForHome(int limit) {
         List<Voucher> rows = new ArrayList<>();
@@ -151,14 +135,9 @@ public class VoucherDAO {
         return null;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // VALIDATE
-    // ─────────────────────────────────────────────────────────────────────────
-
     public boolean codeExists(String code, int excludeId) {
         try (Connection connection = DBContext.getConnection();
              PreparedStatement statement = connection.prepareStatement(
-                     //bỏ qua <>mã hiện tại nếu đang sửa
                      "SELECT 1 FROM Vouchers WHERE VoucherCode = ? AND VoucherID <> ?")) {
             statement.setString(1, code);
             statement.setInt(2, excludeId);
@@ -171,20 +150,16 @@ public class VoucherDAO {
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // INSERT / UPDATE / STATUS
-    // ─────────────────────────────────────────────────────────────────────────
-
     public void insert(Voucher voucher) throws SQLException {
         String sql = "INSERT INTO Vouchers "
-                + "(VoucherCode, VoucherName, Description, CentreID, CreatedBy, "
+                + "(VoucherCode, VoucherName, Description, ImageURL, CentreID, CreatedBy, "
                 + "DiscountType, DiscountValue, MinimumOrderValue, MaximumDiscount, "
                 + "StartDate, EndDate, UsageLimit, UsedCount, Status) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)";
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)";
         try (Connection connection = DBContext.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             bind(statement, voucher);
-            statement.setString(13, voucher.getStatus());
+            statement.setString(14, voucher.getStatus());
             statement.executeUpdate();
             try (ResultSet keys = statement.getGeneratedKeys()) {
                 if (keys.next()) {
@@ -195,8 +170,7 @@ public class VoucherDAO {
     }
 
     public void update(Voucher voucher) throws SQLException {
-        // CentreID và CreatedBy không thay đổi sau khi tạo
-        String sql = "UPDATE Vouchers SET VoucherCode = ?, VoucherName = ?, Description = ?, "
+        String sql = "UPDATE Vouchers SET VoucherCode = ?, VoucherName = ?, Description = ?, ImageURL = ?, "
                 + "CentreID = ?, CreatedBy = ?, "
                 + "DiscountType = ?, DiscountValue = ?, MinimumOrderValue = ?, MaximumDiscount = ?, "
                 + "StartDate = ?, EndDate = ?, UsageLimit = ?, Status = ? "
@@ -204,8 +178,8 @@ public class VoucherDAO {
         try (Connection connection = DBContext.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             bind(statement, voucher);
-            statement.setString(13, voucher.getStatus());
-            statement.setInt(14, voucher.getVoucherId());
+            statement.setString(14, voucher.getStatus());
+            statement.setInt(15, voucher.getVoucherId());
             statement.executeUpdate();
         }
     }
@@ -220,20 +194,6 @@ public class VoucherDAO {
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // OWNERSHIP CHECK
-    // ─────────────────────────────────────────────────────────────────────────
-
-    /**
-     * Kiểm tra xem voucher có thuộc về chi nhánh chỉ định hay không.
-     * Manager chỉ được phép sửa/đổi trạng thái voucher của chính chi nhánh mình.
-     *
-     * @param voucherId  ID voucher cần kiểm tra
-     * @param centreId   ID chi nhánh của manager đang đăng nhập
-     * @return true nếu CentreID của voucher khớp với centreId truyền vào
-     */
-    // đem voucher id 10 ra xem có cnetrer id đó k 
-    
     public boolean belongsToCentre(int voucherId, int centreId) {
         try (Connection connection = DBContext.getConnection();
              PreparedStatement statement = connection.prepareStatement(
@@ -249,39 +209,36 @@ public class VoucherDAO {
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // INTERNAL HELPERS
-    // ─────────────────────────────────────────────────────────────────────────
-
     /**
      * Bind các tham số chung cho INSERT và UPDATE.
-     * Thứ tự: 1=Code, 2=Name, 3=Desc, 4=CentreID, 5=CreatedBy,
-     *         6=Type, 7=Value, 8=Minimum, 9=Maximum, 10=Start, 11=End, 12=Limit
+     * Thứ tự: 1=Code, 2=Name, 3=Desc, 4=ImageURL, 5=CentreID, 6=CreatedBy,
+     *         7=Type, 8=Value, 9=Minimum, 10=Maximum, 11=Start, 12=End, 13=Limit
      */
     private void bind(PreparedStatement statement, Voucher voucher) throws SQLException {
         statement.setString(1, voucher.getVoucherCode());
         statement.setString(2, voucher.getVoucherName());
         statement.setString(3, voucher.getDescription());
+        statement.setString(4, voucher.getImageUrl());
         if (voucher.getCentreId() == null) {
-            statement.setNull(4, Types.INTEGER);
-        } else {
-            statement.setInt(4, voucher.getCentreId());
-        }
-        if (voucher.getCreatedBy() == null) {
             statement.setNull(5, Types.INTEGER);
         } else {
-            statement.setInt(5, voucher.getCreatedBy());
+            statement.setInt(5, voucher.getCentreId());
         }
-        statement.setString(6, voucher.getDiscountType());
-        statement.setBigDecimal(7, voucher.getDiscountValue());
-        statement.setBigDecimal(8, voucher.getMinimumOrderValue());
-        statement.setBigDecimal(9, voucher.getMaximumDiscount());
-        statement.setTimestamp(10, Timestamp.valueOf(voucher.getStartDate()));
-        statement.setTimestamp(11, Timestamp.valueOf(voucher.getEndDate()));
-        if (voucher.getUsageLimit() == null) {
-            statement.setNull(12, Types.INTEGER);
+        if (voucher.getCreatedBy() == null) {
+            statement.setNull(6, Types.INTEGER);
         } else {
-            statement.setInt(12, voucher.getUsageLimit());
+            statement.setInt(6, voucher.getCreatedBy());
+        }
+        statement.setString(7, voucher.getDiscountType());
+        statement.setBigDecimal(8, voucher.getDiscountValue());
+        statement.setBigDecimal(9, voucher.getMinimumOrderValue());
+        statement.setBigDecimal(10, voucher.getMaximumDiscount());
+        statement.setTimestamp(11, Timestamp.valueOf(voucher.getStartDate()));
+        statement.setTimestamp(12, Timestamp.valueOf(voucher.getEndDate()));
+        if (voucher.getUsageLimit() == null) {
+            statement.setNull(13, Types.INTEGER);
+        } else {
+            statement.setInt(13, voucher.getUsageLimit());
         }
     }
 
@@ -291,6 +248,7 @@ public class VoucherDAO {
         voucher.setVoucherCode(rs.getString("VoucherCode"));
         voucher.setVoucherName(rs.getString("VoucherName"));
         voucher.setDescription(rs.getString("Description"));
+        voucher.setImageUrl(rs.getString("ImageURL"));
         int cid = rs.getInt("CentreID");
         voucher.setCentreId(rs.wasNull() ? null : cid);
         int createdBy = rs.getInt("CreatedBy");

@@ -18,7 +18,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Xử lý truy vấn và quản lý dữ liệu người dùng, phân quyền, luân chuyển nhân sự và quản lý tài khoản.
+ * Xử lý truy vấn và quản lý dữ liệu người dùng, phân quyền, luân chuyển nhân sự
+ * và quản lý tài khoản.
  */
 public class UserDAO {
 
@@ -33,8 +34,7 @@ public class UserDAO {
     public boolean isAccountExists(String account) {
         String sql = "SELECT UserID FROM Users WHERE Account = ?";
 
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
+        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, account);
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next();
@@ -55,8 +55,7 @@ public class UserDAO {
     public boolean isEmailExists(String email) {
         String sql = "SELECT UserID FROM Users WHERE Email = ?";
 
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
+        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, email);
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next();
@@ -81,8 +80,8 @@ public class UserDAO {
     /**
      * Đăng ký tài khoản người dùng mới kèm mã OTP kích hoạt tài khoản.
      *
-     * @param user   thông tin tài khoản người dùng
-     * @param otp    mã OTP kích hoạt
+     * @param user thông tin tài khoản người dùng
+     * @param otp mã OTP kích hoạt
      * @param expiry thời điểm hết hạn của OTP
      * @return true nếu đăng ký thành công, ngược lại false
      */
@@ -91,8 +90,7 @@ public class UserDAO {
                 + "(FullName, Account, Email, Password, Role, Status, ResetToken, ResetTokenExpiry, EmailVerified) "
                 + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
+        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, user.getFullName());
             ps.setString(2, user.getAccount());
             ps.setString(3, user.getEmail());
@@ -121,8 +119,7 @@ public class UserDAO {
     public boolean activateUser(int userId) {
         String sql = "UPDATE Users SET Status = 'ACTIVE', EmailVerified = 1, ResetToken = NULL, "
                 + "ResetTokenExpiry = NULL, UpdatedAt = GETDATE() WHERE UserID = ?";
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
+        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, userId);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -136,14 +133,13 @@ public class UserDAO {
      * Cập nhật mã OTP kích hoạt mới và thời gian hết hạn cho người dùng.
      *
      * @param userId mã định danh người dùng
-     * @param otp    mã OTP mới
+     * @param otp mã OTP mới
      * @param expiry thời điểm hết hạn OTP
      * @return true nếu cập nhật thành công, ngược lại false
      */
     public boolean updateActivationOtp(int userId, String otp, Timestamp expiry) {
         String sql = "UPDATE Users SET ResetToken = ?, ResetTokenExpiry = ?, UpdatedAt = GETDATE() WHERE UserID = ?";
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
+        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, otp);
             ps.setTimestamp(2, expiry);
             ps.setInt(3, userId);
@@ -156,7 +152,8 @@ public class UserDAO {
     }
 
     /**
-     * Cập nhật địa chỉ email và trạng thái xác thực của người dùng sau khi xác thực OTP thành công.
+     * Cập nhật địa chỉ email và trạng thái xác thực của người dùng sau khi xác
+     * thực OTP thành công.
      *
      * @param userId ID người dùng
      * @param newEmail địa chỉ email mới
@@ -165,8 +162,7 @@ public class UserDAO {
      */
     public boolean updateUserEmail(int userId, String newEmail, boolean verified) {
         String sql = "UPDATE Users SET Email = ?, EmailVerified = ?, ResetToken = NULL, ResetTokenExpiry = NULL, UpdatedAt = GETDATE() WHERE UserID = ?";
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
+        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, newEmail);
             ps.setBoolean(2, verified);
             ps.setInt(3, userId);
@@ -189,8 +185,7 @@ public class UserDAO {
                 + "LEFT JOIN Centres b ON b.CentreID = u.CentreID "
                 + "WHERE u.Account = ? OR u.Email = ?";
 
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
+        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, accountOrEmail);
             ps.setString(2, accountOrEmail);
 
@@ -217,8 +212,7 @@ public class UserDAO {
                 + "LEFT JOIN Centres b ON b.CentreID = u.CentreID "
                 + "WHERE u.Account = ?";
 
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
+        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, account);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
@@ -243,8 +237,7 @@ public class UserDAO {
                 + "LEFT JOIN Centres b ON b.CentreID = u.CentreID "
                 + "WHERE u.Email = ?";
 
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
+        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, email);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
@@ -261,15 +254,14 @@ public class UserDAO {
     /**
      * Cập nhật mật khẩu mới cho người dùng.
      *
-     * @param userId      mã định danh người dùng
+     * @param userId mã định danh người dùng
      * @param newPassword mật khẩu mới (đã mã hóa)
      * @return true nếu cập nhật thành công, ngược lại false
      */
     public boolean updatePassword(int userId, String newPassword) {
         String sql = "UPDATE Users SET Password = ?, UpdatedAt = GETDATE() WHERE UserID = ?";
 
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
+        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, newPassword);
             ps.setInt(2, userId);
             return ps.executeUpdate() > 0;
@@ -284,15 +276,14 @@ public class UserDAO {
      * Lưu mã đặt lại mật khẩu và thời gian hết hạn của mã.
      *
      * @param userId mã người dùng
-     * @param token  mã xác thực đặt lại mật khẩu
+     * @param token mã xác thực đặt lại mật khẩu
      * @param expiry thời điểm hết hạn của token
      * @return true nếu lưu thành công, ngược lại false
      */
     public boolean saveResetToken(int userId, String token, Timestamp expiry) {
         String sql = "UPDATE Users SET ResetToken = ?, ResetTokenExpiry = ?, UpdatedAt = GETDATE() WHERE UserID = ?";
 
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
+        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, token);
             ps.setTimestamp(2, expiry);
             ps.setInt(3, userId);
@@ -313,8 +304,7 @@ public class UserDAO {
     public User getUserByResetToken(String token) {
         String sql = "SELECT * FROM Users WHERE ResetToken = ? AND ResetTokenExpiry > GETDATE()";
 
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
+        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, token);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
@@ -331,7 +321,7 @@ public class UserDAO {
     /**
      * Đặt lại mật khẩu người dùng và xóa token đặt lại mật khẩu.
      *
-     * @param userId      mã định danh người dùng
+     * @param userId mã định danh người dùng
      * @param newPassword mật khẩu mới đã mã hóa
      * @return true nếu đặt lại mật khẩu thành công, ngược lại false
      */
@@ -339,8 +329,7 @@ public class UserDAO {
         String sql = "UPDATE Users SET Password = ?, ResetToken = NULL, ResetTokenExpiry = NULL, "
                 + "UpdatedAt = GETDATE() WHERE UserID = ?";
 
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
+        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, newPassword);
             ps.setInt(2, userId);
             return ps.executeUpdate() > 0;
@@ -409,8 +398,7 @@ public class UserDAO {
     public boolean updateLastLogin(int userId) {
         String sql = "UPDATE Users SET LastLoginAt = GETDATE(), UpdatedAt = GETDATE() WHERE UserID = ?";
 
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
+        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, userId);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -423,15 +411,14 @@ public class UserDAO {
     /**
      * Thay đổi mật khẩu tài khoản người dùng.
      *
-     * @param userId      mã định danh người dùng
+     * @param userId mã định danh người dùng
      * @param newPassword mật khẩu mới đã mã hóa
      * @return true nếu đổi mật khẩu thành công, ngược lại false
      */
     public boolean changePassword(int userId, String newPassword) {
         String sql = "UPDATE Users SET Password = ?, UpdatedAt = GETDATE() WHERE UserID = ?";
 
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
+        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, newPassword);
             ps.setInt(2, userId);
             return ps.executeUpdate() > 0;
@@ -453,8 +440,7 @@ public class UserDAO {
                 + "LEFT JOIN Centres b ON b.CentreID = u.CentreID "
                 + "WHERE u.UserID = ?";
 
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
+        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, userId);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
@@ -468,13 +454,14 @@ public class UserDAO {
         return null;
     }
 
-    /** Kiểm tra Manager còn phân công hiện hành tại đúng chi nhánh hay không. */
+    /**
+     * Kiểm tra Manager còn phân công hiện hành tại đúng chi nhánh hay không.
+     */
     public boolean hasActiveManagerAssignment(int managerId, int centreId) {
         String sql = "SELECT 1 FROM CentreManagerAssignments "
                 + "WHERE ManagerID = ? AND CentreID = ? "
                 + "AND Status = 'ACTIVE' AND EndDate IS NULL";
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
+        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, managerId);
             ps.setInt(2, centreId);
             try (ResultSet rs = ps.executeQuery()) {
@@ -489,14 +476,13 @@ public class UserDAO {
     /**
      * Kiểm tra địa chỉ email đã được người dùng khác sử dụng hay chưa.
      *
-     * @param email  địa chỉ email cần kiểm tra
+     * @param email địa chỉ email cần kiểm tra
      * @param userId mã người dùng hiện tại (bỏ qua không đối chiếu)
      * @return true nếu email đã thuộc về người dùng khác, ngược lại false
      */
     public boolean isEmailUsedByOtherUser(String email, int userId) {
         String sql = "SELECT UserID FROM Users WHERE Email = ? AND UserID <> ?";
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
+        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, email);
             ps.setInt(2, userId);
             try (ResultSet rs = ps.executeQuery()) {
@@ -509,12 +495,12 @@ public class UserDAO {
     }
 
     /**
-     * Cập nhật thông tin hồ sơ người dùng (họ tên, email, số điện thoại, ảnh đại diện).
+     * Cập nhật thông tin hồ sơ người dùng (họ tên, email, số điện thoại, ảnh
+     * đại diện).
      */
     public boolean updateProfile(int userId, String fullName, String email, String phone, String avatar) {
         String sql = "UPDATE Users SET FullName = ?, Email = ?, Phone = ?, Avatar = ?, UpdatedAt = GETDATE() WHERE UserID = ?";
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
+        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, fullName);
             ps.setString(2, email);
             ps.setString(3, phone);
@@ -547,8 +533,7 @@ public class UserDAO {
                 + "JOIN Centres br ON br.CentreID = h.CentreID "
                 + "WHERE b.UserID = ? ORDER BY b.CreatedAt DESC";
         List<BookingHistoryDTO> history = new ArrayList<>();
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
+        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, userId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
@@ -582,7 +567,8 @@ public class UserDAO {
      * Lấy danh bạ nhân viên theo trung tâm và từ khóa tìm kiếm.
      *
      * @param centreId mã trung tâm (null nếu tìm trên toàn bộ hệ thống)
-     * @param search   từ khóa tìm kiếm (họ tên, tài khoản, email, số điện thoại hoặc mã ID)
+     * @param search từ khóa tìm kiếm (họ tên, tài khoản, email, số điện thoại
+     * hoặc mã ID)
      * @return danh sách nhân viên thỏa mãn điều kiện
      */
     public List<User> getStaffDirectory(Integer centreId, String search) {
@@ -590,7 +576,8 @@ public class UserDAO {
     }
 
     /**
-     * Lấy danh sách nhân viên cấp rạp (Ticket Sales Staff, Ticket Checker Staff) có lọc theo trung tâm, vai trò và tìm kiếm.
+     * Lấy danh sách nhân viên cấp rạp (Ticket Sales Staff, Ticket Checker
+     * Staff) có lọc theo trung tâm, vai trò và tìm kiếm.
      */
     public List<User> getStaffDirectory(Integer centreId, String search, String roleFilter) {
         StringBuilder sql = new StringBuilder("SELECT u.*, b.CentreName FROM Users u "
@@ -623,8 +610,7 @@ public class UserDAO {
         sql.append("ORDER BY u.FullName");
 
         List<User> staff = new ArrayList<>();
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql.toString())) {
+        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql.toString())) {
             int pIdx = 1;
             if (roleFilter != null && !roleFilter.trim().isEmpty() && !"ALL".equalsIgnoreCase(roleFilter.trim())) {
                 ps.setString(pIdx++, roleFilter.trim().toUpperCase());
@@ -655,13 +641,13 @@ public class UserDAO {
     }
 
     /**
-     * Cập nhật trung tâm công tác và trạng thái hoạt động của nhân viên hoặc quản lý.
+     * Cập nhật trung tâm công tác và trạng thái hoạt động của nhân viên hoặc
+     * quản lý.
      */
     public boolean updateStaffAssignment(int userId, Integer centreId, String status) {
         String sql = "UPDATE Users SET CentreID = ?, Status = ?, UpdatedAt = GETDATE() "
                 + "WHERE UserID = ? AND Role IN ('STAFF', 'TICKET_SALES_STAFF', 'TICKET_CHECKER_STAFF', 'TICKET_SALES', 'TICKET_CHECKER', 'MANAGER')";
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
+        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
             if (centreId == null) {
                 ps.setNull(1, Types.INTEGER);
             } else {
@@ -677,7 +663,8 @@ public class UserDAO {
     }
 
     /**
-     * Tạo tài khoản nhân viên mới (Ticket Sales Staff hoặc Ticket Checker Staff).
+     * Tạo tài khoản nhân viên mới (Ticket Sales Staff hoặc Ticket Checker
+     * Staff).
      *
      * @param user đối tượng người dùng có vai trò nhân viên
      * @return true nếu tạo thành công, ngược lại false
@@ -689,8 +676,7 @@ public class UserDAO {
         }
         String sql = "INSERT INTO Users (FullName, Account, Email, Password, Phone, Role, Status, CentreID, EmailVerified, CreatedAt) "
                 + "VALUES (?, ?, ?, ?, ?, ?, 'ACTIVE', ?, 1, GETDATE())";
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
+        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, user.getFullName());
             ps.setString(2, user.getAccount());
             ps.setString(3, user.getEmail());
@@ -791,8 +777,7 @@ public class UserDAO {
      */
     public boolean assignManagerToCentre(int managerUserId, int centreId) {
         String sql = "UPDATE Users SET CentreID = ?, UpdatedAt = GETDATE() WHERE UserID = ? AND Role = 'MANAGER'";
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
+        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, centreId);
             ps.setInt(2, managerUserId);
             return ps.executeUpdate() > 0;
@@ -812,7 +797,8 @@ public class UserDAO {
     /**
      * Tìm kiếm và lấy danh sách Quản lý theo từ khóa.
      *
-     * @param search từ khóa tìm kiếm (họ tên, tài khoản, email, số điện thoại, tên trung tâm hoặc mã ID)
+     * @param search từ khóa tìm kiếm (họ tên, tài khoản, email, số điện thoại,
+     * tên trung tâm hoặc mã ID)
      * @return danh sách các Quản lý
      */
     public List<User> getManagers(String search) {
@@ -844,8 +830,7 @@ public class UserDAO {
         sql.append("ORDER BY u.FullName");
 
         List<User> list = new ArrayList<>();
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql.toString())) {
+        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql.toString())) {
             if (keyword != null) {
                 int pIdx = 1;
                 String likePattern = "%" + keyword + "%";
@@ -870,7 +855,8 @@ public class UserDAO {
     }
 
     /**
-     * Lấy danh sách cả Nhân viên và Quản lý theo trung tâm (hoặc toàn bộ nếu centreId là null).
+     * Lấy danh sách cả Nhân viên và Quản lý theo trung tâm (hoặc toàn bộ nếu
+     * centreId là null).
      */
     public List<User> getAllStaffAndManagers(Integer centreId) {
         String sql = "SELECT u.*, b.CentreName FROM Users u "
@@ -879,8 +865,7 @@ public class UserDAO {
                 + (centreId != null ? "AND u.CentreID = ? " : "")
                 + "ORDER BY u.Role DESC, b.CentreName, u.FullName";
         List<User> list = new ArrayList<>();
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
+        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
             if (centreId != null) {
                 ps.setInt(1, centreId);
             }
@@ -896,28 +881,28 @@ public class UserDAO {
     }
 
     /**
-     * Luân chuyển nhân viên sang trung tâm rạp khác và lưu lịch sử điều động trong giao dịch.
+     * Luân chuyển nhân viên sang trung tâm rạp khác và lưu lịch sử điều động
+     * trong giao dịch.
      *
-     * @param userId       mã nhân viên
+     * @param userId mã nhân viên
      * @param fromCentreId mã trung tâm hiện tại (hoặc null nếu chưa gán)
-     * @param toCentreId   mã trung tâm chuyển đến
-     * @param adminId      mã Admin thực hiện lệnh luân chuyển
-    /**
-     * Luân chuyển nhân sự (Nhân viên hoặc Quản lý) sang trung tâm rạp khác,
-     * hỗ trợ thay đổi vai trò/thăng chức và ngày hiệu lực, bảo toàn tính toàn vẹn trong giao dịch.
+     * @param toCentreId mã trung tâm chuyển đến
+     * @param adminId mã Admin thực hiện lệnh luân chuyển /** Luân chuyển nhân
+     * sự (Nhân viên hoặc Quản lý) sang trung tâm rạp khác, hỗ trợ thay đổi vai
+     * trò/thăng chức và ngày hiệu lực, bảo toàn tính toàn vẹn trong giao dịch.
      *
-     * @param userId        mã nhân sự
-     * @param fromCentreId  mã trung tâm hiện tại (hoặc null nếu chưa gán)
-     * @param toCentreId    mã trung tâm chuyển đến
-     * @param adminId       mã Admin thực hiện lệnh luân chuyển
-     * @param reason        lý do điều động
-     * @param notes         ghi chú bổ sung
-     * @param newRole       vai trò mới (nếu có thay đổi hoặc thăng chức)
+     * @param userId mã nhân sự
+     * @param fromCentreId mã trung tâm hiện tại (hoặc null nếu chưa gán)
+     * @param toCentreId mã trung tâm chuyển đến
+     * @param adminId mã Admin thực hiện lệnh luân chuyển
+     * @param reason lý do điều động
+     * @param notes ghi chú bổ sung
+     * @param newRole vai trò mới (nếu có thay đổi hoặc thăng chức)
      * @param effectiveDate ngày có hiệu lực
      * @return true nếu luân chuyển thành công, ngược lại false
      */
     public boolean transferStaff(int userId, Integer fromCentreId, int toCentreId, int adminId,
-                                 String reason, String notes, String newRole, java.sql.Date effectiveDate) {
+            String reason, String notes, String newRole, java.sql.Date effectiveDate) {
         User u = getUserById(userId);
         if (u == null) {
             return false;
@@ -967,8 +952,7 @@ public class UserDAO {
         sql.append("ORDER BY t.TransferDate DESC, t.TransferID DESC");
 
         List<StaffTransfer> list = new ArrayList<>();
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql.toString())) {
+        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql.toString())) {
             int paramIndex = 1;
             if (centreId != null) {
                 ps.setInt(paramIndex++, centreId);
@@ -1015,8 +999,9 @@ public class UserDAO {
     }
 
     /**
-     * Lấy danh sách toàn bộ nhân viên có thể điều chuyển (Staff / Ticket Sales / Ticket Checker),
-     * hỗ trợ lọc theo trung tâm, vai trò và tìm kiếm theo tên/mã nhân sự.
+     * Lấy danh sách toàn bộ nhân viên có thể điều chuyển (Staff / Ticket Sales
+     * / Ticket Checker), hỗ trợ lọc theo trung tâm, vai trò và tìm kiếm theo
+     * tên/mã nhân sự.
      */
     public List<User> getTransferableUsers(Integer centreId, String search, String roleFilter) {
         StringBuilder sql = new StringBuilder("SELECT u.*, b.CentreName FROM Users u "
@@ -1049,8 +1034,7 @@ public class UserDAO {
         sql.append("ORDER BY u.Role, u.FullName");
 
         List<User> list = new ArrayList<>();
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql.toString())) {
+        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql.toString())) {
             int pIdx = 1;
             if (roleFilter != null && !roleFilter.trim().isEmpty() && !"ALL".equalsIgnoreCase(roleFilter.trim())) {
                 ps.setString(pIdx++, roleFilter.trim().toUpperCase());
@@ -1081,12 +1065,12 @@ public class UserDAO {
     }
 
     /**
-     * Cập nhật trạng thái hoạt động của tài khoản người dùng (ACTIVE, INACTIVE, LOCKED...).
+     * Cập nhật trạng thái hoạt động của tài khoản người dùng (ACTIVE, INACTIVE,
+     * LOCKED...).
      */
     public boolean updateUserStatus(int userId, String status) {
         String sql = "UPDATE Users SET Status = ?, UpdatedAt = GETDATE() WHERE UserID = ?";
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
+        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, status);
             ps.setInt(2, userId);
             boolean ok = ps.executeUpdate() > 0;
@@ -1101,12 +1085,12 @@ public class UserDAO {
     }
 
     /**
-     * Kiểm tra email đã được tài khoản khác sử dụng hay chưa (dùng cho form cập nhật thông tin).
+     * Kiểm tra email đã được tài khoản khác sử dụng hay chưa (dùng cho form cập
+     * nhật thông tin).
      */
     public boolean isEmailExistsForOtherUser(String email, int userId) {
         String sql = "SELECT 1 FROM Users WHERE Email = ? AND UserID <> ?";
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
+        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, email);
             ps.setInt(2, userId);
             try (ResultSet rs = ps.executeQuery()) {
@@ -1123,8 +1107,7 @@ public class UserDAO {
      */
     public boolean updateUserBasicInfo(int userId, String fullName, String phone, String email) {
         String sql = "UPDATE Users SET FullName = ?, Phone = ?, Email = ?, UpdatedAt = GETDATE() WHERE UserID = ?";
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
+        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, fullName);
             ps.setString(2, phone);
             ps.setString(3, email);
@@ -1137,12 +1120,12 @@ public class UserDAO {
     }
 
     /**
-     * Cập nhật thông tin nhân viên (họ tên, số điện thoại, email, vai trò: Ticket Sales hoặc Ticket Checker).
+     * Cập nhật thông tin nhân viên (họ tên, số điện thoại, email, vai trò:
+     * Ticket Sales hoặc Ticket Checker).
      */
     public boolean updateStaffBasicInfo(int userId, String fullName, String phone, String email, String role) {
         String sql = "UPDATE Users SET FullName = ?, Phone = ?, Email = ?, Role = ?, UpdatedAt = GETDATE() WHERE UserID = ?";
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
+        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, fullName);
             ps.setString(2, phone);
             ps.setString(3, email);
@@ -1156,23 +1139,26 @@ public class UserDAO {
     }
 
     /**
-     * Bổ nhiệm Quản lý phụ trách trung tâm chiếu phim và ghi nhận vào lịch sử bổ nhiệm.
+     * Bổ nhiệm Quản lý phụ trách trung tâm chiếu phim và ghi nhận vào lịch sử
+     * bổ nhiệm.
      *
-     * @param centreId  mã trung tâm chiếu phim
+     * @param centreId mã trung tâm chiếu phim
      * @param managerId mã người dùng vai trò Quản lý
-     * @param adminId   mã Admin ra quyết định bổ nhiệm
-     * @param notes     ghi chú bổ nhiệm
+     * @param adminId mã Admin ra quyết định bổ nhiệm
+     * @param notes ghi chú bổ nhiệm
      * @return true nếu bổ nhiệm thành công, ngược lại false
      */
     /**
-     * Bổ nhiệm Quản lý mới cho trung tâm chiếu phim (chỉ dành cho Manager chưa có phân công hiện hành).
-     * Áp dụng Transaction và khóa UPDLOCK, HOLDLOCK chống tranh chấp đồng thời (concurrency safe).
+     * Bổ nhiệm Quản lý mới cho trung tâm chiếu phim (chỉ dành cho Manager chưa
+     * có phân công hiện hành). Áp dụng Transaction và khóa UPDLOCK, HOLDLOCK
+     * chống tranh chấp đồng thời (concurrency safe).
      *
-     * @param centreId  mã trung tâm chiếu phim
+     * @param centreId mã trung tâm chiếu phim
      * @param managerId mã người dùng vai trò Quản lý
-     * @param adminId   mã Admin ra quyết định bổ nhiệm
-     * @param notes     ghi chú bổ nhiệm
-     * @return mã kết quả (SUCCESS, MANAGER_ALREADY_ASSIGNED, CENTRE_ALREADY_HAS_MANAGER,...)
+     * @param adminId mã Admin ra quyết định bổ nhiệm
+     * @param notes ghi chú bổ nhiệm
+     * @return mã kết quả (SUCCESS, MANAGER_ALREADY_ASSIGNED,
+     * CENTRE_ALREADY_HAS_MANAGER,...)
      */
     public String assignManager(int centreId, int managerId, int adminId, String notes) {
         Connection connection = null;
@@ -1331,12 +1317,11 @@ public class UserDAO {
     }
 
     /**
-     * Điều chuyển Quản lý từ trung tâm hiện tại sang trung tâm đích.
-     * Quy tắc:
-     * - Manager phải ACTIVE và đang có phân công hiện hành.
-     * - Centre đích phải ACTIVE, khác Centre hiện tại và CHƯA CÓ Manager phụ trách.
-     * - Không tự động ghi đè hay kết thúc phân công của người ở Centre đích.
-     * - Thực hiện trong Transaction với khóa UPDLOCK, HOLDLOCK chống xung đột đồng thời.
+     * Điều chuyển Quản lý từ trung tâm hiện tại sang trung tâm đích. Quy tắc: -
+     * Manager phải ACTIVE và đang có phân công hiện hành. - Centre đích phải
+     * ACTIVE, khác Centre hiện tại và CHƯA CÓ Manager phụ trách. - Không tự
+     * động ghi đè hay kết thúc phân công của người ở Centre đích. - Thực hiện
+     * trong Transaction với khóa UPDLOCK, HOLDLOCK chống xung đột đồng thời.
      */
     public String transferManager(int managerId, int toCentreId, int adminId, String reason, String notes) {
         // Quy tắc nghiệp vụ hệ thống: Vị trí Quản lý trung tâm không áp dụng điều chuyển,
@@ -1494,8 +1479,9 @@ public class UserDAO {
     }
 
     /**
-     * Điều chuyển Nhân sự (Staff) thông thường.
-     * Bảo đảm quy tắc Rule 12: Giữ nguyên hoạt động của Staff transfer, không can thiệp bảng phân công Manager.
+     * Điều chuyển Nhân sự (Staff) thông thường. Bảo đảm quy tắc Rule 12: Giữ
+     * nguyên hoạt động của Staff transfer, không can thiệp bảng phân công
+     * Manager.
      */
     public String transferRegularStaff(int staffUserId, int toCentreId, int adminId, String reason, String notes, java.sql.Date effectiveDate) {
         return transferRegularStaff(staffUserId, toCentreId, adminId, reason, notes, effectiveDate, null);
@@ -1617,8 +1603,8 @@ public class UserDAO {
     }
 
     /**
-     * Thăng chức nhân viên lên Quản lý và điều chuyển tới trung tâm mới.
-     * Trung tâm đích bắt buộc phải CHƯA CÓ Quản lý hoạt động.
+     * Thăng chức nhân viên lên Quản lý và điều chuyển tới trung tâm mới. Trung
+     * tâm đích bắt buộc phải CHƯA CÓ Quản lý hoạt động.
      */
     public String promoteStaffToManager(int staffUserId, int toCentreId, int adminId, String reason, String notes, java.sql.Date effectiveDate) {
         Connection connection = null;
@@ -1750,8 +1736,8 @@ public class UserDAO {
     }
 
     /**
-     * Chuyển Quản lý sang vai trò nhân viên thông thường tại trung tâm mới.
-     * Kết thúc nhiệm kỳ Manager tại trung tâm cũ.
+     * Chuyển Quản lý sang vai trò nhân viên thông thường tại trung tâm mới. Kết
+     * thúc nhiệm kỳ Manager tại trung tâm cũ.
      */
     public String demoteManagerToStaff(int managerId, int toCentreId, String targetRole, int adminId, String reason, String notes, java.sql.Date effectiveDate) {
         Connection connection = null;
@@ -1770,7 +1756,9 @@ public class UserDAO {
                         return "USER_NOT_FOUND";
                     }
                     int cid = rs.getInt("CentreID");
-                    if (!rs.wasNull()) fromCentreId = cid;
+                    if (!rs.wasNull()) {
+                        fromCentreId = cid;
+                    }
                 }
             }
 
@@ -1799,12 +1787,18 @@ public class UserDAO {
                     + "VALUES (?, ?, ?, ?, GETDATE(), ?, 'MANAGER', ?, ?, ?)";
             try (PreparedStatement ps = connection.prepareStatement(insertSql)) {
                 ps.setInt(1, managerId);
-                if (fromCentreId != null) ps.setInt(2, fromCentreId);
-                else ps.setNull(2, Types.INTEGER);
+                if (fromCentreId != null) {
+                    ps.setInt(2, fromCentreId);
+                } else {
+                    ps.setNull(2, Types.INTEGER);
+                }
                 ps.setInt(3, toCentreId);
                 ps.setInt(4, adminId);
-                if (effectiveDate != null) ps.setDate(5, effectiveDate);
-                else ps.setDate(5, new java.sql.Date(System.currentTimeMillis()));
+                if (effectiveDate != null) {
+                    ps.setDate(5, effectiveDate);
+                } else {
+                    ps.setDate(5, new java.sql.Date(System.currentTimeMillis()));
+                }
                 ps.setString(6, newStaffRole);
                 ps.setString(7, reason != null ? reason.trim() : "Chuyển đổi vị trí công tác");
                 ps.setString(8, notes != null ? notes.trim() : "");
@@ -1816,12 +1810,21 @@ public class UserDAO {
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Chuyển Quản lý sang Staff thất bại", e);
             if (connection != null) {
-                try { connection.rollback(); } catch (SQLException ex) { ex.printStackTrace(); }
+                try {
+                    connection.rollback();
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
             }
             return "ERROR";
         } finally {
             if (connection != null) {
-                try { connection.setAutoCommit(true); connection.close(); } catch (SQLException ex) { ex.printStackTrace(); }
+                try {
+                    connection.setAutoCommit(true);
+                    connection.close();
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
             }
         }
     }
@@ -1836,10 +1839,10 @@ public class UserDAO {
     /**
      * Miễn nhiệm Quản lý đang phụ trách trung tâm chiếu phim.
      *
-     * @param centreId  mã trung tâm chiếu phim
+     * @param centreId mã trung tâm chiếu phim
      * @param managerId mã Quản lý
-     * @param adminId   mã Admin thực hiện miễn nhiệm
-     * @param reason    lý do miễn nhiệm
+     * @param adminId mã Admin thực hiện miễn nhiệm
+     * @param reason lý do miễn nhiệm
      * @return true nếu miễn nhiệm thành công, ngược lại false
      */
     public boolean unassignManager(int centreId, int managerId, int adminId, String reason) {
@@ -1900,7 +1903,8 @@ public class UserDAO {
     }
 
     /**
-     * Giải phóng cụm rạp mà Quản lý đang phụ trách theo UserId (dùng khi tài khoản bị khóa/tạm ngưng).
+     * Giải phóng cụm rạp mà Quản lý đang phụ trách theo UserId (dùng khi tài
+     * khoản bị khóa/tạm ngưng).
      */
     public boolean unassignManagerByUserId(int managerId, int adminId, String reason) {
         String endAssignment = "UPDATE CentreManagerAssignments SET EndDate = GETDATE(), Status = 'ENDED', "
@@ -1949,43 +1953,150 @@ public class UserDAO {
     }
 
     /**
-     * Đồng bộ và giải phóng các cụm rạp có Quản lý đang bị khóa/tạm ngưng tài khoản.
-     * Khi tài khoản Quản lý không ở trạng thái ACTIVE, rạp đó được giải phóng thành "Chưa có Quản lý" (vô chủ)
-     * để Admin có thể bổ nhiệm Quản lý mới ngay lập tức.
+     * Đồng bộ và giải phóng các cụm rạp có Quản lý đang bị khóa/tạm ngưng tài
+     * khoản. Khi tài khoản Quản lý không ở trạng thái ACTIVE, rạp đó được giải
+     * phóng thành "Chưa có Quản lý" để Admin có thể bổ nhiệm Quản lý mới ngay
+     * lập tức.
      */
     public void syncLockedManagersAssignments() {
-        // 1. Chấm dứt phân công trong CentreManagerAssignments của Quản lý không ở trạng thái ACTIVE
+        // 1. Kết thúc phân công của Quản lý có tài khoản không ACTIVE
+        String endAssignmentsSql
+                = "UPDATE cma "
+                + "SET cma.EndDate = GETDATE(), "
+                + "    cma.Status = 'ENDED', "
+                + "    cma.Notes = LEFT(ISNULL(cma.Notes, '') + N' [Tài khoản Quản lý bị khóa/tạm ngưng]', 500) "
+                + "FROM CentreManagerAssignments cma "
+                + "JOIN Users u ON u.UserID = cma.ManagerID "
+                + "WHERE cma.Status = 'ACTIVE' "
+                + "AND cma.EndDate IS NULL "
+                + "AND UPPER(u.Status) <> 'ACTIVE'";
+
+        // 2. Đồng bộ CentreID theo phân công ACTIVE
+        String syncCentreIdSql
+                = "UPDATE u "
+                + "SET u.CentreID = cma.CentreID, "
+                + "    u.UpdatedAt = GETDATE() "
+                + "FROM Users u "
+                + "LEFT JOIN CentreManagerAssignments cma "
+                + "    ON u.UserID = cma.ManagerID "
+                + "    AND cma.Status = 'ACTIVE' "
+                + "    AND cma.EndDate IS NULL "
+                + "WHERE u.Role = 'MANAGER' "
+                + "AND ("
+                + "    u.CentreID <> cma.CentreID "
+                + "    OR (u.CentreID IS NULL AND cma.CentreID IS NOT NULL) "
+                + "    OR (u.CentreID IS NOT NULL AND cma.CentreID IS NULL)"
+                + ")";
+
+        try (Connection conn = DBContext.getConnection()) {
+            try {
+                conn.setAutoCommit(false);
+
+                try (PreparedStatement ps1 = conn.prepareStatement(endAssignmentsSql); PreparedStatement ps2 = conn.prepareStatement(syncCentreIdSql)) {
+
+                    ps1.executeUpdate();
+                    ps2.executeUpdate();
+
+                    conn.commit();
+                } catch (SQLException e) {
+                    conn.rollback();
+                    throw e;
+                } finally {
+                    conn.setAutoCommit(true);
+                }
+
+            } catch (SQLException e) {
+                LOGGER.log(Level.SEVERE, "Lỗi đồng bộ phân công Quản lý", e);
+            }
+
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Lỗi kết nối Database khi đồng bộ phân công Quản lý", e);
+        }
+    }
+
+    /**
+     * Cập nhật trạng thái Quản lý, giải phóng phân công rạp (nếu khóa/ngưng),
+     * và đồng bộ phân công trong 1 transaction.
+     */
+    public boolean toggleManagerStatusTx(int managerId, String newStatus, int adminId) {
+        String updateStatusSql = "UPDATE Users SET Status = ?, UpdatedAt = GETDATE() WHERE UserID = ? AND Role = 'MANAGER'";
+        String endAssignmentSql = "UPDATE CentreManagerAssignments SET EndDate = GETDATE(), Status = 'ENDED', "
+                + "Notes = LEFT(ISNULL(Notes, '') + N' [Tài khoản Quản lý bị khóa/tạm ngưng' + CASE WHEN ? > 0 THEN N' bởi Admin #' + CAST(? AS NVARCHAR) ELSE N'' END + N']', 500) "
+                + "WHERE ManagerID = ? AND Status = 'ACTIVE' AND EndDate IS NULL";
+        String clearCentreSql = "UPDATE Users SET CentreID = NULL, UpdatedAt = GETDATE() WHERE UserID = ? AND Role = 'MANAGER'";
+
         String endAssignmentsSql = "UPDATE cma "
                 + "SET cma.EndDate = GETDATE(), cma.Status = 'ENDED', "
                 + "cma.Notes = ISNULL(cma.Notes, '') + N' [Chấm dứt phân công do tài khoản Quản lý bị khóa/tạm ngưng]' "
                 + "FROM CentreManagerAssignments cma "
                 + "JOIN Users u ON u.UserID = cma.ManagerID "
                 + "WHERE cma.Status = 'ACTIVE' AND cma.EndDate IS NULL AND UPPER(u.Status) <> 'ACTIVE'";
-
-        // 2. Xóa sạch CentreID trong bảng Users của TẤT CẢ Quản lý KHÔNG có phân công ACTIVE hợp lệ
-        // (đặc biệt khi mở lại tài khoản cho Quản lý cũ mà rạp đó đã có người mới)
         String clearUnassignedManagersSql = "UPDATE Users SET CentreID = NULL, UpdatedAt = GETDATE() "
                 + "WHERE Role = 'MANAGER' AND CentreID IS NOT NULL "
                 + "AND UserID NOT IN (SELECT ManagerID FROM CentreManagerAssignments WHERE Status = 'ACTIVE' AND EndDate IS NULL)";
-
-        // 3. Đồng bộ chuẩn xác Users.CentreID với phân công ACTIVE hiện tại
         String syncActiveManagersSql = "UPDATE u SET u.CentreID = cma.CentreID, u.UpdatedAt = GETDATE() "
                 + "FROM Users u "
                 + "JOIN CentreManagerAssignments cma ON cma.ManagerID = u.UserID AND cma.Status = 'ACTIVE' AND cma.EndDate IS NULL "
                 + "WHERE u.Role = 'MANAGER' AND (u.CentreID IS NULL OR u.CentreID <> cma.CentreID)";
 
-        try (Connection conn = DBContext.getConnection()) {
-            try (PreparedStatement ps1 = conn.prepareStatement(endAssignmentsSql)) {
-                ps1.executeUpdate();
+        Connection conn = null;
+        try {
+            conn = DBContext.getConnection();
+            conn.setAutoCommit(false);
+
+            // 1. Cập nhật Status trong bảng Users
+            try (PreparedStatement ps1 = conn.prepareStatement(updateStatusSql)) {
+                ps1.setString(1, newStatus);
+                ps1.setInt(2, managerId);
+                int rows = ps1.executeUpdate();
+                if (rows == 0) {
+                    conn.rollback();
+                    return false;
+                }
             }
-            try (PreparedStatement ps2 = conn.prepareStatement(clearUnassignedManagersSql)) {
-                ps2.executeUpdate();
+
+            // 2. Nếu không phải ACTIVE -> tự động gỡ bỏ quyền quản lý khỏi cụm rạp
+            if (!"ACTIVE".equalsIgnoreCase(newStatus)) {
+                try (PreparedStatement ps2a = conn.prepareStatement(endAssignmentSql)) {
+                    ps2a.setInt(1, adminId);
+                    ps2a.setInt(2, adminId);
+                    ps2a.setInt(3, managerId);
+                    ps2a.executeUpdate();
+                }
+                try (PreparedStatement ps2b = conn.prepareStatement(clearCentreSql)) {
+                    ps2b.setInt(1, managerId);
+                    ps2b.executeUpdate();
+                }
             }
-            try (PreparedStatement ps3 = conn.prepareStatement(syncActiveManagersSql)) {
-                ps3.executeUpdate();
+
+            // 3. Đồng bộ phân công quản lý
+            try (PreparedStatement ps3a = conn.prepareStatement(endAssignmentsSql); PreparedStatement ps3b = conn.prepareStatement(clearUnassignedManagersSql); PreparedStatement ps3c = conn.prepareStatement(syncActiveManagersSql)) {
+                ps3a.executeUpdate();
+                ps3b.executeUpdate();
+                ps3c.executeUpdate();
             }
+
+            conn.commit();
+            return true;
         } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Lỗi đồng bộ phân công của Quản lý", e);
+            LOGGER.log(Level.SEVERE, "Lỗi thực thi toggleManagerStatusTx cho managerId=" + managerId, e);
+            if (conn != null) {
+                try {
+                    conn.rollback();
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+            }
+            return false;
+        } finally {
+            if (conn != null) {
+                try {
+                    conn.setAutoCommit(true);
+                    conn.close();
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+            }
         }
     }
 
@@ -2015,8 +2126,7 @@ public class UserDAO {
         sql.append("ORDER BY bma.StartDate DESC, bma.AssignmentID DESC");
 
         List<ManagerAssignment> list = new ArrayList<>();
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql.toString())) {
+        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql.toString())) {
             int paramIndex = 1;
             if (centreId != null) {
                 ps.setInt(paramIndex++, centreId);
@@ -2053,7 +2163,8 @@ public class UserDAO {
     }
 
     /**
-     * Lấy danh sách khách hàng phục vụ trang quản trị kèm số vé đã đặt và tổng chi tiêu.
+     * Lấy danh sách khách hàng phục vụ trang quản trị kèm số vé đã đặt và tổng
+     * chi tiêu.
      *
      * @param search từ khóa tìm kiếm
      * @param status bộ lọc trạng thái (ACTIVE, INACTIVE, LOCKED hoặc ALL)
@@ -2062,10 +2173,10 @@ public class UserDAO {
     public List<User> getCustomers(String search, String status) {
         StringBuilder sql = new StringBuilder();
         sql.append("SELECT u.*, ")
-           .append("  (SELECT COUNT(*) FROM Bookings b WHERE b.UserID = u.UserID) AS BookingCount, ")
-           .append("  (SELECT ISNULL(SUM(b.TotalAmount), 0) FROM Bookings b WHERE b.UserID = u.UserID AND b.BookingStatus <> 'CANCELLED') AS TotalSpent ")
-           .append("FROM Users u ")
-           .append("WHERE u.Role = 'CUSTOMER' ");
+                .append("  (SELECT COUNT(*) FROM Bookings b WHERE b.UserID = u.UserID) AS BookingCount, ")
+                .append("  (SELECT ISNULL(SUM(b.TotalAmount), 0) FROM Bookings b WHERE b.UserID = u.UserID AND b.BookingStatus <> 'CANCELLED') AS TotalSpent ")
+                .append("FROM Users u ")
+                .append("WHERE u.Role = 'CUSTOMER' ");
 
         List<Object> params = new ArrayList<>();
 
@@ -2077,8 +2188,8 @@ public class UserDAO {
 
         if (search != null && !search.isBlank()) {
             sql.append("AND (u.FullName LIKE ? OR u.Account LIKE ? OR u.Email LIKE ? OR u.Phone LIKE ? ")
-               .append("OR ('KH' + RIGHT('00000' + CAST(u.UserID AS VARCHAR(10)), 5)) LIKE ? ")
-               .append("OR CAST(u.UserID AS VARCHAR(10)) LIKE ?) ");
+                    .append("OR ('KH' + RIGHT('00000' + CAST(u.UserID AS VARCHAR(10)), 5)) LIKE ? ")
+                    .append("OR CAST(u.UserID AS VARCHAR(10)) LIKE ?) ");
             String keyword = "%" + search.trim() + "%";
             params.add(keyword);
             params.add(keyword);
@@ -2091,8 +2202,7 @@ public class UserDAO {
         sql.append("ORDER BY u.CreatedAt DESC, u.UserID DESC");
 
         List<User> list = new ArrayList<>();
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql.toString())) {
+        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql.toString())) {
             for (int i = 0; i < params.size(); i++) {
                 ps.setObject(i + 1, params.get(i));
             }
@@ -2124,8 +2234,7 @@ public class UserDAO {
             sql.append("AND Status = ? ");
             params.add(filterStatus);
         }
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql.toString())) {
+        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql.toString())) {
             for (int i = 0; i < params.size(); i++) {
                 ps.setObject(i + 1, params.get(i));
             }
@@ -2152,8 +2261,7 @@ public class UserDAO {
                 + "AND a.Status = 'ACTIVE' AND a.StartDate <= GETDATE() "
                 + "AND (a.EndDate IS NULL OR a.EndDate > GETDATE()) "
                 + "WHERE u.UserID = ?";
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
+        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, userId);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {

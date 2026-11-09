@@ -33,13 +33,62 @@
     gap: 8px;
 }
 
-/* ---------- KPI Metrics ---------- */
+/* ---------- KPI Metrics (3 Cards trải rộng toàn khung) ---------- */
+.cf-kpi-grid,
+.cf-kpi-grid-3 {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 16px !important;
+    margin-bottom: 24px !important;
+    width: 100% !important;
+}
+
+.cf-kpi-grid .cf-kpi-card,
+.cf-kpi-grid-3 .cf-kpi-card {
+    padding: 20px 24px !important;
+    min-height: 100px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.cf-kpi-grid .cf-kpi-label,
+.cf-kpi-grid-3 .cf-kpi-label {
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    color: #64748B !important;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+}
+
+.cf-kpi-grid .cf-kpi-value,
+.cf-kpi-grid-3 .cf-kpi-value {
+    font-size: 32px !important;
+    font-weight: 800 !important;
+    line-height: 1.2 !important;
+    margin-top: 4px;
+}
+
 .kpi-active {
     color: #059669 !important;
 }
 
 .kpi-inactive {
     color: #d97706 !important;
+}
+
+@media (max-width: 900px) {
+    .cf-kpi-grid,
+    .cf-kpi-grid-3 {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+}
+
+@media (max-width: 600px) {
+    .cf-kpi-grid,
+    .cf-kpi-grid-3 {
+        grid-template-columns: 1fr !important;
+    }
 }
 
 /* ---------- Khung nội dung bảng & Thanh lọc ---------- */
@@ -140,40 +189,62 @@ html[data-theme="light"] .manager-status-select option {
     color: #1e293b !important;
 }
 
-/* ---------- Bảng dữ liệu Manager ---------- */
+/* ---------- Bảng dữ liệu Manager (Không thanh trượt ngang) ---------- */
+.manager-card-section .cf-table-wrap {
+    overflow-x: hidden;
+}
+
+@media (max-width: 992px) {
+    .manager-card-section .cf-table-wrap {
+        overflow-x: auto;
+    }
+}
+
+.manager-card-section .cf-table th,
+.manager-card-section .cf-table td {
+    padding: 12px 14px;
+}
+
 .th-emp-code {
-    width: 110px;
+    width: 95px;
     white-space: nowrap;
 }
 
 .th-manager {
-    min-width: 180px;
+    min-width: 160px;
     white-space: nowrap;
 }
 
 .th-account {
-    min-width: 140px;
+    width: 120px;
     white-space: nowrap;
 }
 
 .th-phone {
-    min-width: 120px;
+    width: 110px;
     white-space: nowrap;
 }
 
 .th-centre {
-    min-width: 180px;
-    white-space: nowrap;
-}
-
-.th-status {
     min-width: 150px;
     white-space: nowrap;
 }
 
-.th-action {
-    min-width: 180px;
+.th-status {
+    width: 130px;
+    text-align: center;
     white-space: nowrap;
+}
+
+.th-action {
+    width: 70px;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.manager-row td:nth-child(6),
+.manager-row td:nth-child(7) {
+    text-align: center;
 }
 
 .cf-badge-mgr-code {
@@ -214,6 +285,7 @@ html[data-theme="light"] .manager-status-select option {
     display: flex;
     gap: 8px;
     align-items: center;
+    justify-content: center;
     flex-wrap: nowrap;
 }
 
@@ -416,4 +488,113 @@ html[data-theme="light"] .manager-status-select option {
 .modal-code-badge {
     font-size: 13px !important;
     font-weight: 700 !important;
+}
+
+/* =========================================================
+   3-STATE STATUS DROPDOWN & 4-COLUMN KPI GRID
+   ========================================================= */
+.cf-kpi-grid-4 {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+}
+.cf-kpi-grid-4 .cf-kpi-card {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    padding: 18px 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+.cf-kpi-grid-4 .cf-kpi-label {
+    display: block;
+    font-size: 13px;
+    color: #64748B;
+    margin-bottom: 6px;
+    font-weight: 500;
+}
+.cf-kpi-grid-4 .cf-kpi-value {
+    font-size: 26px;
+    font-weight: 700;
+    color: #0F172A;
+    line-height: 1.1;
+}
+
+@media (max-width: 992px) {
+    .cf-kpi-grid-4 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+@media (max-width: 576px) {
+    .cf-kpi-grid-4 {
+        grid-template-columns: 1fr;
+    }
+}
+
+.status-select-wrap {
+    display: inline-flex;
+    align-items: center;
+}
+
+.cf-status-select {
+    min-height: 30px;
+    padding: 4px 10px;
+    border: 1px solid #CBD5E1;
+    border-radius: 6px;
+    background-color: #F8FAFC;
+    color: #0F172A;
+    font-size: 13px;
+    font-weight: 600;
+    outline: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.cf-status-select:hover {
+    border-color: #94A3B8;
+    background-color: #FFFFFF;
+}
+
+.cf-status-select:focus {
+    border-color: #FF2855;
+    box-shadow: 0 0 0 2px rgba(255, 40, 85, 0.25);
+}
+
+.cf-status-select.val-active {
+    border-color: rgba(34, 197, 94, 0.4);
+    background-color: rgba(34, 197, 94, 0.08);
+    color: #16A34A;
+}
+
+.cf-status-select.val-inactive {
+    border-color: rgba(245, 158, 11, 0.4);
+    background-color: rgba(245, 158, 11, 0.08);
+    color: #D97706;
+}
+
+.cf-status-select.val-locked {
+    border-color: rgba(239, 68, 68, 0.4);
+    background-color: rgba(239, 68, 68, 0.08);
+    color: #DC2626;
+}
+
+html:not([data-theme="light"]) .cf-status-select {
+    border: 1px solid #334155;
+    background-color: #1e293b;
+    color: #f8fafc;
+}
+html:not([data-theme="light"]) .cf-status-select.val-active {
+    border-color: rgba(34, 197, 94, 0.4);
+    background-color: rgba(34, 197, 94, 0.15);
+    color: #4ade80;
+}
+html:not([data-theme="light"]) .cf-status-select.val-inactive {
+    border-color: rgba(245, 158, 11, 0.4);
+    background-color: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+}
+html:not([data-theme="light"]) .cf-status-select.val-locked {
+    border-color: rgba(239, 68, 68, 0.4);
+    background-color: rgba(239, 68, 68, 0.15);
+    color: #f87171;
 }

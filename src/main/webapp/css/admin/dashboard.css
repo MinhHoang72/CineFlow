@@ -97,6 +97,14 @@
     margin-bottom: 24px;
 }
 
+.cf-kpi-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+    width: 100%;
+}
+
 .kpi-card, .cf-kpi-card {
     background: #ffffff !important;
     border: 1px solid #E2E8F0 !important;

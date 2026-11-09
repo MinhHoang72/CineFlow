@@ -56,3 +56,36 @@ IF NOT EXISTS (SELECT 1 FROM Users WHERE Account = 'customer1')
 ELSE
     UPDATE Users SET EmailVerified = 1 WHERE Account = 'customer1';
 GO
+
+/* 4. Don chuyen sang COMPLETED khi moi ghe da soat ve (ve soat xong la USED, do CheckInDAO cap nhat) */
+CREATE OR ALTER TRIGGER TR_Tickets_CompleteBooking ON Tickets
+AFTER UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    IF NOT UPDATE(TicketStatus) RETURN;
+
+    UPDATE b SET b.BookingStatus = 'COMPLETED', b.UpdatedAt = SYSDATETIME()
+    FROM Bookings b
+    WHERE b.BookingStatus = 'CONFIRMED'
+      AND b.BookingID IN (SELECT bs.BookingID FROM inserted i
+                          JOIN BookingSeats bs ON bs.BookingSeatID = i.BookingSeatID
+                          WHERE i.TicketStatus = 'USED')
+      AND NOT EXISTS (SELECT 1 FROM BookingSeats bs
+                      LEFT JOIN Tickets t ON t.BookingSeatID = bs.BookingSeatID
+                      WHERE bs.BookingID = b.BookingID AND bs.SeatStatus = 'CONFIRMED'
+                        AND (t.TicketID IS NULL OR t.TicketStatus <> 'USED'));
+END
+GO
+
+/* Cap nhat cac don da soat du ve truoc khi co trigger */
+UPDATE b SET b.BookingStatus = 'COMPLETED', b.UpdatedAt = SYSDATETIME()
+FROM Bookings b
+WHERE b.BookingStatus = 'CONFIRMED'
+  AND EXISTS (SELECT 1 FROM BookingSeats bs JOIN Tickets t ON t.BookingSeatID = bs.BookingSeatID
+              WHERE bs.BookingID = b.BookingID)
+  AND NOT EXISTS (SELECT 1 FROM BookingSeats bs
+                  LEFT JOIN Tickets t ON t.BookingSeatID = bs.BookingSeatID
+                  WHERE bs.BookingID = b.BookingID AND bs.SeatStatus = 'CONFIRMED'
+                    AND (t.TicketID IS NULL OR t.TicketStatus <> 'USED'));
+GO

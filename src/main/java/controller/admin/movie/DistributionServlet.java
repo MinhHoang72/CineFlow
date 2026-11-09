@@ -108,16 +108,6 @@ public class DistributionServlet extends HttpServlet {
             // 3. Đọc mã phim và danh sách mã cụm rạp được tích chọn (checkbox centreIds)
             int movieId = Integer.parseInt(request.getParameter("movieId"));
 
-            // Nghiệp vụ: Phim ở trạng thái archive hoặc end không còn được phân phối nữa ở các rạp
-            Movie targetMovie = movieService.getMovieById(movieId);
-            if (targetMovie != null) {
-                String mStatus = targetMovie.getStatus() != null ? targetMovie.getStatus().toUpperCase() : "";
-                if ("ARCHIVED".equals(mStatus) || "ENDED".equals(mStatus)) {
-                    response.sendRedirect(request.getContextPath() + "/admin/distribution?movieId=" + movieId + "&error=movie_ended_or_archived");
-                    return;
-                }
-            }
-
             String[] ids = request.getParameterValues("centreIds");
             Set<Integer> selectedCentreIds = new HashSet<>();
             if (ids != null) {
@@ -128,13 +118,26 @@ public class DistributionServlet extends HttpServlet {
                 }
             }
 
-            // 4. Gọi Service cập nhật bảng quan hệ CentreMovies trong khối Transaction
-            if (!movieService.saveMovieDistribution(movieId, selectedCentreIds)) {
-                throw new IllegalStateException("Không lưu được phân phối phim.");
-            }
+            // 4. Ủy quyền toàn bộ xử lý nghiệp vụ cho MovieService (Mô hình 3 lớp)
+            MovieService.DistributionResult result = movieService.saveDistribution(movieId, selectedCentreIds);
 
-            // 5. Chuyển hướng về lại trang phân phối của phim đó kèm cờ thông báo thành công (saved=1)
-            response.sendRedirect(request.getContextPath() + "/admin/distribution?movieId=" + movieId + "&saved=1");
+            // 5. Điều hướng theo kết quả nghiệp vụ trả về từ Service
+            switch (result) {
+                case SUCCESS:
+                    response.sendRedirect(request.getContextPath() + "/admin/distribution?movieId=" + movieId + "&saved=1");
+                    break;
+                case MOVIE_ENDED_OR_ARCHIVED:
+                    response.sendRedirect(request.getContextPath() + "/admin/distribution?movieId=" + movieId + "&error=movie_ended_or_archived");
+                    break;
+                case MOVIE_NOT_FOUND:
+                    response.sendRedirect(request.getContextPath() + "/admin/distribution?error=movie_not_found");
+                    break;
+                default:
+                    response.sendRedirect(request.getContextPath() + "/admin/distribution?movieId=" + movieId + "&error=save_failed");
+                    break;
+            }
+        } catch (NumberFormatException exception) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Mã phim hoặc mã cụm rạp không hợp lệ.");
         } catch (Exception exception) {
             // 6. Xử lý khi có lỗi dữ liệu hoặc lỗi cơ sở dữ liệu
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Không thể lưu phân phối phim.");

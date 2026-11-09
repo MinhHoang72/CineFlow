@@ -18,14 +18,18 @@
 
     int totalManagers = managers != null ? managers.size() : 0;
     int activeCount = 0;
-    int inactiveCount = 0;
+    int suspendedCount = 0;
+    int lockedCount = 0;
 
     if (managers != null) {
         for (User m : managers) {
-            if ("ACTIVE".equalsIgnoreCase(m.getStatus())) {
+            String s = m.getStatus() != null ? m.getStatus().toUpperCase() : "INACTIVE";
+            if ("ACTIVE".equals(s)) {
                 activeCount++;
+            } else if ("LOCKED".equals(s)) {
+                lockedCount++;
             } else {
-                inactiveCount++;
+                suspendedCount++;
             }
         }
     }
@@ -59,7 +63,7 @@
                 setTimeout(function () {
                     alert.remove();
                 }, 400);
-            }, 3000);
+            }, 1000);
         });
     });
 </script>
@@ -136,14 +140,22 @@
                 <div class="cf-alert cf-alert-danger">
                     <span>⚠</span> <strong>Cụm rạp đã có Quản lý:</strong> Cụm rạp được chọn hiện đã có Quản lý đang phụ trách (mỗi rạp chỉ có 1 Quản lý). Để thay thế hoặc phân công Quản lý, vui lòng sử dụng chức năng Bổ nhiệm & Miễn nhiệm tại mục Bổ nhiệm & Điều chuyển.
                 </div>
+            <% } else if ("status_failed".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger">
+                    <span>⚠</span> <strong>Lỗi:</strong> Cập nhật trạng thái Quản lý thất bại. Vui lòng thử lại.
+                </div>
+            <% } else if ("not_manager".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger">
+                    <span>⚠</span> <strong>Lỗi:</strong> Tài khoản không tồn tại hoặc không phải là Quản lý.
+                </div>
             <% } else if (errorParam != null) { %>
                 <div class="cf-alert cf-alert-danger">
                     <span>⚠</span> Thao tác thất bại. Vui lòng kiểm tra lại thông tin.
                 </div>
             <% } %>
 
-            <!-- KPI METRICS: TỔNG SỐ, ĐANG HOẠT ĐỘNG, TẠM NGƯNG -->
-            <div class="cf-kpi-grid">
+            <!-- KPI METRICS: TỔNG SỐ, ĐANG HOẠT ĐỘNG, TẠM NGƯNG, ĐÃ KHÓA -->
+            <div class="cf-kpi-grid-4">
                 <div class="cf-kpi-card">
                     <span class="cf-kpi-label">Tổng số Manager</span>
                     <div class="cf-kpi-value"><%= totalManagers %></div>
@@ -153,8 +165,12 @@
                     <div class="cf-kpi-value kpi-active"><%= activeCount %></div>
                 </div>
                 <div class="cf-kpi-card">
-                    <span class="cf-kpi-label">Tạm ngưng</span>
-                    <div class="cf-kpi-value kpi-inactive"><%= inactiveCount %></div>
+                    <span class="cf-kpi-label">Tạm ngưng (nghỉ phép/ốm)</span>
+                    <div class="cf-kpi-value kpi-suspended" style="color: #fbbf24;"><%= suspendedCount %></div>
+                </div>
+                <div class="cf-kpi-card">
+                    <span class="cf-kpi-label">Đã khóa (nghỉ việc)</span>
+                    <div class="cf-kpi-value kpi-locked" style="color: #ef4444;"><%= lockedCount %></div>
                 </div>
             </div>
 
@@ -180,10 +196,11 @@
                             <button type="button" id="managerSearchClearBtn" class="cf-search-clear-btn" style="display: none;" title="Xóa tìm kiếm">✕</button>
                         </div>
                         
-                        <select id="statusFilterSelect" class="manager-status-select cf-select-sm">
+                        <select id="statusFilterSelect" class="manager-status-select cf-select-sm" title="Lọc theo trạng thái tài khoản">
                             <option value="ALL">Tất cả trạng thái</option>
                             <option value="ACTIVE">Đang hoạt động</option>
                             <option value="INACTIVE">Tạm ngưng</option>
+                            <option value="LOCKED">Đã khóa</option>
                         </select>
 
                         <div class="cf-page-size-wrap">
@@ -218,14 +235,16 @@
                                 <% if (managers == null || managers.isEmpty()) { %>
                                     <tr><td colspan="7" class="cf-empty">Chưa có tài khoản Manager nào trong hệ thống.</td></tr>
                                 <% } else for (User m : managers) {
-                                    String st = m.getStatus();
-                                    boolean isActive = "ACTIVE".equalsIgnoreCase(st);
+                                    String st = m.getStatus() != null ? m.getStatus().toUpperCase() : "INACTIVE";
+                                    boolean isActive = "ACTIVE".equals(st);
+                                    boolean isSuspended = "INACTIVE".equals(st);
+                                    boolean isLocked = "LOCKED".equals(st);
                                     String centreName = m.getCentreName();
                                     boolean hasCentre = centreName != null && !centreName.trim().isEmpty();
                                     String searchData = (m.getEmployeeCode() + " " + m.getUserId() + " ql" + m.getUserId() + " " + m.getFullName() + " " + m.getAccount() + " " + m.getEmail() + " " + (hasCentre ? centreName : "")).toLowerCase();
-                                    String statusClass = isActive ? "st-active" : "st-inactive";
+                                    String statusClass = isActive ? "st-active" : (isSuspended ? "st-inactive" : "st-locked");
                                 %>
-                                    <tr class="manager-row <%= statusClass %>" data-search="<%= searchData %>" data-status="<%= isActive ? "ACTIVE" : "INACTIVE" %>">
+                                    <tr class="manager-row <%= statusClass %>" data-search="<%= searchData %>" data-status="<%= st %>">
                                         <td><code class="cf-badge cf-badge-primary cf-badge-mgr-code"><%= m.getEmployeeCode() %></code></td>
                                         <td>
                                             <strong class="manager-name"><%= m.getFullName() %></strong>
@@ -241,9 +260,21 @@
                                             <% } %>
                                         </td>
                                         <td>
-                                            <span class="cf-badge <%= isActive ? "cf-badge-success" : "cf-badge-warning" %>">
-                                                <%= isActive ? "Đang hoạt động" : "Tạm ngưng" %>
-                                            </span>
+                                            <form method="post" action="${pageContext.request.contextPath}/admin/managers" class="form-inline-action" style="margin: 0;">
+                                                <input type="hidden" name="action" value="toggle_status">
+                                                <input type="hidden" name="userId" value="<%= m.getUserId() %>">
+                                                <div class="status-select-wrap">
+                                                    <select name="status" class="cf-status-select val-<%= st.toLowerCase() %>"
+                                                            data-name="<%= m.getFullName() != null ? m.getFullName().replace("\"", "&quot;") : "" %>"
+                                                            data-current-status="<%= st %>"
+                                                            onchange="handleManagerStatusChange(this)"
+                                                            title="Bấm để thay đổi trạng thái Quản lý">
+                                                        <option value="ACTIVE" <%= isActive ? "selected" : "" %>>Hoạt động</option>
+                                                        <option value="INACTIVE" <%= isSuspended ? "selected" : "" %>>Tạm ngưng</option>
+                                                        <option value="LOCKED" <%= isLocked ? "selected" : "" %>>Đã khóa</option>
+                                                    </select>
+                                                </div>
+                                            </form>
                                         </td>
                                         <td class="cell-nowrap">
                                             <div class="manager-actions-row">
@@ -253,24 +284,6 @@
                                                         title="Chỉnh sửa thông tin cá nhân">
                                                     Sửa
                                                 </button>
-
-                                                <!-- Nút Kích hoạt / Tạm ngưng tài khoản -->
-                                                <form method="post" action="${pageContext.request.contextPath}/admin/managers" class="form-inline-action">
-                                                    <input type="hidden" name="action" value="toggle_status">
-                                                    <input type="hidden" name="userId" value="<%= m.getUserId() %>">
-                                                    <% if (isActive) { %>
-                                                        <input type="hidden" name="status" value="INACTIVE">
-                                                        <button type="submit" class="cf-btn cf-btn-secondary cf-btn-sm btn-toggle-suspend" 
-                                                                >
-                                                            Tạm ngưng
-                                                        </button>
-                                                    <% } else { %>
-                                                        <input type="hidden" name="status" value="ACTIVE">
-                                                        <button type="submit" class="cf-btn cf-btn-secondary cf-btn-sm btn-toggle-activate">
-                                                            Kích hoạt
-                                                        </button>
-                                                    <% } %>
-                                                </form>
                                             </div>
                                         </td>
                                     </tr>
@@ -392,6 +405,32 @@
 <script src="${pageContext.request.contextPath}/js/admin-pagination.js?v=<%= System.currentTimeMillis() %>"></script>
 <script>
     
+    
+    function handleManagerStatusChange(selectEl) {
+        var newStatus = selectEl.value;
+        var currentStatus = selectEl.getAttribute('data-current-status') || 'ACTIVE';
+        var managerName = selectEl.getAttribute('data-name') || 'Quản lý';
+
+        if (newStatus === currentStatus) {
+            return;
+        }
+
+        var message = "";
+        if (newStatus === 'ACTIVE') {
+            message = "Kích hoạt lại tài khoản cho Quản lý \"" + managerName + "\" sang HOẠT ĐỘNG?\n\n(Lưu ý: Sau khi kích hoạt, bạn có thể phân công Quản lý này vào cụm rạp).";
+        } else if (newStatus === 'INACTIVE') {
+            message = "Chuyển tài khoản Quản lý \"" + managerName + "\" sang TẠM NGƯNG?\n\n(Dành cho trường hợp nghỉ ốm, nghỉ phép dài hạn. Hệ thống sẽ tạm thời giải phóng rạp để bổ nhiệm Quản lý tạm thời).";
+        } else if (newStatus === 'LOCKED') {
+            message = "CẢNH BÁO: Bạn có chắc chắn muốn KHÓA tài khoản Quản lý \"" + managerName + "\"?\n\n(Dành cho trường hợp thôi việc hoặc vi phạm kỷ luật. Tài khoản sẽ bị khóa hoàn toàn).";
+        }
+
+        if (confirm(message)) {
+            selectEl.form.submit();
+        } else {
+            selectEl.value = currentStatus;
+        }
+    }
+
     function openCreateManagerModal() {
         document.getElementById('createManagerModal').classList.add('active');
     }

@@ -480,3 +480,104 @@ html[data-theme="light"] .cf-btn-reset-filter:hover {
     color: #0f172a;
     border-color: #94a3b8;
 }
+
+
+/* ==========================================================================
+   Cảnh báo & Thông báo (High Contrast Alerts)
+   ========================================================================== */
+.cf-alert {
+    padding: 14px 18px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.cf-alert-danger,
+.cf-alert-error {
+    background-color: #FEF2F2 !important;
+    border: 2px solid #EF4444 !important;
+    border-left: 6px solid #DC2626 !important;
+    color: #991B1B !important;
+    font-weight: 600 !important;
+}
+
+.cf-alert-danger strong,
+.cf-alert-error strong {
+    color: #7F1D1D !important;
+    font-weight: 800 !important;
+}
+
+.cf-alert-danger span,
+.cf-alert-error span {
+    color: #DC2626 !important;
+    font-weight: 900 !important;
+    font-size: 18px !important;
+}
+
+.cf-alert-success {
+    background-color: #ECFDF5 !important;
+    border: 1.5px solid #10B981 !important;
+    color: #065F46 !important;
+    font-weight: 500 !important;
+}
+
+.cf-alert-success strong {
+    color: #064E3B !important;
+    font-weight: 700 !important;
+}
+/* Toolbar: tất cả thành phần nằm trên một hàng */
+.cf-card-toolbar-compact {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
+    padding: 12px 16px !important;
+    overflow-x: auto;
+}
+
+/* Nhóm nút lọc trạng thái */
+.cf-toolbar-left {
+    flex: 0 0 auto !important;
+    min-width: 0 !important;
+}
+
+.cf-filter-pills {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    white-space: nowrap !important;
+}
+
+/* Nhóm tìm kiếm, hiển thị và sắp xếp */
+.cf-toolbar-right {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 10px !important;
+    flex: 0 0 auto !important;
+    min-width: 0 !important;
+}
+
+/* Thu nhỏ ô tìm kiếm để tiết kiệm diện tích */
+.cf-search-box-compact {
+    width: 180px !important;
+    min-width: 180px !important;
+    flex-shrink: 1 !important;
+}
+
+/* Không cho các nhóm Hiển thị và Sắp xếp xuống dòng */
+.cf-page-size-wrap {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    flex-wrap: nowrap !important;
+    white-space: nowrap !important;
+    gap: 8px !important;
+}

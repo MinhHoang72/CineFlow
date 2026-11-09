@@ -41,3 +41,26 @@ src/main/webapp/uploads/video_trailer/*.mp4
 *.pptx
 *.docx
 *.xlsx
+
+# Local scripts, tools, and temporary assets
+*.py
+/tools/
+*.csv
+ai-log.md
+mockup_*.html
+
+# Architecture diagrams and documentation assets
+*.drawio
+*.drawio.xml
+*.puml
+Admin_UseCase_Diagram.*
+CineFlow_Package_Diagram.*
+CineFlow_ERD*
+CineFlow_UC_*
+CineFlow_Flow_*
+CineFlow_Main_Business_Flow.*
+Activity_Movie_Distribution.*
+src/test/java/ThreeCasesMovieVerificationTest.java
+
+# Sample uploads
+resources/uploads/movies/poster-*

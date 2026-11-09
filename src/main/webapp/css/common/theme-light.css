@@ -5182,10 +5182,26 @@ html[data-theme="light"] .cf-alert-success {
     background: rgba(16, 185, 129, 0.12);
 }
 
-html[data-theme="light"] .cf-alert-error {
-    border: 1px solid rgba(239, 68, 68, 0.35);
-    color: #F87171;
-    background: rgba(239, 68, 68, 0.12);
+html[data-theme="light"] .cf-alert-error,
+html[data-theme="light"] .cf-alert-danger {
+    border: 2px solid #EF4444 !important;
+    border-left: 6px solid #DC2626 !important;
+    color: #991B1B !important;
+    background: #FEF2F2 !important;
+    font-weight: 600 !important;
+}
+
+html[data-theme="light"] .cf-alert-error strong,
+html[data-theme="light"] .cf-alert-danger strong {
+    color: #7F1D1D !important;
+    font-weight: 800 !important;
+}
+
+html[data-theme="light"] .cf-alert-error span,
+html[data-theme="light"] .cf-alert-danger span {
+    color: #DC2626 !important;
+    font-weight: 900 !important;
+    font-size: 18px !important;
 }
 
 html[data-theme="light"] .cf-alert-info {

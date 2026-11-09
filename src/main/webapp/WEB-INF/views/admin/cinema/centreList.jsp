@@ -151,7 +151,7 @@
 
             <!-- Thanh lọc & tìm kiếm -->
             <div class="cf-filter-card">
-                <form class="cf-filter-form" method="GET" action="${pageContext.request.contextPath}/admin/centres">
+                <form class="cf-filter-form" method="GET" action="${baseUrl}">
                     <div class="cf-search-box">
                         <span class="icon">
                             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
@@ -223,9 +223,10 @@
                                     String badgeStatusClass = "ACTIVE".equals(cStat) ? "status-active" :
                                                               ("SUSPENDED".equals(cStat) || "TEMPORARILY_CLOSED".equals(cStat)) ? "status-suspended" : "status-inactive";
                                 %>
-                                <form method="POST" action="${pageContext.request.contextPath}/admin/centres" style="display: inline-block; margin: 0;">
+                                <form method="POST" action="${baseUrl != null ? baseUrl : pageContext.request.contextPath.concat('/admin/centres')}" style="display: inline-block; margin: 0;">
                                     <input type="hidden" name="action" value="changeStatus">
                                     <input type="hidden" name="centreId" value="<%= c.getCentreId() %>">
+                                    <input type="hidden" name="back" value="${backQuery}">
                                     <input type="hidden" name="search" value="<%= currentSearch != null ? currentSearch : "" %>">
                                     <input type="hidden" name="status" value="<%= currentStatus != null ? currentStatus : "ALL" %>">
                                     <input type="hidden" name="page" value="<%= currentPage %>">
@@ -246,6 +247,7 @@
                                             onclick="openEditCentreModal(<%= c.getCentreId() %>, '<%= c.getCentreName() != null ? c.getCentreName().replace("'", "\\'") : "" %>', '<%= c.getAddress() != null ? c.getAddress().replace("'", "\\'") : "" %>', '<%= c.getPhone() != null ? c.getPhone().replace("'", "\\'") : "" %>', '<%= c.getCity() != null ? c.getCity().replace("'", "\\'") : "" %>')">
                                         Sửa
                                     </button>
+
                                 </div>
                             </td>
                         </tr>
@@ -262,28 +264,17 @@
                     </tbody>
                 </table>
 
-                <% if (totalFilteredCentres > 0) { 
-                    int startItem = (currentPage - 1) * pageSize + 1;
-                    int endItem = Math.min(currentPage * pageSize, totalFilteredCentres);
-
-                    String baseParams = "";
-                    if (currentSearch != null && !currentSearch.trim().isEmpty()) {
-                        baseParams += "&search=" + java.net.URLEncoder.encode(currentSearch.trim(), "UTF-8");
-                    }
-                    if (currentStatus != null && !currentStatus.trim().isEmpty()) {
-                        baseParams += "&status=" + java.net.URLEncoder.encode(currentStatus.trim(), "UTF-8");
-                    }
-                %>
+                <% if (totalFilteredCentres > 0) { %>
                 <!-- THANH PHÂN TRANG (PAGINATION) -->
                 <div class="cf-pagination-bar">
                     <div class="cf-pagination-info">
-                        Hiển thị <strong><%= startItem %> - <%= endItem %></strong> trên tổng số <strong><%= totalFilteredCentres %></strong> cụm rạp
+                        Hiển thị <strong>${result.from} - ${result.to}</strong> trên tổng số <strong>${result.total}</strong> cụm rạp
                     </div>
                     <% if (totalPages > 1) { %>
                     <div class="cf-pagination-controls">
                         <!-- Nút trang trước (Previous) -->
                         <% if (currentPage > 1) { %>
-                            <a href="${pageContext.request.contextPath}/admin/centres?page=<%= currentPage - 1 %><%= baseParams %>" 
+                            <a href="${pagerBase}<%= currentPage - 1 %>" 
                                class="cf-page-btn" title="Trang trước">«</a>
                         <% } else { %>
                             <span class="cf-page-btn disabled" title="Trang trước">«</span>
@@ -296,7 +287,7 @@
                             <% if (i == currentPage) { %>
                                 <span class="cf-page-btn active"><%= i %></span>
                             <% } else { %>
-                                <a href="${pageContext.request.contextPath}/admin/centres?page=<%= i %><%= baseParams %>" 
+                                <a href="${pagerBase}<%= i %>" 
                                    class="cf-page-btn"><%= i %></a>
                             <% } %>
                         <% 
@@ -310,7 +301,7 @@
 
                         <!-- Nút trang sau (Next) -->
                         <% if (currentPage < totalPages) { %>
-                            <a href="${pageContext.request.contextPath}/admin/centres?page=<%= currentPage + 1 %><%= baseParams %>" 
+                            <a href="${pagerBase}<%= currentPage + 1 %>" 
                                class="cf-page-btn" title="Trang sau">»</a>
                         <% } else { %>
                             <span class="cf-page-btn disabled" title="Trang sau">»</span>
@@ -333,8 +324,9 @@
             <h3>Thêm Cụm rạp mới</h3>
             <button type="button" class="cf-modal-close" onclick="closeCreateCentreModal()">&times;</button>
         </div>
-        <form method="POST" action="${pageContext.request.contextPath}/admin/centres">
+        <form method="POST" action="${baseUrl}">
             <input type="hidden" name="action" value="create">
+            <input type="hidden" name="back" value="${backQuery}">
             <input type="hidden" name="search" value="<%= currentSearch != null ? currentSearch : "" %>">
             <input type="hidden" name="status" value="<%= currentStatus != null ? currentStatus : "ALL" %>">
             <input type="hidden" name="page" value="1">
@@ -379,9 +371,10 @@
             <h3>Sửa thông tin Cụm rạp</h3>
             <button type="button" class="cf-modal-close" onclick="closeEditCentreModal()">&times;</button>
         </div>
-        <form method="POST" action="${pageContext.request.contextPath}/admin/centres">
+        <form method="POST" action="${baseUrl}">
             <input type="hidden" name="action" value="update">
             <input type="hidden" name="centreId" id="editCentreId">
+            <input type="hidden" name="back" value="${backQuery}">
             <input type="hidden" name="search" value="<%= currentSearch != null ? currentSearch : "" %>">
             <input type="hidden" name="status" value="<%= currentStatus != null ? currentStatus : "ALL" %>">
             <input type="hidden" name="page" value="<%= currentPage %>">
