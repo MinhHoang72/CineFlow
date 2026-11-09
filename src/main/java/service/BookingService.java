@@ -267,6 +267,11 @@ public class BookingService {
         bookingDAO.releaseOverdueSeats(conn);
     }
 
+    /** Suất chiếu đã kết thúc -> đơn đã xác nhận của suất đó chuyển sang COMPLETED. @return số đơn đã đổi */
+    public int completeFinishedBookings() throws SQLException {
+        return DbUtil.inTransaction(bookingDAO::completeFinishedBookings);
+    }
+
     /** Khách tự huỷ đơn đang chờ thanh toán của mình. @return false nếu đơn không còn chờ thanh toán */
     public boolean cancelPendingBooking(int bookingId, int userId) throws SQLException {
         return DbUtil.inTransaction(conn -> cancelPending(conn, bookingDAO.findPendingIdOfUser(conn, bookingId, userId)) > 0);
