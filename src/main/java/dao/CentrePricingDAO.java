@@ -17,15 +17,31 @@ import utils.DBContext;
 
 public class CentrePricingDAO extends DBContext {
 
+    /** One query for the chain overview, including centres without a current price. */
+    public List<java.util.Map<String,Object>> getCentrePriceOverview() throws SQLException {
+        String sql="SELECT c.CentreID,c.CentreName,c.City,c.Status,p.BasePrice,p.EffectiveFrom,u.FullName UpdatedByName,n.BasePrice NextPrice,n.EffectiveFrom NextFrom "
+                +"FROM Centres c OUTER APPLY(SELECT TOP 1 BasePrice,EffectiveFrom,UpdatedBy FROM CentrePricing WHERE CentreID=c.CentreID AND EffectiveFrom<=SYSDATETIME() AND (EffectiveTo IS NULL OR EffectiveTo>SYSDATETIME()) ORDER BY EffectiveFrom DESC,CentrePricingID DESC)p "
+                +"LEFT JOIN Users u ON u.UserID=p.UpdatedBy OUTER APPLY(SELECT TOP 1 BasePrice,EffectiveFrom FROM CentrePricing WHERE CentreID=c.CentreID AND EffectiveFrom>SYSDATETIME() AND (EffectiveTo IS NULL OR EffectiveTo>EffectiveFrom) ORDER BY EffectiveFrom,CentrePricingID)n ORDER BY c.CentreName,c.CentreID";
+        List<java.util.Map<String,Object>> rows=new ArrayList<>();
+        try(Connection c=DBContext.getConnection();PreparedStatement ps=c.prepareStatement(sql);ResultSet rs=ps.executeQuery()){
+            while(rs.next()){
+                var row=new java.util.LinkedHashMap<String,Object>();
+                for(String key:new String[]{"CentreID","CentreName","City","Status","BasePrice","EffectiveFrom","UpdatedByName","NextPrice","NextFrom"})row.put(key,rs.getObject(key));
+                rows.add(row);
+            }
+        }
+        return rows;
+    }
+
     public CentrePricing getCurrentPrice(int centreId) {
 
         String sql =
-            "SELECT TOP 1 * "
-            + "FROM CentrePricing "
-            + "WHERE CentreID = ? "
-            + "AND EffectiveFrom <= SYSDATETIME() "
-            + "AND (EffectiveTo IS NULL OR EffectiveTo > SYSDATETIME()) "
-            + "ORDER BY EffectiveFrom DESC";
+            "SELECT TOP 1 bp.*, u.FullName AS UpdatedByName "
+            + "FROM CentrePricing bp LEFT JOIN Users u ON u.UserID=bp.UpdatedBy "
+            + "WHERE bp.CentreID = ? "
+            + "AND bp.EffectiveFrom <= SYSDATETIME() "
+            + "AND (bp.EffectiveTo IS NULL OR bp.EffectiveTo > SYSDATETIME()) "
+            + "ORDER BY bp.EffectiveFrom DESC,bp.CentrePricingID DESC";
 
         try (PreparedStatement ps =
                 connection.prepareStatement(sql)) {
@@ -37,6 +53,7 @@ public class CentrePricingDAO extends DBContext {
             if (rs.next()) {
 
                 CentrePricing bp = new CentrePricing();
+                bp.setUpdatedByName(rs.getString("UpdatedByName"));
 
                 bp.setCentrePricingId(
                         rs.getInt("CentrePricingID")

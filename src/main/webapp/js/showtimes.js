@@ -5,6 +5,18 @@
     if (!search || !date || !hall || !status) return;
     let rows = Array.from(document.querySelectorAll('[data-showtime]'));
     let page = 1, view = 'table', refreshing = false;
+    const stateKey = 'cineflow:showtimes:' + document.body.dataset.listStateKey;
+    let savedState = null;
+    try { savedState = JSON.parse(sessionStorage.getItem(stateKey)); } catch (error) { /* Storage may be unavailable. */ }
+    function saveListState() {
+        try {
+            const scroll = document.querySelector('.st-schedule .st-table-scroll');
+            sessionStorage.setItem(stateKey, JSON.stringify({page, view, search:search.value, date:date.value,
+                hall:hall.value, status:status.value, size:$('st-page-size').value,
+                timelineDate:$('st-timeline-date').value, y:window.scrollY,
+                tableTop:scroll?.scrollTop || 0, tableLeft:scroll?.scrollLeft || 0}));
+        } catch (error) { /* List navigation still works without browser storage. */ }
+    }
     const normalize = value => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLocaleLowerCase('vi');
     const localDate = value => `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;
     const midnight = value => new Date(`${value}T00:00:00`);
@@ -27,7 +39,7 @@
     const matches = (row, withDate = true) => {
         if (!normalize(row.dataset.title).includes(normalize(search.value.trim()))
             || (hall.value && row.dataset.hallId !== hall.value)
-            || (status.value && row.dataset.status !== status.value)) return false;
+            || (status.value === 'ACTIVE' ? row.dataset.status === 'CANCELLED' : (status.value && row.dataset.status !== status.value))) return false;
         if (!withDate) return true;
         const range = date.value ? [midnight(date.value), nextDay(midnight(date.value))] : null;
         if (!range) return true;
@@ -78,6 +90,18 @@
         $('st-timeline-summary').textContent = `${count} suất chiếu trong ngày${conflictCount ? ` · ${conflictCount} suất có xung đột (gồm thời gian dọn phòng)` : ''}. Bấm vào suất chiếu để xem ghế.`;
     }
     function render() {
+        const statsDate = date.value || today(), dayStart = midnight(statsDate), dayEnd = nextDay(dayStart);
+        const counts = {ACTIVE:0, SCHEDULED:0, ONGOING:0, COMPLETED:0};
+        rows.forEach(row => {
+            if (row.dataset.status === 'CANCELLED' || !normalize(row.dataset.title).includes(normalize(search.value.trim())) || (hall.value && row.dataset.hallId !== hall.value)) return;
+            const {start,end} = bounds(row);
+            if (start >= dayEnd || end <= dayStart) return;
+            counts.ACTIVE++;
+            if (Object.hasOwn(counts,row.dataset.status)) counts[row.dataset.status]++;
+        });
+        document.querySelectorAll('[data-stat-count]').forEach(node => { node.textContent = counts[node.dataset.statCount]; });
+        $('st-overview-date').textContent = `${date.value ? 'Ngày' : 'Hôm nay ·'} ${dayStart.toLocaleDateString('vi-VN')}`;
+        document.querySelectorAll('[data-stat]').forEach(button => button.setAttribute('aria-pressed',String(Boolean(date.value) && status.value === button.dataset.stat)));
         const filtered = rows.filter(row => matches(row));
         const size = Number($('st-page-size').value), pages = Math.max(1, Math.ceil(filtered.length / size)); page = Math.min(page, pages);
         const start = (page - 1) * size, visible = new Set(filtered.slice(start, start + size));
@@ -99,8 +123,15 @@
         $('st-table-view').hidden = view !== 'table'; $('st-timeline').hidden = view !== 'timeline';
         document.querySelectorAll('[data-view]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.view === view)));
         if (view === 'timeline') renderTimeline();
+        saveListState();
     }
     const filter = () => { page = 1; render(); };
+    document.querySelectorAll('[data-stat]').forEach(button => button.addEventListener('click', () => {
+        date.value = date.value || today();
+        $('st-timeline-date').value = date.value;
+        status.value = button.dataset.stat;
+        filter();
+    }));
     search.addEventListener('input', filter); [hall, status].forEach(control => control.addEventListener('change', filter));
     date.addEventListener('change', () => { if (date.value) $('st-timeline-date').value = date.value; document.querySelectorAll('[data-quick]').forEach(button => button.setAttribute('aria-pressed', 'false')); filter(); });
     $('st-reset').addEventListener('click', () => { [search, date, hall, status].forEach(control => { control.value = ''; }); $('st-timeline-date').value = today(); document.querySelectorAll('[data-quick]').forEach(button => button.setAttribute('aria-pressed', 'false')); filter(); search.focus(); });
@@ -156,7 +187,24 @@
     if (form) {
         form.addEventListener('submit', async event => { event.preventDefault(); clearTimeout(checkTimer); if (await checkAvailability()) { if (submit) submit.disabled = true; HTMLFormElement.prototype.submit.call(form); } });
     }
+    if (savedState && typeof savedState === 'object') {
+        search.value = typeof savedState.search === 'string' ? savedState.search : '';
+        date.value = typeof savedState.date === 'string' ? savedState.date : '';
+        for (const [control, value] of [[hall,savedState.hall],[status,savedState.status],[$('st-page-size'),savedState.size]]) {
+            if (Array.from(control.options).some(option => option.value === value)) control.value = value;
+        }
+        page = Number.isSafeInteger(savedState.page) && savedState.page > 0 ? savedState.page : 1;
+        view = savedState.view === 'timeline' ? 'timeline' : 'table';
+        if (typeof savedState.timelineDate === 'string') $('st-timeline-date').value = savedState.timelineDate;
+        if (!$('st-timeline-date').value) $('st-timeline-date').value = date.value || today();
+    }
     render();
+    if (savedState) requestAnimationFrame(() => {
+        const scroll = document.querySelector('.st-schedule .st-table-scroll');
+        if (scroll) { scroll.scrollTop = Number(savedState.tableTop) || 0; scroll.scrollLeft = Number(savedState.tableLeft) || 0; }
+        window.scrollTo(0, Number(savedState.y) || 0);
+    });
+    window.addEventListener('pagehide', saveListState);
 
     async function refreshStatuses() {
         if (document.hidden || refreshing) return; refreshing = true;
@@ -168,7 +216,7 @@
             rows.forEach(row => {
                 const updated = latest.get(row.dataset.showtimeId);
                 if (!updated || row.contains(document.activeElement)) return;
-                if (updated.dataset.status !== row.dataset.status || updated.dataset.start !== row.dataset.start || updated.dataset.end !== row.dataset.end) row.replaceWith(updated);
+                if (updated.dataset.status !== row.dataset.status || updated.dataset.booked !== row.dataset.booked || updated.dataset.start !== row.dataset.start || updated.dataset.end !== row.dataset.end) row.replaceWith(updated);
             });
             rows = Array.from(document.querySelectorAll('[data-showtime]')); render();
             if (dialog && dialog.open) checkAvailability();

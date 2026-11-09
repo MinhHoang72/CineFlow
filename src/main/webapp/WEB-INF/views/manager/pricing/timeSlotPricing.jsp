@@ -1,7 +1,7 @@
 <%@ page pageEncoding="UTF-8" %>
 <%
     request.setAttribute("pageTitle", "Phụ thu theo khung giờ");
-    request.setAttribute("pageDescription", "Thiết lập mức phụ thu cho từng khung giờ chiếu tại cụm rạp.");
+    request.setAttribute("pageDescription", "");
     request.setAttribute("activeTab", "time");
 %>
 <%@ include file="/WEB-INF/fragments/cinemaBegin.jspf" %>
@@ -9,7 +9,7 @@
     <div class="st-panel-heading">
         <div>
             <h2>Thêm khung giờ</h2>
-            <p>Nhập thời gian bắt đầu, kết thúc và mức phụ thu.</p>
+
         </div>
         <span class="st-step">CỤM RẠP #${centreId}</span>
     </div>
@@ -43,7 +43,7 @@
     <div class="st-panel-heading">
         <div>
             <h2>Khung giờ đang áp dụng <span class="st-count">${fn:length(rules)}</span></h2>
-            <p>Sửa mức phụ thu hoặc ngừng áp dụng một khung giờ.</p>
+
         </div>
     </div>
     <div class="st-table-scroll" tabindex="0" role="region" aria-label="Các khung giờ hiện tại">
@@ -98,7 +98,7 @@
     <c:if test="${empty rules}">
         <div class="st-empty">
             <h3>Chưa có phụ thu khung giờ</h3>
-            <p>Thêm khung giờ bằng biểu mẫu phía trên.</p>
+
         </div>
     </c:if>
 </section>
@@ -106,7 +106,7 @@
     <div class="st-panel-heading">
         <div>
             <h2>Lịch sử phụ thu khung giờ</h2>
-            <p>Toàn bộ mức phụ thu và thời gian áp dụng.</p>
+
         </div>
     </div>
     <div class="st-table-scroll" tabindex="0" role="region" aria-label="Lịch sử phụ thu khung giờ">

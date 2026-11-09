@@ -37,6 +37,9 @@ public class ViewShowtimeSeatsServlet
                     new SeatDAO();
 
             Showtime showtime = showtimeDAO.getById(showtimeId);
+            if(showtime != null && showtime.getCentreId()!=service.ShowtimeService.requireCentreId(request)){
+                response.sendError(403);return;
+            }
             request.setAttribute("showtime", showtime);
             if (showtime != null) {
                 List<SeatAvailability> seats = seatDAO.getSeatAvailability(showtimeId);

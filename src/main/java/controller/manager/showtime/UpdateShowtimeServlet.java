@@ -33,9 +33,7 @@ public class UpdateShowtimeServlet extends HttpServlet {
             int movieId = Integer.parseInt(request.getParameter("movieId"));
             int hallId = Integer.parseInt(request.getParameter("hallId"));
             LocalDateTime startTime = LocalDateTime.parse(request.getParameter("startTime"));
-            int cleaningBuffer = 15;
-
-            showtimeService.updateShowtime(showtimeId, movieId, hallId, startTime, cleaningBuffer);
+            showtimeService.saveShowtime(request,showtimeId,movieId,hallId,startTime);
             request.getSession().setAttribute("message", "Cập nhật suất chiếu #" + showtimeId + " thành công.");
         } catch (IllegalArgumentException | IllegalStateException e) {
             request.getSession().setAttribute("error", e.getMessage());

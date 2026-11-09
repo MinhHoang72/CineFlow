@@ -29,7 +29,7 @@
 
 ## 📌 Phân Công Chức Năng Theo Nhánh (Centre Features)
 
-### 🌟 Nhánh `ThaiDQHE181794` (Dương Quốc Thái)
+### 🌟 Nhánh `ThaiDQHE181794` (Dương Quyết Thái)
 Phụ trách các phân hệ cốt lõi về **Quản trị Người dùng & Nhân sự**, **Quản lý Phim & Phân phối Phim**, **Quản trị Cụm rạp** và **Chuẩn hoá Kiến trúc Hệ thống**:
 
 | Phân hệ / Chức năng | Đường dẫn (URL) | Vai trò | Mô tả chi tiết |

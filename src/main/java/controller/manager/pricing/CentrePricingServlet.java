@@ -27,13 +27,29 @@ public class CentrePricingServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        int centreId = ShowtimeService.requireCentreId(request);
+        boolean admin="ADMIN".equals(request.getSession().getAttribute("role"));
+        if(admin && !"true".equals(request.getParameter("edit"))){
+            try{request.setAttribute("centrePrices",dao.getCentrePriceOverview());}
+            catch(java.sql.SQLException e){throw new ServletException("Không thể tải bảng giá các rạp.",e);}
+            request.setAttribute("hideCinemaCentreSelector",true);
+            request.getRequestDispatcher("/WEB-INF/views/manager/pricing/centrePricingList.jsp").forward(request,response);
+            return;
+        }
+        int centreId;
+        if(admin){
+            try{centreId=Integer.parseInt(request.getParameter("centreId"));}
+            catch(NumberFormatException e){response.sendError(400,"Mã rạp không hợp lệ.");return;}
+            if(new dao.CentreDAO().getCentreById(centreId)==null){response.sendError(404,"Không tìm thấy rạp.");return;}
+            request.setAttribute("hideCinemaCentreSelector",true);
+        }else centreId=ShowtimeService.requireCentreId(request);
 
         CentrePricing currentPrice = dao.getCurrentPrice(centreId);
         List<CentrePricing> history = dao.getPriceHistory(centreId);
 
         request.setAttribute("currentPrice", currentPrice);
         request.setAttribute("history", history);
+        request.setAttribute("nextPrice",history.stream().filter(CentrePricing::isScheduled)
+                .min(java.util.Comparator.comparing(CentrePricing::getEffectiveFrom)).orElse(null));
         request.setAttribute("centreId", centreId);
         model.entity.Centre centre = new dao.CentreDAO().getCentreById(centreId);
         request.setAttribute("centreName", centre == null ? "Chưa xác định cụm rạp" : centre.getCentreName());
@@ -45,14 +61,20 @@ public class CentrePricingServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
+        if(!"ADMIN".equals(request.getSession().getAttribute("role"))){response.sendError(403);return;}
+        int centreId;
+        try{centreId=Integer.parseInt(request.getParameter("centreId"));}
+        catch(NumberFormatException e){response.sendError(400,"Mã rạp không hợp lệ.");return;}
+        if(new dao.CentreDAO().getCentreById(centreId)==null){response.sendError(404,"Không tìm thấy rạp.");return;}
+        String editUrl=request.getContextPath()+"/pricing?centreId="+centreId+"&edit=true";
+        boolean saved=false;
         try {
-            int centreId = ShowtimeService.requireCentreId(request);
             double newPrice = service.PricingService.parseVnd(request.getParameter("basePrice"));
             int managerId = ShowtimeService.requireUserId(request);
 
             if (newPrice < 0) {
                 request.getSession().setAttribute("error", "Giá cơ bản không được âm.");
-                response.sendRedirect(request.getContextPath() + "/pricing");
+                response.sendRedirect(editUrl);
                 return;
             }
 
@@ -67,12 +89,13 @@ public class CentrePricingServlet extends HttpServlet {
             CentrePricing current = dao.getCurrentPrice(centreId);
             if (effectiveFrom == null && current != null && current.getBasePrice() == newPrice) {
                 request.getSession().setAttribute("error", "Mức giá mới phải khác giá đang áp dụng.");
-                response.sendRedirect(request.getContextPath() + "/pricing");
+                response.sendRedirect(editUrl);
                 return;
             }
 
             boolean success = dao.updateBasePrice(centreId, newPrice, managerId, effectiveFrom);
             if (success) {
+                saved=true;
                 request.getSession().setAttribute("message", effectiveFrom == null ? "Cập nhật giá vé cơ bản thành công." : "Đã lên lịch áp dụng giá cơ bản mới.");
             } else {
                 request.getSession().setAttribute("error", "Không thể cập nhật giá vé cơ bản.");
@@ -86,6 +109,6 @@ public class CentrePricingServlet extends HttpServlet {
             request.getSession().setAttribute("error", "Lỗi: " + e.getMessage());
         }
 
-        response.sendRedirect(request.getContextPath() + "/pricing");
+        response.sendRedirect(saved?request.getContextPath()+"/pricing":editUrl);
     }
 }

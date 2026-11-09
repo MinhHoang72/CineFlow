@@ -3,23 +3,24 @@
 <c:set var="tab" value="${not empty activeTab ? activeTab : 'showtimes'}" />
 <c:set var="centresList" value="${not empty centres ? centres : cinemaCentres}" />
 <c:set var="currentCentreId" value="${not empty selectedCentreId ? selectedCentreId : (not empty centreId ? centreId : cinemaCentreId)}" />
-
-<%-- Điều hướng phân hệ Bảng giá vé & Phụ thu (chỉ hiển thị trong các trang giá vé) --%>
-<c:if test="${tab != 'showtimes'}">
-<nav class="st-tabs" aria-label="Điều hướng bảng giá vé & phụ thu">
-<a class="${tab == 'base' ? 'is-active' : ''}" href="${pageContext.request.contextPath}/pricing" ${tab == 'base' ? 'aria-current="page"' : ''}>Giá cơ bản</a>
-<a class="${tab == 'time' ? 'is-active' : ''}" href="${pageContext.request.contextPath}/pricing/time-slots" ${tab == 'time' ? 'aria-current="page"' : ''}>Phụ thu khung giờ</a>
-<a class="${tab == 'surcharge' ? 'is-active' : ''}" href="${pageContext.request.contextPath}/pricing/seat-surcharges" ${tab == 'surcharge' ? 'aria-current="page"' : ''}>Phụ thu ghế & phòng</a>
+<c:if test="${tab != 'showtimes' && sessionScope.role == 'MANAGER'}">
+<nav class="st-tabs" aria-label="Điều hướng giá vé">
+    <a class="${tab == 'base' ? 'is-active' : ''}" href="${pageContext.request.contextPath}/pricing">Giá cơ bản</a>
+    <c:if test="${sessionScope.role == 'MANAGER'}">
+        <a class="${tab == 'CENTRE' ? 'is-active' : ''}" href="${pageContext.request.contextPath}/pricing/centre-surcharges">Phụ thu chi nhánh</a>
+        <a class="${tab == 'HALL' ? 'is-active' : ''}" href="${pageContext.request.contextPath}/pricing/hall-surcharges">Phụ thu phòng</a>
+        <a class="${tab == 'SEAT' ? 'is-active' : ''}" href="${pageContext.request.contextPath}/pricing/seat-surcharges">Phụ thu ghế</a>
+        <a class="${tab == 'MOVIE' ? 'is-active' : ''}" href="${pageContext.request.contextPath}/pricing/movie-surcharges">Phụ thu phim</a>
+        <a class="${tab == 'TIME' ? 'is-active' : ''}" href="${pageContext.request.contextPath}/pricing/time-slots">Phụ thu giờ</a>
+    </c:if>
 </nav>
 </c:if>
-
-<%-- Chọn cụm rạp cho Quản trị viên (Admin) --%>
-<c:if test="${not empty centresList}">
-<form class="st-create-form" method="get" style="margin-bottom:16px"
-      action="${pageContext.request.contextPath}${tab == 'showtimes' ? '/showtimes' : (tab == 'time' ? '/pricing/time-slots' : (tab == 'surcharge' ? '/pricing/seat-surcharges' : '/pricing'))}">
-<div class="st-field"><label for="cinema-centre">Cụm rạp</label>
-<select id="cinema-centre" name="centreId" onchange="this.form.submit()">
-<c:forEach var="ce" items="${centresList}"><option value="${ce.centreId}" ${ce.centreId == currentCentreId ? 'selected' : ''}><c:out value="${ce.centreName}" /> · <c:out value="${ce.city}" /></option></c:forEach>
-</select></div>
+<c:if test="${not empty centresList && not hideCinemaCentreSelector}">
+<form class="st-create-form" method="get" action="${pageContext.request.contextPath}${tab == 'showtimes' ? '/showtimes' : '/pricing'}">
+    <div class="st-field"><label for="cinema-centre">Cụm rạp</label>
+        <select id="cinema-centre" name="centreId" onchange="this.form.submit()">
+            <c:forEach var="ce" items="${centresList}"><option value="${ce.centreId}" ${ce.centreId == currentCentreId ? 'selected' : ''}><c:out value="${ce.centreName}" /></option></c:forEach>
+        </select>
+    </div>
 </form>
 </c:if>

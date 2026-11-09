@@ -174,10 +174,11 @@ public class BookingService {
      * tính trong ShowtimeDAO) cộng phụ thu loại ghế (VIP, Sweetbox) đang hiệu lực tại giờ chiếu.
      */
     private List<Seat> pricedSeats(Connection conn, Showtime showtime) throws SQLException {
-        Map<String, BigDecimal> surcharges = seatDAO.getSeatTypeSurcharges(conn, showtime.getStartTime());
+        Map<String, BigDecimal> prices = seatDAO.getLockedPrices(conn, showtime.getId());
         List<Seat> priced = new ArrayList<>();
         for (Seat s : seatDAO.getSeatMap(conn, showtime)) {
-            BigDecimal price = showtime.getBasePrice().add(surcharges.getOrDefault(s.getType(), BigDecimal.ZERO));
+            BigDecimal price = prices.get(s.getType());
+            if(price==null) throw new SQLException("Bảng giá của suất chiếu chưa có loại ghế này. Vui lòng liên hệ quản lý.");
             priced.add(new Seat(s.getId(), s.getRow(), s.getNumber(), s.getType(), s.isAvailable(), s.isTaken(), price));
         }
         return priced;
