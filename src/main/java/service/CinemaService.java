@@ -264,10 +264,6 @@ public class CinemaService {
         return seatDAO.getSeatsByHallPaged(hallId, search, seatType, seatStatus, page, pageSize);
     }
 
-    public boolean hasFutureBookedShowtimes(int hallId) {
-        return seatDAO.hasFutureBookedShowtimes(hallId);
-    }
-
     public String toggleSeatMaintenance(int hallId, int seatId) {
         if (hallId <= 0 || seatId <= 0) {
             return "invalid_id";
@@ -286,9 +282,6 @@ public class CinemaService {
     public String saveSeatLayout(int hallId, List<SeatConfigDTO> seatList, boolean isRegenerating) {
         if (hallId <= 0) {
             return "invalid_id";
-        }
-        if (isRegenerating && seatDAO.hasFutureBookedShowtimes(hallId)) {
-            return "cannot_regenerate";
         }
         if (seatList == null || seatList.isEmpty()) {
             return "empty_data";

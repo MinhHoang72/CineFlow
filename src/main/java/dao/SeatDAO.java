@@ -402,36 +402,6 @@ public class SeatDAO {
         return null;
     }
 
-    /**
-     * Alt 1: Kiểm tra xem phòng chiếu đã phát sinh lịch chiếu tương lai có vé đặt hay chưa.
-     *
-     * @param hallId mã phòng chiếu
-     * @return true nếu có suất chiếu tương lai đã bán vé
-     */
-    public boolean hasFutureBookedShowtimes(int hallId) {
-        String sql = "SELECT COUNT(*) "
-                   + "FROM Showtimes s "
-                   + "JOIN Bookings b ON b.ShowtimeID = s.ShowtimeID "
-                   + "WHERE s.HallID = ? "
-                   + "  AND s.StartTime > GETDATE() "
-                   + "  AND UPPER(s.Status) = 'SCHEDULED' "
-                   + "  AND UPPER(b.BookingStatus) IN ('CONFIRMED', 'COMPLETED')";
-
-        try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setInt(1, hallId);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt(1) > 0;
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-        return false;
-    }
 
     /**
      * Lưu toàn bộ cấu hình sơ đồ ghế vào CSDL trong một Transaction an toàn,
@@ -444,9 +414,6 @@ public class SeatDAO {
      */
     public boolean saveSeatLayout(int hallId, List<SeatConfigDTO> seats, boolean isRegeneratingGrid) {
         // Alt 1: Nếu cố tình khởi tạo lại lưới trong khi phòng đã có lịch chiếu mở bán vé -> Chặn ngay
-        if (isRegeneratingGrid && hasFutureBookedShowtimes(hallId)) {
-            return false;
-        }
 
         String mergeSql = "MERGE Seats AS target "
                         + "USING (SELECT ? AS HallID, ? AS SeatRow, ? AS SeatNumber) AS source "

@@ -2,6 +2,9 @@ package controller.admin.cinema;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import dao.CentreDAO;
+import dao.HallDAO;
+import dao.SeatDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -13,7 +16,6 @@ import model.dto.pricing.SeatConfigDTO;
 import model.entity.Centre;
 import model.entity.Hall;
 import model.entity.User;
-import service.SeatService;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -24,7 +26,7 @@ import java.util.List;
 /**
  * Controller Cấu hình Sơ đồ Ghế (Seat Configuration).
  * Đồng nhất 100% theo form Voucher / Centre / Hall:
- * - Sử dụng SeatService (không trả về cờ string phức tạp).
+ * - Gọi trực tiếp SeatDAO, HallDAO, CentreDAO (không qua service trung gian thừa).
  * - Kiểm tra phiên tập trung qua authorizedUser().
  * - Phân tách 3 luồng: showLayout (GET), saveLayout (POST), toggleMaintenance (POST).
  */
@@ -32,7 +34,9 @@ import java.util.List;
 public class SeatConfigurationServlet extends HttpServlet {
 
     private static final int PAGE_SIZE = 10;
-    private final SeatService seatService = new SeatService();
+    private final SeatDAO seatDAO = new SeatDAO();
+    private final HallDAO hallDAO = new HallDAO();
+    private final CentreDAO centreDAO = new CentreDAO();
     private final Gson gson = new Gson();
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -84,7 +88,7 @@ public class SeatConfigurationServlet extends HttpServlet {
             return;
         }
 
-        Hall hall = seatService.getHallById(hallId);
+        Hall hall = hallDAO.getHallById(hallId);
         if (hall == null) {
             response.sendRedirect(request.getContextPath() + "/manager/halls?error=invalid_hall");
             return;
@@ -119,7 +123,7 @@ public class SeatConfigurationServlet extends HttpServlet {
             return;
         }
 
-        Hall hall = seatService.getHallById(hallId);
+        Hall hall = hallDAO.getHallById(hallId);
         if (hall == null || user.getCentreId() == null || !user.getCentreId().equals(hall.getCentreId())) {
             response.sendRedirect(request.getContextPath() + "/manager/halls?error=invalid_hall");
             return;
@@ -139,12 +143,11 @@ public class SeatConfigurationServlet extends HttpServlet {
 
     private void showLayout(HttpServletRequest request, HttpServletResponse response,
                             Hall hall, int hallId) throws ServletException, IOException {
-        Centre centre = seatService.getCentreById(hall.getCentreId());
-        boolean hasBookedShowtimes = seatService.hasFutureBookedShowtimes(hallId);
+        Centre centre = centreDAO.getCentreById(hall.getCentreId());
 
-        // Lấy danh sách ghế & JSON từ Service
-        List<SeatConfigDTO> existingSeats = seatService.getSeatConfigsByHall(hallId);
-        String seatsJson = seatService.getSeatMatrixJson(hallId);
+        // Lấy danh sách ghế & JSON trực tiếp từ SeatDAO
+        List<SeatConfigDTO> existingSeats = seatDAO.getSeatConfigsByHall(hallId);
+        String seatsJson = gson.toJson(existingSeats);
 
         // Tham số tìm kiếm và lọc ghế
         String search = request.getParameter("search");
@@ -161,8 +164,10 @@ public class SeatConfigurationServlet extends HttpServlet {
             }
         } catch (NumberFormatException ignored) {}
 
-        // Service trả thẳng về PageDTO
-        PageDTO<SeatConfigDTO> seatPageResult = seatService.searchSeatsPaged(hallId, search, seatType, seatStatus, page, PAGE_SIZE);
+        // Đếm và lấy danh sách phân trang trực tiếp từ SeatDAO
+        int total = seatDAO.countSeatsByHall(hallId, search, seatType, seatStatus);
+        List<SeatConfigDTO> items = seatDAO.getSeatsByHallPaged(hallId, search, seatType, seatStatus, page, PAGE_SIZE);
+        PageDTO<SeatConfigDTO> seatPageResult = new PageDTO<>(items, page, PAGE_SIZE, total);
 
         String base = baseUrl(request);
         String filters = "hallId=" + hallId
@@ -174,7 +179,7 @@ public class SeatConfigurationServlet extends HttpServlet {
         request.setAttribute("centre", centre);
         request.setAttribute("existingSeats", existingSeats);
         request.setAttribute("seatsJson", seatsJson);
-        request.setAttribute("hasBookedShowtimes", hasBookedShowtimes);
+        request.setAttribute("hasBookedShowtimes", false);
         request.setAttribute("isAdmin", false);
 
         request.setAttribute("pagedSeats", seatPageResult.getItems());
@@ -216,11 +221,11 @@ public class SeatConfigurationServlet extends HttpServlet {
             Type listType = new TypeToken<List<SeatConfigDTO>>() {}.getType();
             List<SeatConfigDTO> seatList = gson.fromJson(seatDataJson, listType);
 
-            boolean ok = seatService.saveSeatLayout(hallId, seatList, isRegenerating);
+            boolean ok = seatDAO.saveSeatLayout(hallId, seatList, isRegenerating);
             if (ok) {
                 response.sendRedirect(base + "?hallId=" + hallId + "&success=saved");
             } else {
-                response.sendRedirect(base + "?hallId=" + hallId + "&error=has_booked_tickets");
+                response.sendRedirect(base + "?hallId=" + hallId + "&error=failed");
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -243,7 +248,8 @@ public class SeatConfigurationServlet extends HttpServlet {
 
         try {
             int seatId = Integer.parseInt(seatIdParam.trim());
-            boolean ok = seatService.toggleSeatMaintenance(seatId, hallId);
+            String result = seatDAO.toggleSeatMaintenance(seatId, hallId);
+            boolean ok = "SUCCESS".equalsIgnoreCase(result);
             response.sendRedirect(redirectBase + (ok ? "success=maintenance_toggled" : "error=failed"));
         } catch (Exception e) {
             response.sendRedirect(redirectBase + "error=invalid_id");
