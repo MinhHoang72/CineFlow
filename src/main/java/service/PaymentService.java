@@ -208,7 +208,8 @@ public class PaymentService {
                 return new Outcome(Status.PAID_BUT_SEATS_LOST, bookingId);
             }
 
-            bookingDAO.updateStatus(conn, bookingId, "CONFIRMED");
+            // Nhóm không dùng soát vé: thanh toán xong là đơn hoàn tất
+            bookingDAO.updateStatus(conn, bookingId, "COMPLETED");
             // Bắp nước kèm vé -> PREPARING và trừ kho (gồm cả đơn CANCELLED khi tiền về sau khi hết hạn giữ ghế)
             if (fnbOrderDAO.markBookingOrdersPreparing(conn, bookingId) > 0) {
                 fnbOrderService.deductStock(conn, fnbOrderDAO.getDemandForBooking(conn, bookingId));

@@ -9,9 +9,7 @@ import service.PaymentService;
 import model.dto.booking.FnbMenuItemDTO;
 import model.entity.Booking;
 import model.entity.Showtime;
-import model.entity.Ticket;
 import model.entity.User;
-import utils.QrUtil;
 import utils.WebUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -309,25 +307,16 @@ public class BookingServlet extends HttpServlet {
             resp.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;
         }
-        List<Ticket> tickets = paymentService.getTickets(booking.getId());
         req.setAttribute("booking", booking);
-        req.setAttribute("tickets", tickets);
+        req.setAttribute("tickets", paymentService.getTickets(booking.getId()));
         req.setAttribute("transactions", paymentService.getTransactions(booking.getId()));
         req.setAttribute("isOwner", booking.getUserId() != null && booking.getUserId() == user.getUserId());
-        req.setAttribute("ticketQrs", ticketQrs(tickets));
         req.getRequestDispatcher(VIEW_DIR + "booking/bookingDetail.jsp").forward(req, resp);
     }
 
     private Booking loadOwnBooking(HttpServletRequest req, User user) throws SQLException {
         Integer bookingId = WebUtil.parseInt(req.getParameter("bookingId"));
         return bookingId == null ? null : bookingService.getOwnBooking(bookingId, user.getUserId());
-    }
-
-    /** Anh QR rieng cua tung ve (TicketCode -> data URI), dung chung cho ve dien tu va in ve tai quay. */
-    public static Map<String, String> ticketQrs(List<Ticket> tickets) {
-        Map<String, String> qrs = new LinkedHashMap<>();
-        for (Ticket t : tickets) qrs.put(t.getCode(), QrUtil.toDataUri(t.getQrContent()));
-        return qrs;
     }
 
     /** Cac seatId hop le gui tu form chon ghe. */

@@ -620,7 +620,7 @@ public class ShowtimeDAO {
                 + "FROM Bookings "
                 + "WHERE ShowtimeID = ? "
                 + "AND BookingStatus IN "
-                + "('PENDING','CONFIRMED')";
+                + "('PENDING','CONFIRMED','COMPLETED')";
 
         try (Connection connection = DBContext.getConnection();
              PreparedStatement ps = connection.prepareStatement(sql)) {
