@@ -1,5 +1,5 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ page import="model.entity.Hall,model.entity.Centre,model.dto.pricing.SeatConfigDTO,java.util.List" %>
+<%@ page import="model.entity.Hall,model.entity.Centre,model.dto.pricing.SeatConfigDTO,java.util.*" %>
 <%
     String authRole = (String) session.getAttribute("role");
     if (authRole == null && session.getAttribute("user") instanceof model.entity.User) {
@@ -15,19 +15,77 @@
 
     Hall hall = (Hall) request.getAttribute("hall");
     Centre centre = (Centre) request.getAttribute("centre");
-    String seatsJson = (String) request.getAttribute("seatsJson");
+    List<SeatConfigDTO> existingSeats = (List<SeatConfigDTO>) request.getAttribute("existingSeats");
     Boolean hasBookedShowtimes = (Boolean) request.getAttribute("hasBookedShowtimes");
     if (hasBookedShowtimes == null) {
         hasBookedShowtimes = false;
     }
+//------------------------------------------------search seat-------------------------
+   //tra cứu tọa độ 
+    Map<String, SeatConfigDTO> seatLookup = new HashMap<>();
+    //treeSeat lưu trữ không trùng lặp và theo thứ tựu , row set lưu số hàng A,B,C
+    Set<String> rowSet = new TreeSet<>();
+    // số cột lớn nhất 
+    int maxCols = 0;
+// check seat từ DB rỗng 
+    if (existingSeats != null && !existingSeats.isEmpty()) {
+        for (SeatConfigDTO s : existingSeats) {
+            String r = s.getSeatRow().toUpperCase();
+            int c = s.getSeatNumber();
+            rowSet.add(r);
+//A_1,seat
+            seatLookup.put(r + "_" + c, s);
+            //if khi cột lớn hơn max
+            if (c > maxCols) {
+                maxCols = c;
+            }
+        }
+    } else {
+        // Phòng mới chưa có ghế trong DB -> Mặc định 6 hàng x 10 cột tạo mặc định 5 hàng từ A đến F
+        for (int i = 0; i < 6; i++) {
+            rowSet.add(String.valueOf((char) ('A' + i)));
+        }
+        //defautl mỗi hàng 10 cột 
+        maxCols = 10;
+    }
+// đổi TreeSet-> ArrayList
+    List<String> rowList = new ArrayList<>(rowSet);
+
+// thống kê // total row=treeseat.size()*colum
+    int countTotalCells = rowList.size() * maxCols;
+    int countStandard = 0, countVip = 0, countSweetbox = 0, countMaintenance = 0, countEmpty = 0;
+    for (String r : rowList) {
+        for (int c = 1; c <= maxCols; c++) {
+        //seatLookup hash map(hàng_cột, object ),nếu DB không lưu ô này thì null ,get này lấy key trả về seat 
+            SeatConfigDTO cell = seatLookup.get(r + "_" + c);
+            //type hạng ghế STANDARD/VIP/SWEETBOX
+            String type = (cell != null && cell.getSeatType() != null) ? cell.getSeatType().toUpperCase() : "STANDARD";
+            //status trạn thái hoạt động của vị trí đo "UNAVAILABLE": ô trống lối đi 
+            String status = (cell != null && cell.getStatus() != null)
+                    ? cell.getStatus().toUpperCase()
+                    : ((existingSeats == null || existingSeats.isEmpty()) ? "AVAILABLE" : "UNAVAILABLE");
+            //lối đi 
+            if ("UNAVAILABLE".equals(status)) {
+                countEmpty++;
+                //bảo trì
+            } else if ("MAINTENANCE".equals(status)) {
+                countMaintenance++;
+            } else if ("VIP".equals(type)) {
+                countVip++;
+            } else if ("SWEETBOX".equals(type)) {
+                countSweetbox++;
+            } else {
+                countStandard++;
+            }
+        }
+    }
+    int availableCapacity = countStandard + countVip + countSweetbox;
 
     List<SeatConfigDTO> pagedSeats = (List<SeatConfigDTO>) request.getAttribute("pagedSeats");
     Integer currentPage = (Integer) request.getAttribute("currentPage");
     if (currentPage == null) currentPage = 1;
     Integer pageSize = (Integer) request.getAttribute("pageSize");
     if (pageSize == null) pageSize = 12;
-    Integer totalPages = (Integer) request.getAttribute("totalPages");
-    if (totalPages == null) totalPages = 1;
     Integer totalFilteredSeats = (Integer) request.getAttribute("totalFilteredSeats");
     if (totalFilteredSeats == null) totalFilteredSeats = 0;
 
@@ -156,26 +214,28 @@
                     <h3>
                         <span>📐</span> Khởi tạo lưới sơ đồ
                     </h3>
-                    <div class="cf-grid-form">
+                    <form class="cf-grid-form" method="POST" action="${pageContext.request.contextPath}/manager/seat-config" onsubmit="return checkGridInput();">
+                        <input type="hidden" name="action" value="generateGrid">
+                        <input type="hidden" name="hallId" value="<%= hall != null ? hall.getHallId() : 0 %>">
                         <div class="cf-form-inline">
                             <label>Số hàng (A-Z):</label>
-                            <input type="number" id="gridRowsInput" min="1" max="26" value="6" <%= hasBookedShowtimes ? "disabled" : "" %>>
+                            <input type="number" id="gridRowsInput" name="rows" min="1" max="26" value="<%= rowList.size() %>" <%= hasBookedShowtimes ? "disabled" : "" %>>
                         </div>
                         <div class="cf-form-inline">
                             <label>Số ghế / hàng:</label>
-                            <input type="number" id="gridColsInput" min="1" max="30" value="10" <%= hasBookedShowtimes ? "disabled" : "" %>>
+                            <input type="number" id="gridColsInput" name="cols" min="1" max="30" value="<%= maxCols %>" <%= hasBookedShowtimes ? "disabled" : "" %>>
                         </div>
-                        <button type="button" class="cf-btn cf-btn-secondary" onclick="handleGenerateGridClick()" <%= hasBookedShowtimes ? "disabled style='opacity: 0.5; cursor: not-allowed;'" : "" %>>
+                        <button type="submit" class="cf-btn cf-btn-secondary" <%= hasBookedShowtimes ? "disabled style='opacity: 0.5; cursor: not-allowed;'" : "" %>>
                             Tạo lưới sơ đồ
                         </button>
-                    </div>
+                    </form>
                     <% if (hasBookedShowtimes) { %>
                         <p style="font-size: 12px; color: #B45309; margin: 8px 0 0 0;">
                             * Lưu ý: Không được phép tạo lại lưới khi phòng đang có suất chiếu đã bán vé.
                         </p>
                     <% } else { %>
                         <p style="font-size: 12px; color: #64748B; margin: 8px 0 0 0;">
-                            * Nhập số hàng và cột để tạo lưới ô ban đầu (mặc định toàn bộ là ghế Standard).
+                            * Nhập số hàng và cột để tạo mới toàn bộ lưới ghế (mặc định toàn bộ là Standard).
                         </p>
                     <% } %>
                 </div>
@@ -186,23 +246,23 @@
                         <span>🎨</span> Công cụ phân hạng &amp; Bảo trì
                     </h3>
                     <div class="cf-tool-palette">
-                        <button type="button" class="cf-tool-btn active" data-tool="STANDARD" onclick="selectTool('STANDARD', this)">
+                        <button type="button" class="cf-tool-btn active" data-tool="STANDARD" onclick="chooseTool('STANDARD', this)">
                             <span class="cf-tool-swatch standard"></span>
                             Standard (Thường)
                         </button>
-                        <button type="button" class="cf-tool-btn" data-tool="VIP" onclick="selectTool('VIP', this)">
+                        <button type="button" class="cf-tool-btn" data-tool="VIP" onclick="chooseTool('VIP', this)">
                             <span class="cf-tool-swatch vip"></span>
                             VIP
                         </button>
-                        <button type="button" class="cf-tool-btn" data-tool="SWEETBOX" onclick="selectTool('SWEETBOX', this)">
+                        <button type="button" class="cf-tool-btn" data-tool="SWEETBOX" onclick="chooseTool('SWEETBOX', this)">
                             <span class="cf-tool-swatch sweetbox"></span>
                             Sweetbox (Đôi)
                         </button>
-                        <button type="button" class="cf-tool-btn" data-tool="MAINTENANCE" onclick="selectTool('MAINTENANCE', this)">
+                        <button type="button" class="cf-tool-btn" data-tool="MAINTENANCE" onclick="chooseTool('MAINTENANCE', this)">
                             <span class="cf-tool-swatch maintenance"></span>
                             🔧 Khóa bảo trì
                         </button>
-                        <button type="button" class="cf-tool-btn" data-tool="EMPTY" onclick="selectTool('EMPTY', this)">
+                        <button type="button" class="cf-tool-btn" data-tool="EMPTY" onclick="chooseTool('EMPTY', this)">
                             <span class="cf-tool-swatch empty"></span>
                             Lối đi / Trống
                         </button>
@@ -213,79 +273,151 @@
                 </div>
             </div>
 
-            <!-- Thanh thống kê sức chứa khả dụng thực tế (Live Capacity Bar) -->
+            <!-- Thanh thống kê sức chứa khả dụng thực tế -->
             <div class="cf-capacity-summary">
                 <div class="cf-capacity-stats">
                     <div class="cf-stat-item">
                         <span>Tổng ô:</span>
-                        <span class="cf-stat-pill" id="statTotalCells">0</span>
+                        <span class="cf-stat-pill" id="statTotalCells"><%= countTotalCells %></span>
                     </div>
                     <div class="cf-stat-item">
                         <span>Ghế Standard:</span>
-                        <span class="cf-stat-pill standard" id="statStandard">0</span>
+                        <span class="cf-stat-pill standard" id="statStandard"><%= countStandard %></span>
                     </div>
                     <div class="cf-stat-item">
                         <span>Ghế VIP:</span>
-                        <span class="cf-stat-pill vip" id="statVip">0</span>
+                        <span class="cf-stat-pill vip" id="statVip"><%= countVip %></span>
                     </div>
                     <div class="cf-stat-item">
                         <span>Ghế Sweetbox:</span>
-                        <span class="cf-stat-pill sweetbox" id="statSweetbox">0</span>
+                        <span class="cf-stat-pill sweetbox" id="statSweetbox"><%= countSweetbox %></span>
                     </div>
                     <div class="cf-stat-item">
                         <span>🔧 Ghế bảo trì:</span>
-                        <span class="cf-stat-pill maintenance" id="statMaintenance">0</span>
+                        <span class="cf-stat-pill maintenance" id="statMaintenance"><%= countMaintenance %></span>
                     </div>
                     <div class="cf-stat-item">
                         <span>Lối đi / Trống:</span>
-                        <span class="cf-stat-pill empty" id="statEmpty">0</span>
+                        <span class="cf-stat-pill empty" id="statEmpty"><%= countEmpty %></span>
                     </div>
                 </div>
 
                 <div class="cf-capacity-highlight">
                     <span>Sức chứa khả dụng thực tế:</span>
-                    <strong id="statAvailableCapacity">0</strong>
+                    <strong id="statAvailableCapacity"><%= availableCapacity %></strong>
                     <span style="font-size: 13px; color: #64748B;">ghế mở bán</span>
                 </div>
             </div>
 
-            <!-- Vùng Canvas Sơ đồ ghế (Seat Map Canvas) -->
-            <div class="cf-seat-canvas-wrapper">
-                <!-- Màn hình chiếu -->
-                <div class="cf-screen">
-                    <div class="cf-screen-label">MÀN HÌNH CHIẾU</div>
-                </div>
-
-                <!-- Lưới ma trận ghế -->
-                <div id="seatGridContainer" class="cf-seat-grid">
-                    <!-- Được render động bởi JavaScript -->
-                </div>
-
-                <!-- Chú giải sơ đồ -->
-                <div class="cf-legend">
-                    <div class="cf-legend-item">
-                        <span class="cf-legend-box standard"></span> Ghế Standard (Thường)
-                    </div>
-                    <div class="cf-legend-item">
-                        <span class="cf-legend-box vip"></span> Ghế VIP
-                    </div>
-                    <div class="cf-legend-item">
-                        <span class="cf-legend-box sweetbox"></span> Ghế Sweetbox (Đôi)
-                    </div>
-                    <div class="cf-legend-item">
-                        <span class="cf-legend-box maintenance"></span> Ghế Disable / Đang bảo trì
-                    </div>
-                    <div class="cf-legend-item">
-                        <span class="cf-legend-box empty"></span> Ô lối đi / Trống
-                    </div>
-                </div>
-            </div>
-
-            <!-- Form ẩn lưu dữ liệu cấu hình -->
+<!-- Form lưu toàn bộ sơ đồ ghế (JSP vẽ thẳng các ô ghế và input bên trong) -->
             <form id="saveLayoutForm" method="POST" action="${pageContext.request.contextPath}/manager/seat-config">
                 <input type="hidden" name="hallId" value="<%= hall != null ? hall.getHallId() : 0 %>">
-                <input type="hidden" name="isRegenerating" id="isRegeneratingInput" value="false">
-                <input type="hidden" name="seatData" id="seatDataInput" value="">
+
+                <!-- Vùng Canvas Sơ đồ ghế -->
+                <div class="cf-seat-canvas-wrapper">
+                    <!-- Màn hình chiếu -->
+                    <div class="cf-screen">
+                        <div class="cf-screen-label">MÀN HÌNH CHIẾU</div>
+                    </div>
+
+<!-- Lưới sơ đồ ghế vẽ trực tiếp bằng Java/JSP -->
+                    <div id="seatGridContainer" class="cf-seat-grid">
+               <%-- lặp từng hàng --%>
+                        <% for (String r : rowList) {
+                        //khởi tạo biến đếm ghế
+                            int seatIndexInRow = 0;
+                        %>
+                        <%-- 1 row--%>
+                        <div class="cf-grid-row">
+                            <%-- in tên hàng bên trái --%>
+                            <span class="cf-row-label"><%= r %></span>
+                <%-- chạy cột ở mỗi hàng --%>
+                            <% for (int c = 1; c <= maxCols; c++) {
+                            //tra cứu trong hash map để lấy cell
+                                SeatConfigDTO cell = seatLookup.get(r + "_" + c);
+                                //lấy type ghế 
+                                String type = (cell != null && cell.getSeatType() != null) ? cell.getSeatType().toUpperCase() : "STANDARD";
+                                //lấy status ghế 
+                                String status = (cell != null && cell.getStatus() != null)
+                                        ? cell.getStatus().toUpperCase()
+                                        : ((existingSeats == null || existingSeats.isEmpty()) ? "AVAILABLE" : "UNAVAILABLE");
+                               // biến lưu danh sách cho css ghế
+                                String cssClass = "cf-seat-box";
+                                //biến lưu trên mặt ô ghế
+                                String displayText;
+                                String titleText;
+                                String fallbackLabel;
+                                  //gắn lối trống -       
+                                if ("UNAVAILABLE".equals(status)) {
+                                    cssClass += " EMPTY";
+                                    displayText = "—";
+                                    fallbackLabel = r + c;
+                                    titleText = "Hàng " + r + " - Lối đi / Trống (Cột " + c + ")";
+                                } else {
+                                    seatIndexInRow++;
+                                    //ghép tên hàng và số ghế thật vào ghế
+                                    String seatLabel = r + seatIndexInRow;
+                                    displayText = seatLabel;
+                                    //màu
+                                    fallbackLabel = seatLabel;
+                                   //nếu cột chẵn thì ghép bên phải , lẻ thì ghép bên trái 
+                                    if ("SWEETBOX".equals(type)) {
+                                        boolean isLeft = (c % 2 == 1);
+                                        int partnerC = isLeft ? (c + 1) : (c - 1);
+                                        SeatConfigDTO partner = seatLookup.get(r + "_" + partnerC);
+                                        //cùng loại ghế 
+                                        if (partner != null && "SWEETBOX".equalsIgnoreCase(partner.getSeatType()) && !"UNAVAILABLE".equalsIgnoreCase(partner.getStatus())) {
+                                            cssClass += isLeft ? " sweetbox-left" : " sweetbox-right";
+                                        }
+                                    }
+
+                                    if ("MAINTENANCE".equals(status)) {
+                                        cssClass += " " + type + " MAINTENANCE";
+                                        titleText = seatLabel + " (Bảo trì / Hỏng - " + type + ")";
+                                    } else {
+                                        cssClass += " " + type;
+                                        titleText = seatLabel + " (" + type + ")";
+                                    }
+                                }
+                            %>
+                            <div class="<%= cssClass %>"
+                                 id="seat-<%= r %>-<%= c %>"
+                                 data-row="<%= r %>"
+                                 data-col="<%= c %>"
+                                 data-label="<%= fallbackLabel %>"
+                                 title="<%= titleText %>"
+                                 onclick="clickSeat(this)">
+                                <span class="cf-seat-label"><%= displayText %></span>
+                                <input type="hidden" name="seatRow" value="<%= r %>">
+                                <input type="hidden" name="seatNumber" value="<%= c %>">
+                                <input type="hidden" name="seatType" class="inp-type" value="<%= type %>">
+                                <input type="hidden" name="status" class="inp-status" value="<%= status %>">
+                            </div>
+                            <% } %>
+                            <span class="cf-row-label"><%= r %></span>
+                        </div>
+                        <% } %>
+                    </div>
+
+                    <!-- Chú giải sơ đồ -->
+                    <div class="cf-legend">
+                        <div class="cf-legend-item">
+                            <span class="cf-legend-box standard"></span> Ghế Standard (Thường)
+                        </div>
+                        <div class="cf-legend-item">
+                            <span class="cf-legend-box vip"></span> Ghế VIP
+                        </div>
+                        <div class="cf-legend-item">
+                            <span class="cf-legend-box sweetbox"></span> Ghế Sweetbox (Đôi)
+                        </div>
+                        <div class="cf-legend-item">
+                            <span class="cf-legend-box maintenance"></span> Ghế Disable / Đang bảo trì
+                        </div>
+                        <div class="cf-legend-item">
+                            <span class="cf-legend-box empty"></span> Ô lối đi / Trống
+                        </div>
+                    </div>
+                </div>
 
                 <div class="cf-footer-actions">
                     <a href="${pageContext.request.contextPath}/manager/halls<%= isAdmin && centre != null ? "?centreId=" + centre.getCentreId() : "" %>"
@@ -293,7 +425,7 @@
                         Hủy thay đổi
                     </a>
 
-                    <button type="button" class="cf-btn cf-btn-primary" onclick="submitSeatConfiguration()" style="padding: 10px 24px; font-size: 15px;">
+                    <button type="submit" class="cf-btn cf-btn-primary" style="padding: 10px 24px; font-size: 15px;">
                         💾 Lưu cấu hình sơ đồ ghế
                     </button>
                 </div>
@@ -451,44 +583,7 @@
                         <div class="cf-pagination-info">
                             Hiển thị <strong>${result.from} - ${result.to}</strong> trên tổng số <strong>${result.total}</strong> vị trí ghế
                         </div>
-                        <% if (totalPages > 1) { %>
-                        <div class="cf-pagination-controls">
-                            <!-- Nút trang trước (Previous) -->
-                            <% if (currentPage > 1) { %>
-                                <a href="${pagerBase}<%= currentPage - 1 %>" 
-                                   class="cf-page-btn" title="Trang trước">«</a>
-                            <% } else { %>
-                                <span class="cf-page-btn disabled" title="Trang trước">«</span>
-                            <% } %>
-
-                            <!-- Danh sách các số trang -->
-                            <% for (int i = 1; i <= totalPages; i++) { 
-                                if (i == 1 || i == totalPages || Math.abs(i - currentPage) <= 2) {
-                            %>
-                                <% if (i == currentPage) { %>
-                                    <span class="cf-page-btn active"><%= i %></span>
-                                <% } else { %>
-                                    <a href="${pagerBase}<%= i %>" 
-                                       class="cf-page-btn"><%= i %></a>
-                                <% } %>
-                            <% 
-                                } else if (i == currentPage - 3 || i == currentPage + 3) { 
-                            %>
-                                <span class="cf-page-ellipsis">...</span>
-                            <% 
-                                }
-                            } 
-                            %>
-
-                            <!-- Nút trang sau (Next) -->
-                            <% if (currentPage < totalPages) { %>
-                                <a href="${pagerBase}<%= currentPage + 1 %>" 
-                                   class="cf-page-btn" title="Trang sau">»</a>
-                            <% } else { %>
-                                <span class="cf-page-btn disabled" title="Trang sau">»</span>
-                            <% } %>
-                        </div>
-                        <% } %>
+                        ${result.renderPager(pagerBase)}
                     </div>
                     <% } %>
                 </div>
@@ -498,301 +593,141 @@
 </div>
 
 <!-- ============================================================== -->
-<!-- JAVASCRIPT: XỬ LÝ MA TRẬN SƠ ĐỒ GHẾ & TÍNH TOÁN REALTIME -->
+<!-- JAVASCRIPT ĐƠN GIẢN: TÔ MÀU GHẾ & ĐẾM SỨC CHỨA TRỰC TIẾP       -->
 <!-- ============================================================== -->
 <script>
-    // Dữ liệu ghế hiện có từ Server
-    var existingSeatsData = <%= seatsJson != null ? seatsJson : "[]" %>;
-    var hasBookedShowtimes = <%= hasBookedShowtimes %>;
-    var currentTool = 'STANDARD';
-    var isRegeneratingGridFlag = false;
+    var selectedTool = 'STANDARD';
+    var maxCols = <%= maxCols %>;
 
-    // Lưu trữ ma trận hiện tại: { "A": { 1: { type: "STANDARD", status: "AVAILABLE" }, ... } }
-    var seatMatrix = {};
-    var rowKeys = [];
-    var maxCols = 0;
-
-    // Ký tự hàng A, B, C...
-    function getRowLetter(index) {
-        return String.fromCharCode(65 + index); // 0 -> A, 1 -> B...
-    }
-
-    // Chọn công cụ từ Palette
-    function selectTool(toolName, btnElement) {
-        currentTool = toolName;
-        document.querySelectorAll('.cf-tool-btn').forEach(function(b) {
-            b.classList.remove('active');
+    // 1. Chọn công cụ trên Palette
+    function chooseTool(toolName, btnElement) {
+        selectedTool = toolName;
+        document.querySelectorAll('.cf-tool-btn').forEach(function (btn) {
+            btn.classList.remove('active');
         });
         if (btnElement) {
             btnElement.classList.add('active');
         }
     }
 
-    // Khởi tạo ma trận từ dữ liệu có sẵn hoặc mặc định
-    function initMatrix() {
-        if (existingSeatsData && existingSeatsData.length > 0) {
-            // Load từ DB
-            existingSeatsData.forEach(function(s) {
-                var r = s.seatRow.toUpperCase();
-                var c = parseInt(s.seatNumber);
-                if (!seatMatrix[r]) {
-                    seatMatrix[r] = {};
-                }
-                seatMatrix[r][c] = {
-                    type: s.seatType ? s.seatType.toUpperCase() : "STANDARD",
-                    status: s.status ? s.status.toUpperCase() : "AVAILABLE"
-                };
+    // Hàm phụ: cập nhật input ẩn và class CSS của 1 ô ghế
+    function applySeatStyle(box, type, status, pairClass) {
+        box.querySelector('.inp-type').value = type;
+        box.querySelector('.inp-status').value = status;
+        box.className = 'cf-seat-box';
 
-                if (c > maxCols) maxCols = c;
-            });
-
-            rowKeys = Object.keys(seatMatrix).sort();
-            document.getElementById('gridRowsInput').value = rowKeys.length;
-            document.getElementById('gridColsInput').value = maxCols;
+        if (status === 'UNAVAILABLE') {
+            box.classList.add('EMPTY');
+        } else if (status === 'MAINTENANCE') {
+            box.classList.add(type, 'MAINTENANCE');
         } else {
-            // Mặc định sinh lưới 6x10
-            generateNewGrid(6, 10);
+            box.classList.add(type);
         }
-
-        renderGrid();
+        if (pairClass && status !== 'UNAVAILABLE') {
+            box.classList.add(pairClass);
+        }
     }
 
-    // Xử lý khi nhấn nút Generate Grid
-    function handleGenerateGridClick() {
-        if (hasBookedShowtimes) {
-            alert("CẢNH BÁO: Không thể tạo lại cấu trúc lưới ghế vì phòng chiếu đang có lịch chiếu đã mở bán vé.");
-            return;
+    // 2. Xử lý khi click trực tiếp vào 1 ô ghế
+    function clickSeat(seatBox) {
+        var row = seatBox.dataset.row;
+        var col = parseInt(seatBox.dataset.col, 10);
+        var type = seatBox.querySelector('.inp-type').value;
+        var status = seatBox.querySelector('.inp-status').value;
+        var partnerCol = (col % 2 === 1) ? (col + 1) : (col - 1);
+        var partnerBox = document.getElementById('seat-' + row + '-' + partnerCol);
+
+        if (selectedTool === 'EMPTY') {
+            if (status === 'UNAVAILABLE') {
+                applySeatStyle(seatBox, 'STANDARD', 'AVAILABLE');
+            } else {
+                applySeatStyle(seatBox, 'STANDARD', 'UNAVAILABLE');
+                if (partnerBox) partnerBox.classList.remove('sweetbox-left', 'sweetbox-right');
+            }
+        } else if (selectedTool === 'MAINTENANCE') {
+            var pairClass = seatBox.classList.contains('sweetbox-left') ? 'sweetbox-left'
+                          : (seatBox.classList.contains('sweetbox-right') ? 'sweetbox-right' : '');
+            var nextStatus = (status === 'MAINTENANCE') ? 'AVAILABLE' : 'MAINTENANCE';
+            applySeatStyle(seatBox, type, nextStatus, pairClass);
+        } else if (selectedTool === 'SWEETBOX') {
+            var leftCol = (col % 2 === 1) ? col : (col - 1);
+            var rightCol = leftCol + 1;
+            if (rightCol <= maxCols) {
+                var leftBox = document.getElementById('seat-' + row + '-' + leftCol);
+                var rightBox = document.getElementById('seat-' + row + '-' + rightCol);
+                var bothSweet = leftBox.querySelector('.inp-type').value === 'SWEETBOX'
+                             && rightBox.querySelector('.inp-type').value === 'SWEETBOX'
+                             && leftBox.querySelector('.inp-status').value !== 'UNAVAILABLE'
+                             && rightBox.querySelector('.inp-status').value !== 'UNAVAILABLE';
+                if (bothSweet) {
+                    applySeatStyle(leftBox, 'STANDARD', 'AVAILABLE');
+                    applySeatStyle(rightBox, 'STANDARD', 'AVAILABLE');
+                } else {
+                    applySeatStyle(leftBox, 'SWEETBOX', 'AVAILABLE', 'sweetbox-left');
+                    applySeatStyle(rightBox, 'SWEETBOX', 'AVAILABLE', 'sweetbox-right');
+                }
+            }
+        } else {
+            applySeatStyle(seatBox, selectedTool, 'AVAILABLE');
+            if (partnerBox) partnerBox.classList.remove('sweetbox-left', 'sweetbox-right');
         }
 
-        // Bo confirm tao lai luoi
+        updateStats();
+    }
 
-        var numRows = parseInt(document.getElementById('gridRowsInput').value) || 6;
-        var numCols = parseInt(document.getElementById('gridColsInput').value) || 10;
+    // 3. Đếm lại số lượng ghế & đánh số thứ tự A1, A2... trên giao diện
+    function updateStats() {
+        var total = 0, std = 0, vip = 0, sweet = 0, maint = 0, empty = 0;
 
+        document.querySelectorAll('.cf-grid-row').forEach(function (rowEl) {
+            var seatNum = 0;
+            rowEl.querySelectorAll('.cf-seat-box').forEach(function (box) {
+                total++;
+                var row = box.dataset.row;
+                var type = box.querySelector('.inp-type').value;
+                var status = box.querySelector('.inp-status').value;
+                var labelSpan = box.querySelector('.cf-seat-label');
+
+                if (status === 'UNAVAILABLE') {
+                    empty++;
+                    labelSpan.innerText = '—';
+                } else {
+                    seatNum++;
+                    labelSpan.innerText = row + seatNum;
+                    if (status === 'MAINTENANCE') maint++;
+                    else if (type === 'VIP') vip++;
+                    else if (type === 'SWEETBOX') sweet++;
+                    else std++;
+                }
+            });
+        });
+
+        document.getElementById('statTotalCells').innerText = total;
+        document.getElementById('statStandard').innerText = std;
+        document.getElementById('statVip').innerText = vip;
+        document.getElementById('statSweetbox').innerText = sweet;
+        document.getElementById('statMaintenance').innerText = maint;
+        document.getElementById('statEmpty').innerText = empty;
+        document.getElementById('statAvailableCapacity').innerText = std + vip + sweet;
+    }
+
+    // 4. Kiểm tra số hàng/cột trước khi gửi form Tạo lưới mới
+    function checkGridInput() {
+        var numRows = parseInt(document.getElementById('gridRowsInput').value, 10) || 0;
+        var numCols = parseInt(document.getElementById('gridColsInput').value, 10) || 0;
         if (numRows < 1 || numRows > 26) {
             alert("Số hàng phải từ 1 đến 26 (tương ứng A-Z)!");
-            return;
+            return false;
         }
         if (numCols < 1 || numCols > 30) {
             alert("Số ghế mỗi hàng phải từ 1 đến 30!");
-            return;
+            return false;
         }
-
-        isRegeneratingGridFlag = true;
-        generateNewGrid(numRows, numCols);
-        renderGrid();
+        return true;
     }
 
-    // Tạo mới cấu trúc lưới
-    function generateNewGrid(numRows, numCols) {
-        seatMatrix = {};
-        rowKeys = [];
-        maxCols = numCols;
-
-        for (var i = 0; i < numRows; i++) {
-            var r = getRowLetter(i);
-            rowKeys.push(r);
-            seatMatrix[r] = {};
-
-            for (var c = 1; c <= numCols; c++) {
-                seatMatrix[r][c] = {
-                    type: 'STANDARD',
-                    status: 'AVAILABLE'
-                };
-            }
-        }
-    }
-
-    // Click vào một ô ghế trên lưới để áp dụng công cụ hiện tại
-    function handleCellClick(row, col) {
-        var cell = seatMatrix[row][col];
-        if (!cell) {
-            cell = { type: 'STANDARD', status: 'AVAILABLE' };
-            seatMatrix[row][col] = cell;
-        }
-
-        if (currentTool === 'EMPTY') {
-            // Chuyển sang ô trống / lối đi
-            if (cell.status === 'UNAVAILABLE') {
-                // Nếu đang là lối đi, click lần nữa chuyển về Standard
-                cell.status = 'AVAILABLE';
-                cell.type = 'STANDARD';
-            } else {
-                cell.status = 'UNAVAILABLE';
-            }
-        } else if (currentTool === 'MAINTENANCE') {
-            // Chuyển sang khóa bảo trì (hoặc mở lại nếu đang bảo trì)
-            if (cell.status === 'MAINTENANCE') {
-                cell.status = 'AVAILABLE';
-            } else {
-                cell.status = 'MAINTENANCE';
-            }
-        } else if (currentTool === 'SWEETBOX') {
-            // Ghế đôi theo block cố định: (1-2), (3-4), (5-6), (7-8), (9-10)...
-            var leftCol = (col % 2 === 1) ? col : (col - 1);
-            var rightCol = leftCol + 1;
-
-            if (rightCol <= maxCols) {
-                // Kiểm tra xem cặp này hiện tại đã là SWEETBOX chưa
-                var isCurrentSweet = seatMatrix[row][leftCol] && seatMatrix[row][leftCol].type === 'SWEETBOX'
-                                  && seatMatrix[row][rightCol] && seatMatrix[row][rightCol].type === 'SWEETBOX';
-
-                // Nếu đang là SWEETBOX mà bấm tiếp cọ SWEETBOX -> chuyển về STANDARD
-                var targetType = isCurrentSweet ? 'STANDARD' : 'SWEETBOX';
-
-                if (!seatMatrix[row][leftCol]) seatMatrix[row][leftCol] = { type: targetType, status: 'AVAILABLE' };
-                else { seatMatrix[row][leftCol].type = targetType; seatMatrix[row][leftCol].status = 'AVAILABLE'; }
-
-                if (!seatMatrix[row][rightCol]) seatMatrix[row][rightCol] = { type: targetType, status: 'AVAILABLE' };
-                else { seatMatrix[row][rightCol].type = targetType; seatMatrix[row][rightCol].status = 'AVAILABLE'; }
-            }
-        } else {
-            // Gán phân loại ghế: STANDARD, VIP
-            cell.type = currentTool;
-            cell.status = 'AVAILABLE';
-        }
-
-        renderGrid();
-    }
-
-    // Render lại giao diện lưới ghế và tính toán thống kê
-    function renderGrid() {
-        var container = document.getElementById('seatGridContainer');
-        container.innerHTML = '';
-
-        var countTotalCells = 0;
-        var countStandard = 0;
-        var countVip = 0;
-        var countSweetbox = 0;
-        var countMaintenance = 0;
-        var countEmpty = 0;
-
-        rowKeys.forEach(function(r) {
-            var rowDiv = document.createElement('div');
-            rowDiv.className = 'cf-grid-row';
-
-            // Nhãn hàng bên trái
-            var leftLabel = document.createElement('span');
-            leftLabel.className = 'cf-row-label';
-            leftLabel.innerText = r;
-            rowDiv.appendChild(leftLabel);
-
-            // Các ô ghế trong hàng: Đánh số tuần tự A1, A2, A3... khi bỏ ghế trống (lối đi)
-            var seatIndexInRow = 0;
-            for (var c = 1; c <= maxCols; c++) {
-                countTotalCells++;
-                var cell = seatMatrix[r] ? seatMatrix[r][c] : null;
-                if (!cell) {
-                    cell = { type: 'STANDARD', status: 'UNAVAILABLE' };
-                }
-
-                var seatBox = document.createElement('div');
-                seatBox.className = 'cf-seat-box';
-
-                // Xác định class hiển thị & đánh số ghế tuần tự
-                if (cell.status === 'UNAVAILABLE') {
-                    seatBox.classList.add('EMPTY');
-                    seatBox.innerText = '—';
-                    seatBox.title = 'Hàng ' + r + ' - Lối đi / Trống (Cột ' + c + ')';
-                    countEmpty++;
-                } else {
-                    seatIndexInRow++;
-                    var seatLabel = r + seatIndexInRow;
-
-                    if (cell.type === 'SWEETBOX') {
-                        var isLeftInPair = (c % 2 === 1);
-                        var partnerC = isLeftInPair ? (c + 1) : (c - 1);
-                        var partnerCell = (partnerC <= maxCols && seatMatrix[r]) ? seatMatrix[r][partnerC] : null;
-
-                        if (partnerCell && partnerCell.type === 'SWEETBOX' && partnerCell.status !== 'UNAVAILABLE') {
-                            if (isLeftInPair) {
-                                seatBox.classList.add('sweetbox-left');
-                            } else {
-                                seatBox.classList.add('sweetbox-right');
-                            }
-                        }
-                    }
-
-                    if (cell.status === 'MAINTENANCE') {
-                        seatBox.classList.add(cell.type, 'MAINTENANCE');
-                        seatBox.innerText = seatLabel;
-                        seatBox.title = seatLabel + ' (Bảo trì / Hỏng - ' + cell.type + ')';
-                        countMaintenance++;
-                    } else {
-                        seatBox.classList.add(cell.type);
-                        seatBox.innerText = seatLabel;
-                        seatBox.title = seatLabel + ' (' + cell.type + ')';
-
-                        if (cell.type === 'VIP') countVip++;
-                        else if (cell.type === 'SWEETBOX') countSweetbox++;
-                        else countStandard++;
-                    }
-                }
-
-                (function(row, col) {
-                    seatBox.onclick = function() {
-                        handleCellClick(row, col);
-                    };
-                })(r, c);
-
-                rowDiv.appendChild(seatBox);
-            }
-
-            // Nhãn hàng bên phải
-            var rightLabel = document.createElement('span');
-            rightLabel.className = 'cf-row-label';
-            rightLabel.innerText = r;
-            rowDiv.appendChild(rightLabel);
-
-            container.appendChild(rowDiv);
-        });
-
-        // Tính toán Sức chứa khả dụng thực tế:
-        // Total Capacity = Tổng ô - Bảo trì - Lối đi
-        var availableCapacity = countStandard + countVip + countSweetbox;
-
-        document.getElementById('statTotalCells').innerText = countTotalCells;
-        document.getElementById('statStandard').innerText = countStandard;
-        document.getElementById('statVip').innerText = countVip;
-        document.getElementById('statSweetbox').innerText = countSweetbox;
-        document.getElementById('statMaintenance').innerText = countMaintenance;
-        document.getElementById('statEmpty').innerText = countEmpty;
-        document.getElementById('statAvailableCapacity').innerText = availableCapacity;
-    }
-
-    // Submit lưu cấu hình sơ đồ ghế
-    function submitSeatConfiguration() {
-        var seatList = [];
-
-        rowKeys.forEach(function(r) {
-            for (var c = 1; c <= maxCols; c++) {
-                var cell = seatMatrix[r] ? seatMatrix[r][c] : null;
-                if (cell) {
-                    seatList.push({
-                        seatRow: r,
-                        seatNumber: c,
-                        seatType: cell.type || "STANDARD",
-                        status: cell.status || "AVAILABLE"
-                    });
-                }
-            }
-        });
-
-        if (seatList.length === 0) {
-            alert("Sơ đồ chưa có ghế nào. Vui lòng bấm Tạo lưới sơ đồ trước!");
-            return;
-        }
-
-        document.getElementById('isRegeneratingInput').value = isRegeneratingGridFlag ? "true" : "false";
-        document.getElementById('seatDataInput').value = JSON.stringify(seatList);
-        document.getElementById('saveLayoutForm').submit();
-    }
-
-    // Khởi chạy khi tải trang
+    // 5. Tự động ẩn thông báo Alert sau 3.5 giây
     document.addEventListener("DOMContentLoaded", function () {
-        initMatrix();
-
-        // Tự động ẩn thông báo Alert sau 3.5 giây
         document.querySelectorAll(".cf-alert").forEach(function (alert) {
             setTimeout(function () {
                 alert.style.transition = "opacity 0.4s ease";

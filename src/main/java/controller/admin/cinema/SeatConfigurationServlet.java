@@ -1,7 +1,5 @@
 package controller.admin.cinema;
 
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import dao.CentreDAO;
 import dao.HallDAO;
 import dao.SeatDAO;
@@ -18,17 +16,17 @@ import model.entity.Hall;
 import model.entity.User;
 
 import java.io.IOException;
-import java.lang.reflect.Type;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Controller Cấu hình Sơ đồ Ghế (Seat Configuration).
- * Đồng nhất 100% theo form Voucher / Centre / Hall:
- * - Gọi trực tiếp SeatDAO, HallDAO, CentreDAO (không qua service trung gian thừa).
- * - Kiểm tra phiên tập trung qua authorizedUser().
- * - Phân tách 3 luồng: showLayout (GET), saveLayout (POST), toggleMaintenance (POST).
+ * Controller Cấu hình Sơ đồ Ghế (Seat Configuration). Đồng nhất 100% theo form
+ * Voucher / Centre / Hall: - Gọi trực tiếp SeatDAO, HallDAO, CentreDAO (không
+ * qua service trung gian thừa). - Kiểm tra phiên tập trung qua
+ * authorizedUser(). - Phân tách 4 luồng: showSeats (GET), createNewGrid (POST),
+ * saveSeats (POST), toggleSeatStatus (POST).
  */
 @WebServlet(name = "SeatConfigurationServlet", urlPatterns = {"/manager/seat-config", "/admin/seat-config"})
 public class SeatConfigurationServlet extends HttpServlet {
@@ -37,12 +35,10 @@ public class SeatConfigurationServlet extends HttpServlet {
     private final SeatDAO seatDAO = new SeatDAO();
     private final HallDAO hallDAO = new HallDAO();
     private final CentreDAO centreDAO = new CentreDAO();
-    private final Gson gson = new Gson();
 
     // ─────────────────────────────────────────────────────────────────────────
     // AUTHENTICATION & AUTHORIZATION
     // ─────────────────────────────────────────────────────────────────────────
-
     private User authorizedUser(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
         HttpSession session = request.getSession(false);
@@ -71,7 +67,6 @@ public class SeatConfigurationServlet extends HttpServlet {
     // ─────────────────────────────────────────────────────────────────────────
     // HTTP GET
     // ─────────────────────────────────────────────────────────────────────────
-
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -93,19 +88,18 @@ public class SeatConfigurationServlet extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/manager/halls?error=invalid_hall");
             return;
         }
-
+        //check hall đã trùng với manager đã trùng centrer ID 
         if (user.getCentreId() == null || !user.getCentreId().equals(hall.getCentreId())) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN, "Bạn chỉ được cấu hình sơ đồ ghế cho Cụm rạp mình phụ trách.");
             return;
         }
 
-        showLayout(request, response, hall, hallId);
+        showSeats(request, response, hall);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
     // HTTP POST
     // ─────────────────────────────────────────────────────────────────────────
-
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -131,30 +125,35 @@ public class SeatConfigurationServlet extends HttpServlet {
 
         String action = request.getParameter("action");
         if ("toggleMaintenance".equalsIgnoreCase(action)) {
-            toggleMaintenance(request, response, hallId);
+            toggleSeatStatus(request, response, hallId);
+        } else if ("generateGrid".equalsIgnoreCase(action)) {
+            createNewGrid(request, response, hallId);
         } else {
-            saveLayout(request, response, hallId);
+            saveSeats(request, response, hallId);
         }
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // 1. SHOW LAYOUT (Đổ dữ liệu sơ đồ & phân trang)
+    // 1. SHOW SEATS (Đổ dữ liệu sơ đồ & phân trang)
     // ─────────────────────────────────────────────────────────────────────────
-
-    private void showLayout(HttpServletRequest request, HttpServletResponse response,
-                            Hall hall, int hallId) throws ServletException, IOException {
+    private void showSeats(HttpServletRequest request, HttpServletResponse response,
+            Hall hall) throws ServletException, IOException {
+        int hallId = hall.getHallId();
         Centre centre = centreDAO.getCentreById(hall.getCentreId());
 
-        // Lấy danh sách ghế & JSON trực tiếp từ SeatDAO
-        List<SeatConfigDTO> existingSeats = seatDAO.getSeatConfigsByHall(hallId);
-        String seatsJson = gson.toJson(existingSeats);
+    
+        List<SeatConfigDTO> Seats = seatDAO.getSeatConfigsByHall(hallId);
 
         // Tham số tìm kiếm và lọc ghế
         String search = request.getParameter("search");
         String seatType = request.getParameter("seatType");
         String seatStatus = request.getParameter("seatStatus");
-        if (seatType == null || seatType.trim().isEmpty()) seatType = "ALL";
-        if (seatStatus == null || seatStatus.trim().isEmpty()) seatStatus = "ALL";
+        if (seatType == null || seatType.trim().isEmpty()) {
+            seatType = "ALL";
+        }
+        if (seatStatus == null || seatStatus.trim().isEmpty()) {
+            seatStatus = "ALL";
+        }
 
         int page = 1;
         try {
@@ -162,7 +161,8 @@ public class SeatConfigurationServlet extends HttpServlet {
             if (pageParam != null && !pageParam.trim().isEmpty()) {
                 page = Integer.parseInt(pageParam.trim());
             }
-        } catch (NumberFormatException ignored) {}
+        } catch (NumberFormatException ignored) {
+        }
 
         // Đếm và lấy danh sách phân trang trực tiếp từ SeatDAO
         int total = seatDAO.countSeatsByHall(hallId, search, seatType, seatStatus);
@@ -177,8 +177,8 @@ public class SeatConfigurationServlet extends HttpServlet {
 
         request.setAttribute("hall", hall);
         request.setAttribute("centre", centre);
-        request.setAttribute("existingSeats", existingSeats);
-        request.setAttribute("seatsJson", seatsJson);
+  //gửi list sang jsp 
+        request.setAttribute("existingSeats", Seats);
         request.setAttribute("hasBookedShowtimes", false);
         request.setAttribute("isAdmin", false);
 
@@ -203,41 +203,75 @@ public class SeatConfigurationServlet extends HttpServlet {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // 2. SAVE LAYOUT
+    // 2. CREATE NEW GRID (Tạo lưới sơ đồ mới theo số hàng x cột)
     // ─────────────────────────────────────────────────────────────────────────
-
-    private void saveLayout(HttpServletRequest request, HttpServletResponse response, int hallId)
+    private void createNewGrid(HttpServletRequest request, HttpServletResponse response, int hallId)
             throws IOException {
         String base = baseUrl(request);
-        String seatDataJson = request.getParameter("seatData");
-        boolean isRegenerating = "true".equalsIgnoreCase(request.getParameter("isRegenerating"));
+        int numRows = 6;
+        int numCols = 10;
+        try {
+            numRows = Integer.parseInt(request.getParameter("rows").trim());
+            numCols = Integer.parseInt(request.getParameter("cols").trim());
+        } catch (Exception ignored) {
+        }
 
-        if (seatDataJson == null || seatDataJson.trim().isEmpty()) {
+        if (numRows < 1 || numRows > 26 || numCols < 1 || numCols > 30) {
+            response.sendRedirect(base + "?hallId=" + hallId + "&error=failed");
+            return;
+        }
+
+        List<SeatConfigDTO> newSeats = new ArrayList<>();
+        for (int i = 0; i < numRows; i++) {
+            String rowName = String.valueOf((char) ('A' + i));
+            for (int c = 1; c <= numCols; c++) {
+                newSeats.add(new SeatConfigDTO(0, hallId, rowName, c, "STANDARD", "AVAILABLE"));
+            }
+        }
+
+        boolean ok = seatDAO.saveSeatLayout(hallId, newSeats, true);
+        response.sendRedirect(base + "?hallId=" + hallId + (ok ? "&success=saved" : "&error=failed"));
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 3. SAVE SEATS (Đọc trực tiếp từ form HTML, không qua JSON)
+    // ─────────────────────────────────────────────────────────────────────────
+    private void saveSeats(HttpServletRequest request, HttpServletResponse response, int hallId)
+            throws IOException {
+        String base = baseUrl(request);
+        String[] rows = request.getParameterValues("seatRow");
+        String[] numbers = request.getParameterValues("seatNumber");
+        String[] types = request.getParameterValues("seatType");
+        String[] statuses = request.getParameterValues("status");
+
+        if (rows == null || numbers == null || types == null || statuses == null
+                || rows.length == 0
+                || rows.length != numbers.length
+                || rows.length != types.length
+                || rows.length != statuses.length) {
             response.sendRedirect(base + "?hallId=" + hallId + "&error=empty_data");
             return;
         }
 
         try {
-            Type listType = new TypeToken<List<SeatConfigDTO>>() {}.getType();
-            List<SeatConfigDTO> seatList = gson.fromJson(seatDataJson, listType);
-
-            boolean ok = seatDAO.saveSeatLayout(hallId, seatList, isRegenerating);
-            if (ok) {
-                response.sendRedirect(base + "?hallId=" + hallId + "&success=saved");
-            } else {
-                response.sendRedirect(base + "?hallId=" + hallId + "&error=failed");
+            List<SeatConfigDTO> seatList = new ArrayList<>();
+            for (int i = 0; i < rows.length; i++) {
+                int seatNum = Integer.parseInt(numbers[i].trim());
+                seatList.add(new SeatConfigDTO(0, hallId, rows[i], seatNum, types[i], statuses[i]));
             }
+
+            boolean ok = seatDAO.saveSeatLayout(hallId, seatList, false);
+            response.sendRedirect(base + "?hallId=" + hallId + (ok ? "&success=saved" : "&error=failed"));
         } catch (Exception e) {
             e.printStackTrace();
-            response.sendRedirect(base + "?hallId=" + hallId + "&error=json_error");
+            response.sendRedirect(base + "?hallId=" + hallId + "&error=failed");
         }
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // 3. TOGGLE MAINTENANCE
+    // 3. TOGGLE SEAT STATUS
     // ─────────────────────────────────────────────────────────────────────────
-
-    private void toggleMaintenance(HttpServletRequest request, HttpServletResponse response, int hallId)
+    private void toggleSeatStatus(HttpServletRequest request, HttpServletResponse response, int hallId)
             throws IOException {
         String base = baseUrl(request);
         String seatIdParam = request.getParameter("seatId");
