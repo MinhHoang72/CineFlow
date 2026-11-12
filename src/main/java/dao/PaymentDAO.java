@@ -94,6 +94,11 @@ public class PaymentDAO {
      * @param centreId null = moi rap
      */
     public LockedPayment lockBookingPayment(Connection conn, int paymentId, Integer centreId) throws SQLException {
+        // Serialize payment confirmation with manager edits/cancellation and seat holds.
+        try (PreparedStatement ps = conn.prepareStatement("SELECT s.ShowtimeID FROM Showtimes s WITH(UPDLOCK,HOLDLOCK) WHERE s.ShowtimeID=(SELECT b.ShowtimeID FROM Payments p JOIN Bookings b ON b.BookingID=p.BookingID WHERE p.PaymentID=?)")) {
+            ps.setInt(1, paymentId);
+            try (ResultSet rs = ps.executeQuery()) { while (rs.next()) { /* hold until commit */ } }
+        }
         try (PreparedStatement ps = conn.prepareStatement(
                 "SELECT p.BookingID, p.PaymentStatus, p.Amount, b.TotalAmount "
               + "FROM Payments p WITH (UPDLOCK, ROWLOCK) "
@@ -112,6 +117,13 @@ public class PaymentDAO {
 
     public void markPaid(Connection conn, int paymentId) throws SQLException {
         update(conn, "UPDATE Payments SET PaymentStatus = 'PAID', PaidAt = SYSDATETIME() WHERE PaymentID = ?", paymentId);
+    }
+
+    public boolean bookingStillMatchesShowtime(Connection conn, int bookingId) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement("SELECT 1 FROM Bookings b JOIN Showtimes s ON s.ShowtimeID=b.ShowtimeID WHERE b.BookingID=? AND b.BookingStatus<>'CANCELLED' AND s.Status='SCHEDULED' AND s.StartTime>SYSDATETIME() AND s.SaleState='OPEN'")) {
+            ps.setInt(1, bookingId);
+            try (ResultSet rs = ps.executeQuery()) { return rs.next(); }
+        }
     }
 
     /** Cac giao dich con cho (PENDING / TIMEOUT) khac cua don -> CANCELLED. */

@@ -5,7 +5,6 @@ import controller.customer.PaymentServlet;
 import model.entity.Booking;
 import model.dto.booking.FnbMenuItemDTO;
 import model.entity.Showtime;
-import model.entity.Ticket;
 import model.entity.User;
 import service.BookingExtrasService;
 import service.BookingService;
@@ -290,11 +289,9 @@ public class CounterShowtimeServlet extends HttpServlet {
             resp.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;
         }
-        List<Ticket> tickets = paymentService.getTickets(booking.getId());
         req.setAttribute("booking", booking);
-        req.setAttribute("tickets", tickets);
+        req.setAttribute("tickets", paymentService.getTickets(booking.getId()));
         req.setAttribute("paidTransaction", paymentService.getPaidTransaction(booking.getId()));
-        req.setAttribute("ticketQrs", BookingServlet.ticketQrs(tickets));
         req.getRequestDispatcher(VIEW_BASE + "counterTicketPrint.jsp").forward(req, resp);
     }
 

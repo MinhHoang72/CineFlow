@@ -28,9 +28,9 @@ public class CancelShowtimeServlet extends HttpServlet {
 
         try {
             int showtimeId = Integer.parseInt(request.getParameter("showtimeId"));
-            showtimeService.cancelShowtime(showtimeId);
+            showtimeService.cancelShowtime(request,showtimeId);
             request.getSession().setAttribute("message", "Suất chiếu #" + showtimeId + " đã được hủy thành công.");
-        } catch (IllegalStateException e) {
+        } catch (IllegalArgumentException | IllegalStateException e) {
             request.getSession().setAttribute("error", e.getMessage());
         } catch (Exception e) {
             request.getSession().setAttribute("error", "Không thể hủy suất chiếu. Vui lòng thử lại.");

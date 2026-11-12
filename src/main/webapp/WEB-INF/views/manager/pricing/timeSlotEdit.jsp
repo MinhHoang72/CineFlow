@@ -2,7 +2,7 @@
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <%
     request.setAttribute("pageTitle", "Sửa phụ thu khung giờ");
-    request.setAttribute("pageDescription", "Điều chỉnh thời gian và mức phụ thu của khung giờ đã chọn.");
+    request.setAttribute("pageDescription", "");
     request.setAttribute("activeTab", "time");
 %>
 <%@ include file="/WEB-INF/fragments/cinemaBegin.jspf" %>

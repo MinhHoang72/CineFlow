@@ -32,7 +32,7 @@ public class EditShowtimeServlet extends HttpServlet {
             int id = Integer.parseInt(request.getParameter("id"));
             Showtime showtime = showtimeService.getShowtimeById(id);
 
-            if (showtime == null || !"SCHEDULED".equalsIgnoreCase(showtime.getStatus())) {
+            if (showtime == null || !showtime.isEditable() || showtime.getCentreId()!=ShowtimeService.requireCentreId(request)) {
                 request.getSession().setAttribute("error", "Suất chiếu không tồn tại hoặc đã chiếu/đã hủy.");
                 response.sendRedirect(request.getContextPath() + "/showtimes");
                 return;

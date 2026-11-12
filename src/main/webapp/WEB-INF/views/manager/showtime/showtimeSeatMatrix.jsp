@@ -1,7 +1,7 @@
 <%@ page pageEncoding="UTF-8" %>
 <%
     request.setAttribute("pageTitle", "Tình trạng ghế");
-    request.setAttribute("pageDescription", "Sơ đồ phòng chiếu và tình trạng ghế theo suất chiếu.");
+    request.setAttribute("pageDescription", "");
     request.setAttribute("activeTab", "showtimes");
     request.setAttribute("seatMatrixView", true);
 %>
@@ -76,6 +76,7 @@
                                                         data-status="${seat.availabilityStatus}"
                                                         data-status-label="${seat.availabilityLabel}"
                                                         data-base="${seat.basePrice}"
+                                                        data-centre="${seat.centreSurcharge}" data-movie="${seat.movieSurcharge}"
                                                         data-time="${seat.timeSurcharge}"
                                                         data-hall="${seat.hallSurcharge}"
                                                         data-seat="${seat.seatSurcharge}"
@@ -116,16 +117,22 @@
                         </div>
                         <aside class="st-seat-price-panel" id="st-seat-price-panel" aria-labelledby="st-seat-price-title">
                             <h2 id="st-seat-price-title" tabindex="-1">Chi tiết giá vé</h2>
-                            <p id="st-seat-price-hint">Bấm vào một ghế để xem giá vé và từng khoản phụ thu.</p>
+                            <p id="st-seat-price-hint" hidden></p>
                             <div id="st-seat-price-detail" hidden>
                                 <p class="st-inspected-seat" id="st-inspected-seat"></p>
                                 <p id="st-inspected-status"></p>
-                                <h3>Giá theo cấu hình hiện tại</h3>
-                                <p class="st-price-context">Áp dụng theo giờ bắt đầu suất chiếu.</p>
+                                <h3>${showtime.saleState == 'OPEN' ? 'Bảng giá đã chốt khi mở bán' : 'Giá dự kiến trước mở bán'}</h3>
+
                                 <dl class="st-price-breakdown">
                                     <div>
                                         <dt>Giá cơ bản</dt>
                                         <dd id="st-price-base"></dd>
+                                    </div>
+                                    <div>
+                                        <dt>Phụ thu chi nhánh</dt><dd id="st-price-centre">—</dd>
+                                    </div>
+                                    <div>
+                                        <dt>Phụ thu phim</dt><dd id="st-price-movie">—</dd>
                                     </div>
                                     <div>
                                         <dt>Phụ thu khung giờ</dt>
@@ -148,19 +155,13 @@
                                 <div class="st-saved-price" id="st-saved-price" hidden>
                                     <span id="st-saved-label">Giá đã lưu lúc đặt</span>
                                     <strong id="st-price-stored"></strong>
-                                    <p>
-                                        Giá vé lưu trên đơn, trước giảm giá; không gồm bắp nước. Các khoản ở trên là cấu hình hiện tại, không phải lịch sử chi tiết của đơn.
-                                    </p>
+
                                 </div>
                                 <p class="st-price-context" id="st-seat-booking-note"></p>
                             </div>
-                            <p class="st-price-readonly">Chỉ tra cứu thông tin, không giữ ghế hoặc tạo booking.</p>
                             <p class="st-sr-only" id="st-seat-price-announcement" role="status" aria-live="polite"></p>
                         </aside>
                     </div>
-                    <p class="st-seat-note">
-                        Ghế được đánh số liên tiếp trong từng hàng, bỏ qua lối đi, giống sơ đồ cấu hình phòng chiếu. Tải lại trang để cập nhật tình trạng mới nhất.
-                    </p>
                 </c:when>
                 <c:otherwise>
                     <div class="st-empty">

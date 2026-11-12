@@ -2,7 +2,7 @@
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <%
     request.setAttribute("pageTitle", "Sửa phụ thu ghế & phòng");
-    request.setAttribute("pageDescription", "Cập nhật tên và mức phụ thu cho đối tượng đã chọn.");
+    request.setAttribute("pageDescription", "");
     request.setAttribute("activeTab", "surcharge");
 %>
 <%@ include file="/WEB-INF/fragments/cinemaBegin.jspf" %>
@@ -12,7 +12,6 @@
             <div class="st-panel-heading">
                 <div>
                     <h2>Thông tin phụ thu</h2>
-                    <p>Loại và đối tượng áp dụng được giữ nguyên khi cập nhật.</p>
                 </div>
                 <a class="st-link" href="${pageContext.request.contextPath}/pricing/seat-surcharges">← Danh sách phụ thu</a>
             </div>
@@ -44,7 +43,6 @@
                     </div>
                 </div>
                 <div class="st-form-footer">
-                    <p>Mức phụ thu cũ được giữ lại trong lịch sử.</p>
                     <div class="st-row-actions">
                         <a class="st-button st-button-muted" href="${pageContext.request.contextPath}/pricing/seat-surcharges">Quay lại</a>
                         <button class="st-button st-button-primary" type="submit">Lưu thay đổi</button>

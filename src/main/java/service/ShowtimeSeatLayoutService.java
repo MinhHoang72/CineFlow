@@ -56,6 +56,7 @@ public class ShowtimeSeatLayoutService {
             if (price==null) continue;
             seat.setBasePrice(price.getBasePrice()); seat.setTimeSurcharge(price.getTimeSurcharge());
             seat.setHallSurcharge(price.getHallSurcharge()); seat.setSeatSurcharge(price.getSeatSurcharge());
+            seat.setCentreSurcharge(price.getCentreSurcharge());seat.setMovieSurcharge(price.getMovieSurcharge());
             seat.setPrice(price.getPrice()); seat.setStoredPrice(price.getStoredPrice());
         }
     }

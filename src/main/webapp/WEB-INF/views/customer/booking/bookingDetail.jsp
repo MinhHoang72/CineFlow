@@ -14,6 +14,9 @@
         <span class="badge text-bg-secondary">${booking.counter ? 'Tại quầy' : 'Online'}</span>
     </h5>
     <div class="d-flex gap-2 no-print">
+        <c:if test="${not empty tickets}">
+            <button type="button" class="btn btn-primary" onclick="window.print()">🖨 In vé</button>
+        </c:if>
         <c:if test="${isOwner and booking.holdActive}">
             <a href="${ctx}/booking?action=checkout&bookingId=${booking.id}" class="btn btn-warning">Tiếp tục thanh toán</a>
         </c:if>

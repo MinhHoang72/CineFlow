@@ -7,6 +7,20 @@ import java.time.format.DateTimeFormatter;
 
 public class Showtime {
 
+    private String saleState;
+    private Timestamp saleOpensAt,priceLockedAt;
+    private boolean hasBookings;
+    public String getSaleState(){return saleState;}
+    public void setSaleState(String value){saleState=value;}
+    public Timestamp getSaleOpensAt(){return saleOpensAt;}
+    public void setSaleOpensAt(Timestamp value){saleOpensAt=value;}
+    public Timestamp getPriceLockedAt(){return priceLockedAt;}
+    public void setPriceLockedAt(Timestamp value){priceLockedAt=value;}
+    public boolean isHasBookings(){return hasBookings;}
+    public void setHasBookings(boolean value){hasBookings=value;}
+    public String getDisplayStatus(){return status;}
+    public boolean isEditable(){return "SCHEDULED".equals(status)&&startTime!=null&&startTime.toLocalDateTime().isAfter(LocalDateTime.now())&&!hasBookings;}
+    public String getSaleOpensAtFormatted(){return saleOpensAt==null?"Chưa lên lịch":saleOpensAt.toLocalDateTime().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));}
     private int showtimeId;
     private int movieId;
     private int hallId;

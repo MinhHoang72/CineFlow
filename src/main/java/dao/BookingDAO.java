@@ -150,6 +150,16 @@ public class BookingDAO {
         }
     }
 
+    /** Don CONFIRMED cua suat da chieu xong (khong tinh suat bi huy) -> COMPLETED. @return so don da doi */
+    public int completeFinishedBookings(Connection conn) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "UPDATE b SET BookingStatus = 'COMPLETED', UpdatedAt = SYSDATETIME() "
+              + "FROM Bookings b JOIN Showtimes s ON s.ShowtimeID = b.ShowtimeID "
+              + "WHERE b.BookingStatus = 'CONFIRMED' AND s.Status <> 'CANCELLED' AND s.EndTime <= SYSDATETIME()")) {
+            return ps.executeUpdate();
+        }
+    }
+
     /** Ghi tong tien moi cho don con PENDING. */
     public void updateTotal(Connection conn, int bookingId, BigDecimal total) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(

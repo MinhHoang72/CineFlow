@@ -42,6 +42,27 @@ public class ShowtimeService implements ServletContextListener {
     public ShowtimeService() {
     }
 
+    public void saveShowtime(HttpServletRequest request,Integer id,int movie,int hall,LocalDateTime start) throws SQLException {
+        requireManager(request);
+        try {
+            showtimeDAO.saveShowtime(requireCentreId(request),requireUserId(request),id,movie,hall,start);
+        } catch (SQLException e) {
+            if(e.getErrorCode()==51002)throw new IllegalArgumentException("Chưa có giá cơ bản tại giờ chiếu. Vui lòng liên hệ Admin thiết lập giá.",e);
+            if(e.getErrorCode()==51003)throw new IllegalArgumentException("Phim, phòng hoặc cụm rạp hiện không khả dụng để mở bán.",e);
+            throw e;
+        }
+    }
+
+    public void cancelShowtime(HttpServletRequest request,int id) throws SQLException {
+        requireManager(request);
+        showtimeDAO.cancelShowtime(requireCentreId(request),id);
+    }
+
+    private static void requireManager(HttpServletRequest request){
+        HttpSession session=request.getSession(false);
+        if(session==null||!"MANAGER".equals(session.getAttribute("role")))throw new IllegalStateException("Chỉ Manager được quản lý suất chiếu.");
+    }
+
     /** Tomcat starts this task once when the application starts. */
     @Override
     public void contextInitialized(ServletContextEvent event) {
@@ -209,7 +230,7 @@ public class ShowtimeService implements ServletContextListener {
      */
     public boolean updateShowtime(int showtimeId, int movieId, int hallId, LocalDateTime startTime, int cleaningBuffer) {
         Showtime old = showtimeDAO.getById(showtimeId);
-        if (old == null || !"SCHEDULED".equals(old.getStatus())) {
+        if (old == null || !old.isEditable()) {
             throw new IllegalStateException("Suất chiếu không tồn tại hoặc không ở trạng thái có thể chỉnh sửa.");
         }
         if (!isHallAvailable(hallId)) {

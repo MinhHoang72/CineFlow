@@ -192,6 +192,12 @@ public class PaymentService {
             if ("PAID".equals(payment.status())) return new Outcome(Status.ALREADY_PAID, bookingId);
 
             paymentDAO.markPaid(conn, paymentId);
+            // A late callback must not issue tickets for a showtime edited after this booking.
+            if (!paymentDAO.bookingStillMatchesShowtime(conn, bookingId)) {
+                bookingDAO.updateStatus(conn, bookingId, "CANCELLED");
+                fnbOrderDAO.cancelPendingForBookings(conn, List.of(bookingId));
+                return new Outcome(Status.PAID_BUT_SEATS_LOST, bookingId);
+            }
             // Giao dịch tạo trước khi khách đổi bắp nước / voucher: ghi nhận tiền nhưng không xác nhận đơn
             if (payment.amount().compareTo(payment.bookingTotal()) != 0) {
                 return new Outcome(Status.PAID_AMOUNT_MISMATCH, bookingId);
@@ -208,6 +214,7 @@ public class PaymentService {
                 return new Outcome(Status.PAID_BUT_SEATS_LOST, bookingId);
             }
 
+            // Thanh toán xong là đơn đã xác nhận; suất chiếu kết thúc thì BookingCompletionJob chuyển sang COMPLETED
             bookingDAO.updateStatus(conn, bookingId, "CONFIRMED");
             // Bắp nước kèm vé -> PREPARING và trừ kho (gồm cả đơn CANCELLED khi tiền về sau khi hết hạn giữ ghế)
             if (fnbOrderDAO.markBookingOrdersPreparing(conn, bookingId) > 0) {

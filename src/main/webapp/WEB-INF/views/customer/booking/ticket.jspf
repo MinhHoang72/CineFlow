@@ -1,6 +1,6 @@
 <%@ page pageEncoding="UTF-8" %>
-<%-- Ve dien tu cua don: moi ghe mot ma QR de soat ve, danh sach bap nuoc de nhan mon, bang chi tiet tien.
-     Can co: booking, tickets, ticketQrs (TicketCode -> anh QR). Neu co isCancelled thi hien thi danh dau da huy. --%>
+<%-- Ve dien tu cua don: moi ghe mot ve day du thong tin, danh sach bap nuoc de nhan mon, bang chi tiet tien.
+     Can co: booking, tickets. --%>
 <div class="eticket" data-bs-theme="light">
     <c:if test="${isCancelled}">
         <div class="alert alert-danger d-flex align-items-center mb-3" role="alert">
@@ -20,36 +20,43 @@
         Đơn <code><c:out value="${booking.code}"/></code>
     </div>
 
-    <div class="row g-3 mb-1">
+    <div class="row g-3 mb-3">
         <c:forEach var="t" items="${tickets}">
-            <div class="col-6 col-md-4 col-xl-3 text-center seat-ticket">
-                <div class="fw-bold">Ghế ${t.seatLabel} <span class="small fw-normal text-muted">${t.seatType}</span></div>
-                <div style="position: relative; display: inline-block;">
-                    <img src="${ticketQrs[t.code]}" alt="QR vé ghế ${t.seatLabel}" class="qr" style="${isCancelled ? 'filter: grayscale(100%) opacity(0.35);' : ''}">
-                    <c:if test="${isCancelled}">
-                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-15deg); background: #dc3545; color: #fff; font-weight: 800; font-size: 13px; padding: 4px 8px; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); white-space: nowrap;">
-                            ĐÃ HỦY
+            <div class="col-12 col-lg-6 seat-ticket">
+                <div class="ticket-card"${isCancelled ? ' style="opacity: 0.7; border-color: #dc3545;"' : ''}>
+                    <div class="flex-grow-1">
+                        <div class="small text-muted">CINEFLOW · <c:out value="${booking.showtime.centreName}"/></div>
+                        <div class="fw-bold fs-5 mb-1">
+                            <c:out value="${booking.showtime.movieTitle}"/>
+                            <c:if test="${isCancelled}">
+                                <span class="badge bg-danger ms-1" style="font-size: 11px;">ĐÃ HỦY</span>
+                            </c:if>
                         </div>
-                    </c:if>
+                        <table class="table table-sm table-borderless mb-0 ticket-info">
+                            <tr><th>Suất chiếu</th><td><fmt:formatDate value="${booking.showtime.startTime}" pattern="HH:mm - dd/MM/yyyy"/></td></tr>
+                            <tr><th>Phòng</th><td><c:out value="${booking.showtime.hallName}"/> (${booking.showtime.hallType})</td></tr>
+                            <tr><th>Ghế</th><td><strong>${t.seatLabel}</strong> · ${t.seatType}</td></tr>
+                            <tr><th>Giá vé</th><td><c:forEach var="seat" items="${booking.seats}"><c:if test="${seat.label == t.seatLabel}"><fmt:formatNumber value="${seat.price}" pattern="#,##0"/> đ</c:if></c:forEach></td></tr>
+                            <tr><th>Mã vé</th><td><code class="${isCancelled ? 'text-danger' : ''}"><c:out value="${t.code}"/></code></td></tr>
+                            <tr><th>Mã đơn</th><td><code><c:out value="${booking.code}"/></code></td></tr>
+                            <tr><th>Trạng thái</th><td>
+                                <c:choose>
+                                    <c:when test="${isCancelled}"><strong class="text-danger">Đã hủy</strong></c:when>
+                                    <c:when test="${t.status == 'USED'}"><strong class="text-muted">Đã sử dụng</strong></c:when>
+                                    <c:otherwise><strong>${booking.statusLabel}</strong></c:otherwise>
+                                </c:choose>
+                            </td></tr>
+                        </table>
+                    </div>
                 </div>
-                <div><code class="${isCancelled ? 'text-danger' : ''}"><c:out value="${t.code}"/></code></div>
-                <c:choose>
-                    <c:when test="${isCancelled}"><div class="small fw-bold text-danger">Vé đã hủy</div></c:when>
-                    <c:when test="${t.status == 'USED'}"><div class="small fw-bold text-muted">Đã soát vé</div></c:when>
-                </c:choose>
             </div>
         </c:forEach>
     </div>
-    <div class="small text-muted mb-3">
-        <c:choose>
-            <c:when test="${isCancelled}">
-                <span class="text-danger fw-semibold">Vé không còn hiệu lực vào rạp.</span>
-            </c:when>
-            <c:otherwise>
-                Mỗi ghế có một mã riêng, đưa mã của từng ghế cho nhân viên soát vé.
-            </c:otherwise>
-        </c:choose>
-    </div>
+    <c:if test="${isCancelled}">
+        <div class="small text-danger mb-3 font-semibold">
+            * Vé không còn hiệu lực vào rạp. Vui lòng xem hướng dẫn hỗ trợ ở phía trên để đổi vé hoặc giải quyết quyền lợi.
+        </div>
+    </c:if>
 
     <c:if test="${not empty booking.fnbLines}">
         <div class="fw-bold">Bắp nước</div>

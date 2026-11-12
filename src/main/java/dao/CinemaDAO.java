@@ -287,29 +287,8 @@ public class CinemaDAO {
     // 3. QUẢN LÝ SUẤT CHIẾU VÀ GIÁ VÉ TỰ ĐỘNG THEO RẠP (Showtimes & Dynamic Pricing)
     // =========================================================================
 
-    private static final String DYNAMIC_PRICE_SELECT = "(COALESCE(bp.BasePrice, 80000) + COALESCE(tsp.Surcharge, 0) + COALESCE(sur.Amount, 0)) AS BaseTicketPrice ";
-    private static final String DYNAMIC_PRICE_APPLY = "OUTER APPLY ( "
-            + "    SELECT TOP 1 bp.BasePrice FROM CentrePricing bp "
-            + "    WHERE bp.CentreID = b.CentreID AND s.StartTime >= bp.EffectiveFrom "
-            + "      AND (bp.EffectiveTo IS NULL OR s.StartTime <= bp.EffectiveTo) "
-            + "    ORDER BY bp.EffectiveFrom DESC "
-            + ") bp "
-            + "OUTER APPLY ( "
-            + "    SELECT TOP 1 tsp.Surcharge FROM TimeSlotPricing tsp "
-            + "    WHERE tsp.CentreID = b.CentreID "
-            + "      AND CAST(s.StartTime AS TIME) >= tsp.StartTime "
-            + "      AND CAST(s.StartTime AS TIME) < tsp.EndTime "
-            + "      AND s.StartTime >= tsp.EffectiveFrom "
-            + "      AND (tsp.EffectiveTo IS NULL OR s.StartTime <= tsp.EffectiveTo) "
-            + "    ORDER BY tsp.EffectiveFrom DESC "
-            + ") tsp "
-            + "OUTER APPLY ( "
-            + "    SELECT TOP 1 sur.Amount FROM Surcharges sur "
-            + "    WHERE sur.SurchargeType = 'HALL' AND sur.TargetValue = h.HallType "
-            + "      AND s.StartTime >= sur.EffectiveFrom "
-            + "      AND (sur.EffectiveTo IS NULL OR s.StartTime <= sur.EffectiveTo) "
-            + "    ORDER BY sur.EffectiveFrom DESC "
-            + ") sur ";
+    private static final String DYNAMIC_PRICE_SELECT="locked.Total AS BaseTicketPrice ";
+    private static final String DYNAMIC_PRICE_APPLY="JOIN ShowtimeSeatPrices locked ON locked.ShowtimeID=s.ShowtimeID AND locked.SeatType='STANDARD' ";
 
     /**
      * Lấy tất cả các suất chiếu đã lên lịch của những phim đang chiếu hoặc sắp chiếu.
@@ -325,7 +304,7 @@ public class CinemaDAO {
                 + "JOIN Halls h ON h.HallID = s.HallID "
                 + "JOIN Centres b ON b.CentreID = h.CentreID "
                 + DYNAMIC_PRICE_APPLY
-                + "WHERE s.Status = 'SCHEDULED' AND s.StartTime > SYSDATETIME() AND m.Status IN ('NOW_SHOWING', 'COMING_SOON') "
+                + "WHERE s.SaleState='OPEN' AND s.PriceLockedAt IS NOT NULL AND s.Status = 'SCHEDULED' AND s.StartTime > SYSDATETIME() AND m.Status IN ('NOW_SHOWING', 'COMING_SOON') "
                 + "ORDER BY s.StartTime";
         List<ShowtimeDetailDTO> showtimes = new ArrayList<>();
 
@@ -367,7 +346,7 @@ public class CinemaDAO {
                 + "JOIN Halls h ON h.HallID = s.HallID "
                 + "JOIN Centres b ON b.CentreID = h.CentreID "
                 + DYNAMIC_PRICE_APPLY
-                + "WHERE s.Status = 'SCHEDULED' AND s.StartTime > SYSDATETIME() AND s.MovieID = ? "
+                + "WHERE s.SaleState='OPEN' AND s.PriceLockedAt IS NOT NULL AND s.Status = 'SCHEDULED' AND s.StartTime > SYSDATETIME() AND s.MovieID = ? "
                 + "ORDER BY s.StartTime";
         List<ShowtimeDetailDTO> showtimes = new ArrayList<>();
 
@@ -411,7 +390,7 @@ public class CinemaDAO {
                 + "JOIN Halls h ON h.HallID = s.HallID "
                 + "JOIN Centres b ON b.CentreID = h.CentreID "
                 + DYNAMIC_PRICE_APPLY
-                + "WHERE s.Status = 'SCHEDULED' AND s.StartTime > SYSDATETIME() AND m.Status IN ('NOW_SHOWING', 'COMING_SOON') AND b.CentreID = ? "
+                + "WHERE s.SaleState='OPEN' AND s.PriceLockedAt IS NOT NULL AND s.Status = 'SCHEDULED' AND s.StartTime > SYSDATETIME() AND m.Status IN ('NOW_SHOWING', 'COMING_SOON') AND b.CentreID = ? "
                 + "ORDER BY s.StartTime";
         List<ShowtimeDetailDTO> showtimes = new ArrayList<>();
 

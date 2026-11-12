@@ -73,6 +73,11 @@ public class ShowtimeSeatMatrixDTO {
 
     public BigDecimal getPrice() { return price; }
     public void setPrice(BigDecimal price) { this.price = price; }
+    private BigDecimal centreSurcharge,movieSurcharge;
+    public BigDecimal getCentreSurcharge(){return centreSurcharge;}
+    public void setCentreSurcharge(BigDecimal v){centreSurcharge=v;}
+    public BigDecimal getMovieSurcharge(){return movieSurcharge;}
+    public void setMovieSurcharge(BigDecimal v){movieSurcharge=v;}
     private BigDecimal basePrice, timeSurcharge, hallSurcharge, seatSurcharge, storedPrice;
     public BigDecimal getBasePrice() { return basePrice; }
     public void setBasePrice(BigDecimal value) { basePrice=value; }
