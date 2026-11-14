@@ -45,7 +45,7 @@ CREATE TABLE Users (
     Phone VARCHAR(20) NULL,
     Avatar VARCHAR(500) NULL,
     Role VARCHAR(30) NOT NULL
-        CONSTRAINT CK_Users_Role CHECK (Role IN ('CUSTOMER','STAFF','MANAGER','ADMIN','TICKET_SALES_STAFF','TICKET_CHECKER_STAFF')),
+        CONSTRAINT CK_Users_Role CHECK (Role IN ('CUSTOMER','STAFF','MANAGER','ADMIN','TICKET_SALES_STAFF')),
     Status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
     CentreID INT NULL,
     ResetToken VARCHAR(255) NULL,
@@ -57,7 +57,7 @@ CREATE TABLE Users (
     UpdatedAt DATETIME2 NULL,
     CONSTRAINT CK_Users_Status CHECK (Status IN ('ACTIVE','INACTIVE','LOCKED')),
     CONSTRAINT CK_Users_Staff_Manager_Centre CHECK (
-        Role NOT IN ('STAFF','TICKET_SALES_STAFF','TICKET_CHECKER_STAFF')
+        Role NOT IN ('STAFF','TICKET_SALES_STAFF')
         OR CentreID IS NOT NULL
     )
 );
@@ -784,10 +784,6 @@ CREATE TABLE Tickets (
     TicketStatus VARCHAR(20) NOT NULL
         DEFAULT 'VALID',
 
-    CheckedInAt DATETIME2 NULL,
-
-    CheckedInBy INT NULL,
-
     CreatedAt DATETIME2 NOT NULL
         DEFAULT GETDATE(),
 
@@ -795,42 +791,15 @@ CREATE TABLE Tickets (
         FOREIGN KEY (BookingSeatID)
         REFERENCES BookingSeats(BookingSeatID),
 
-    CONSTRAINT FK_Tickets_CheckedInBy
-        FOREIGN KEY (CheckedInBy)
-        REFERENCES Users(UserID),
-
     CONSTRAINT CK_Tickets_Status
         CHECK (TicketStatus IN (
             'VALID',
-            'USED',
             'CANCELLED',
             'EXPIRED'
         ))
 );
 GO
 
-/* =====================================================================================
-   TRIGGER: TỰ ĐỘNG CHUYỂN TRẠNG THÁI BOOKING SANG 'COMPLETED' KHI ĐÃ SOÁT ĐỦ VÉ
-   ===================================================================================== */
-CREATE OR ALTER TRIGGER TR_Tickets_CompleteBooking ON Tickets
-AFTER UPDATE
-AS
-BEGIN
-    SET NOCOUNT ON;
-    IF NOT UPDATE(TicketStatus) RETURN;
-
-    UPDATE b SET b.BookingStatus = 'COMPLETED', b.UpdatedAt = SYSDATETIME()
-    FROM Bookings b
-    WHERE b.BookingStatus = 'CONFIRMED'
-      AND b.BookingID IN (SELECT bs.BookingID FROM inserted i
-                          JOIN BookingSeats bs ON bs.BookingSeatID = i.BookingSeatID
-                          WHERE i.TicketStatus = 'USED')
-      AND NOT EXISTS (SELECT 1 FROM BookingSeats bs
-                      LEFT JOIN Tickets t ON t.BookingSeatID = bs.BookingSeatID
-                      WHERE bs.BookingID = b.BookingID AND bs.SeatStatus = 'CONFIRMED'
-                        AND (t.TicketID IS NULL OR t.TicketStatus <> 'USED'));
-END;
-GO
 
 
 
@@ -1024,39 +993,6 @@ GO
 
 
 
-/* =========================================================
-   29. CHECK-IN LOGS
-   ========================================================= */
-
-CREATE TABLE CheckInLogs (
-    CheckInID INT IDENTITY(1,1) PRIMARY KEY,
-
-    TicketID INT NOT NULL,
-
-    CheckedBy INT NOT NULL,
-
-    CheckInTime DATETIME2 NOT NULL
-        DEFAULT GETDATE(),
-
-    Result VARCHAR(20) NOT NULL,
-
-    Note NVARCHAR(500) NULL,
-
-    CONSTRAINT FK_CheckInLogs_Ticket
-        FOREIGN KEY (TicketID)
-        REFERENCES Tickets(TicketID),
-
-    CONSTRAINT FK_CheckInLogs_User
-        FOREIGN KEY (CheckedBy)
-        REFERENCES Users(UserID),
-
-    CONSTRAINT CK_CheckInLogs_Result
-        CHECK (Result IN (
-            'SUCCESS',
-            'REJECTED'
-        ))
-);
-GO
 
 
 
@@ -1096,22 +1032,6 @@ CREATE TABLE VoucherUsages (
 );
 GO
 
-/* =========================================================
-   31. MOVIE RATINGS
-   ========================================================= */
-CREATE TABLE MovieRatings (
-    RatingID INT IDENTITY(1,1) PRIMARY KEY,
-    MovieID INT NOT NULL,
-    UserID INT NOT NULL,
-    Score INT NOT NULL,
-    CreatedAt DATETIME2 NOT NULL DEFAULT GETDATE(),
-    UpdatedAt DATETIME2 NULL,
-    CONSTRAINT FK_MovieRatings_Movie FOREIGN KEY (MovieID) REFERENCES Movies(MovieID) ON DELETE CASCADE,
-    CONSTRAINT FK_MovieRatings_User FOREIGN KEY (UserID) REFERENCES Users(UserID) ON DELETE CASCADE,
-    CONSTRAINT CK_MovieRatings_Score CHECK (Score >= 1 AND Score <= 5),
-    CONSTRAINT UQ_MovieRatings_UserMovie UNIQUE (MovieID, UserID)
-);
-GO
 
 /* =========================================================
    32. STAFF TRANSFER HISTORY - FE-01.2
@@ -1211,9 +1131,9 @@ INSERT INTO Users (UserID, FullName, Account, Email, Password, Phone, Avatar, Ro
 (3, N'Nguyễn Văn Manager', N'manager', N'manager@gmail.com', N'$2a$10$t0EGXUJ09K1EEHwVVXtNCuFG40Wpv0ILErFvqxdUYUi8uIiogfCM6', N'0900000003', NULL, N'MANAGER', N'ACTIVE', 21, NULL, NULL, 1, 0, '2026-10-17 21:28:30', '2026-10-03 23:08:30', '2026-10-17 21:28:30'),
 (4, N'Administrator', N'admin', N'admin@gmail.com', N'$2a$10$A1HeMkposFAqeqnLfimaR.AyagdCIo4z8WDsvp3yz2tnri6dL7JZu', N'0900000004', N'', N'ADMIN', N'ACTIVE', NULL, NULL, NULL, 1, 0, '2026-10-17 21:29:54', '2026-10-03 23:08:30', '2026-10-17 21:29:54'),
 (5, N'Lê Hoàng Nhân Viên', N'staff_caugiay', N'staff.caugiay@cineflow.vn', N'123456', N'0911000002', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 17, NULL, NULL, 1, 0, NULL, '2026-10-03 23:08:31', '2026-10-14 17:52:49'),
-(6, N'Phạm Ngọc Nhân Viên', N'staff_hadong', N'staff.hadong@cineflow.vn', N'123456', N'0911000003', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 2, NULL, NULL, 1, 0, NULL, '2026-10-03 23:08:31', '2026-10-14 16:48:15'),
+(6, N'Phạm Ngọc Nhân Viên', N'staff_hadong', N'staff.hadong@cineflow.vn', N'123456', N'0911000003', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 2, NULL, NULL, 1, 0, NULL, '2026-10-03 23:08:31', '2026-10-14 16:48:15'),
 (7, N'Trần Minh Quản Lý', N'manager_hanoi', N'manager.hanoi@cineflow.vn', N'123456', N'0911000001', NULL, N'MANAGER', N'ACTIVE', 22, NULL, NULL, 1, 0, NULL, '2026-10-03 23:08:31', '2026-10-14 21:03:45'),
-(8, N'Nguyễn Thu Nhân Viên', N'staff_quan1', N'staff.quan1@cineflow.vn', N'123456', N'0911000004', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 4, NULL, NULL, 1, 0, NULL, '2026-10-03 23:08:31', NULL),
+(8, N'Nguyễn Thu Nhân Viên', N'staff_quan1', N'staff.quan1@cineflow.vn', N'123456', N'0911000004', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 4, NULL, NULL, 1, 0, NULL, '2026-10-03 23:08:31', NULL),
 (9, N'Dương quyết thái', N'quyetthaix2@gmail.com', N'quyetthaix2@gmail.com', N'$2a$10$R9pVSyewXfcSSYK8nBGIyOlJLmRbaq21W7iFgvh2RtX2nncVIEH9O', NULL, NULL, N'CUSTOMER', N'ACTIVE', NULL, N'429397', '2026-10-13 17:25:53', 0, 0, '2026-10-08 11:02:00', '2026-10-08 08:52:50', '2026-10-08 11:36:55'),
 (10, N'Dương quyết thái', N'quyetthaix1@gmail.com', N'quyetthaix1@gmail.com', N'$2a$10$lYTuc4U954e24qY2RQyav.C7FLGCj/OV/aTTbeh.qx4LOMeiOHH.G', NULL, NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 0, 0, NULL, '2026-10-08 09:00:25', NULL),
 (11, N'Dương Công An', N'quyetthaix12@gmail.com', N'quyetthaix12@gmail.com', N'$2a$10$sTQxHll1gC3/vJ0n8TlV1.2T7pCiomNZlV61cN4wGHRGz4sy8hDCy', N'0972049598', N'', N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 0, 0, '2026-10-08 10:31:54', '2026-10-08 10:31:42', '2026-10-08 10:33:28'),
@@ -1230,61 +1150,61 @@ INSERT INTO Users (UserID, FullName, Account, Email, Password, Phone, Avatar, Ro
 (22, N'Trương Mỹ Duyên', N'manager_landmark81', N'manager.landmark81@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0911000019', NULL, N'MANAGER', N'ACTIVE', 19, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
 (23, N'Hồ Quốc Bảo', N'manager_govap', N'manager.govap@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0911000020', NULL, N'MANAGER', N'ACTIVE', 20, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
 (24, N'Hoàng Thuỳ Linh', N'staff_cg_02', N'staff.cg02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921010002', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 1, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(25, N'Đỗ Quốc Hùng', N'staff_cg_03', N'staff.cg03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921010003', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 1, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(25, N'Đỗ Quốc Hùng', N'staff_cg_03', N'staff.cg03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921010003', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 1, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
 (26, N'Lê Minh Trang', N'staff_cg_04', N'staff.cg04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921010004', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 1, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(27, N'Trần Bảo Nam', N'staff_cg_05', N'staff.cg05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921010005', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 1, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(27, N'Trần Bảo Nam', N'staff_cg_05', N'staff.cg05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921010005', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 1, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
 (28, N'Vũ Khánh Linh', N'staff_hd_02', N'staff.hd02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921020002', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 2, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(29, N'Nguyễn Đức Huy', N'staff_hd_03', N'staff.hd03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921020003', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 2, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(29, N'Nguyễn Đức Huy', N'staff_hd_03', N'staff.hd03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921020003', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 2, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
 (30, N'Đinh Lan Hương', N'staff_hd_04', N'staff.hd04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921020004', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 2, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(31, N'Bùi Thanh Tùng', N'staff_hd_05', N'staff.hd05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921020005', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 2, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(31, N'Bùi Thanh Tùng', N'staff_hd_05', N'staff.hd05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921020005', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 2, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
 (32, N'Ngô Mai Phương', N'staff_hk_01', N'staff.hk01@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921030001', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 3, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(33, N'Phan Tiến Đạt', N'staff_hk_02', N'staff.hk02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921030002', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 3, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(33, N'Phan Tiến Đạt', N'staff_hk_02', N'staff.hk02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921030002', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 3, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
 (34, N'Trương Mỹ Hoa', N'staff_hk_03', N'staff.hk03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921030003', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 3, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(35, N'Hà Anh Tuấn', N'staff_hk_04', N'staff.hk04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921030004', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 3, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(35, N'Hà Anh Tuấn', N'staff_hk_04', N'staff.hk04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921030004', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 3, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
 (36, N'Lương Thảo My', N'staff_hk_05', N'staff.hk05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921030005', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 3, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(37, N'Võ Hoàng Yến', N'staff_q1_02', N'staff.q102@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921040002', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 4, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(37, N'Võ Hoàng Yến', N'staff_q1_02', N'staff.q102@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921040002', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 4, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
 (38, N'Đặng Khắc Tiệp', N'staff_q1_03', N'staff.q103@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921040003', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 4, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(39, N'Cao Thái Hà', N'staff_q1_04', N'staff.q104@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921040004', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 4, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(39, N'Cao Thái Hà', N'staff_q1_04', N'staff.q104@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921040004', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 4, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
 (40, N'Lý Quí Khánh', N'staff_q1_05', N'staff.q105@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921040005', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 4, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(41, N'Dương Triệu Vũ', N'staff_hc_01', N'staff.hc01@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921050001', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 5, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(41, N'Dương Triệu Vũ', N'staff_hc_01', N'staff.hc01@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921050001', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 5, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
 (42, N'Tô Ngọc Vân', N'staff_hc_02', N'staff.hc02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921050002', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 5, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(43, N'Mai Phương Thúy', N'staff_hc_03', N'staff.hc03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921050003', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 5, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(43, N'Mai Phương Thúy', N'staff_hc_03', N'staff.hc03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921050003', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 5, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
 (44, N'Huỳnh Trọng Phát', N'staff_hc_04', N'staff.hc04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921050004', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 5, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(45, N'Lê Diệp Kiều', N'staff_hc_05', N'staff.hc05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921050005', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 5, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(45, N'Lê Diệp Kiều', N'staff_hc_05', N'staff.hc05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921050005', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 5, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
 (46, N'Đoàn Văn Hậu', N'staff_nq_01', N'staff.nq01@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921060001', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 6, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(47, N'Nguyễn Quang Hải', N'staff_nq_02', N'staff.nq02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921060002', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 6, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(47, N'Nguyễn Quang Hải', N'staff_nq_02', N'staff.nq02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921060002', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 6, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
 (48, N'Bùi Tiến Dũng', N'staff_nq_03', N'staff.nq03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921060003', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 6, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(49, N'Phạm Hải Yến', N'staff_nq_04', N'staff.nq04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921060004', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 6, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(49, N'Phạm Hải Yến', N'staff_nq_04', N'staff.nq04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921060004', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 6, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
 (50, N'Chu Ngọc Hà', N'staff_nq_05', N'staff.nq05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921060005', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 6, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(51, N'Hà Kiều Anh', N'staff_hbt_02', N'staff.hbt02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921170002', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 17, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(51, N'Hà Kiều Anh', N'staff_hbt_02', N'staff.hbt02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921170002', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 17, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
 (52, N'Vũ Trọng Phụng', N'staff_hbt_03', N'staff.hbt03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921170003', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 17, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(53, N'Nguyễn Du', N'staff_hbt_04', N'staff.hbt04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921170004', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 17, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(53, N'Nguyễn Du', N'staff_hbt_04', N'staff.hbt04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921170004', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 17, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
 (54, N'Hồ Xuân Hương', N'staff_hbt_05', N'staff.hbt05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921170005', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 17, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(55, N'Trần Đăng Khoa', N'staff_th_01', N'staff.th01@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921180001', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 18, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(55, N'Trần Đăng Khoa', N'staff_th_01', N'staff.th01@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921180001', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 18, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
 (56, N'Xuân Diệu', N'staff_th_02', N'staff.th02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921180002', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 18, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(57, N'Huy Cận', N'staff_th_03', N'staff.th03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921180003', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 18, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(57, N'Huy Cận', N'staff_th_03', N'staff.th03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921180003', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 18, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
 (58, N'Hàn Mặc Tử', N'staff_th_04', N'staff.th04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921180004', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 18, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(59, N'Chế Lan Viên', N'staff_th_05', N'staff.th05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921180005', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 18, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(59, N'Chế Lan Viên', N'staff_th_05', N'staff.th05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921180005', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 18, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
 (60, N'Lê Lợi', N'staff_lm_01', N'staff.lm01@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921190001', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 19, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(61, N'Trần Hưng Đạo', N'staff_lm_02', N'staff.lm02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921190002', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 19, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(61, N'Trần Hưng Đạo', N'staff_lm_02', N'staff.lm02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921190002', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 19, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
 (62, N'Ngô Quyền', N'staff_lm_03', N'staff.lm03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921190003', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 19, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(63, N'Lý Thường Kiệt', N'staff_lm_04', N'staff.lm04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921190004', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 19, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(63, N'Lý Thường Kiệt', N'staff_lm_04', N'staff.lm04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921190004', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 19, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
 (64, N'Quang Trung', N'staff_lm_05', N'staff.lm05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921190005', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 19, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(65, N'Võ Thị Sáu', N'staff_gv_01', N'staff.gv01@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921200001', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 20, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(65, N'Võ Thị Sáu', N'staff_gv_01', N'staff.gv01@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921200001', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 20, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
 (66, N'Nguyễn Văn Trỗi', N'staff_gv_02', N'staff.gv02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921200002', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 20, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(67, N'Kim Đồng', N'staff_gv_03', N'staff.gv03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921200003', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 20, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(67, N'Kim Đồng', N'staff_gv_03', N'staff.gv03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921200003', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 20, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
 (68, N'Lê Văn Tám', N'staff_gv_04', N'staff.gv04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921200004', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 20, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(69, N'Bế Văn Đàn', N'staff_gv_05', N'staff.gv05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921200005', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 20, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(69, N'Bế Văn Đàn', N'staff_gv_05', N'staff.gv05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921200005', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 20, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
 (70, N'Phan Bội Châu', N'staff_td_01', N'staff.td01@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921210001', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 21, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(71, N'Phan Châu Trinh', N'staff_td_02', N'staff.td02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921210002', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 21, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(71, N'Phan Châu Trinh', N'staff_td_02', N'staff.td02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921210002', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 21, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
 (72, N'Huỳnh Thúc Kháng', N'staff_td_03', N'staff.td03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921210003', NULL, N'TICKET_SALES_STAFF', N'INACTIVE', 21, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 21:17:51'),
-(73, N'Lương Văn Can', N'staff_td_04', N'staff.td04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921210004', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 21, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(73, N'Lương Văn Can', N'staff_td_04', N'staff.td04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921210004', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 21, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
 (74, N'Nguyễn An Ninh', N'staff_td_05', N'staff.td05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921210005', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 21, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(75, N'Hoàng Hoa Thám', N'staff_cl_01', N'staff.cl01@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921220001', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 22, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(75, N'Hoàng Hoa Thám', N'staff_cl_01', N'staff.cl01@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921220001', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 22, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
 (76, N'Trương Định', N'staff_cl_02', N'staff.cl02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921220002', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 22, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(77, N'Nguyễn Trung Trực', N'staff_cl_03', N'staff.cl03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921220003', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 22, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(77, N'Nguyễn Trung Trực', N'staff_cl_03', N'staff.cl03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921220003', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 22, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
 (78, N'Võ Duy Dương', N'staff_cl_04', N'staff.cl04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921220004', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 22, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
-(79, N'Thủ Khoa Huân', N'staff_cl_05', N'staff.cl05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921220005', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 22, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
+(79, N'Thủ Khoa Huân', N'staff_cl_05', N'staff.cl05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921220005', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 22, NULL, NULL, 1, 1, NULL, '2026-10-15 20:10:06', '2026-10-15 20:10:06'),
 (80, N'Trần Thị Mai', N'cust_01', N'tranthimai@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000001', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-10-14 20:10:06', '2026-10-15 20:10:06'),
 (81, N'Lê Văn Long', N'cust_02', N'levanlong@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000002', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-10-13 20:10:06', '2026-10-15 20:10:06'),
 (82, N'Phạm Thu Trang', N'cust_03', N'phamthutrang@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0981000003', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 1, NULL, '2026-10-12 20:10:06', '2026-10-15 20:10:06'),
@@ -1332,19 +1252,19 @@ INSERT INTO Users (UserID, FullName, Account, Email, Password, Phone, Avatar, Ro
 (127, N'Dương quyết thái', N'quyetthai', N'quyetthaix22@gmail.com', N'$2a$10$SXAro67oi3IuXv8s.LO6tuSi/zg8XeB0mp/jiTbcOcKU7JQwCDgOu', N'0972049598', NULL, N'MANAGER', N'ACTIVE', 24, NULL, NULL, 1, 0, NULL, '2026-10-26 18:39:48', NULL),
 (128, N'Trần Thị Cúc', N'customer1', N'customer1@gmail.com', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0900000011', NULL, N'CUSTOMER', N'ACTIVE', NULL, NULL, NULL, 1, 0, NULL, '2026-10-24 15:00:00', NULL),
 (136, N'Nguyễn Hoàng Nam', N'staff_tk_01', N'staff.tk01@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230001', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
-(137, N'Trần Thị Thùy Dung', N'staff_tk_02', N'staff.tk02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230002', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
+(137, N'Trần Thị Thùy Dung', N'staff_tk_02', N'staff.tk02@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230002', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
 (138, N'Lê Quốc Bảo', N'staff_tk_03', N'staff.tk03@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230003', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
-(139, N'Phạm Minh Thư', N'staff_tk_04', N'staff.tk04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230004', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
+(139, N'Phạm Minh Thư', N'staff_tk_04', N'staff.tk04@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230004', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
 (140, N'Đặng Tuấn Kiệt', N'staff_tk_05', N'staff.tk05@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230005', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
-(141, N'Huỳnh Mai Phương', N'staff_tk_06', N'staff.tk06@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230006', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
+(141, N'Huỳnh Mai Phương', N'staff_tk_06', N'staff.tk06@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230006', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
 (142, N'Võ Thành Đạt', N'staff_tk_07', N'staff.tk07@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230007', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
-(143, N'Bùi Thảo Nhi', N'staff_tk_08', N'staff.tk08@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230008', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
+(143, N'Bùi Thảo Nhi', N'staff_tk_08', N'staff.tk08@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230008', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
 (144, N'Đỗ Gia Huy', N'staff_tk_09', N'staff.tk09@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230009', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
-(145, N'Trương Bảo Châu', N'staff_tk_10', N'staff.tk10@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230010', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
+(145, N'Trương Bảo Châu', N'staff_tk_10', N'staff.tk10@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230010', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
 (146, N'Ngô Đình Khang', N'staff_tk_11', N'staff.tk11@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230011', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
-(147, N'Hoàng Ngọc Ánh', N'staff_tk_12', N'staff.tk12@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230012', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
+(147, N'Hoàng Ngọc Ánh', N'staff_tk_12', N'staff.tk12@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230012', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
 (148, N'Phan Nhật Anh', N'staff_tk_13', N'staff.tk13@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230013', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
-(149, N'Lâm Quỳnh Như', N'staff_tk_14', N'staff.tk14@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230014', NULL, N'TICKET_CHECKER_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
+(149, N'Lâm Quỳnh Như', N'staff_tk_14', N'staff.tk14@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230014', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00'),
 (150, N'Vũ Đức Hải', N'staff_tk_15', N'staff.tk15@cineflow.vn', N'$2a$10$4AeCwdkcGvspefpI3xi8K.F5mdPwC7zGSm3nVb82VfnRgp9BaUrkq', N'0921230015', NULL, N'TICKET_SALES_STAFF', N'ACTIVE', 23, NULL, NULL, 1, 1, NULL, '2026-11-09 18:00:00', '2026-11-09 18:00:00');
 GO
 SET IDENTITY_INSERT Users OFF;
@@ -24222,52 +24142,52 @@ GO
 -- ====================================================================================
 SET IDENTITY_INSERT Tickets ON;
 GO
-INSERT INTO Tickets (TicketID, BookingSeatID, TicketCode, QRCode, TicketStatus, CheckedInAt, CheckedInBy, CreatedAt) VALUES
-(1, 2, N'TKBK2026101500014641', N'QR_BK202610150001_4641', N'VALID', NULL, NULL, '2026-10-15 19:27:12'),
-(2, 3, N'TKBK2026101500024591', N'QR_BK202610150002_4591', N'USED', '2026-10-15 19:57:12', 75, '2026-10-15 18:42:12'),
-(3, 4, N'TKBK2026101500034491', N'QR_BK202610150003_4491', N'VALID', NULL, NULL, '2026-10-15 17:57:12'),
-(4, 5, N'TKBK2026101500044491', N'QR_BK202610150004_4491', N'USED', '2026-10-15 19:57:12', 70, '2026-10-15 17:12:12'),
-(5, 6, N'TKBK2026101500054441', N'QR_BK202610150005_4441', N'VALID', NULL, NULL, '2026-10-15 16:27:12'),
-(6, 7, N'TKBK2026101500064441', N'QR_BK202610150006_4441', N'USED', '2026-10-15 19:57:12', 70, '2026-10-15 15:42:12'),
-(7, 8, N'TKBK2026101500074341', N'QR_BK202610150007_4341', N'VALID', NULL, NULL, '2026-10-15 14:57:12'),
-(8, 9, N'TKBK2026101500084191', N'QR_BK202610150008_4191', N'USED', '2026-10-15 19:57:12', 60, '2026-10-15 14:12:12'),
-(9, 10, N'TKBK2026101500094141', N'QR_BK202610150009_4141', N'VALID', NULL, NULL, '2026-10-15 13:27:12'),
-(10, 11, N'TKBK2026101500103991', N'QR_BK202610150010_3991', N'USED', '2026-10-15 19:57:12', 55, '2026-10-15 12:42:12'),
-(11, 12, N'TKBK2026101500113991', N'QR_BK202610150011_3991', N'VALID', NULL, NULL, '2026-10-15 11:57:12'),
-(12, 13, N'TKBK2026101500123891', N'QR_BK202610150012_3891', N'USED', '2026-10-15 19:57:12', 5, '2026-10-15 11:12:12'),
-(13, 14, N'TKBK2026101500133841', N'QR_BK202610150013_3841', N'VALID', NULL, NULL, '2026-10-15 10:27:12'),
-(14, 15, N'TKBK2026101500141891', N'QR_BK202610150014_1891', N'USED', '2026-10-15 19:57:12', 46, '2026-10-15 09:42:12'),
-(15, 16, N'TKBK202610150015481', N'QR_BK202610150015_481', N'VALID', NULL, NULL, '2026-10-15 08:57:12'),
-(16, 17, N'TKBK202610150016841', N'QR_BK202610150016_841', N'USED', '2026-10-15 19:57:12', 41, '2026-10-15 08:12:12'),
-(17, 18, N'TKBK202610150017361', N'QR_BK202610150017_361', N'VALID', NULL, NULL, '2026-10-15 07:27:12'),
-(18, 19, N'TKBK202610150018301', N'QR_BK202610150018_301', N'USED', '2026-10-15 19:57:12', 32, '2026-10-15 06:42:12'),
-(19, 20, N'TKBK202610150019241', N'QR_BK202610150019_241', N'VALID', NULL, NULL, '2026-10-15 05:57:12'),
-(20, 21, N'TKBK20261015002015', N'QR_BK202610150020_15', N'USED', '2026-10-15 19:57:12', 6, '2026-10-15 05:12:12'),
-(21, 22, N'TKBK2026101500217', N'QR_BK202610150021_7', N'VALID', NULL, NULL, '2026-10-15 04:27:12'),
-(22, 23, N'TKBK2026101500227', N'QR_BK202610150022_7', N'USED', '2026-10-15 19:57:12', 2, '2026-10-15 03:42:12'),
-(23, 24, N'TKBK2026101500231', N'QR_BK202610150023_1', N'VALID', NULL, NULL, '2026-10-15 02:57:12'),
-(24, 25, N'TKBK2026101500241', N'QR_BK202610150024_1', N'USED', '2026-10-15 19:57:12', 2, '2026-10-15 02:12:12'),
-(25, 26, N'TKBK2026101500254641', N'QR_BK202610150025_4641', N'VALID', NULL, NULL, '2026-10-15 01:27:12'),
-(26, 27, N'TKBK2026101500014591', N'QR_BK202610150001_4591', N'VALID', NULL, NULL, '2026-10-15 19:27:12'),
-(27, 28, N'TKBK2026101500024491', N'QR_BK202610150002_4491', N'USED', '2026-10-15 19:57:43', 70, '2026-10-15 18:42:12'),
-(28, 29, N'TKBK2026101500044441', N'QR_BK202610150004_4441', N'USED', '2026-10-15 19:57:43', 70, '2026-10-15 17:12:12'),
-(29, 30, N'TKBK2026101500064341', N'QR_BK202610150006_4341', N'USED', '2026-10-15 19:57:43', 65, '2026-10-15 15:42:12'),
-(30, 31, N'TKBK2026101500074191', N'QR_BK202610150007_4191', N'VALID', NULL, NULL, '2026-10-15 14:57:12'),
-(31, 32, N'TKBK2026101500084141', N'QR_BK202610150008_4141', N'USED', '2026-10-15 19:57:43', 60, '2026-10-15 14:12:12'),
-(32, 33, N'TKBK2026101500093991', N'QR_BK202610150009_3991', N'VALID', NULL, NULL, '2026-10-15 13:27:12'),
-(33, 34, N'TKBK2026101500113891', N'QR_BK202610150011_3891', N'VALID', NULL, NULL, '2026-10-15 11:57:12'),
-(34, 35, N'TKBK2026101500123841', N'QR_BK202610150012_3841', N'USED', '2026-10-15 19:57:43', 5, '2026-10-15 11:12:12'),
-(35, 36, N'TKBK2026101500131891', N'QR_BK202610150013_1891', N'VALID', NULL, NULL, '2026-10-15 10:27:12'),
-(36, 37, N'TKBK202610150014481', N'QR_BK202610150014_481', N'USED', '2026-10-15 19:57:43', 46, '2026-10-15 09:42:12'),
-(37, 38, N'TKBK202610150015841', N'QR_BK202610150015_841', N'VALID', NULL, NULL, '2026-10-15 08:57:12'),
-(38, 39, N'TKBK202610150016361', N'QR_BK202610150016_361', N'USED', '2026-10-15 19:57:43', 8, '2026-10-15 08:12:12'),
-(39, 40, N'TKBK202610150017301', N'QR_BK202610150017_301', N'VALID', NULL, NULL, '2026-10-15 07:27:12'),
-(40, 41, N'TKBK202610150018241', N'QR_BK202610150018_241', N'USED', '2026-10-15 19:57:43', 32, '2026-10-15 06:42:12'),
-(41, 42, N'TKBK20261015001915', N'QR_BK202610150019_15', N'VALID', NULL, NULL, '2026-10-15 05:57:12'),
-(42, 43, N'TKBK2026101500207', N'QR_BK202610150020_7', N'USED', '2026-10-15 19:57:43', 2, '2026-10-15 05:12:12'),
-(43, 44, N'TKBK2026101500221', N'QR_BK202610150022_1', N'USED', '2026-10-15 19:57:43', 2, '2026-10-15 03:42:12'),
-(44, 45, N'TKBK2026101500244641', N'QR_BK202610150024_4641', N'USED', '2026-10-15 19:57:43', 75, '2026-10-15 02:12:12'),
-(45, 46, N'TKBK2026101500254591', N'QR_BK202610150025_4591', N'VALID', NULL, NULL, '2026-10-15 01:27:12');
+INSERT INTO Tickets (TicketID, BookingSeatID, TicketCode, QRCode, TicketStatus, CreatedAt) VALUES
+(1, 2, N'TKBK2026101500014641', N'QR_BK202610150001_4641', N'VALID', '2026-10-15 19:27:12'),
+(2, 3, N'TKBK2026101500024591', N'QR_BK202610150002_4591', N'VALID', '2026-10-15 18:42:12'),
+(3, 4, N'TKBK2026101500034491', N'QR_BK202610150003_4491', N'VALID', '2026-10-15 17:57:12'),
+(4, 5, N'TKBK2026101500044491', N'QR_BK202610150004_4491', N'VALID', '2026-10-15 17:12:12'),
+(5, 6, N'TKBK2026101500054441', N'QR_BK202610150005_4441', N'VALID', '2026-10-15 16:27:12'),
+(6, 7, N'TKBK2026101500064441', N'QR_BK202610150006_4441', N'VALID', '2026-10-15 15:42:12'),
+(7, 8, N'TKBK2026101500074341', N'QR_BK202610150007_4341', N'VALID', '2026-10-15 14:57:12'),
+(8, 9, N'TKBK2026101500084191', N'QR_BK202610150008_4191', N'VALID', '2026-10-15 14:12:12'),
+(9, 10, N'TKBK2026101500094141', N'QR_BK202610150009_4141', N'VALID', '2026-10-15 13:27:12'),
+(10, 11, N'TKBK2026101500103991', N'QR_BK202610150010_3991', N'VALID', '2026-10-15 12:42:12'),
+(11, 12, N'TKBK2026101500113991', N'QR_BK202610150011_3991', N'VALID', '2026-10-15 11:57:12'),
+(12, 13, N'TKBK2026101500123891', N'QR_BK202610150012_3891', N'VALID', '2026-10-15 11:12:12'),
+(13, 14, N'TKBK2026101500133841', N'QR_BK202610150013_3841', N'VALID', '2026-10-15 10:27:12'),
+(14, 15, N'TKBK2026101500141891', N'QR_BK202610150014_1891', N'VALID', '2026-10-15 09:42:12'),
+(15, 16, N'TKBK202610150015481', N'QR_BK202610150015_481', N'VALID', '2026-10-15 08:57:12'),
+(16, 17, N'TKBK202610150016841', N'QR_BK202610150016_841', N'VALID', '2026-10-15 08:12:12'),
+(17, 18, N'TKBK202610150017361', N'QR_BK202610150017_361', N'VALID', '2026-10-15 07:27:12'),
+(18, 19, N'TKBK202610150018301', N'QR_BK202610150018_301', N'VALID', '2026-10-15 06:42:12'),
+(19, 20, N'TKBK202610150019241', N'QR_BK202610150019_241', N'VALID', '2026-10-15 05:57:12'),
+(20, 21, N'TKBK20261015002015', N'QR_BK202610150020_15', N'VALID', '2026-10-15 05:12:12'),
+(21, 22, N'TKBK2026101500217', N'QR_BK202610150021_7', N'VALID', '2026-10-15 04:27:12'),
+(22, 23, N'TKBK2026101500227', N'QR_BK202610150022_7', N'VALID', '2026-10-15 03:42:12'),
+(23, 24, N'TKBK2026101500231', N'QR_BK202610150023_1', N'VALID', '2026-10-15 02:57:12'),
+(24, 25, N'TKBK2026101500241', N'QR_BK202610150024_1', N'VALID', '2026-10-15 02:12:12'),
+(25, 26, N'TKBK2026101500254641', N'QR_BK202610150025_4641', N'VALID', '2026-10-15 01:27:12'),
+(26, 27, N'TKBK2026101500014591', N'QR_BK202610150001_4591', N'VALID', '2026-10-15 19:27:12'),
+(27, 28, N'TKBK2026101500024491', N'QR_BK202610150002_4491', N'VALID', '2026-10-15 18:42:12'),
+(28, 29, N'TKBK2026101500044441', N'QR_BK202610150004_4441', N'VALID', '2026-10-15 17:12:12'),
+(29, 30, N'TKBK2026101500064341', N'QR_BK202610150006_4341', N'VALID', '2026-10-15 15:42:12'),
+(30, 31, N'TKBK2026101500074191', N'QR_BK202610150007_4191', N'VALID', '2026-10-15 14:57:12'),
+(31, 32, N'TKBK2026101500084141', N'QR_BK202610150008_4141', N'VALID', '2026-10-15 14:12:12'),
+(32, 33, N'TKBK2026101500093991', N'QR_BK202610150009_3991', N'VALID', '2026-10-15 13:27:12'),
+(33, 34, N'TKBK2026101500113891', N'QR_BK202610150011_3891', N'VALID', '2026-10-15 11:57:12'),
+(34, 35, N'TKBK2026101500123841', N'QR_BK202610150012_3841', N'VALID', '2026-10-15 11:12:12'),
+(35, 36, N'TKBK2026101500131891', N'QR_BK202610150013_1891', N'VALID', '2026-10-15 10:27:12'),
+(36, 37, N'TKBK202610150014481', N'QR_BK202610150014_481', N'VALID', '2026-10-15 09:42:12'),
+(37, 38, N'TKBK202610150015841', N'QR_BK202610150015_841', N'VALID', '2026-10-15 08:57:12'),
+(38, 39, N'TKBK202610150016361', N'QR_BK202610150016_361', N'VALID', '2026-10-15 08:12:12'),
+(39, 40, N'TKBK202610150017301', N'QR_BK202610150017_301', N'VALID', '2026-10-15 07:27:12'),
+(40, 41, N'TKBK202610150018241', N'QR_BK202610150018_241', N'VALID', '2026-10-15 06:42:12'),
+(41, 42, N'TKBK20261015001915', N'QR_BK202610150019_15', N'VALID', '2026-10-15 05:57:12'),
+(42, 43, N'TKBK2026101500207', N'QR_BK202610150020_7', N'VALID', '2026-10-15 05:12:12'),
+(43, 44, N'TKBK2026101500221', N'QR_BK202610150022_1', N'VALID', '2026-10-15 03:42:12'),
+(44, 45, N'TKBK2026101500244641', N'QR_BK202610150024_4641', N'VALID', '2026-10-15 02:12:12'),
+(45, 46, N'TKBK2026101500254591', N'QR_BK202610150025_4591', N'VALID', '2026-10-15 01:27:12');
 GO
 SET IDENTITY_INSERT Tickets OFF;
 GO
@@ -24358,84 +24278,7 @@ GO
 SET IDENTITY_INSERT Payments OFF;
 GO
 
--- ====================================================================================
--- CheckInLogs (23 bản ghi)
--- ====================================================================================
-SET IDENTITY_INSERT CheckInLogs ON;
-GO
-INSERT INTO CheckInLogs (CheckInID, TicketID, CheckedBy, CheckInTime, Result, Note) VALUES
-(1, 2, 75, '2026-10-15 19:57:12', N'SUCCESS', N'Khách hàng quét mã QR qua cổng soát vé thành công'),
-(2, 4, 70, '2026-10-15 19:57:12', N'SUCCESS', N'Khách hàng quét mã QR qua cổng soát vé thành công'),
-(3, 6, 70, '2026-10-15 19:57:12', N'SUCCESS', N'Khách hàng quét mã QR qua cổng soát vé thành công'),
-(4, 8, 60, '2026-10-15 19:57:12', N'SUCCESS', N'Khách hàng quét mã QR qua cổng soát vé thành công'),
-(5, 10, 55, '2026-10-15 19:57:12', N'SUCCESS', N'Khách hàng quét mã QR qua cổng soát vé thành công'),
-(6, 12, 5, '2026-10-15 19:57:12', N'SUCCESS', N'Khách hàng quét mã QR qua cổng soát vé thành công'),
-(7, 14, 46, '2026-10-15 19:57:12', N'SUCCESS', N'Khách hàng quét mã QR qua cổng soát vé thành công'),
-(8, 16, 41, '2026-10-15 19:57:12', N'SUCCESS', N'Khách hàng quét mã QR qua cổng soát vé thành công'),
-(9, 18, 32, '2026-10-15 19:57:12', N'SUCCESS', N'Khách hàng quét mã QR qua cổng soát vé thành công'),
-(10, 20, 6, '2026-10-15 19:57:12', N'SUCCESS', N'Khách hàng quét mã QR qua cổng soát vé thành công'),
-(11, 22, 2, '2026-10-15 19:57:12', N'SUCCESS', N'Khách hàng quét mã QR qua cổng soát vé thành công'),
-(12, 24, 2, '2026-10-15 19:57:12', N'SUCCESS', N'Khách hàng quét mã QR qua cổng soát vé thành công'),
-(13, 27, 70, '2026-10-15 19:57:43', N'SUCCESS', N'Khách hàng quét mã QR qua cổng soát vé thành công'),
-(14, 28, 70, '2026-10-15 19:57:43', N'SUCCESS', N'Khách hàng quét mã QR qua cổng soát vé thành công'),
-(15, 29, 65, '2026-10-15 19:57:43', N'SUCCESS', N'Khách hàng quét mã QR qua cổng soát vé thành công'),
-(16, 31, 60, '2026-10-15 19:57:43', N'SUCCESS', N'Khách hàng quét mã QR qua cổng soát vé thành công'),
-(17, 34, 5, '2026-10-15 19:57:43', N'SUCCESS', N'Khách hàng quét mã QR qua cổng soát vé thành công'),
-(18, 36, 46, '2026-10-15 19:57:43', N'SUCCESS', N'Khách hàng quét mã QR qua cổng soát vé thành công'),
-(19, 38, 8, '2026-10-15 19:57:43', N'SUCCESS', N'Khách hàng quét mã QR qua cổng soát vé thành công'),
-(20, 40, 32, '2026-10-15 19:57:43', N'SUCCESS', N'Khách hàng quét mã QR qua cổng soát vé thành công'),
-(21, 42, 2, '2026-10-15 19:57:43', N'SUCCESS', N'Khách hàng quét mã QR qua cổng soát vé thành công'),
-(22, 43, 2, '2026-10-15 19:57:43', N'SUCCESS', N'Khách hàng quét mã QR qua cổng soát vé thành công'),
-(23, 44, 75, '2026-10-15 19:57:43', N'SUCCESS', N'Khách hàng quét mã QR qua cổng soát vé thành công');
-GO
-SET IDENTITY_INSERT CheckInLogs OFF;
-GO
 
--- ====================================================================================
--- MovieRatings (36 bản ghi)
--- ====================================================================================
-SET IDENTITY_INSERT MovieRatings ON;
-GO
-INSERT INTO MovieRatings (RatingID, MovieID, UserID, Score, CreatedAt, UpdatedAt) VALUES
-(1, 9, 1, 5, '2026-10-12 09:24:29', '2026-10-12 09:24:46'),
-(2, 12, 1, 5, '2026-10-12 09:27:21', '2026-10-12 09:32:10'),
-(3, 1, 80, 5, '2026-10-12 20:10:56', '2026-10-12 20:10:56'),
-(4, 1, 81, 5, '2026-10-12 20:10:56', '2026-10-12 20:10:56'),
-(5, 1, 82, 4, '2026-10-12 20:10:56', '2026-10-12 20:10:56'),
-(6, 1, 83, 5, '2026-10-12 20:10:56', '2026-10-12 20:10:56'),
-(7, 2, 84, 5, '2026-10-09 20:10:56', '2026-10-09 20:10:56'),
-(8, 2, 85, 5, '2026-10-09 20:10:56', '2026-10-09 20:10:56'),
-(9, 2, 86, 4, '2026-10-09 20:10:56', '2026-10-09 20:10:56'),
-(10, 2, 87, 5, '2026-10-09 20:10:56', '2026-10-09 20:10:56'),
-(11, 4, 88, 4, '2026-10-03 20:10:56', '2026-10-03 20:10:56'),
-(12, 4, 89, 5, '2026-10-03 20:10:56', '2026-10-03 20:10:56'),
-(13, 4, 90, 4, '2026-10-03 20:10:56', '2026-10-03 20:10:56'),
-(14, 5, 91, 5, '2026-09-30 20:10:56', '2026-09-30 20:10:56'),
-(15, 5, 92, 5, '2026-09-30 20:10:56', '2026-09-30 20:10:56'),
-(16, 5, 93, 4, '2026-09-30 20:10:56', '2026-09-30 20:10:56'),
-(17, 5, 94, 5, '2026-09-30 20:10:56', '2026-09-30 20:10:56'),
-(18, 6, 95, 5, '2026-09-27 20:10:56', '2026-09-27 20:10:56'),
-(19, 6, 96, 5, '2026-09-27 20:10:56', '2026-09-27 20:10:56'),
-(20, 6, 97, 4, '2026-09-27 20:10:56', '2026-09-27 20:10:56'),
-(21, 7, 98, 4, '2026-10-14 20:10:56', '2026-10-14 20:10:56'),
-(22, 7, 99, 4, '2026-10-14 20:10:56', '2026-10-14 20:10:56'),
-(23, 7, 100, 5, '2026-10-14 20:10:56', '2026-10-14 20:10:56'),
-(24, 9, 101, 5, '2026-10-08 20:10:56', '2026-10-08 20:10:56'),
-(25, 9, 102, 5, '2026-10-08 20:10:56', '2026-10-08 20:10:56'),
-(26, 9, 103, 4, '2026-10-08 20:10:56', '2026-10-08 20:10:56'),
-(27, 9, 104, 5, '2026-10-08 20:10:56', '2026-10-08 20:10:56'),
-(28, 10, 105, 5, '2026-10-05 20:10:56', '2026-10-05 20:10:56'),
-(29, 10, 106, 5, '2026-10-05 20:10:56', '2026-10-05 20:10:56'),
-(30, 10, 107, 5, '2026-10-05 20:10:56', '2026-10-05 20:10:56'),
-(31, 11, 108, 4, '2026-10-02 20:10:56', '2026-10-02 20:10:56'),
-(32, 11, 109, 5, '2026-10-02 20:10:56', '2026-10-02 20:10:56'),
-(33, 11, 110, 4, '2026-10-02 20:10:56', '2026-10-02 20:10:56'),
-(34, 12, 111, 5, '2026-09-29 20:10:56', '2026-09-29 20:10:56'),
-(35, 12, 112, 5, '2026-09-29 20:10:56', '2026-09-29 20:10:56'),
-(36, 12, 113, 4, '2026-09-29 20:10:56', '2026-09-29 20:10:56');
-GO
-SET IDENTITY_INSERT MovieRatings OFF;
-GO
 
 /* ====================================================================================
    KIỂM TRA TỔNG SỐ LƯỢNG BẢN GHI SAU KHI NẠP DỮ LIỆU
@@ -24467,9 +24310,7 @@ UNION ALL SELECT 'Tickets', COUNT(*) FROM Tickets
 UNION ALL SELECT 'FnbOrders', COUNT(*) FROM FnbOrders
 UNION ALL SELECT 'FnbOrderItems', COUNT(*) FROM FnbOrderItems
 UNION ALL SELECT 'Payments', COUNT(*) FROM Payments
-UNION ALL SELECT 'CheckInLogs', COUNT(*) FROM CheckInLogs
 UNION ALL SELECT 'VoucherUsages', COUNT(*) FROM VoucherUsages
-UNION ALL SELECT 'MovieRatings', COUNT(*) FROM MovieRatings
 ORDER BY SoBanGhi DESC;
 GO
 
@@ -24706,7 +24547,7 @@ GO
 
 
 /* =====================================================================================
-   DỮ LIỆU BỔ SUNG: TỒN KHO F&B VÀ NHẬT KÝ SOÁT VÉ DEMO
+   DỮ LIỆU BỔ SUNG: TỒN KHO F&B
    ===================================================================================== */
 -- Cập nhật tồn kho bắp nước chi nhánh (Centre 1 và Centre 2) để luôn sẵn sàng bán
 UPDATE CentreFnbInventory
@@ -24714,21 +24555,6 @@ SET IsAvailable = 1, StockQuantity = 150
 WHERE CentreID IN (1, 2);
 GO
 
--- Thêm các bản ghi nhật ký soát vé (CheckInLogs) mẫu
-INSERT INTO CheckInLogs (TicketID, CheckedBy, CheckInTime, Result, Note)
-VALUES
-    (20, 6, DATEADD(minute, -30, GETDATE()), 'SUCCESS', N'Quét mã QR qua cổng soát vé thành công'),
-    (NULL, 6, DATEADD(minute, -25, GETDATE()), 'REJECTED', N'Không tìm thấy vé với mã này.'),
-    (20, 6, DATEADD(minute, -20, GETDATE()), 'REJECTED', N'Vé đã được sử dụng trước đó.'),
-    (1, 6, DATEADD(minute, -15, GETDATE()), 'REJECTED', N'Vé thuộc Centre khác (CineFlow Cẩm Lệ).'),
-    (20, 6, DATEADD(minute, -10, GETDATE()), 'SUCCESS', N'Nhân viên xác thực vé thủ công'),
-    (NULL, 6, DATEADD(minute, -5, GETDATE()), 'REJECTED', N'Không tìm thấy vé với mã này.'),
-    (20, 6, DATEADD(minute, -2, GETDATE()), 'SUCCESS', N'Quét mã vé thành công'),
-    (NULL, 25, DATEADD(minute, -40, GETDATE()), 'REJECTED', N'Không tìm thấy vé với mã này.'),
-    (NULL, 25, DATEADD(minute, -35, GETDATE()), 'REJECTED', N'Mã vé không đúng định dạng.'),
-    (1, 25, DATEADD(minute, -18, GETDATE()), 'REJECTED', N'Vé thuộc Centre khác.'),
-    (NULL, 25, DATEADD(minute, -5, GETDATE()), 'REJECTED', N'Không tìm thấy vé với mã này.');
-GO
 
 
 /* =====================================================================================
