@@ -12,9 +12,8 @@
     }
     boolean isManager = "MANAGER".equalsIgnoreCase(cfRole) || "ADMIN".equalsIgnoreCase(cfRole);
     boolean isSales = "TICKET_SALES_STAFF".equalsIgnoreCase(cfRole) || "TICKET_SALES".equalsIgnoreCase(cfRole);
-    boolean isChecker = "TICKET_CHECKER_STAFF".equalsIgnoreCase(cfRole) || "TICKET_CHECKER".equalsIgnoreCase(cfRole);
     boolean isGenericStaff = "STAFF".equalsIgnoreCase(cfRole);
-    boolean isStaff = isSales || isChecker || isGenericStaff;
+    boolean isStaff = isSales || isGenericStaff;
 
     String brandUrl = isStaff ? (cfPath + "/dashboard") : (cfPath + "/manager/dashboard");
     String dashboardUrl = isStaff ? (cfPath + "/dashboard") : (cfPath + "/manager/dashboard");
@@ -58,8 +57,6 @@
             activeNav = "fnb-stock";
         } else if (fullReqPath.contains("/fnb") || jspUri.contains("fnb")) {
             activeNav = "fnb";
-        } else if (fullReqPath.contains("/checkin") || jspUri.contains("ticketCheckIn") || jspUri.contains("checkin")) {
-            activeNav = "checkin";
         } else if (fullReqPath.contains("/payments") || jspUri.contains("paymentHistory")) {
             activeNav = "payments";
         } else if (fullReqPath.contains("/vouchers") || jspUri.contains("voucher")) {
@@ -120,16 +117,6 @@
             </nav>
         <% } %>
 
-        <% if (isChecker || isGenericStaff) { %>
-            <div class="cf-sidebar-section">SOÁT VÉ CỬA RẠP</div>
-            <nav class="cf-sidebar-nav">
-                <a class="<%= "checkin".equals(activeNav) ? "active" : "" %>" href="<%= cfPath %>/checkin">
-                    <span class="icon">
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
-                    </span>Soát vé Check-in
-                </a>
-            </nav>
-        <% } %>
     <% } else { %>
         <div class="cf-sidebar-section">VẬN HÀNH RẠP CHIẾU</div>
         <nav class="cf-sidebar-nav">
@@ -175,11 +162,6 @@
 
         <div class="cf-sidebar-section">BÁN VÉ &amp; VẬN HÀNH</div>
         <nav class="cf-sidebar-nav">
-            <a class="<%= "checkin".equals(activeNav) ? "active" : "" %>" href="<%= cfPath %>/checkin">
-                <span class="icon">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
-                </span>Soát vé Check-in
-            </a>
             <a class="<%= "payments".equals(activeNav) ? "active" : "" %>" href="<%= cfPath %>/manager/payments">
                 <span class="icon">
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>

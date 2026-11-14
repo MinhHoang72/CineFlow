@@ -7,7 +7,6 @@ public class TicketInfoDTO {
     private int ticketId;
     private String ticketCode;
     private String ticketStatus;
-    private Timestamp checkedInAt;
     private String bookingCode;
     private String bookingStatus;
     private String seatLabel;
@@ -28,8 +27,6 @@ public class TicketInfoDTO {
     public String getTicketStatus() { return ticketStatus; }
     public void setTicketStatus(String ticketStatus) { this.ticketStatus = ticketStatus; }
 
-    public Timestamp getCheckedInAt() { return checkedInAt; }
-    public void setCheckedInAt(Timestamp checkedInAt) { this.checkedInAt = checkedInAt; }
 
     public String getBookingCode() { return bookingCode; }
     public void setBookingCode(String bookingCode) { this.bookingCode = bookingCode; }

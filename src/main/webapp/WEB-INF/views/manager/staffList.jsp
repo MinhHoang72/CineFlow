@@ -40,7 +40,6 @@
     int activeStaffCount = 0;
     int inactiveStaffCount = 0;
     int salesCount = 0;
-    int checkerCount = 0;
     if (staff != null) {
         for (User u : staff) {
             if ("ACTIVE".equalsIgnoreCase(u.getStatus())) {
@@ -50,8 +49,6 @@
             }
             if (u.isTicketSalesStaff()) {
                 salesCount++;
-            } else if (u.isTicketCheckerStaff()) {
-                checkerCount++;
             }
         }
     }
@@ -207,10 +204,6 @@
                     <span class="cf-kpi-label">Nhân viên Bán vé</span>
                     <div class="cf-kpi-value" style="color: #0284c7;"><%= salesCount %></div>
                 </div>
-                <div class="cf-kpi-card">
-                    <span class="cf-kpi-label">Nhân viên Soát vé</span>
-                    <div class="cf-kpi-value" style="color: #8b5cf6;"><%= checkerCount %></div>
-                </div>
             </div>
 
             <% if (selectedCentreId == null && !isAdminRole) { %>
@@ -239,7 +232,6 @@
                             <select id="staffRoleFilter" aria-label="Lọc theo vị trí công việc">
                                 <option value="">Tất cả vị trí</option>
                                 <option value="role-sales">🎫 Bán vé</option>
-                                <option value="role-checker">🔍 Soát vé</option>
                             </select>
                         </div>
 
@@ -328,8 +320,7 @@
                                     String employeeCode = item.getEmployeeCode() != null ? item.getEmployeeCode() : "";
                                     String staffRole = item.getRole() != null ? item.getRole() : "TICKET_SALES_STAFF";
                                     boolean isSales = item.isTicketSalesStaff();
-                                    boolean isChecker = item.isTicketCheckerStaff();
-                                    String roleClass = isSales ? "role-sales" : (isChecker ? "role-checker" : "");
+                                    String roleClass = isSales ? "role-sales" : "";
                                     String searchVal = (employeeCode + " " + item.getUserId() + " nv" + item.getUserId()
                                         + " " + staffName + " " + staffEmail + " " + staffAccount + " " + staffPhone + " " + staffRole).toLowerCase();
                                     String stClass = "ACTIVE".equalsIgnoreCase(st) ? "st-active"
@@ -350,10 +341,6 @@
                                         <% if (isSales) { %>
                                             <span class="cf-badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); white-space: nowrap;">
                                                 🎫 Bán vé 
-                                            </span>
-                                        <% } else if (isChecker) { %>
-                                            <span class="cf-badge" style="background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.35); white-space: nowrap;">
-                                                🔍 Soát vé 
                                             </span>
                                         <% } else { %>
                                             <span class="cf-badge cf-badge-info" style="white-space: nowrap;">
@@ -453,7 +440,6 @@
                     <label for="createStaffRole">Vị trí công việc *</label>
                     <select id="createStaffRole" name="role" required>
                         <option value="TICKET_SALES_STAFF">🎫 Nhân viên bán vé & F&B (Ticket Sales Staff)</option>
-                        <option value="TICKET_CHECKER_STAFF">🔍 Nhân viên soát vé tại cửa rạp (Ticket Checker Staff)</option>
                     </select>
                 </div>
 
@@ -522,7 +508,6 @@
                     <label for="editStaffRole">Vị trí công việc *</label>
                     <select name="role" id="editStaffRole" required>
                         <option value="TICKET_SALES_STAFF">🎫 Nhân viên bán vé & F&B (Ticket Sales Staff)</option>
-                        <option value="TICKET_CHECKER_STAFF">🔍 Nhân viên soát vé tại cửa rạp (Ticket Checker Staff)</option>
                     </select>
                 </div>
 

@@ -165,16 +165,6 @@
 
     <filter-mapping>
         <filter-name>StaffFilter</filter-name>
-        <url-pattern>/checkin</url-pattern>
-    </filter-mapping>
-
-    <filter-mapping>
-        <filter-name>StaffFilter</filter-name>
-        <url-pattern>/checkin/*</url-pattern>
-    </filter-mapping>
-
-    <filter-mapping>
-        <filter-name>StaffFilter</filter-name>
         <url-pattern>/fnb</url-pattern>
     </filter-mapping>
 

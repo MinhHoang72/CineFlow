@@ -6,7 +6,7 @@
      Trang dat truoc: pageTitle, pageStep (request scope). --%>
 <fmt:setLocale value="vi_VN" scope="request"/>
 <c:set var="cfRole" value="${sessionScope.user.role}"/>
-<c:set var="cfStaffShell" value="${cfRole == 'TICKET_SALES_STAFF' or cfRole == 'STAFF' or cfRole == 'TICKET_CHECKER_STAFF'
+<c:set var="cfStaffShell" value="${cfRole == 'TICKET_SALES_STAFF' or cfRole == 'STAFF'
                                    or cfRole == 'MANAGER' or cfRole == 'ADMIN'}" scope="request"/>
 <c:if test="${empty pageBreadcrumb}"><c:set var="pageBreadcrumb" value="Đặt vé và thanh toán" scope="request"/></c:if>
 <!DOCTYPE html>

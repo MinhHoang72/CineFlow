@@ -361,7 +361,6 @@
                                 <select name="role" class="select-dark" onchange="this.form.submit()">
                                     <option value="ALL" <%= (roleFilter == null || "ALL".equalsIgnoreCase(roleFilter)) ? "selected" : "" %>>Tất cả vai trò</option>
                                     <option value="TICKET_SALES_STAFF" <%= "TICKET_SALES_STAFF".equalsIgnoreCase(roleFilter) ? "selected" : "" %>>Bán vé</option>
-                                    <option value="TICKET_CHECKER_STAFF" <%= "TICKET_CHECKER_STAFF".equalsIgnoreCase(roleFilter) ? "selected" : "" %>>Soát vé</option>
                                 </select>
 
                                 <!-- BỘ LỌC SẮP XẾP MÃ NHÂN SỰ -->
@@ -432,10 +431,6 @@
                                                 <% if (item.isTicketSalesStaff()) { %>
                                                     <span class="cf-badge cf-badge-role-sales">
                                                         🎫 Bán vé (Ticket Sales)
-                                                    </span>
-                                                <% } else if (item.isTicketCheckerStaff()) { %>
-                                                    <span class="cf-badge cf-badge-role-checker">
-                                                        🔍 Soát vé (Ticket Checker)
                                                     </span>
                                                 <% } else { %>
                                                     <span class="cf-badge cf-badge-info">Nhân viên</span>
@@ -644,7 +639,6 @@
                     <select name="newRole" id="transferStaffNewRole" onchange="handleNewRoleChange()">
                         <option value="KEEP">-- Giữ nguyên chức vụ hiện tại --</option>
                         <option value="TICKET_SALES_STAFF">🎫 Nhân viên Bán vé (Ticket Sales)</option>
-                        <option value="TICKET_CHECKER_STAFF">🔍 Nhân viên Soát vé (Ticket Checker)</option>
                     </select>
                 </div>
 
@@ -827,8 +821,6 @@ function showDisabledCentreAlert(centreName, status) {
         var roleText = 'Nhân viên';
         if (role === 'TICKET_SALES_STAFF' || role === 'TICKET_SALES') {
             roleText = '🎫 Bán vé (Ticket Sales)';
-        } else if (role === 'TICKET_CHECKER_STAFF' || role === 'TICKET_CHECKER') {
-            roleText = '🔍 Soát vé (Ticket Checker)';
         }
         var roleEl = document.getElementById('transferStaffRoleDisplay');
         if (roleEl) roleEl.textContent = roleText;

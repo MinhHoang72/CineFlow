@@ -191,7 +191,7 @@ public class TransferServlet extends HttpServlet {
         }
 
         // 5. Xử lý điều chuyển nhân sự (action = "transfer_staff" / "transfer")
-        // Lưu ý: Chức năng điều chuyển chỉ áp dụng cho nhân viên thường (Bán vé, Soát vé).
+        // Lưu ý: Chức năng điều chuyển chỉ áp dụng cho nhân viên thường (Bán vé).
         // Vị trí Quản lý trung tâm thực hiện độc lập qua Bổ nhiệm & Miễn nhiệm.
         if ("transfer_staff".equalsIgnoreCase(action) || "transfer".equalsIgnoreCase(action)) {
             try {

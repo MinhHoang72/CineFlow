@@ -42,7 +42,6 @@
                             <tr><th>Trạng thái</th><td>
                                 <c:choose>
                                     <c:when test="${isCancelled}"><strong class="text-danger">Đã hủy</strong></c:when>
-                                    <c:when test="${t.status == 'USED'}"><strong class="text-muted">Đã sử dụng</strong></c:when>
                                     <c:otherwise><strong>${booking.statusLabel}</strong></c:otherwise>
                                 </c:choose>
                             </td></tr>

@@ -63,12 +63,10 @@ public class AdminDashboardServlet extends HttpServlet {
             return;
         }
 
-        // 3.3. Vai trò Nhân viên cụm rạp (Bán vé, Soát vé) -> Màn hình tác vụ nhân viên
+        // 3.3. Vai trò Nhân viên cụm rạp (Bán vé) -> Màn hình tác vụ nhân viên
         if ("STAFF".equalsIgnoreCase(role)
                 || "TICKET_SALES_STAFF".equalsIgnoreCase(role)
-                || "TICKET_CHECKER_STAFF".equalsIgnoreCase(role)
-                || "TICKET_SALES".equalsIgnoreCase(role)
-                || "TICKET_CHECKER".equalsIgnoreCase(role)) {
+                || "TICKET_SALES".equalsIgnoreCase(role)) {
             request.getRequestDispatcher("/WEB-INF/views/staff/staffDashboard.jsp").forward(request, response);
             return;
         }

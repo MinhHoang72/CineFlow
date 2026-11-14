@@ -46,7 +46,6 @@
     <div class="rp-kpi"><div class="label">Tổng doanh thu</div><div class="value"><%= money(s.getTotalRevenue()) %></div><div class="note">Vé <%= money(s.getTicketRevenue()) %> · Bắp nước <%= money(s.getFnbRevenue()) %></div></div>
     <div class="rp-kpi"><div class="label">Vé đã bán</div><div class="value"><%= num(s.getTickets()) %></div><div class="note"><%= num(s.getBookings()) %> đơn đặt vé</div></div>
     <div class="rp-kpi"><div class="label">Tỷ lệ lấp đầy</div><div class="value"><%= pct(ops.getOccupancy()) %></div><div class="note"><%= num(ops.getShowtimes()) %> suất chiếu</div></div>
-    <div class="rp-kpi"><div class="label">Tỷ lệ đến xem</div><div class="value"><%= pct(ops.getCheckInRate()) %></div><div class="note"><%= num(ops.getCheckedIn()) %> vé đã soát</div></div>
     <div class="rp-kpi"><div class="label">Centre đang hoạt động</div><div class="value"><%= activeCentres %></div><div class="note"><%= num(customers) %> khách hàng hoạt động</div></div>
     <div class="rp-kpi"><div class="label">Voucher đã dùng</div><div class="value"><%= s.getVoucherBookings() %></div><div class="note">Giảm <%= money(s.getDiscountTotal()) %></div></div>
 </div>

@@ -12,13 +12,11 @@
     }
 
     boolean isSales = currentUser != null && currentUser.isTicketSalesStaff();
-    boolean isChecker = currentUser != null && currentUser.isTicketCheckerStaff();
     boolean isGenericStaff = currentUser != null && "STAFF".equalsIgnoreCase(currentUser.getRole());
     boolean isAdminOrManager = "ADMIN".equalsIgnoreCase(authRole) || "MANAGER".equalsIgnoreCase(authRole);
 
-    // Nếu là Admin/Manager hoặc Staff chung thì hiển thị cả 2 phân hệ để tiện kiểm tra
+    // Admin/Manager hoặc Staff chung cũng xem được phân hệ bán vé
     boolean showSales = isSales || isGenericStaff || isAdminOrManager;
-    boolean showChecker = isChecker || isGenericStaff || isAdminOrManager;
 
     String fullName = currentUser != null && currentUser.getFullName() != null ? currentUser.getFullName() : "Nhân viên";
     String employeeCode = currentUser != null ? currentUser.getEmployeeCode() : "NV00000";
@@ -63,10 +61,6 @@
                         <% if (isSales) { %>
                             <span class="staff-role-badge-sales">
                                 🎫 Nhân viên Bán vé &amp; F&amp;B (Ticket Sales Staff)
-                            </span>
-                        <% } else if (isChecker) { %>
-                            <span class="staff-role-badge-checker">
-                                🔍 Nhân viên Soát vé tại cửa rạp (Ticket Checker Staff)
                             </span>
                         <% } else { %>
                             <span class="staff-role-badge-sales" style="background: rgba(99, 102, 241, 0.18); color: #a5b4fc; border-color: rgba(99, 102, 241, 0.4);">
@@ -142,63 +136,6 @@
                 </div>
                 <% } %>
 
-                <!-- ============================================================== -->
-                <!-- PHÂN HỆ 2: TICKET CHECKER STAFF (SOÁT VÉ CỬA RẠP & CHECK-IN) -->
-                <!-- ============================================================== -->
-                <% if (showChecker) { %>
-                <div class="cf-card" style="margin-bottom: 24px;">
-                    <div class="cf-card-header">
-                        <div>
-                            <div class="staff-section-title">
-                                <span>🔍</span> Cửa phòng chiếu &amp; Soát vé (Ticket Checker Staff)
-                            </div>
-                            <p>Quy trình kiểm tra mã vé QR/Code, chọn suất chiếu đón khách và quản lý danh sách khán giả đã check-in.</p>
-                        </div>
-                        <% if (!isChecker && isAdminOrManager) { %>
-                            <span class="cf-badge cf-badge-info" style="font-size: 11px;">Chế độ xem Quản lý</span>
-                        <% } %>
-                    </div>
-                    <div class="cf-card-body">
-                        <div class="cf-dashboard-links">
-                            <a class="cf-dashboard-link cf-dashboard-link-purple" href="${pageContext.request.contextPath}/checkin">
-                                <span class="cf-feature-tag tag-purple">Cửa kiểm soát</span>
-                                <strong style="color: #c084fc; font-size: 15px;">📱 Quét mã QR &amp; Soát vé</strong>
-                                <span>Quét mã QR từ điện thoại của khán giả hoặc nhập mã vé để xác thực tính hợp lệ vào phòng chiếu.</span>
-                            </a>
-
-                            <a class="cf-dashboard-link" href="${pageContext.request.contextPath}/checkin">
-                                <span class="cf-feature-tag tag-blue">Suất chiếu</span>
-                                <strong style="color: #38bdf8; font-size: 15px;">🎬 Chọn suất chiếu đón khách</strong>
-                                <span>Kích hoạt cổng soát vé cho suất chiếu chuẩn bị bắt đầu (mở đón khách 15-30 phút trước giờ chiếu).</span>
-                            </a>
-
-                            <a class="cf-dashboard-link" href="${pageContext.request.contextPath}/checkin">
-                                <span class="cf-feature-tag tag-emerald">Thời gian thực</span>
-                                <strong style="color: #34d399; font-size: 15px;">📋 Danh sách đã Check-in</strong>
-                                <span>Theo dõi số lượng khách đã qua cửa soát vé, số vé chưa check-in và sơ đồ ghế khán giả trong phòng.</span>
-                            </a>
-
-                            <a class="cf-dashboard-link" href="${pageContext.request.contextPath}/checkin">
-                                <span class="cf-feature-tag tag-amber">Giám sát</span>
-                                <strong style="color: #fbbf24; font-size: 15px;">🏛 Trạng thái phòng chiếu</strong>
-                                <span>Kiểm tra trạng thái phòng chiếu tại <%= centreName %> (Đón khách, Đang chiếu, Kết thúc, Dọn vệ sinh).</span>
-                            </a>
-
-                            <a class="cf-dashboard-link" href="${pageContext.request.contextPath}/checkin">
-                                <span class="cf-feature-tag tag-blue">Lịch trình</span>
-                                <strong>🕒 Lịch suất chiếu hôm nay</strong>
-                                <span>Xem toàn bộ lịch chiếu các phòng trong ngày để sắp xếp ca trực cửa kiểm soát vé.</span>
-                            </a>
-
-                            <a class="cf-dashboard-link" href="${pageContext.request.contextPath}/account">
-                                <span class="cf-feature-tag tag-purple">Cá nhân</span>
-                                <strong>👤 Hồ sơ kiểm soát viên</strong>
-                                <span>Thông tin tài khoản <%= employeeCode %>, đổi mật khẩu và ca trực được phân công.</span>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                <% } %>
 
             </main>
         </div>

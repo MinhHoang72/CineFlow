@@ -59,8 +59,8 @@ public final class ValidationUtil {
     // Bộ vai trò người dùng trong hệ thống
     private static final Set<String> VALID_ROLES = new HashSet<>(Arrays.asList(
             "ADMIN", "MANAGER", "STAFF", "CUSTOMER",
-            "TICKET_SALES_STAFF", "TICKET_CHECKER_STAFF",
-            "TICKET_SALES", "TICKET_CHECKER"
+            "TICKET_SALES_STAFF",
+            "TICKET_SALES"
     ));
 
     private ValidationUtil() {
@@ -264,16 +264,14 @@ public final class ValidationUtil {
     }
 
     /**
-     * Kiểm tra vai trò có thuộc nhóm nhân sự rạp (STAFF, TICKET_SALES_STAFF, TICKET_CHECKER_STAFF) hay không.
+     * Kiểm tra vai trò có thuộc nhóm nhân sự rạp (STAFF, TICKET_SALES_STAFF) hay không.
      */
     public static boolean isStaffRole(String role) {
         if (isBlank(role)) {
             return false;
         }
         String r = role.trim().toUpperCase();
-        return "STAFF".equals(r) || "TICKET_SALES_STAFF".equals(r)
-                || "TICKET_CHECKER_STAFF".equals(r) || "TICKET_SALES".equals(r)
-                || "TICKET_CHECKER".equals(r);
+        return "STAFF".equals(r) || "TICKET_SALES_STAFF".equals(r) || "TICKET_SALES".equals(r);
     }
 
     /**

@@ -247,7 +247,6 @@
                                 <select id="transferRoleFilter" onchange="filterTransferHistory()" class="history-filter-select history-role-select">
                                     <option value="">Tất cả chức vụ</option>
                                     <option value="TICKET_SALES_STAFF">Bán vé</option>
-                                    <option value="TICKET_CHECKER_STAFF">Soát vé</option>
                                 </select>
 
                                 <div class="history-search-wrap">

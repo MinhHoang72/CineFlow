@@ -191,7 +191,6 @@ public class StaffTransfer {
         if (r == null) return "Nhân viên";
         if ("MANAGER".equalsIgnoreCase(r)) return "Quản lý";
         if ("TICKET_SALES_STAFF".equalsIgnoreCase(r) || "TICKET_SALES".equalsIgnoreCase(r)) return "Bán vé";
-        if ("TICKET_CHECKER_STAFF".equalsIgnoreCase(r) || "TICKET_CHECKER".equalsIgnoreCase(r)) return "Soát vé";
         if ("ADMIN".equalsIgnoreCase(r)) return "Quản trị viên";
         return r;
     }

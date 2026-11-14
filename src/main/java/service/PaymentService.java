@@ -238,7 +238,7 @@ public class PaymentService {
         voucherDAO.incrementUsedCount(conn, owner.voucherId());
     }
 
-    /** Mỗi ghế đã xác nhận một vé: mã TK + 10 ký tự, nội dung QR "CINEFLOW-TICKET:<mã>" (dùng cho soát vé). */
+    /** Mỗi ghế đã xác nhận một vé: mã TK + 10 ký tự, nội dung QR "CINEFLOW-TICKET:<mã>". */
     private void issueTickets(Connection conn, int bookingId) throws SQLException {
         List<NewTicket> tickets = new ArrayList<>();
         for (int bookingSeatId : bookingDAO.findConfirmedSeatsWithoutTicket(conn, bookingId)) {

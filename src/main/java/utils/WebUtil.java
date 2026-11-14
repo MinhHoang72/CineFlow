@@ -90,9 +90,7 @@ public class WebUtil {
         }
         if ("STAFF".equalsIgnoreCase(role)
                 || "TICKET_SALES_STAFF".equalsIgnoreCase(role)
-                || "TICKET_CHECKER_STAFF".equalsIgnoreCase(role)
-                || "TICKET_SALES".equalsIgnoreCase(role)
-                || "TICKET_CHECKER".equalsIgnoreCase(role)) {
+                || "TICKET_SALES".equalsIgnoreCase(role)) {
             return "/dashboard";
         }
         return "/home";
@@ -154,7 +152,7 @@ public class WebUtil {
                     || lower.startsWith("/reports") || lower.contains("action=detail");
         }
 
-        // STAFF (TICKET_SALES_STAFF, TICKET_CHECKER_STAFF, STAFF)
+        // STAFF (TICKET_SALES_STAFF, STAFF)
         return lower.startsWith("/staff") || lower.startsWith("/dashboard")
                 || lower.contains("action=detail");
     }

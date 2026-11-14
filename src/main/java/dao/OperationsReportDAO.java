@@ -12,7 +12,6 @@ import model.dto.report.OccupancyRowDTO;
 import model.dto.report.OperationsSummaryDTO;
 import model.dto.common.PageDTO;
 import model.dto.showtime.ShowtimeStatDTO;
-import model.dto.checkin.StaffScanDTO;
 import utils.DBContext;
 
 public class OperationsReportDAO {
@@ -22,10 +21,8 @@ public class OperationsReportDAO {
             + "JOIN Movies m ON m.MovieID = st.MovieID "
             + "JOIN Halls h ON h.HallID = st.HallID "
             + "JOIN Centres c ON c.CentreID = h.CentreID "
-            + "LEFT JOIN (SELECT b.ShowtimeID, COUNT(bs.BookingSeatID) AS sold, "
-            + "COUNT(CASE WHEN t.TicketStatus = 'USED' THEN 1 END) AS used "
+            + "LEFT JOIN (SELECT b.ShowtimeID, COUNT(bs.BookingSeatID) AS sold "
             + "FROM Bookings b JOIN BookingSeats bs ON bs.BookingID = b.BookingID "
-            + "LEFT JOIN Tickets t ON t.BookingSeatID = bs.BookingSeatID "
             + "WHERE b.BookingStatus IN ('CONFIRMED','COMPLETED') GROUP BY b.ShowtimeID) x ON x.ShowtimeID = st.ShowtimeID "
             + "WHERE st.Status <> 'CANCELLED' AND st.StartTime >= ? AND st.StartTime < ?";
 
@@ -46,14 +43,9 @@ public class OperationsReportDAO {
         int showtimes = 0;
         int capacity = 0;
         int sold = 0;
-        int used = 0;
-        int rejected = 0;
         int outOfStock = 0;
-        String showtimeSql = "SELECT COUNT(*), ISNULL(SUM(h.Capacity), 0), ISNULL(SUM(ISNULL(x.sold, 0)), 0), "
-                + "ISNULL(SUM(ISNULL(x.used, 0)), 0)" + SHOWTIME_FROM + showtimeScope(centreId);
-        String scanSql = "SELECT COUNT(*) FROM CheckInLogs l JOIN Users u ON u.UserID = l.CheckedBy "
-                + "WHERE l.Result = 'REJECTED' AND l.CheckInTime >= ? AND l.CheckInTime < ?"
-                + (centreId == null ? "" : " AND u.CentreID = ?");
+        String showtimeSql = "SELECT COUNT(*), ISNULL(SUM(h.Capacity), 0), ISNULL(SUM(ISNULL(x.sold, 0)), 0)"
+                + SHOWTIME_FROM + showtimeScope(centreId);
         String stockSql = "SELECT COUNT(*) FROM FnbItems i "
                 + "LEFT JOIN CentreFnbInventory inv ON inv.FnbItemID = i.FnbItemID AND inv.CentreID = i.CentreID "
                 + "WHERE i.Status = 'ACTIVE' AND i.CentreID IS NOT NULL AND ISNULL(inv.IsAvailable, 0) = 0"
@@ -66,15 +58,6 @@ public class OperationsReportDAO {
                         showtimes = rs.getInt(1);
                         capacity = rs.getInt(2);
                         sold = rs.getInt(3);
-                        used = rs.getInt(4);
-                    }
-                }
-            }
-            try (PreparedStatement statement = connection.prepareStatement(scanSql)) {
-                bind(statement, 1, from, to, centreId);
-                try (ResultSet rs = statement.executeQuery()) {
-                    if (rs.next()) {
-                        rejected = rs.getInt(1);
                     }
                 }
             }
@@ -91,7 +74,7 @@ public class OperationsReportDAO {
         } catch (SQLException exception) {
             exception.printStackTrace();
         }
-        return new OperationsSummaryDTO(showtimes, capacity, sold, used, rejected, outOfStock);
+        return new OperationsSummaryDTO(showtimes, capacity, sold, outOfStock);
     }
 
     public PageDTO<ShowtimeStatDTO> showtimes(LocalDate from, LocalDate to, Integer centreId, int page, int size) {
@@ -109,7 +92,7 @@ public class OperationsReportDAO {
             int pages = Math.max(1, (total + size - 1) / size);
             int current = Math.min(Math.max(1, page), pages);
             String sql = "SELECT m.Title, c.CentreName, h.HallName, st.StartTime, h.Capacity, "
-                    + "ISNULL(x.sold, 0) AS sold, ISNULL(x.used, 0) AS used"
+                    + "ISNULL(x.sold, 0) AS sold"
                     + SHOWTIME_FROM + showtimeScope(centreId)
                     + " ORDER BY st.StartTime DESC, st.ShowtimeID DESC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -119,7 +102,7 @@ public class OperationsReportDAO {
                 try (ResultSet rs = statement.executeQuery()) {
                     while (rs.next()) {
                         rows.add(new ShowtimeStatDTO(rs.getString(1), rs.getString(2), rs.getString(3),
-                                rs.getTimestamp(4), rs.getInt(5), rs.getInt("sold"), rs.getInt("used")));
+                                rs.getTimestamp(4), rs.getInt(5), rs.getInt("sold")));
                     }
                 }
             }
@@ -128,26 +111,6 @@ public class OperationsReportDAO {
             exception.printStackTrace();
             return new PageDTO<>(rows, 1, size, 0);
         }
-    }
-
-    public List<StaffScanDTO> scansByStaff(LocalDate from, LocalDate to, Integer centreId) {
-        List<StaffScanDTO> rows = new ArrayList<>();
-        String sql = "SELECT u.FullName, COUNT(CASE WHEN l.Result = 'SUCCESS' THEN 1 END) AS ok, "
-                + "COUNT(CASE WHEN l.Result = 'REJECTED' THEN 1 END) AS bad "
-                + "FROM CheckInLogs l JOIN Users u ON u.UserID = l.CheckedBy "
-                + "WHERE l.CheckInTime >= ? AND l.CheckInTime < ?" + (centreId == null ? "" : " AND u.CentreID = ?")
-                + " GROUP BY u.FullName ORDER BY COUNT(*) DESC";
-        try (Connection connection = DBContext.getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
-            bind(statement, 1, from, to, centreId);
-            try (ResultSet rs = statement.executeQuery()) {
-                while (rs.next()) {
-                    rows.add(new StaffScanDTO(rs.getString(1), rs.getInt("ok"), rs.getInt("bad")));
-                }
-            }
-        } catch (SQLException exception) {
-            exception.printStackTrace();
-        }
-        return rows;
     }
 
     public List<OccupancyRowDTO> occupancyByCentre(LocalDate from, LocalDate to) {

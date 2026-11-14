@@ -173,7 +173,6 @@ public class ReportHubServlet extends HttpServlet {
         }
         request.setAttribute("summary", operations.summary(from, toExclusive, centreId));
         request.setAttribute("result", operations.showtimes(from, toExclusive, centreId, page, PAGE_SIZE));
-        request.setAttribute("scans", operations.scansByStaff(from, toExclusive, centreId));
         request.setAttribute("pagerBase", "/report/operations?" + filters + "&page=");
         request.setAttribute("pageTitle", "Chỉ số vận hành");
         request.setAttribute("activeNav", "report-operations");

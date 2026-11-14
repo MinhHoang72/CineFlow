@@ -583,7 +583,7 @@ public class UserDAO {
     public List<User> getStaffDirectory(Integer centreId, String search, String roleFilter) {
         StringBuilder sql = new StringBuilder("SELECT u.*, b.CentreName FROM Users u "
                 + "LEFT JOIN Centres b ON b.CentreID = u.CentreID "
-                + "WHERE u.Role IN ('STAFF', 'TICKET_SALES_STAFF', 'TICKET_CHECKER_STAFF', 'TICKET_SALES', 'TICKET_CHECKER') ");
+                + "WHERE u.Role IN ('STAFF', 'TICKET_SALES_STAFF', 'TICKET_SALES') ");
         if (roleFilter != null && !roleFilter.trim().isEmpty() && !"ALL".equalsIgnoreCase(roleFilter.trim())) {
             sql.append("AND u.Role = ? ");
         }
@@ -647,7 +647,7 @@ public class UserDAO {
      */
     public boolean updateStaffAssignment(int userId, Integer centreId, String status) {
         String sql = "UPDATE Users SET CentreID = ?, Status = ?, UpdatedAt = GETDATE() "
-                + "WHERE UserID = ? AND Role IN ('STAFF', 'TICKET_SALES_STAFF', 'TICKET_CHECKER_STAFF', 'TICKET_SALES', 'TICKET_CHECKER', 'MANAGER')";
+                + "WHERE UserID = ? AND Role IN ('STAFF', 'TICKET_SALES_STAFF', 'TICKET_SALES', 'MANAGER')";
         try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
             if (centreId == null) {
                 ps.setNull(1, Types.INTEGER);
@@ -862,7 +862,7 @@ public class UserDAO {
     public List<User> getAllStaffAndManagers(Integer centreId) {
         String sql = "SELECT u.*, b.CentreName FROM Users u "
                 + "LEFT JOIN Centres b ON b.CentreID = u.CentreID "
-                + "WHERE u.Role IN ('STAFF', 'TICKET_SALES_STAFF', 'TICKET_CHECKER_STAFF', 'TICKET_SALES', 'TICKET_CHECKER', 'MANAGER') "
+                + "WHERE u.Role IN ('STAFF', 'TICKET_SALES_STAFF', 'TICKET_SALES', 'MANAGER') "
                 + (centreId != null ? "AND u.CentreID = ? " : "")
                 + "ORDER BY u.Role DESC, b.CentreName, u.FullName";
         List<User> list = new ArrayList<>();
@@ -1007,7 +1007,7 @@ public class UserDAO {
     public List<User> getTransferableUsers(Integer centreId, String search, String roleFilter) {
         StringBuilder sql = new StringBuilder("SELECT u.*, b.CentreName FROM Users u "
                 + "LEFT JOIN Centres b ON b.CentreID = u.CentreID "
-                + "WHERE u.Role IN ('STAFF', 'TICKET_SALES_STAFF', 'TICKET_CHECKER_STAFF', 'TICKET_SALES', 'TICKET_CHECKER') ");
+                + "WHERE u.Role IN ('STAFF', 'TICKET_SALES_STAFF', 'TICKET_SALES') ");
         if (roleFilter != null && !roleFilter.trim().isEmpty() && !"ALL".equalsIgnoreCase(roleFilter.trim())) {
             sql.append("AND u.Role = ? ");
         }

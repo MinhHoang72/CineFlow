@@ -54,9 +54,7 @@ public class StaffFilter implements Filter {
                 || "MANAGER".equalsIgnoreCase(role)
                 || "STAFF".equalsIgnoreCase(role)
                 || "TICKET_SALES_STAFF".equalsIgnoreCase(role)
-                || "TICKET_CHECKER_STAFF".equalsIgnoreCase(role)
                 || "TICKET_SALES".equalsIgnoreCase(role)
-                || "TICKET_CHECKER".equalsIgnoreCase(role)
         );
     }
 

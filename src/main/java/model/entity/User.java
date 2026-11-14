@@ -43,15 +43,12 @@ public class User {
     public static final String ROLE_CUSTOMER = "CUSTOMER";
     public static final String ROLE_STAFF = "STAFF";
     public static final String ROLE_TICKET_SALES = "TICKET_SALES_STAFF";
-    public static final String ROLE_TICKET_CHECKER = "TICKET_CHECKER_STAFF";
 
     public String getEmployeeCode() {
         if ("MANAGER".equalsIgnoreCase(role)) {
             return String.format("QL%05d", userId);
         } else if ("TICKET_SALES_STAFF".equalsIgnoreCase(role) || "TICKET_SALES".equalsIgnoreCase(role)) {
             return String.format("BV%05d", userId);
-        } else if ("TICKET_CHECKER_STAFF".equalsIgnoreCase(role) || "TICKET_CHECKER".equalsIgnoreCase(role)) {
-            return String.format("SV%05d", userId);
         } else if ("STAFF".equalsIgnoreCase(role)) {
             return String.format("NV%05d", userId);
         } else if ("ADMIN".equalsIgnoreCase(role)) {
@@ -63,18 +60,13 @@ public class User {
     public boolean isStaff() {
         return "STAFF".equalsIgnoreCase(role)
                 || "TICKET_SALES_STAFF".equalsIgnoreCase(role)
-                || "TICKET_CHECKER_STAFF".equalsIgnoreCase(role)
-                || "TICKET_SALES".equalsIgnoreCase(role)
-                || "TICKET_CHECKER".equalsIgnoreCase(role);
+                || "TICKET_SALES".equalsIgnoreCase(role);
     }
 
     public boolean isTicketSalesStaff() {
         return "TICKET_SALES_STAFF".equalsIgnoreCase(role) || "TICKET_SALES".equalsIgnoreCase(role);
     }
 
-    public boolean isTicketCheckerStaff() {
-        return "TICKET_CHECKER_STAFF".equalsIgnoreCase(role) || "TICKET_CHECKER".equalsIgnoreCase(role);
-    }
 
     public boolean isAdmin() {
         return "ADMIN".equalsIgnoreCase(role);
@@ -95,9 +87,6 @@ public class User {
     public String getRoleDisplayName() {
         if (isTicketSalesStaff()) {
             return "Nhân viên bán vé";
-        }
-        if (isTicketCheckerStaff()) {
-            return "Nhân viên soát vé";
         }
         if ("STAFF".equalsIgnoreCase(role)) {
             return "Nhân viên rạp";

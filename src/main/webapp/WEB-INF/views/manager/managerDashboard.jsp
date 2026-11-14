@@ -32,7 +32,6 @@
     int soldSeats = summary == null ? 0 : summary.getSoldSeats();
     double occupancy = summary == null ? 0 : summary.getOccupancy();
     int stockAlerts = summary == null ? 0 : summary.getOutOfStockItems();
-    double checkInRate = summary == null ? 0 : summary.getCheckInRate();
     int totalHalls = request.getAttribute("totalHalls") instanceof Number
             ? ((Number) request.getAttribute("totalHalls")).intValue() : 0;
     int availableHalls = request.getAttribute("availableHalls") instanceof Number
@@ -163,7 +162,7 @@
                     <div class="quick-nav-icon" style="background:#E0F2FE;color:#0284C7">♙</div>
                     <div class="quick-nav-meta">
                         <h3>Nhân sự cụm rạp</h3>
-                        <p>Quản lý tài khoản bán vé &amp; soát vé</p>
+                        <p>Quản lý tài khoản nhân viên bán vé</p>
                     </div>
                 </a>
 
@@ -203,16 +202,6 @@
                             </div>
                             <div class="progress-bar-bg">
                                 <div class="progress-bar-fill" style="width:<%= Math.min(100.0, occupancy) %>%;background:#FF2855"></div>
-                            </div>
-                        </div>
-
-                        <div class="metric-progress-item">
-                            <div class="metric-progress-header">
-                                <span>Tỷ lệ khách đã soát vé check-in</span>
-                                <strong><%= String.format("%.1f%%", checkInRate) %></strong>
-                            </div>
-                            <div class="progress-bar-bg">
-                                <div class="progress-bar-fill" style="width:<%= Math.min(100.0, checkInRate) %>%;background:#0284c7"></div>
                             </div>
                         </div>
 
@@ -298,7 +287,7 @@
                                 <span style="font-weight: 600; color: #F8FAFC;">Đội ngũ nhân sự</span>
                                 <a href="${pageContext.request.contextPath}/staffList" style="color: var(--cf-primary); font-size: 12px; text-decoration: none;">Xem nhân sự →</a>
                             </div>
-                            <p style="margin: 4px 0 0; font-size: 12px; color: #94a3b8;">Phân công vị trí Bán vé tại quầy và Soát vé Check-in cho nhân viên chi nhánh.</p>
+                            <p style="margin: 4px 0 0; font-size: 12px; color: #94a3b8;">Quản lý nhân viên bán vé tại quầy của chi nhánh.</p>
                         </div>
                     </div>
                 </div>
