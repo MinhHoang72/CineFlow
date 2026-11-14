@@ -189,6 +189,7 @@
 
         <!-- ===================================================================
              2. LƯỚI THÔNG TIN TÀI KHOẢN (BIỂU MẪU + BẢO MẬT + TỔNG KẾT)
+             Lịch sử đặt vé nằm ở trang riêng /booking?action=history (bookingHistory.jsp)
              =================================================================== -->
         <section class="account-grid">
             <!-- CỘT TRÁI: FORM CẬP NHẬT THÔNG TIN -->
@@ -309,10 +310,10 @@
                         </div>
 
                         <% if (isCustomer) { %>
-                            <div class="summary-row">
-                                <span class="row-label">Tổng vé đã đặt</span>
-                                <strong class="row-value highlight"><%= history == null ? 0 : history.size() %> vé</strong>
-                            </div>
+                            <a class="summary-row summary-link" href="${pageContext.request.contextPath}/booking?action=history">
+                                <span class="row-label">Lịch sử đặt vé</span>
+                                <strong class="row-value highlight"><%= history == null ? 0 : history.size() %> đơn ›</strong>
+                            </a>
                         <% } %>
                     </div>
                 </article>
@@ -344,79 +345,6 @@
                 </article>
             </div>
         </section>
-
-        <% if (isCustomer) { %>
-        <!-- ===================================================================
-             3. BẢNG LỊCH SỬ ĐẶT VÉ (CHỈ DÀNH CHO KHÁCH HÀNG)
-             =================================================================== -->
-        <section class="panel history-panel">
-            <div class="panel-heading history-heading">
-                <div class="heading-title-group">
-                    <span class="heading-icon">🎟️</span>
-                    <div>
-                        <h2>Lịch sử đặt vé</h2>
-                        <p class="panel-desc">Danh sách các suất chiếu và vé xem phim bạn đã đặt gần đây.</p>
-                    </div>
-                </div>
-                <a href="${pageContext.request.contextPath}/booking/booking.jsp" class="new-booking-btn">
-                    Đặt vé mới
-                </a>
-            </div>
-
-            <% if (history == null || history.isEmpty()) { %>
-                <div class="empty-history">
-                    <div class="empty-icon">🎬</div>
-                    <p>Bạn chưa có lần đặt vé nào.</p>
-                    <a href="${pageContext.request.contextPath}/booking/booking.jsp" class="browse-movies-btn">
-                        Khám phá phim đang chiếu
-                    </a>
-                </div>
-            <% } else { %>
-                <div class="history-list">
-                    <% for (BookingHistoryDTO item : history) { %>
-                        <article class="history-item">
-                            <div class="history-left">
-                                <div class="movie-ticket-icon">🎟</div>
-                                <div class="history-details">
-                                    <strong><%= esc(item.getMovieTitle()) %></strong>
-                                    <span class="booking-code">Mã vé: <code><%= esc(item.getBookingCode()) %></code></span>
-                                    <span class="booking-meta">
-                                        <%= esc(item.getCentreName()) %> · <%= item.getStartTime() == null ? "Chưa có lịch" : dateTime.format(item.getStartTime()) %>
-                                    </span>
-                                    <% if ("CANCELLED".equalsIgnoreCase(item.getBookingStatus())) { %>
-                                        <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; color: #ef4444; margin-top: 5px; font-weight: 600;">
-                                            ⚠️ Suất chiếu đã huỷ · Bấm "Xem vé" để xem hướng dẫn hỗ trợ
-                                        </span>
-                                    <% } %>
-                                </div>
-                            </div>
-                            <div class="history-right">
-                                <span class="total-price"><%= money(item.getTotalAmount()) %></span>
-                                <%
-                                    String st = item.getBookingStatus();
-                                    boolean isCancelled = "CANCELLED".equalsIgnoreCase(st);
-                                    String tagClass = item.isPayable() ? " is-pending"
-                                            : isCancelled ? " is-cancelled"
-                                            : ("CONFIRMED".equals(st) || "COMPLETED".equals(st)) ? "" : " is-muted";
-                                %>
-                                <span class="booking-status-tag<%= tagClass %>"<%= isCancelled ? " style=\"background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.35); font-weight: 700;\"" : "" %>>
-                                    ● <%= esc(item.getStatusLabel()) %>
-                                </span>
-                                <div class="history-actions">
-                                    <% if (item.isPayable()) { %>
-                                        <a href="${pageContext.request.contextPath}/booking?action=checkout&bookingId=<%= item.getBookingId() %>"
-                                           class="new-booking-btn">Thanh toán</a>
-                                    <% } %>
-                                    <a href="${pageContext.request.contextPath}/booking?action=detail&bookingId=<%= item.getBookingId() %>"
-                                       class="new-booking-btn">Xem vé</a>
-                                </div>
-                            </div>
-                        </article>
-                    <% } %>
-                </div>
-            <% } %>
-        </section>
-        <% } %>
 
 <% if (isInternal) { %>
                 </div>

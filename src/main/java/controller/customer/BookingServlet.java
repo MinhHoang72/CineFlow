@@ -1,5 +1,6 @@
 package controller.customer;
 
+import dao.UserDAO;
 import service.BookingExtrasService;
 import service.BookingService;
 import service.BookingService.SeatLayout;
@@ -38,7 +39,7 @@ import java.util.Map;
  *   POST /booking?action=apply-voucher     ap ma giam gia (chi giam tien ve)
  *   POST /booking?action=remove-voucher    bo ma giam gia
  *   POST /booking?action=cancel            huy booking dang cho thanh toan
- *   GET  /booking?action=history           chuyen sang lich su dat ve o trang tai khoan (/account)
+ *   GET  /booking?action=history           lich su dat ve cua khach (trang rieng, tach khoi /account)
  *   GET  /booking?action=detail            chi tiet don (khach, nhan vien, quan ly, admin)
  */
 @WebServlet(name = "BookingServlet", urlPatterns = {"/booking", "/booking/booking.jsp"})
@@ -291,9 +292,12 @@ public class BookingServlet extends HttpServlet {
                 + booking.getShowtime().getId());
     }
 
-    /** 5.5 Lich su dat ve nam o trang tai khoan (/account); giu duong dan cu de link cu van dung. */
-    private void history(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        resp.sendRedirect(req.getContextPath() + "/account");
+    /** 5.5 Lich su dat ve: trang rieng, tach khoi trang ho so (/account). */
+    private void history(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        User user = WebUtil.requireUser(req, resp);
+        if (user == null) return;
+        req.setAttribute("bookingHistory", new UserDAO().getBookingHistory(user.getUserId()));
+        req.getRequestDispatcher(VIEW_DIR + "booking/bookingHistory.jsp").forward(req, resp);
     }
 
     /** 5.4 Chi tiet don: ve, chi tiet gia, cac giao dich thanh toan. */

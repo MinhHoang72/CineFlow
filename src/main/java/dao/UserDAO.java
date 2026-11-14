@@ -521,7 +521,7 @@ public class UserDAO {
      */
     public List<BookingHistoryDTO> getBookingHistory(int userId) {
         String sql = "SELECT b.BookingID, b.BookingCode, m.Title, br.CentreName, s.StartTime, "
-                + "b.BookingStatus, b.TotalAmount, b.CreatedAt, "
+                + "b.BookingStatus, b.TotalAmount, b.CreatedAt, s.Status AS ShowtimeStatus, "
                 // Don cho thanh toan con trong thoi gian giu ghe (de hien nut Thanh toan)
                 + "CASE WHEN b.BookingStatus = 'PENDING' AND EXISTS (SELECT 1 FROM BookingSeats bs "
                 + "  WHERE bs.BookingID = b.BookingID AND bs.SeatStatus = 'HELD' AND bs.HoldUntil > SYSDATETIME()) "
@@ -547,6 +547,7 @@ public class UserDAO {
                     item.setBookingStatus(rs.getString("BookingStatus"));
                     item.setTotalAmount(rs.getBigDecimal("TotalAmount"));
                     item.setCreatedAt(rs.getTimestamp("CreatedAt"));
+                    item.setShowtimeStatus(rs.getString("ShowtimeStatus"));
                     history.add(item);
                 }
             }

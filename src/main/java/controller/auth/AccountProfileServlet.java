@@ -25,7 +25,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Controller: Điều khiển trang quản lý thông tin tài khoản cá nhân (/account),
- * xem lịch sử đặt vé và cập nhật thông tin người dùng (họ tên, số điện thoại, avatar, đổi email qua OTP).
+ * cập nhật thông tin người dùng (họ tên, số điện thoại, avatar, đổi email qua OTP).
  * URL ánh xạ: /account
  */
 @WebServlet(name = "AccountProfileServlet", urlPatterns = {"/account", "/profile", "/account/profile.jsp"})
