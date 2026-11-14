@@ -201,6 +201,26 @@ public class BookingService {
         return hold(null, "COUNTER", showtimeId, seatIds);
     }
 
+    /**
+     * Ghép cặp ghế Sweetbox: trong mỗi hàng, các ghế Sweetbox xếp theo số ghế được ghép lần lượt
+     * (E1-E2, E3-E4, ...). Trả về map SeatID -> ghế cùng cặp (cùng cách ghép với JS ở selectSeats.jsp).
+     */
+    private static Map<Integer, Seat> sweetboxPartners(Iterable<Seat> seats) {
+        Map<String, List<Seat>> byRow = new TreeMap<>();
+        for (Seat s : seats) {
+            if ("SWEETBOX".equalsIgnoreCase(s.getType())) byRow.computeIfAbsent(s.getRow(), k -> new ArrayList<>()).add(s);
+        }
+        Map<Integer, Seat> partners = new HashMap<>();
+        for (List<Seat> row : byRow.values()) {
+            row.sort((a, b) -> Integer.compare(a.getNumber(), b.getNumber()));
+            for (int i = 0; i + 1 < row.size(); i += 2) {
+                partners.put(row.get(i).getId(), row.get(i + 1));
+                partners.put(row.get(i + 1).getId(), row.get(i));
+            }
+        }
+        return partners;
+    }
+
     private int hold(Integer userId, String bookingType, int showtimeId, List<Integer> seatIds)
             throws SeatUnavailableException, SQLException {
         List<Integer> ids = new ArrayList<>(new LinkedHashSet<>(seatIds));
@@ -231,6 +251,15 @@ public class BookingService {
                     if (seat.isTaken()) throw new SeatUnavailableException("Ghế " + seat.getLabel() + " vừa có người khác chọn.");
                     chosen.add(seat);
                     subTotal = subTotal.add(seat.getPrice());
+                }
+                // Ghế Sweetbox là ghế đôi: chọn 1 ghế thì phải chọn cả ghế cùng cặp (trừ khi ghế kia không còn bán)
+                Map<Integer, Seat> partners = sweetboxPartners(seatMap.values());
+                for (Seat seat : chosen) {
+                    Seat partner = partners.get(seat.getId());
+                    if (partner != null && partner.isSelectable() && !ids.contains(partner.getId())) {
+                        throw new SeatUnavailableException("Ghế Sweetbox phải đặt theo cặp: "
+                                + seat.getLabel() + " và " + partner.getLabel() + ".");
+                    }
                 }
 
                 int bookingId = bookingDAO.insertBooking(conn, CodeUtil.randomCode("CF", 10), userId, bookingType,

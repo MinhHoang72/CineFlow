@@ -35,7 +35,7 @@
                         <c:forEach var="seat" items="${row.value}">
                             <label class="seat ${seat.type}" title="${seat.label} - ${seat.type}">
                                 <input type="checkbox" name="seatId" value="${seat.id}"
-                                       data-label="${seat.label}" data-price="${seat.price}"
+                                       data-label="${seat.label}" data-price="${seat.price}" data-type="${seat.type}"
                                        ${seat.selectable ? '' : 'disabled'}>
                                 <span>${seat.label}</span>
                             </label>
@@ -85,9 +85,20 @@
             document.getElementById('submitBtn').disabled = checked.length === 0;
         }
 
+        // Ghép cặp Sweetbox trong từng hàng theo thứ tự ghế (E1-E2, E3-E4...), giống BookingService
+        const partner = new Map();
+        document.querySelectorAll('.seat-row').forEach(row => {
+            const sb = [...row.querySelectorAll('input[name="seatId"]')].filter(b => b.dataset.type === 'SWEETBOX');
+            for (let i = 0; i + 1 < sb.length; i += 2) { partner.set(sb[i], sb[i + 1]); partner.set(sb[i + 1], sb[i]); }
+        });
+
         boxes.forEach(b => b.addEventListener('change', function () {
+            // Bấm 1 ghế Sweetbox thì chọn / bỏ chọn luôn ghế cùng cặp (nếu ghế kia còn trống)
+            const mate = partner.get(this);
+            if (mate && !mate.disabled) mate.checked = this.checked;
             if (this.checked && [...boxes].filter(x => x.checked).length > maxSeats) {
                 this.checked = false;
+                if (mate && !mate.disabled) mate.checked = false;
                 alert('Mỗi lần chỉ được chọn tối đa ' + maxSeats + ' ghế.');
             }
             refresh();
