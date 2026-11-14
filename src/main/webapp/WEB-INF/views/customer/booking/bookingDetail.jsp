@@ -6,6 +6,7 @@
 <%@ include file="/WEB-INF/fragments/header.jspf" %>
 <c:set var="ctx" value="${pageContext.request.contextPath}"/>
 <c:set var="st" value="${booking.showtime}"/>
+<c:set var="showtimeCancelled" value="${not empty st and st.status == 'CANCELLED'}"/>
 <c:set var="isCancelled" value="${booking.status == 'CANCELLED' or (not empty st and st.status == 'CANCELLED')}"/>
 
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
@@ -21,39 +22,19 @@
             <a href="${ctx}/booking?action=checkout&bookingId=${booking.id}" class="btn btn-warning">Tiếp tục thanh toán</a>
         </c:if>
         <c:if test="${isOwner}">
-            <a href="${ctx}/account" class="btn btn-outline-primary">← Lịch sử đặt vé</a>
+            <a href="${ctx}/booking?action=history" class="btn btn-outline-primary">← Lịch sử đặt vé</a>
         </c:if>
     </div>
 </div>
 
-<c:if test="${isCancelled}">
-    <div class="alert alert-danger border-danger shadow-sm mb-4" role="alert" style="border-left: 5px solid #dc3545 !important; background-color: #fff5f5;">
-        <div class="d-flex align-items-start gap-3">
-            <div class="fs-2 text-danger" style="line-height: 1;">⚠️</div>
-            <div class="flex-grow-1">
-                <h5 class="alert-heading fw-bold mb-1 text-danger">Thông báo: Suất chiếu này đã bị huỷ</h5>
-                <p class="mb-2 text-dark">
-                    Rất tiếc, suất chiếu phim <strong><c:out value="${st.movieTitle}"/></strong> vào lúc 
-                    <strong><fmt:formatDate value="${st.startTime}" pattern="HH:mm - dd/MM/yyyy"/></strong> 
-                    tại <strong><c:out value="${st.centreName}"/></strong> đã bị huỷ vì lý do kỹ thuật hoặc sự cố vận hành bất khả kháng.
-                </p>
-                <div class="p-3 bg-white rounded border border-danger-subtle mb-2">
-                    <div class="fw-semibold text-danger mb-1">Quyền lợi của quý khách được bảo lưu đầy đủ:</div>
-                    <div class="text-secondary small mb-2">
-                        Mã đơn đặt vé <code><c:out value="${booking.code}"/></code> của quý khách vẫn được lưu giữ an toàn trên hệ thống để đối soát quyền lợi.
-                    </div>
-                    <div class="fw-semibold text-dark small mb-1">Quý khách vui lòng chọn một trong các hình thức hỗ trợ sau:</div>
-                    <ul class="mb-0 small text-secondary ps-3">
-                        <li class="mb-1"><strong>Đổi vé tại quầy:</strong> Mang mã đơn hoặc vé điện tử này đến trực tiếp Quầy vé tại <strong><c:out value="${st.centreName}"/></strong> để nhân viên hỗ trợ đổi sang suất chiếu khác hoặc phim khác hoàn toàn miễn phí.</li>
-                        <li class="mb-1"><strong>Liên hệ Tổng đài / Hotline:</strong> Gọi đến tổng đài hỗ trợ <strong>1900 6868</strong> để được nhân viên chăm sóc khách hàng hướng dẫn giải quyết.</li>
-                        <li><strong>Hỗ trợ qua Email:</strong> Gửi thông tin mã đơn đến email <strong>cskh@cineflow.vn</strong> hoặc <strong>support@cineflow.vn</strong> để nhận voucher vé xem phim bù đắp quyền lợi.</li>
-                    </ul>
-                </div>
-                <div class="small text-muted fst-italic">
-                    * Lưu ý: Hệ thống không tự động hoàn tiền trực tuyến. Mọi quyền lợi đổi vé hoặc nhận voucher đền bù sẽ được giải quyết trực tiếp tại quầy rạp hoặc qua các kênh chăm sóc khách hàng ở trên.
-                </div>
-            </div>
-        </div>
+<%-- Suat chieu bi huy (rap dong cua): ve het hieu luc, khach lien he de duoc hoan tien. --%>
+<c:if test="${showtimeCancelled}">
+    <div class="alert alert-danger mb-3" role="alert">
+        <strong>Suất chiếu đã bị huỷ</strong> do rạp tạm ngưng hoạt động, vé của đơn này không còn hiệu lực.
+        <c:if test="${not empty tickets}">
+            <br>Để được hoàn tiền, vui lòng liên hệ hotline <strong>1900 6868</strong> hoặc email <strong>cskh@cineflow.vn</strong>
+            kèm mã đơn <code><c:out value="${booking.code}"/></code>.
+        </c:if>
     </div>
 </c:if>
 

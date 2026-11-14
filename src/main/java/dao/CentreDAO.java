@@ -544,8 +544,6 @@ public class CentreDAO {
             return true;
         }
 
-        // TODO: Xử lý suất chiếu tương lai và vé đã bán khi rạp SUSPENDED hoặc INACTIVE (Quy tắc nghiệp vụ chưa chốt theo tài liệu)
-
         try (Connection conn = DBContext.getConnection()) {
             conn.setAutoCommit(false);
             try {
@@ -575,6 +573,12 @@ public class CentreDAO {
                     // INACTIVE -> ACTIVE không tự khôi phục các bản ghi đã CANCELLED.
                 }
 
+                // Bước 3b: Rạp đóng cửa (SUSPENDED hoặc INACTIVE): huỷ các suất chiếu chưa bắt đầu
+                // cùng đơn, ghế, vé của các suất đó. Không hoàn tiền tự động: khách liên hệ hotline.
+                if ("SUSPENDED".equals(to) || "INACTIVE".equals(to)) {
+                    cancelUpcomingShowtimes(conn, centreId);
+                }
+
                 // Bước 4: Ghi log kiểm toán (ai đổi, khi nào, lý do)
                 LOGGER.info(String.format("[AUDIT] Admin '%s' đã đổi trạng thái cụm rạp ID %d từ '%s' sang '%s'. Lý do: %s",
                         (adminUser != null ? adminUser : "SYSTEM"), centreId, from, to, (reason != null ? reason : "N/A")));
@@ -586,6 +590,49 @@ public class CentreDAO {
                 conn.rollback();
                 LOGGER.log(java.util.logging.Level.SEVERE, "Lỗi khi thực hiện giao dịch chuyển trạng thái rạp ID: " + centreId, e);
                 throw e;
+            }
+        }
+    }
+
+    /** Các suất chiếu chưa bắt đầu của rạp (dùng làm điều kiện chung cho các câu huỷ). */
+    private static final String UPCOMING_SHOWTIMES_OF_CENTRE =
+            "SELECT s.ShowtimeID FROM Showtimes s JOIN Halls h ON h.HallID = s.HallID "
+            + "WHERE h.CentreID = ? AND s.Status = 'SCHEDULED' AND s.StartTime > SYSDATETIME()";
+
+    /**
+     * Huỷ toàn bộ suất chiếu chưa bắt đầu của rạp khi rạp đóng cửa, trong transaction của changeStatus.
+     * Đơn đang giữ ghế hoặc đã thanh toán chuyển CANCELLED, ghế được nhả, vé hết hiệu lực,
+     * giao dịch đang chờ bị huỷ và đơn bắp nước kèm vé bị huỷ.
+     * Giao dịch đã PAID giữ nguyên: hệ thống không hoàn tiền tự động, khách liên hệ hotline để được hoàn tiền.
+     */
+    private void cancelUpcomingShowtimes(Connection conn, int centreId) throws SQLException {
+        String target = "IN (" + UPCOMING_SHOWTIMES_OF_CENTRE + ")";
+        String bookingsOfTarget = "IN (SELECT BookingID FROM Bookings WHERE ShowtimeID " + target + ")";
+        String[] statements = {
+            // Vé của các suất bị huỷ hết hiệu lực
+            "UPDATE t SET t.TicketStatus = 'CANCELLED' FROM Tickets t "
+                + "JOIN BookingSeats bs ON bs.BookingSeatID = t.BookingSeatID "
+                + "WHERE t.TicketStatus = 'VALID' AND bs.ShowtimeID " + target,
+            // Nhả ghế đang giữ hoặc đã bán
+            "UPDATE BookingSeats SET SeatStatus = 'CANCELLED' "
+                + "WHERE SeatStatus IN ('HELD', 'CONFIRMED') AND ShowtimeID " + target,
+            // Giao dịch đang chờ thanh toán bị huỷ
+            "UPDATE Payments SET PaymentStatus = 'CANCELLED' "
+                + "WHERE PaymentStatus = 'PENDING' AND BookingID " + bookingsOfTarget,
+            // Đơn bắp nước đi kèm vé bị huỷ
+            "UPDATE FnbOrders SET OrderStatus = 'CANCELLED', UpdatedAt = SYSDATETIME() "
+                + "WHERE OrderStatus <> 'CANCELLED' AND BookingID " + bookingsOfTarget,
+            // Đơn đang chờ hoặc đã thanh toán chuyển CANCELLED
+            "UPDATE Bookings SET BookingStatus = 'CANCELLED', UpdatedAt = SYSDATETIME() "
+                + "WHERE BookingStatus IN ('PENDING', 'CONFIRMED') AND ShowtimeID " + target,
+            // Cuối cùng mới huỷ suất chiếu (các câu trên cần suất còn SCHEDULED để lọc)
+            "UPDATE Showtimes SET Status = 'CANCELLED', UpdatedAt = SYSDATETIME() "
+                + "WHERE ShowtimeID " + target
+        };
+        for (String sql : statements) {
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setInt(1, centreId);
+                ps.executeUpdate();
             }
         }
     }

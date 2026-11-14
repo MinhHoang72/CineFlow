@@ -503,9 +503,9 @@
                 message = "Kích hoạt lại cụm rạp \"" + centreName + "\" sang HOẠT ĐỘNG (ACTIVE)?\n\nLưu ý: Các phân phối phim đã bị hủy trước đó sẽ không tự khôi phục, bạn cần phân phối lại.";
             }
         } else if (newStatus === 'SUSPENDED') {
-            message = "Xác nhận chuyển cụm rạp \"" + centreName + "\" sang TẠM NGƯNG (SUSPENDED)?\n\nCác phân phối phim đang hiệu lực tại rạp sẽ tạm ngưng.";
+            message = "Xác nhận chuyển cụm rạp \"" + centreName + "\" sang TẠM NGƯNG (SUSPENDED)?\n\nCác phân phối phim đang hiệu lực tại rạp sẽ tạm ngưng.\nToàn bộ suất chiếu chưa bắt đầu và vé đã bán của các suất đó sẽ bị HUỶ; khách liên hệ hotline để được hoàn tiền.";
         } else if (newStatus === 'INACTIVE') {
-            message = "CẢNH BÁO: Chuyển cụm rạp \"" + centreName + "\" sang NGỪNG HOẠT ĐỘNG (INACTIVE)?\n\nToàn bộ phân phối phim của rạp sẽ bị HỦY (CANCELLED).";
+            message = "CẢNH BÁO: Chuyển cụm rạp \"" + centreName + "\" sang NGỪNG HOẠT ĐỘNG (INACTIVE)?\n\nToàn bộ phân phối phim của rạp sẽ bị HỦY (CANCELLED).\nToàn bộ suất chiếu chưa bắt đầu và vé đã bán của các suất đó sẽ bị HUỶ; khách liên hệ hotline để được hoàn tiền.";
         }
 
         if (confirm(message)) {
