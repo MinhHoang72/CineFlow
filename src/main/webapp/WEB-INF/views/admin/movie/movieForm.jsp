@@ -126,6 +126,18 @@
                 <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
                     <span>⚠</span> <strong>Lỗi:</strong> Vui lòng nhập đầy đủ <strong>Ngày khởi chiếu</strong> và <strong>Ngày kết thúc</strong>.
                 </div>
+            <% } else if ("title_too_long".equals(errorParam) || "invalid_title".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;"><span>⚠</span> Tên phim không được vượt quá 200 ký tự.</div>
+            <% } else if ("duplicate_title".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;"><span>⚠</span> Tên phim đã tồn tại.</div>
+            <% } else if ("text_too_long".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;"><span>⚠</span> Một trường mô tả, đạo diễn, diễn viên hoặc ngôn ngữ vượt quá độ dài cho phép.</div>
+            <% } else if ("invalid_date_format".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;"><span>⚠</span> Định dạng ngày không hợp lệ.</div>
+            <% } else if ("end_date_in_past".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;"><span>⚠</span> Ngày kết thúc của phim đang chiếu không được ở trong quá khứ.</div>
+            <% } else if ("end_date_not_future".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;"><span>⚠</span> Ngày kết thúc của phim sắp chiếu phải nằm trong tương lai.</div>
             <% } else if ("invalid_date_range".equals(errorParam)) { %>
                 <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
                     <span>⚠</span> <strong>Lỗi:</strong> Khoảng thời gian phát hành không hợp lệ: Ngày kết thúc phải sau hoặc bằng ngày khởi chiếu.
@@ -146,6 +158,12 @@
                 <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
                     <span>⚠</span> <strong>Lỗi tệp:</strong> Trailer phải là tệp video (.mp4, .webm, .ogg).
                 </div>
+            <% } else if ("poster_too_large".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;"><span>⚠</span> Poster không được vượt quá 5 MB.</div>
+            <% } else if ("trailer_too_large".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;"><span>⚠</span> Trailer không được vượt quá 50 MB.</div>
+            <% } else if ("invalid_media_url".equals(errorParam)) { %>
+                <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;"><span>⚠</span> Đường dẫn media không hợp lệ.</div>
             <% } else if ("reissue_dates_required".equals(errorParam)) { %>
                 <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
                     <span>⚠</span> <strong>Lỗi ngày phát hành:</strong> Phim đang ở trạng thái <%= editing && "ARCHIVED".equalsIgnoreCase(movie.getStatus()) ? "Lưu trữ (ARCHIVED)" : "Đã kết thúc (ENDED)" %>. Khi chuyển sang "Sắp khởi chiếu" (COMING SOON), bạn bắt buộc phải thiết lập lại <strong>Ngày khởi chiếu</strong> (trong tương lai) và <strong>Ngày kết thúc</strong> mới trước khi lưu thay đổi.
@@ -193,7 +211,14 @@
 
                             <div class="cf-form-group">
                                 <label class="cf-form-label">Thể loại phim</label>
-                                <input class="cf-form-control" name="genre" value="<%= editing ? esc(movie.getGenre()) : "" %>" placeholder="Ví dụ: Hành động, Tình cảm">
+                                <select class="cf-form-control" name="genre">
+                                    <option value="">-- Chọn thể loại --</option>
+                                    <% String[] genres = {"Hành Động", "Tình Cảm", "Tâm Lý", "Hài Hước", "Kinh Dị", "Hoạt Hình", "Gia Đình", "Phiêu Lưu", "Khoa Học Viễn Tưởng", "Lịch Sử", "Chiến Tranh", "Chính Kịch"};
+                                       String currentGenre = editing && movie.getGenre() != null ? movie.getGenre() : "";
+                                       for (String genreOption : genres) { %>
+                                        <option value="<%= esc(genreOption) %>" <%= genreOption.equalsIgnoreCase(currentGenre) ? "selected" : "" %>><%= esc(genreOption) %></option>
+                                    <% } %>
+                                </select>
                             </div>
 
                             <div class="cf-form-group">

@@ -100,6 +100,17 @@ public class MovieManagementServlet extends HttpServlet {
             }
         }
 
+        if (request.getParameter("error") != null) {
+            HttpSession session = request.getSession(false);
+            if (session != null) {
+                Object draft = session.getAttribute("movieFormDraft");
+                if (draft instanceof Movie) {
+                    request.setAttribute("movie", draft);
+                    session.removeAttribute("movieFormDraft");
+                }
+            }
+        }
+
         // 4. Chuyển tiếp (forward) sang giao diện form nhập liệu (movie-management.jsp)
         request.getRequestDispatcher("/WEB-INF/views/admin/movie/movieForm.jsp").forward(request, response);
     }
@@ -131,7 +142,13 @@ public class MovieManagementServlet extends HttpServlet {
             if (movieIdStr != null && !movieIdStr.isBlank()) {
                 try {
                     movieId = Integer.parseInt(movieIdStr.trim());
+                    if (movieId <= 0) {
+                        response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Mã phim không hợp lệ.");
+                        return;
+                    }
                 } catch (NumberFormatException ignored) {
+                    response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Mã phim không hợp lệ.");
+                    return;
                 }
             }
 
@@ -146,10 +163,25 @@ public class MovieManagementServlet extends HttpServlet {
             // Xác định URL chuyển hướng khi có lỗi nhập liệu
             String redirectTarget = request.getContextPath() + (movieId > 0 ? "/admin/movie?movieId=" + movieId : "/admin/movie");
             String sep = redirectTarget.contains("?") ? "&" : "?";
+            Movie draft = readMovie(request, parseIntOrZero(durationStr));
+            draft.setReleaseDate(parseDate(releaseDateStr));
+            draft.setEndDate(parseDate(endDateStr));
+            request.getSession(true).setAttribute("movieFormDraft", draft);
 
             // 2.3. Kiểm tra tính hợp lệ (Validation) của tiêu đề phim
             if (ValidationUtil.isBlank(title)) {
                 response.sendRedirect(redirectTarget + sep + "error=missing_title");
+                return;
+            }
+            if (title.trim().length() > 200) {
+                response.sendRedirect(redirectTarget + sep + "error=title_too_long");
+                return;
+            }
+            if (lengthOver(request.getParameter("description"), 2000)
+                    || lengthOver(request.getParameter("director"), 150)
+                    || lengthOver(request.getParameter("cast"), 1000)
+                    || lengthOver(request.getParameter("language"), 100)) {
+                response.sendRedirect(redirectTarget + sep + "error=text_too_long");
                 return;
             }
 
@@ -181,6 +213,21 @@ public class MovieManagementServlet extends HttpServlet {
             // 2.7. Đọc ngày khởi chiếu và ngày kết thúc
             Date releaseDate = parseDate(releaseDateStr);
             Date endDate = parseDate(endDateStr);
+            if ((releaseDateStr != null && !releaseDateStr.isBlank() && releaseDate == null)
+                    || (endDateStr != null && !endDateStr.isBlank() && endDate == null)) {
+                response.sendRedirect(redirectTarget + sep + "error=invalid_date_format");
+                return;
+            }
+            java.sql.Date today = java.sql.Date.valueOf(java.time.LocalDate.now(java.time.ZoneId.of("Asia/Bangkok")));
+            String normalizedStatus = status.trim().toUpperCase();
+            if ("NOW_SHOWING".equals(normalizedStatus) && endDate != null && endDate.before(today)) {
+                response.sendRedirect(redirectTarget + sep + "error=end_date_in_past");
+                return;
+            }
+            if ("COMING_SOON".equals(normalizedStatus) && endDate != null && !endDate.after(today)) {
+                response.sendRedirect(redirectTarget + sep + "error=end_date_not_future");
+                return;
+            }
 
             String posterUrl = null;
             String trailerUrl = null;
@@ -211,6 +258,7 @@ public class MovieManagementServlet extends HttpServlet {
 
                 // 2.11. Chuyển hướng về trang danh sách phim kèm thông báo thành công
                 response.sendRedirect(request.getContextPath() + "/admin/movies?success=saved");
+                request.getSession(false).removeAttribute("movieFormDraft");
             } catch (IllegalArgumentException e) {
                 deleteUploadedFileSilently(posterUrl);
                 deleteUploadedFileSilently(trailerUrl);
@@ -322,6 +370,19 @@ public class MovieManagementServlet extends HttpServlet {
         }
     }
 
+    private boolean lengthOver(String value, int max) {
+        return value != null && value.trim().length() > max;
+    }
+
+
+    private int parseIntOrZero(String value) {
+        try {
+            return Integer.parseInt(value == null ? "0" : value.trim());
+        } catch (NumberFormatException ignored) {
+            return 0;
+        }
+    }
+
     /**
      * Lưu trữ tệp tin tải lên (poster hoặc trailer) vào thư mục uploads/movies trên máy chủ.
      * Sử dụng UUID ngẫu nhiên để đảm bảo tên tệp không bao giờ bị trùng lặp.
@@ -355,10 +416,22 @@ public class MovieManagementServlet extends HttpServlet {
 
         // 4. Kiểm tra phần mở rộng tệp tin theo quy chuẩn an toàn
         if ("poster".equals(prefix)) {
+            if (part.getSize() > 5L * 1024 * 1024) {
+                throw new IllegalArgumentException("poster_too_large");
+            }
+            if (part.getContentType() == null || !part.getContentType().toLowerCase().startsWith("image/")) {
+                throw new IllegalArgumentException("invalid_poster_file");
+            }
             if (!ValidationUtil.isValidImageExtension(original)) {
                 throw new IllegalArgumentException("invalid_poster_file");
             }
         } else if ("trailer".equals(prefix)) {
+            if (part.getSize() > 50L * 1024 * 1024) {
+                throw new IllegalArgumentException("trailer_too_large");
+            }
+            if (part.getContentType() == null || !part.getContentType().toLowerCase().startsWith("video/")) {
+                throw new IllegalArgumentException("invalid_trailer_file");
+            }
             if (!ValidationUtil.isValidVideoExtension(original)) {
                 throw new IllegalArgumentException("invalid_trailer_file");
             }

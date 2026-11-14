@@ -508,7 +508,7 @@ public class CentreDAO {
 
         if ("ACTIVE".equals(from)) {
             return "SUSPENDED".equals(to) || "INACTIVE".equals(to);
-        } else if ("SUSPENDED".equals(from) || "TEMPORARILY_CLOSED".equals(from)) {
+        } else if ("SUSPENDED".equals(from)) {
             return "ACTIVE".equals(to) || "INACTIVE".equals(to);
         } else if ("INACTIVE".equals(from)) {
             return "ACTIVE".equals(to);
@@ -562,15 +562,7 @@ public class CentreDAO {
                 }
 
                 // Bước 3: Cập nhật hàng loạt trạng thái phân phối (MovieDistribution / CentreMovies)
-                if ("SUSPENDED".equals(to)) {
-                    // Rạp chuyển sang SUSPENDED: ACTIVE -> SUSPENDED
-                    String sql = "UPDATE CentreMovies SET Status = 'SUSPENDED', IsActive = 0, UpdatedAt = GETDATE() "
-                               + "WHERE CentreID = ? AND Status = 'ACTIVE'";
-                    try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                        ps.setInt(1, centreId);
-                        ps.executeUpdate();
-                    }
-                } else if ("INACTIVE".equals(to)) {
+                if ("INACTIVE".equals(to)) {
                     // Rạp chuyển sang INACTIVE: ACTIVE hoặc SUSPENDED -> CANCELLED
                     String sql = "UPDATE CentreMovies SET Status = 'CANCELLED', IsActive = 0, UpdatedAt = GETDATE() "
                                + "WHERE CentreID = ? AND Status IN ('ACTIVE', 'SUSPENDED')";
@@ -579,29 +571,8 @@ public class CentreDAO {
                         ps.executeUpdate();
                     }
                 } else if ("ACTIVE".equals(to)) {
-                    if ("SUSPENDED".equals(from) || "TEMPORARILY_CLOSED".equals(from)) {
-                        // Khôi phục các bản ghi cũ nếu từng có Status = 'SUSPENDED' (chưa quá endDate)
-                        String restoreActiveSql = "UPDATE cm SET cm.Status = 'ACTIVE', cm.IsActive = 1, cm.UpdatedAt = GETDATE() "
-                                                + "FROM CentreMovies cm JOIN Movies m ON cm.MovieID = m.MovieID "
-                                                + "WHERE cm.CentreID = ? AND cm.Status = 'SUSPENDED' "
-                                                + "AND (m.EndDate IS NULL OR m.EndDate >= CAST(GETDATE() AS DATE))";
-                        try (PreparedStatement ps = conn.prepareStatement(restoreActiveSql)) {
-                            ps.setInt(1, centreId);
-                            ps.executeUpdate();
-                        }
-
-                        // Những phim đã hết hạn chiếu (quá endDate) thì chuyển thành CANCELLED
-                        String expirePastEndSql = "UPDATE cm SET cm.Status = 'CANCELLED', cm.IsActive = 0, cm.UpdatedAt = GETDATE() "
-                                                + "FROM CentreMovies cm JOIN Movies m ON cm.MovieID = m.MovieID "
-                                                + "WHERE cm.CentreID = ? AND cm.Status = 'SUSPENDED' "
-                                                + "AND (m.EndDate IS NOT NULL AND m.EndDate < CAST(GETDATE() AS DATE))";
-                        try (PreparedStatement ps = conn.prepareStatement(expirePastEndSql)) {
-                            ps.setInt(1, centreId);
-                            ps.executeUpdate();
-                        }
-                    } else if ("INACTIVE".equals(from)) {
-                        // ACTIVE (từ INACTIVE): CANCELLED giữ nguyên (Không tự khôi phục)
-                    }
+                    // ACTIVE <-> SUSPENDED không thay đổi phân phối.
+                    // INACTIVE -> ACTIVE không tự khôi phục các bản ghi đã CANCELLED.
                 }
 
                 // Bước 4: Ghi log kiểm toán (ai đổi, khi nào, lý do)
@@ -646,7 +617,7 @@ public class CentreDAO {
         if ("ALL".equalsIgnoreCase(status) || status == null) {
             sql = "SELECT COUNT(*) FROM Centres";
         } else if ("SUSPENDED".equalsIgnoreCase(status)) {
-            sql = "SELECT COUNT(*) FROM Centres WHERE UPPER(Status) IN ('SUSPENDED', 'TEMPORARILY_CLOSED')";
+            sql = "SELECT COUNT(*) FROM Centres WHERE UPPER(Status) = 'SUSPENDED'";
         } else {
             sql = "SELECT COUNT(*) FROM Centres WHERE UPPER(Status) = ?";
         }

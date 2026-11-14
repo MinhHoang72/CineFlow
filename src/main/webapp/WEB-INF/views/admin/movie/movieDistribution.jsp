@@ -25,7 +25,7 @@
         if (c.getCity() != null && !c.getCity().isBlank()) {
             cities.add(c.getCity().trim());
         }
-        boolean isEligible = "ACTIVE".equalsIgnoreCase(c.getStatus()) || "SUSPENDED".equalsIgnoreCase(c.getStatus()) || "TEMPORARILY_CLOSED".equalsIgnoreCase(c.getStatus());
+        boolean isEligible = "ACTIVE".equalsIgnoreCase(c.getStatus()) || "SUSPENDED".equalsIgnoreCase(c.getStatus());
         if (isEligible) {
             totalActiveCentres++;
         }
@@ -301,7 +301,7 @@
                                             String rawStatus = c.getStatus() != null ? c.getStatus().trim().toUpperCase() : "ACTIVE";
                                                 // Xác định cụm rạp đang hoạt động hoặc tạm ngưng
                                             boolean isActive = "ACTIVE".equals(rawStatus);
-                                            boolean isSuspended = "SUSPENDED".equals(rawStatus) || "TEMPORARILY_CLOSED".equals(rawStatus);
+                                            boolean isSuspended = "SUSPENDED".equals(rawStatus);
                                             boolean isInactive = !isActive && !isSuspended;
                                                 // Lấy trạng thái phân phối phim tại cụm rạp hiện tại
                                             boolean isDistributed = c.isDistributed();
@@ -812,7 +812,7 @@
                         let matchesSearch = !query || rName.includes(query) || rCity.includes(query);
                         let matchesCity = (city === 'ALL') || (rCityRaw.toLowerCase() === city.toLowerCase());
                         let matchesStatus = (status === 'ALL') || (rStatus === status) ||
-                                (status === 'SUSPENDED' && (rStatus === 'SUSPENDED' || rStatus === 'TEMPORARILY_CLOSED')) ||
+                                (status === 'SUSPENDED' && rStatus === 'SUSPENDED') ||
                                 (status === 'INACTIVE' && rStatus === 'INACTIVE') ||
                                 (status === 'ACTIVE' && rStatus === 'ACTIVE');
 

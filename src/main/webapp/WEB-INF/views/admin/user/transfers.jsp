@@ -242,7 +242,7 @@
                                         boolean isActiveManager = b.hasActiveManager();
                                         String cStatus = b.getStatus() != null ? b.getStatus().trim().toUpperCase() : "INACTIVE";
                                         boolean isCentreActive = "ACTIVE".equals(cStatus);
-                                        boolean isCentreSuspended = "SUSPENDED".equals(cStatus) || "TEMPORARILY_CLOSED".equals(cStatus);
+                                        boolean isCentreSuspended = "SUSPENDED".equals(cStatus);
                                         String centreStatusBadgeClass = isCentreActive ? "cf-badge-success" : (isCentreSuspended ? "cf-badge-warning" : "cf-badge-danger");
                                         String centreStatusLabel = isCentreActive ? "Đang hoạt động" : (isCentreSuspended ? "Tạm ngưng" : "Ngừng hoạt động");
                                         String mPhone = b.getManagerPhone();
@@ -958,7 +958,7 @@ function showDisabledCentreAlert(centreName, status) {
                         if (selectedCentreStatus === 'ACTIVE') {
                             if (rowCentreStatus !== 'ACTIVE') return false;
                         } else if (selectedCentreStatus === 'SUSPENDED') {
-                            if (rowCentreStatus !== 'SUSPENDED' && rowCentreStatus !== 'TEMPORARILY_CLOSED') return false;
+                            if (rowCentreStatus !== 'SUSPENDED') return false;
                         } else if (selectedCentreStatus === 'INACTIVE') {
                             if (rowCentreStatus !== 'INACTIVE') return false;
                         } else {

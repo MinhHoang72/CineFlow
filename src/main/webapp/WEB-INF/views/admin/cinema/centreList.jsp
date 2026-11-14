@@ -221,7 +221,7 @@
                                 <%
                                     String cStat = c.getStatus() != null ? c.getStatus().toUpperCase() : "ACTIVE";
                                     String badgeStatusClass = "ACTIVE".equals(cStat) ? "status-active" :
-                                                              ("SUSPENDED".equals(cStat) || "TEMPORARILY_CLOSED".equals(cStat)) ? "status-suspended" : "status-inactive";
+                                                              "SUSPENDED".equals(cStat) ? "status-suspended" : "status-inactive";
                                 %>
                                 <form method="POST" action="${baseUrl != null ? baseUrl : pageContext.request.contextPath.concat('/admin/centres')}" style="display: inline-block; margin: 0;">
                                     <input type="hidden" name="action" value="changeStatus">
@@ -235,7 +235,7 @@
                                             onchange="handleCentreStatusChange(this, '<%= c.getCentreName() != null ? c.getCentreName().replace("'", "\\'") : "" %>', '<%= cStat %>')"
                                             title="Bấm để thay đổi trạng thái cụm rạp">
                                         <option value="ACTIVE" <%= "ACTIVE".equals(cStat) ? "selected" : "" %>>Hoạt động</option>
-                                        <option value="SUSPENDED" <%= ("SUSPENDED".equals(cStat) || "TEMPORARILY_CLOSED".equals(cStat)) ? "selected" : "" %> <%= "INACTIVE".equals(cStat) ? "disabled" : "" %>>Tạm ngưng<%= "INACTIVE".equals(cStat) ? " (Cần Active)" : "" %></option>
+                                        <option value="SUSPENDED" <%= "SUSPENDED".equals(cStat) ? "selected" : "" %> <%= "INACTIVE".equals(cStat) ? "disabled" : "" %>>Tạm ngưng<%= "INACTIVE".equals(cStat) ? " (Cần Active)" : "" %></option>
                                         <option value="INACTIVE" <%= "INACTIVE".equals(cStat) ? "selected" : "" %>>Ngừng HĐ</option>
                                     </select>
                                 </form>
@@ -489,7 +489,7 @@
     // Xử lý chuyển trạng thái cụm rạp từ dropdown trực tiếp ở cột Trạng thái
     function handleCentreStatusChange(selectElem, centreName, currentStatus) {
         var newStatus = selectElem.value;
-        var originalVal = (currentStatus === 'TEMPORARILY_CLOSED') ? 'SUSPENDED' : currentStatus;
+        var originalVal = currentStatus;
         if (!newStatus || newStatus === originalVal) {
             selectElem.value = originalVal;
             return;
@@ -497,7 +497,7 @@
 
         var message = "";
         if (newStatus === 'ACTIVE') {
-            if (currentStatus === 'SUSPENDED' || currentStatus === 'TEMPORARILY_CLOSED') {
+            if (currentStatus === 'SUSPENDED') {
                 message = "Khôi phục cụm rạp \"" + centreName + "\" sang HOẠT ĐỘNG (ACTIVE)?\n\nCác phân phối phim chưa hết hạn chiếu sẽ được tự động khôi phục.";
             } else {
                 message = "Kích hoạt lại cụm rạp \"" + centreName + "\" sang HOẠT ĐỘNG (ACTIVE)?\n\nLưu ý: Các phân phối phim đã bị hủy trước đó sẽ không tự khôi phục, bạn cần phân phối lại.";

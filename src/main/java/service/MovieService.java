@@ -118,6 +118,13 @@ public class MovieService {
         Date today = Date.valueOf(LocalDate.now());
         String status = movie.getStatus() != null ? movie.getStatus().trim().toUpperCase() : "";
 
+        if (movie.getTitle() == null || movie.getTitle().trim().length() > 200) {
+            throw new IllegalArgumentException("invalid_title");
+        }
+        if (movieDAO.existsTitle(movie.getTitle(), movie.getMovieId())) {
+            throw new IllegalArgumentException("duplicate_title");
+        }
+
         Movie existing = movie.getMovieId() > 0 ? movieDAO.getMovieById(movie.getMovieId()) : null;
 
         // ENDED/ARCHIVED: giữ lại ngày đã có làm hồ sơ lịch sử.
