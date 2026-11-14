@@ -4,8 +4,6 @@
 <%@ page import="model.entity.Centre" %>
 <%@ page import="model.dto.showtime.ShowtimeDetailDTO" %>
 <%@ page import="dao.CinemaDAO, dao.MovieDAO" %>
-<%@ page import="dao.RatingDAO" %>
-<%@ page import="dao.RatingDAO.MovieRatingSummary" %>
 <%@ page import="java.text.SimpleDateFormat" %>
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.ArrayList" %>
@@ -117,16 +115,6 @@
 <%
         return;
     }
-
-    RatingDAO.MovieRatingSummary ratingSummary = (RatingDAO.MovieRatingSummary) request.getAttribute("ratingSummary");
-    if (ratingSummary == null && movie != null) {
-        Integer currentUid = signedInUser != null && signedInUser.getUserId() > 0 ? signedInUser.getUserId() : null;
-        ratingSummary = new RatingDAO().getRatingSummary(movie.getMovieId(), currentUid);
-    }
-    double avgScore10 = ratingSummary != null ? ratingSummary.getAverageScore10() : 0.0;
-    double avgStars5 = ratingSummary != null ? ratingSummary.getAverageStars5() : 0.0;
-    int totalVotes = ratingSummary != null ? ratingSummary.getTotalVotes() : 0;
-    int userScore = ratingSummary != null ? ratingSummary.getUserScore() : 0;
 
     String currentDetailsPath = "/movie/details?movieId=" + movie.getMovieId();
     String encodedRedirectParam = java.net.URLEncoder.encode(currentDetailsPath, "UTF-8");
@@ -326,59 +314,6 @@
                         <% } %>
                     </div>
 
-                    <!-- 3. Phân mục điểm đánh giá và bình chọn -->
-                    <div class="rating-section-bar">
-                        <!-- Bên trái: Điểm số trung bình -->
-                        <div class="rating-left">
-                            <div class="rating-number-score">
-                                <span id="avgScoreDisplay"><%= !isComingSoon && totalVotes > 0 ? String.format(java.util.Locale.US, "%.1f", avgScore10) : "--" %></span> <span>/10</span>
-                            </div>
-                            <div>
-                                <div class="rating-stars-visual" id="visualStarsDisplay" title="<%= isComingSoon ? "Phim sắp chiếu - Chưa mở đánh giá" : (totalVotes > 0 ? ("Đánh giá trung bình " + String.format(java.util.Locale.US, "%.1f", avgStars5) + "/5 sao") : "Chưa có lượt đánh giá nào") %>">
-                                    <% 
-                                        int fullStars = (!isComingSoon && totalVotes > 0) ? (int) Math.round(avgStars5) : 0;
-                                        for (int s = 1; s <= 5; s++) { 
-                                            if (s <= fullStars) { %>★<% } else { %><span style="color: #d1d5db;">★</span><% }
-                                        } 
-                                    %>
-                                </div>
-                                <div class="rating-count-label">
-                                    <% if (isComingSoon) { %>
-                                        <span id="totalVotesDisplay" style="color: #ea580c; font-weight: 600;">Sắp chiếu (Chưa mở đánh giá)</span>
-                                    <% } else { %>
-                                        <span id="totalVotesDisplay"><%= totalVotes %></span> lượt đánh giá
-                                    <% } %>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Bên phải: Tương tác đánh giá -->
-                        <div class="rating-right">
-                            <% if (isComingSoon) { %>
-                                <div class="rating-coming-soon-notice">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                                    <span>Phim sắp chiếu chưa mở cổng đánh giá. Khán giả có thể bình chọn sau khi phim khởi chiếu tại rạp.</span>
-                                </div>
-                            <% } else { %>
-                                <span class="rating-vote-prompt" id="ratingVotePrompt">
-                                    <%= userScore > 0 ? "Đánh giá của bạn:" : "Bạn đánh giá phim này?" %>
-                                </span>
-                                <div class="interactive-stars" id="interactiveStars" role="radiogroup" aria-label="Đánh giá từ 1 đến 5 sao">
-                                    <% for (int val = 1; val <= 5; val++) { %>
-                                        <button type="button" class="star-btn <%= val <= userScore ? "selected" : "" %>" data-value="<%= val %>" aria-label="<%= val %> sao" onclick="selectRating(<%= val %>)">★</button>
-                                    <% } %>
-                                </div>
-                                <span class="rating-chosen-label" id="ratingChosenLabel">
-                                    <%= userScore > 0 ? ("Bạn chọn " + userScore + "/5 sao") : "Chọn số sao" %>
-                                </span>
-                                <button type="button" class="btn-submit-vote" id="btnSubmitVote" onclick="submitRating()">
-                                    <%= userScore > 0 ? "Cập nhật đánh giá" : "Gửi đánh giá" %>
-                                </button>
-
-                                <div class="rating-feedback-msg" id="ratingFeedbackBox" hidden></div>
-                            <% } %>
-                        </div>
-                    </div>
                 </div>
             </div>
         </article>
@@ -465,7 +400,6 @@
         const defaultIsDirect = <%= hasDirectVideo %>;
         const isUserLoggedIn = <%= signedInUser != null %>;
         const currentMovieId = <%= movie.getMovieId() %>;
-        let selectedStarValue = <%= userScore %>;
 
         // Điều khiển trình phát trailer
         function startTrailerPlayer(scrollFirst) {
@@ -509,135 +443,6 @@
         }
 
 
-        // Xử lý chọn số sao đánh giá
-        function selectRating(val) {
-            selectedStarValue = val;
-            const stars = document.querySelectorAll(".star-btn");
-            stars.forEach((star, idx) => {
-                star.classList.toggle("selected", idx < val);
-            });
-            const label = document.getElementById("ratingChosenLabel");
-            if (label) {
-                label.textContent = "Bạn chọn " + val + "/5 sao";
-            }
-        }
-
-        // Hiệu ứng rê chuột trên các ngôi sao
-        document.querySelectorAll(".star-btn").forEach((star, idx) => {
-            star.addEventListener("mouseenter", () => {
-                document.querySelectorAll(".star-btn").forEach((s, i) => {
-                    s.classList.toggle("hovered", i <= idx);
-                });
-            });
-            star.addEventListener("mouseleave", () => {
-                document.querySelectorAll(".star-btn").forEach(s => s.classList.remove("hovered"));
-            });
-        });
-
-        const isMovieComingSoon = <%= isComingSoon %>;
-
-        // Gửi đánh giá qua AJAX cập nhật cơ sở dữ liệu
-        function submitRating() {
-            if (isMovieComingSoon) {
-                const feedback = document.getElementById("ratingFeedbackBox");
-                if (feedback) {
-                    feedback.hidden = false;
-                    feedback.className = "rating-feedback-msg warning";
-                    feedback.textContent = "Phim sắp chiếu chưa mở cổng đánh giá.";
-                }
-                return;
-            }
-            const feedback = document.getElementById("ratingFeedbackBox");
-            const btn = document.getElementById("btnSubmitVote");
-            if (!feedback) return;
-            feedback.hidden = false;
-
-            const loginUrlWithRedirect = "${pageContext.request.contextPath}/login?redirect=" + encodeURIComponent(window.location.pathname + window.location.search);
-            if (!isUserLoggedIn) {
-                feedback.className = "rating-feedback-msg warning";
-                feedback.innerHTML = 'Vui lòng <a href="' + loginUrlWithRedirect + '" style="text-decoration: underline; font-weight: 700;">Đăng nhập</a> để gửi đánh giá phim.';
-                return;
-            }
-
-            if (selectedStarValue <= 0) {
-                feedback.className = "rating-feedback-msg warning";
-                feedback.textContent = "Vui lòng chọn số sao (từ 1 đến 5 sao) trước khi gửi đánh giá.";
-                return;
-            }
-
-            if (btn) {
-                btn.disabled = true;
-                btn.textContent = "Đang lưu...";
-            }
-
-            const formData = new URLSearchParams();
-            formData.append("movieId", currentMovieId);
-            formData.append("score", selectedStarValue);
-
-            fetch("${pageContext.request.contextPath}/movie/rate", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
-                },
-                body: formData.toString()
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (btn) btn.disabled = false;
-                if (!data.success) {
-                    if (data.needLogin) {
-                        feedback.className = "rating-feedback-msg warning";
-                        feedback.innerHTML = 'Vui lòng <a href="' + loginUrlWithRedirect + '" style="text-decoration: underline; font-weight: 700;">Đăng nhập</a> để gửi đánh giá phim.';
-                    } else {
-                        feedback.className = "rating-feedback-msg warning";
-                        feedback.textContent = data.message || "Không thể lưu đánh giá. Vui lòng thử lại.";
-                    }
-                    if (btn) btn.textContent = selectedStarValue > 0 ? "Cập nhật đánh giá" : "Gửi đánh giá";
-                    return;
-                }
-
-                feedback.className = "rating-feedback-msg success";
-                feedback.textContent = data.message || ("Đã lưu đánh giá " + selectedStarValue + "/5 sao thành công!");
-
-                if (btn) btn.textContent = "Cập nhật đánh giá";
-                const promptEl = document.getElementById("ratingVotePrompt");
-                if (promptEl) promptEl.textContent = "Đánh giá của bạn:";
-
-                // Cập nhật điểm số hiển thị trên giao diện
-                const avgEl = document.getElementById("avgScoreDisplay");
-                if (avgEl && data.averageScore10 !== undefined) {
-                    avgEl.textContent = data.averageScore10 > 0 ? Number(data.averageScore10).toFixed(1) : "--";
-                }
-                const countEl = document.getElementById("totalVotesDisplay");
-                if (countEl && data.totalVotes !== undefined) {
-                    countEl.textContent = data.totalVotes;
-                }
-
-                // Cập nhật biểu tượng sao hiển thị
-                const starsWrap = document.getElementById("visualStarsDisplay");
-                if (starsWrap && data.averageStars5 !== undefined) {
-                    const rounded = Math.round(Number(data.averageStars5));
-                    starsWrap.title = "Đánh giá trung bình " + Number(data.averageStars5).toFixed(1) + "/5 sao";
-                    let starHtml = "";
-                    for (let s = 1; s <= 5; s++) {
-                        if (s <= rounded) {
-                            starHtml += "★ ";
-                        } else {
-                            starHtml += '<span style="color: #d1d5db;">★</span> ';
-                        }
-                    }
-                    starsWrap.innerHTML = starHtml.trim();
-                }
-            })
-            .catch(err => {
-                if (btn) {
-                    btn.disabled = false;
-                    btn.textContent = selectedStarValue > 0 ? "Cập nhật đánh giá" : "Gửi đánh giá";
-                }
-                feedback.className = "rating-feedback-msg warning";
-                feedback.textContent = "Lỗi kết nối khi gửi đánh giá. Vui lòng thử lại sau.";
-            });
-        }
     </script>
 
     <!-- Chân trang chung -->

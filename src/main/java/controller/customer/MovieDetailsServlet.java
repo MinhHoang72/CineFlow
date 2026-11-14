@@ -2,7 +2,6 @@ package controller.customer;
 
 import dao.CinemaDAO;
 import dao.MovieDAO;
-import dao.RatingDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -24,7 +23,6 @@ public class MovieDetailsServlet extends HttpServlet {
 
     private final MovieDAO movieDAO = new MovieDAO();
     private final CinemaDAO cinemaDAO = new CinemaDAO();
-    private final RatingDAO ratingDAO = new RatingDAO();
 
     /**
      * Xử lý yêu cầu HTTP GET: Tải thông tin chi tiết phim, điểm đánh giá và lịch chiếu của phim để hiển thị.
@@ -67,30 +65,13 @@ public class MovieDetailsServlet extends HttpServlet {
             return;
         }
 
-        // 3. Xác định định danh người dùng đăng nhập hiện tại (nếu có) để lấy đánh giá cá nhân
-        Integer currentUserId = null;
-        if (session != null && session.getAttribute("user") != null) {
-            Object uObj = session.getAttribute("user");
-            if (uObj instanceof User) {
-                currentUserId = ((User) uObj).getUserId();
-            } else {
-                try {
-                    currentUserId = (Integer) uObj.getClass().getMethod("getUserId").invoke(uObj);
-                } catch (Exception ignored) {
-                }
-            }
-        }
+        // 3. Gán dữ liệu vào các thuộc tính request
 
-        // 4. Lấy thông tin tóm tắt đánh giá (điểm trung bình, số lượng đánh giá, đánh giá của user)
-        RatingDAO.MovieRatingSummary ratingSummary = ratingDAO.getRatingSummary(movieId, currentUserId);
-
-        // 5. Gán dữ liệu vào các thuộc tính request
         request.setAttribute("movie", movie);
-        request.setAttribute("ratingSummary", ratingSummary);
         request.setAttribute("showtimes", cinemaDAO.getScheduledShowtimesByMovieId(movieId));
         request.setAttribute("nowShowingMovies", movieDAO.getNowShowingMovies());
 
-        // 6. Chuyển tiếp tới giao diện chi tiết phim movieDetail.jsp trong customer
+        // 4. Chuyển tiếp tới giao diện chi tiết phim movieDetail.jsp trong customer
         request.getRequestDispatcher("/WEB-INF/views/customer/movieDetail.jsp").forward(request, response);
     }
 }
