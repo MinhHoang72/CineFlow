@@ -355,8 +355,8 @@ request.setAttribute("baseUrl", base);
             voucher.setDiscountValue(value);
             if (value.signum() <= 0) {
                 errors.put("discountValue", "Giá trị giảm phải lớn hơn 0.");
-            } else if ("PERCENT".equals(type) && value.compareTo(new BigDecimal("100")) > 0) {
-                errors.put("discountValue", "Giảm theo phần trăm tối đa 100.");
+            } else if ("PERCENT".equals(type) && value.compareTo(new BigDecimal("50")) > 0) {
+                errors.put("discountValue", "Giảm theo phần trăm tối đa 50.");
             } else if ("FIXED".equals(type) && value.compareTo(MAX_MONEY) > 0) {
                 errors.put("discountValue", "Giá trị giảm quá lớn.");
             }

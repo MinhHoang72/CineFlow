@@ -339,6 +339,7 @@ public class CentreDAO {
      */
     public boolean toggleStatus(int centreId) {
         String sql = "UPDATE Centres "
+                // case when if else
                    + "SET Status = CASE WHEN UPPER(Status) = 'ACTIVE' THEN 'INACTIVE' ELSE 'ACTIVE' END, "
                    + "    UpdatedAt = GETDATE() "
                    + "WHERE CentreID = ?";

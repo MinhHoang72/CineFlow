@@ -80,6 +80,11 @@
                     <span>⚠</span> <strong>Lỗi:</strong> Vui lòng điền đầy đủ các thông tin bắt buộc (Tên phòng, Sức chứa).
                 </div>
             </c:if>
+            <c:if test="${param.error == 'has_future_bookings'}">
+                <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
+                    <span>⚠</span> <strong>Cảnh báo:</strong> Không thể vô hiệu hóa phòng chiếu vì đang có suất chiếu tương lai đã phát sinh vé đặt!
+                </div>
+            </c:if>
             <c:if test="${param.error == 'failed'}">
                 <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
                     <span>⚠</span> <strong>Lỗi:</strong> Không thể lưu thông tin phòng chiếu. Vui lòng thử lại sau!

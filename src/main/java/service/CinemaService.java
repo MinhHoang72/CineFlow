@@ -222,6 +222,12 @@ public class CinemaService {
             return "duplicate_name";
         }
 
+        boolean isChangingToInactive = existingHall.isActive()
+                && ("INACTIVE".equalsIgnoreCase(newStatus) || "MAINTENANCE".equalsIgnoreCase(newStatus));
+        if (isChangingToInactive && hallDAO.hasFutureBookedShowtimes(hallId)) {
+            return "has_future_bookings";
+        }
+
         Hall updatedHall = new Hall();
         updatedHall.setHallId(hallId);
         updatedHall.setCentreId(centreId);
@@ -243,8 +249,14 @@ public class CinemaService {
             return "invalid_hall";
         }
 
-        boolean ok = hallDAO.toggleStatus(hallId);
-        return ok ? "success" : "failed";
+        String result = hallDAO.toggleStatus(hallId);
+        if ("SUCCESS".equalsIgnoreCase(result)) {
+            return "success";
+        } else if ("HAS_FUTURE_BOOKINGS".equalsIgnoreCase(result)) {
+            return "has_future_bookings";
+        } else {
+            return "failed";
+        }
     }
 
     // ==============================================================

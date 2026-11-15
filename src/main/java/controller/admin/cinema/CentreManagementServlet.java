@@ -121,7 +121,7 @@ public class CentreManagementServlet extends HttpServlet {
         } catch (NumberFormatException ignored) {}
      
       
-        // Gọi thẳng CentreDAO lấy dữ liệu phân trang
+       
         PageDTO<Centre> pageResult = centreDAO.search(search, status, page, PAGE_SIZE);
 
         // Gọi thẳng CentreDAO đếm KPI thống kê

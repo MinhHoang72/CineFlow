@@ -84,6 +84,11 @@
                     <span>✓</span> <strong>Thành công!</strong> Đã cập nhật trạng thái hoạt động của phòng chiếu thành công.
                 </div>
             </c:if>
+            <c:if test="${param.error == 'has_future_bookings'}">
+                <div class="cf-alert cf-alert-danger">
+                    <span>⚠</span> <strong>Cảnh báo:</strong> Không thể vô hiệu hóa phòng chiếu vì đang có suất chiếu tương lai đã phát sinh vé đặt.
+                </div>
+            </c:if>
             <c:if test="${param.error == 'invalid_id' || param.error == 'invalid_hall'}">
                 <div class="cf-alert cf-alert-danger">
                     <span>⚠</span> <strong>Lỗi:</strong> Phòng chiếu không tồn tại hoặc không thuộc chi nhánh này!
@@ -241,7 +246,7 @@
                                                 </td>
                                                 <td style="text-align: right;">
                                                     <div class="cf-actions" style="justify-content: flex-end;">
-                                                        <!-- Nút Configure Seats / Cấu hình sơ đồ ghế -->
+<!---------------------------- Nút Configure Seats / Cấu hình sơ đồ ghế -->
                                                         <a href="${pageContext.request.contextPath}/manager/seat-config?hallId=${h.hallId}"
                                                            class="cf-btn cf-btn-sm" style="background: rgba(59, 130, 246, 0.15); color: #60A5FA; border: 1px solid rgba(59, 130, 246, 0.35);"
                                                            title="Cấu hình ma trận sơ đồ ghế và bảo trì">

@@ -270,6 +270,14 @@ public class HallManagementServlet extends HttpServlet {
                 return;
             }
 
+            // Chặn chuyển sang INACTIVE nếu có suất chiếu tương lai đã có khách đặt
+            boolean isDeactivating = existingHall.isActive()
+                    && ("INACTIVE".equalsIgnoreCase(status) || "MAINTENANCE".equalsIgnoreCase(status));
+            if (isDeactivating && hallDAO.hasFutureBookedShowtimes(hallId)) {
+                response.sendRedirect(base + "?action=edit&hallId=" + hallId + "&error=has_future_bookings");
+                return;
+            }
+
             // Kiểm tra trùng tên với phòng khác
             if (hallDAO.isHallNameExists(centreId, hallName, hallId)) {
                 response.sendRedirect(base + "?action=edit&hallId=" + hallId + "&error=duplicate_name");
@@ -316,7 +324,13 @@ public class HallManagementServlet extends HttpServlet {
         }
 
         // Gọi hàm toggleStatus trực tiếp của DAO
-        boolean ok = hallDAO.toggleStatus(hallId);
-        response.sendRedirect(redirectBase + (ok ? "success=status_updated" : "error=failed"));
+        String result = hallDAO.toggleStatus(hallId);
+        if ("SUCCESS".equalsIgnoreCase(result)) {
+            response.sendRedirect(redirectBase + "success=status_updated");
+        } else if ("HAS_FUTURE_BOOKINGS".equalsIgnoreCase(result)) {
+            response.sendRedirect(redirectBase + "error=has_future_bookings");
+        } else {
+            response.sendRedirect(redirectBase + "error=failed");
+        }
     }
 }
