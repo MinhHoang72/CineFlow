@@ -87,6 +87,30 @@ public class MediaResourceServlet extends HttpServlet {
             }
         }
 
+        if (file == null && "movies".equals(segments[0])) {
+            // Tương thích ngược: Thư mục movies đã xóa, tự động tìm trong poster hoặc video_trailer
+            String[] fallbackCategories = {"poster", "video_trailer"};
+            for (String fallback : fallbackCategories) {
+                try {
+                    Path root = MediaStorage.resourcesRoot(getServletContext()).toAbsolutePath().normalize();
+                    Path candidate = root.resolve("uploads").resolve(fallback).resolve(filename).normalize();
+                    if (candidate.startsWith(root) && Files.isRegularFile(candidate)) {
+                        file = candidate;
+                        break;
+                    }
+                } catch (Exception ignored) {}
+
+                String deployedPath = getServletContext().getRealPath("/uploads/" + fallback + "/" + filename);
+                if (deployedPath != null) {
+                    Path candidate = Path.of(deployedPath).toAbsolutePath().normalize();
+                    if (Files.isRegularFile(candidate)) {
+                        file = candidate;
+                        break;
+                    }
+                }
+            }
+        }
+
         if (file == null || !Files.isRegularFile(file)) {
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;

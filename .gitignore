@@ -37,8 +37,6 @@ src/main/webapp/uploads/video_trailer/*.mp4
 # Demo / scratch assets
 /demo_assets/
 /demo_materials/
-resources/uploads/movies/trailer-*
-src/main/webapp/uploads/movies/trailer-*
 
 # Office documents
 *.pptx
@@ -64,6 +62,3 @@ CineFlow_Flow_*
 CineFlow_Main_Business_Flow.*
 Activity_Movie_Distribution.*
 src/test/java/ThreeCasesMovieVerificationTest.java
-
-# Sample uploads
-resources/uploads/movies/poster-*

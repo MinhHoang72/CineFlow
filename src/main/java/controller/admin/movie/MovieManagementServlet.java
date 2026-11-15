@@ -269,12 +269,23 @@ public class MovieManagementServlet extends HttpServlet {
      * Chỉ xóa các file mới tạo trong lần gọi này dựa trên URL trả về từ saveUpload.
      */
     private void deleteUploadedFileSilently(String url) {
-        if (url == null || !url.contains("/uploads/movies/")) {
+        if (url == null) {
+            return;
+        }
+        String category = null;
+        if (url.contains("/uploads/video_trailer/")) {
+            category = "video_trailer";
+        } else if (url.contains("/uploads/poster/")) {
+            category = "poster";
+        } else if (url.contains("/uploads/movies/")) {
+            category = "movies";
+        }
+        if (category == null) {
             return;
         }
         try {
             String fileName = url.substring(url.lastIndexOf('/') + 1);
-            Path directory = MediaStorage.uploadDirectory(getServletContext(), "movies");
+            Path directory = MediaStorage.uploadDirectory(getServletContext(), category);
             Files.deleteIfExists(directory.resolve(fileName));
         } catch (Exception ignored) {
         }
@@ -338,7 +349,7 @@ public class MovieManagementServlet extends HttpServlet {
     }
 
     /**
-     * Lưu trữ tệp tin tải lên (poster hoặc trailer) vào thư mục uploads/movies trên máy chủ.
+     * Lưu trữ tệp tin tải lên (poster vào uploads/poster, trailer vào uploads/video_trailer) trên máy chủ.
      * Sử dụng UUID ngẫu nhiên để đảm bảo tên tệp không bao giờ bị trùng lặp.
      *
      * @param request  đối tượng yêu cầu HTTP chứa multipart data
@@ -369,6 +380,7 @@ public class MovieManagementServlet extends HttpServlet {
         }
 
         // 4. Kiểm tra phần mở rộng tệp tin theo quy chuẩn an toàn
+        String category;
         if ("poster".equals(prefix)) {
             if (part.getSize() > 5L * 1024 * 1024) {
                 throw new IllegalArgumentException("poster_too_large");
@@ -379,6 +391,7 @@ public class MovieManagementServlet extends HttpServlet {
             if (!ValidationUtil.isValidImageExtension(original)) {
                 throw new IllegalArgumentException("invalid_poster_file");
             }
+            category = "poster";
         } else if ("trailer".equals(prefix)) {
             if (part.getSize() > 50L * 1024 * 1024) {
                 throw new IllegalArgumentException("trailer_too_large");
@@ -389,18 +402,21 @@ public class MovieManagementServlet extends HttpServlet {
             if (!ValidationUtil.isValidVideoExtension(original)) {
                 throw new IllegalArgumentException("invalid_trailer_file");
             }
+            category = "video_trailer";
         } else if (!extension.matches("\\.(jpg|jpeg|png|webp|mp4|webm|ogg)")) {
             return null;
+        } else {
+            category = extension.matches("\\.(mp4|webm|ogg)") ? "video_trailer" : "poster";
         }
 
         // 5. Xác định thư mục lưu trữ trên máy chủ và tạo tên tệp ngẫu nhiên bằng UUID
-        Path directory = MediaStorage.uploadDirectory(getServletContext(), "movies");
+        Path directory = MediaStorage.uploadDirectory(getServletContext(), category);
         String fileName = prefix + "-" + UUID.randomUUID() + extension;
 
         // 6. Ghi dữ liệu nhị phân xuống đĩa cứng máy chủ
         part.write(directory.resolve(fileName).toString());
 
         // 7. Trả về đường dẫn truy cập phục vụ hiển thị trên giao diện web
-        return request.getContextPath() + "/uploads/movies/" + fileName;
+        return request.getContextPath() + "/uploads/" + category + "/" + fileName;
     }
 }
