@@ -132,6 +132,9 @@ public class DistributionServlet extends HttpServlet {
                 case MOVIE_NOT_FOUND:
                     response.sendRedirect(request.getContextPath() + "/admin/distribution?error=movie_not_found");
                     break;
+                case INVALID_CENTRES:
+                    response.sendRedirect(request.getContextPath() + "/admin/distribution?movieId=" + movieId + "&error=invalid_centres");
+                    break;
                 default:
                     response.sendRedirect(request.getContextPath() + "/admin/distribution?movieId=" + movieId + "&error=save_failed");
                     break;

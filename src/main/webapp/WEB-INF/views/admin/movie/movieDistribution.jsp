@@ -87,6 +87,10 @@
                     <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
                         Phim ở trạng thái Lưu trữ (ARCHIVED) hoặc Đã kết thúc (ENDED) không thể phân phối tại các rạp chiếu.
                     </div>
+                    <% } else if ("invalid_centres".equals(request.getParameter("error"))) { %>
+                    <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
+                        Cụm rạp được chọn không tồn tại hoặc không ở trạng thái hợp lệ.
+                    </div>
                     <% } %>
 
                     <!-- BƯỚC 1: CHỌN PHIM -->

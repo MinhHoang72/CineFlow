@@ -14,6 +14,7 @@ import java.util.regex.Pattern;
  */
 public final class ValidationUtil {
 
+
     // Regex kiểm tra định dạng email chuẩn RFC 5322 cơ bản
     private static final Pattern EMAIL_PATTERN = Pattern.compile(
             "^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$"
@@ -72,6 +73,17 @@ public final class ValidationUtil {
      */
     public static boolean isBlank(String value) {
         return value == null || value.trim().isEmpty();
+    }
+
+    /** Chuẩn hóa danh sách thể loại: phân tách bằng phẩy, bỏ mục rỗng/trùng và giữ thứ tự nhập. */
+    public static String normalizeGenres(String genre) {
+        if (isBlank(genre)) return "";
+        Set<String> unique = new java.util.LinkedHashSet<>();
+        for (String part : genre.replace('/', ',').split(",")) {
+            String clean = part.trim().replaceAll("\\s+", " ");
+            if (!clean.isEmpty()) unique.add(clean);
+        }
+        return String.join(", ", unique);
     }
 
     /**

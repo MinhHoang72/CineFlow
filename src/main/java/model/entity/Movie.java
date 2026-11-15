@@ -183,8 +183,4 @@ public class Movie {
         }
         return false;
     }
-
-    public boolean isRateable() {
-        return !isComingSoon();
-    }
 }

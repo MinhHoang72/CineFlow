@@ -117,9 +117,22 @@ public class MovieService {
         }
         Date today = Date.valueOf(LocalDate.now());
         String status = movie.getStatus() != null ? movie.getStatus().trim().toUpperCase() : "";
+        movie.setGenre(ValidationUtil.normalizeGenres(movie.getGenre()));
 
         if (movie.getTitle() == null || movie.getTitle().trim().length() > 200) {
             throw new IllegalArgumentException("invalid_title");
+        }
+        if (movie.getGenre().length() > 200) {
+            throw new IllegalArgumentException("genre_too_long");
+        }
+        if (!ValidationUtil.isValidDuration(movie.getDuration())) {
+            throw new IllegalArgumentException("invalid_duration");
+        }
+        if (!ValidationUtil.isValidAgeRating(movie.getAgeRating())) {
+            throw new IllegalArgumentException("invalid_age_rating");
+        }
+        if (!ValidationUtil.isValidMovieStatus(status)) {
+            throw new IllegalArgumentException("invalid_status");
         }
         if (movieDAO.existsTitle(movie.getTitle(), movie.getMovieId())) {
             throw new IllegalArgumentException("duplicate_title");
@@ -154,6 +167,13 @@ public class MovieService {
         // Kiểm tra khoảng thời gian chiếu (Ngày kết thúc phải lớn hơn hoặc bằng ngày khởi chiếu)
         if (!ValidationUtil.isValidDateRange(movie.getReleaseDate(), movie.getEndDate())) {
             throw new IllegalArgumentException("invalid_date_range");
+        }
+
+        if ("NOW_SHOWING".equals(status) && movie.getEndDate().before(today)) {
+            throw new IllegalArgumentException("end_date_in_past");
+        }
+        if ("COMING_SOON".equals(status) && !movie.getEndDate().after(today)) {
+            throw new IllegalArgumentException("end_date_not_future");
         }
 
         // Kiểm tra tính nhất quán giữa trạng thái và ngày phát hành
@@ -288,6 +308,7 @@ public class MovieService {
         SUCCESS,
         MOVIE_NOT_FOUND,
         MOVIE_ENDED_OR_ARCHIVED,
+        INVALID_CENTRES,
         FAILED
     }
 
@@ -315,6 +336,20 @@ public class MovieService {
         if ("ARCHIVED".equals(st) || "ENDED".equals(st)) {
             if (selectedCentreIds != null && !selectedCentreIds.isEmpty()) {
                 return DistributionResult.MOVIE_ENDED_OR_ARCHIVED;
+            }
+        }
+        if (selectedCentreIds != null && !selectedCentreIds.isEmpty()) {
+            Set<Integer> validCentreIds = new java.util.HashSet<>();
+            for (Centre centre : getDistributionCentres(movieId)) {
+                String centreStatus = centre.getStatus() == null ? "" : centre.getStatus().trim().toUpperCase();
+                if ("ACTIVE".equals(centreStatus) || "SUSPENDED".equals(centreStatus)) {
+                    validCentreIds.add(centre.getCentreId());
+                }
+            }
+            for (Integer centreId : selectedCentreIds) {
+                if (centreId == null || !validCentreIds.contains(centreId)) {
+                    return DistributionResult.INVALID_CENTRES;
+                }
             }
         }
         boolean ok = movieDAO.saveMovieDistribution(movieId, selectedCentreIds);

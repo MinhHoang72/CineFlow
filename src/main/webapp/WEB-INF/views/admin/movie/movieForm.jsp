@@ -211,14 +211,8 @@
 
                             <div class="cf-form-group">
                                 <label class="cf-form-label">Thể loại phim</label>
-                                <select class="cf-form-control" name="genre">
-                                    <option value="">-- Chọn thể loại --</option>
-                                    <% String[] genres = {"Hành Động", "Tình Cảm", "Tâm Lý", "Hài Hước", "Kinh Dị", "Hoạt Hình", "Gia Đình", "Phiêu Lưu", "Khoa Học Viễn Tưởng", "Lịch Sử", "Chiến Tranh", "Chính Kịch"};
-                                       String currentGenre = editing && movie.getGenre() != null ? movie.getGenre() : "";
-                                       for (String genreOption : genres) { %>
-                                        <option value="<%= esc(genreOption) %>" <%= genreOption.equalsIgnoreCase(currentGenre) ? "selected" : "" %>><%= esc(genreOption) %></option>
-                                    <% } %>
-                                </select>
+                                <input class="cf-form-control" name="genre" maxlength="200" value="<%= editing ? esc(movie.getGenre()) : "" %>" placeholder="Ví dụ: Hành động, Hài hước">
+                                <p style="margin: 6px 0 0; font-size: 12px; color: #64748B; line-height: 1.4;">Có thể nhập nhiều thể loại, ngăn cách bằng dấu phẩy.</p>
                             </div>
 
                             <div class="cf-form-group">

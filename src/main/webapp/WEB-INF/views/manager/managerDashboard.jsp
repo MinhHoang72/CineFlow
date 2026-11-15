@@ -5,7 +5,7 @@
     if (authRole == null && session.getAttribute("user") instanceof User) {
         authRole = ((User) session.getAttribute("user")).getRole();
     }
-    if (!"MANAGER".equalsIgnoreCase(authRole) && !"ADMIN".equalsIgnoreCase(authRole)) {
+    if (!"MANAGER".equalsIgnoreCase(authRole)) {
         response.sendError(HttpServletResponse.SC_FORBIDDEN, "Chỉ Quản lý (MANAGER) hoặc Quản trị viên (ADMIN) mới có quyền truy cập trang này.");
         return;
     }

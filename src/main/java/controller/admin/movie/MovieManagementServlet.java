@@ -155,8 +155,6 @@ public class MovieManagementServlet extends HttpServlet {
             // 2.2. Đọc các trường thông tin cơ bản từ biểu mẫu
             String title = request.getParameter("title");
             String durationStr = request.getParameter("duration");
-            String ageRating = request.getParameter("ageRating");
-            String status = request.getParameter("status");
             String releaseDateStr = request.getParameter("releaseDate");
             String endDateStr = request.getParameter("endDate");
 
@@ -173,40 +171,12 @@ public class MovieManagementServlet extends HttpServlet {
                 response.sendRedirect(redirectTarget + sep + "error=missing_title");
                 return;
             }
-            if (title.trim().length() > 200) {
-                response.sendRedirect(redirectTarget + sep + "error=title_too_long");
-                return;
-            }
-            if (lengthOver(request.getParameter("description"), 2000)
-                    || lengthOver(request.getParameter("director"), 150)
-                    || lengthOver(request.getParameter("cast"), 1000)
-                    || lengthOver(request.getParameter("language"), 100)) {
-                response.sendRedirect(redirectTarget + sep + "error=text_too_long");
-                return;
-            }
-
-            // 2.4. Kiểm tra thời lượng phim (phải là số nguyên dương và không quá 300 phút)
+            // 2.4. Chuyển đổi thời lượng; validation nghiệp vụ tập trung tại MovieService.
             int duration;
             try {
                 duration = Integer.parseInt(durationStr != null ? durationStr.trim() : "0");
-                if (!ValidationUtil.isValidDuration(duration)) {
-                    response.sendRedirect(redirectTarget + sep + "error=invalid_duration");
-                    return;
-                }
             } catch (NumberFormatException e) {
                 response.sendRedirect(redirectTarget + sep + "error=invalid_duration");
-                return;
-            }
-
-            // 2.5. Kiểm tra phân loại độ tuổi hợp lệ (P, K, T13, T16, T18, C)
-            if (!ValidationUtil.isValidAgeRating(ageRating)) {
-                response.sendRedirect(redirectTarget + sep + "error=invalid_age_rating");
-                return;
-            }
-
-            // 2.6. Kiểm tra trạng thái phát hành hợp lệ (COMING_SOON, NOW_SHOWING, ENDED, ARCHIVED)
-            if (!ValidationUtil.isValidMovieStatus(status)) {
-                response.sendRedirect(redirectTarget + sep + "error=invalid_status");
                 return;
             }
 
@@ -218,17 +188,6 @@ public class MovieManagementServlet extends HttpServlet {
                 response.sendRedirect(redirectTarget + sep + "error=invalid_date_format");
                 return;
             }
-            java.sql.Date today = java.sql.Date.valueOf(java.time.LocalDate.now(java.time.ZoneId.of("Asia/Bangkok")));
-            String normalizedStatus = status.trim().toUpperCase();
-            if ("NOW_SHOWING".equals(normalizedStatus) && endDate != null && endDate.before(today)) {
-                response.sendRedirect(redirectTarget + sep + "error=end_date_in_past");
-                return;
-            }
-            if ("COMING_SOON".equals(normalizedStatus) && endDate != null && !endDate.after(today)) {
-                response.sendRedirect(redirectTarget + sep + "error=end_date_not_future");
-                return;
-            }
-
             String posterUrl = null;
             String trailerUrl = null;
             try {
@@ -369,11 +328,6 @@ public class MovieManagementServlet extends HttpServlet {
             return null;
         }
     }
-
-    private boolean lengthOver(String value, int max) {
-        return value != null && value.trim().length() > max;
-    }
-
 
     private int parseIntOrZero(String value) {
         try {
