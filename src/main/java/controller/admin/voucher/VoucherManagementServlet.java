@@ -1,204 +1,154 @@
 package controller.admin.voucher;
 
-import service.VoucherService;
+import dao.VoucherDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import model.dto.common.PageDTO;
+import model.entity.User;
+import model.entity.Voucher;
+import service.VoucherService;
+
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.sql.SQLException;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeParseException;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import model.dto.common.PageDTO;
-import model.entity.User;
-import model.entity.Voucher;
 
 /**
- * Servlet quản lý Voucher cho hai vai trò:
- *
- * ┌──────────────────────────────────────────────────────────────────────────┐
- * │ ADMIN   → /admin/vouchers/*   → CRUD voucher toàn chuỗi (CentreID=NULL) │
- * │ MANAGER → /manager/vouchers/* → CRUD voucher tại chi nhánh của mình     │
- * └──────────────────────────────────────────────────────────────────────────┘
- *
- * Manager chỉ thấy và chỉ có thể thao tác voucher gắn với centreId của mình.
- * Admin xem và quản lý TẤT CẢ voucher (bao gồm cả voucher chi nhánh nếu muốn).
+ * Controller Quản lý Voucher (Voucher Management).
+ * Chuẩn hóa cấu trúc tinh gọn theo phong cách CentreManagementServlet:
+ * - Kiểm tra phiên và phân quyền tập trung qua authorizedUser().
+ * - Phân tách 4 luồng rõ ràng: showList, showForm, save, toggleStatus.
  */
 @WebServlet(name = "VoucherManagementServlet", urlPatterns = {"/admin/vouchers", "/admin/vouchers/*", "/manager/vouchers", "/manager/vouchers/*"})
 public class VoucherManagementServlet extends HttpServlet {
 
     private static final int PAGE_SIZE = 10;
-    private static final BigDecimal MAX_MONEY = new BigDecimal("100000000");
     private final VoucherService voucherService = new VoucherService();
 
     // ─────────────────────────────────────────────────────────────────────────
-    // HTTP GET / POST
+    // AUTHENTICATION & AUTHORIZATION
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private User authorizedUser(HttpServletRequest request, HttpServletResponse response)
+            throws IOException {
+        HttpSession session = request.getSession(false);
+        User user = (session == null) ? null : (User) session.getAttribute("user");
+
+        // 1. Kiểm tra đăng nhập
+        if (user == null || session.getAttribute("userId") == null) {
+            String redirect = request.getRequestURI();
+            response.sendRedirect(request.getContextPath() + "/login?redirect="
+                    + URLEncoder.encode(redirect, StandardCharsets.UTF_8));
+            return null;
+        }
+
+        boolean isAdmin = user.isAdmin() || "ADMIN".equalsIgnoreCase(user.getRole());
+        boolean isManager = (user.isManager() || "MANAGER".equalsIgnoreCase(user.getRole())) && user.getCentreId() != null;
+
+        // 2. Kiểm tra quyền truy cập theo vai trò
+        if (!isAdmin && !isManager) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Chỉ Admin hoặc Manager chi nhánh mới được quản lý voucher.");
+            return null;
+        }
+
+        String uri = request.getRequestURI();
+        if (uri.contains("/admin/vouchers") && !isAdmin) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Chỉ Admin mới truy cập được trang quản lý voucher toàn chuỗi.");
+            return null;
+        }
+        if (uri.contains("/manager/vouchers") && !isManager && !isAdmin) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Không có quyền truy cập.");
+            return null;
+        }
+
+        return user;
+    }
+
+    private String baseUrl(HttpServletRequest request, User user) {
+        boolean isAdminPath = user.isAdmin() && request.getRequestURI().contains("/admin/");
+        return request.getContextPath() + (isAdminPath ? "/admin/vouchers" : "/manager/vouchers");
+    }
+
+    private Integer scopeCentreId(HttpServletRequest request, User user) {
+        return (user.isAdmin() && request.getRequestURI().contains("/admin/")) ? null : user.getCentreId();
+    }
+
+    private void setFlash(HttpServletRequest request, String type, String message) {
+        HttpSession session = request.getSession();
+        session.setAttribute("flashType", type);
+        session.setAttribute("flashMessage", message);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // HTTP GET
     // ─────────────────────────────────────────────────────────────────────────
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         User user = authorizedUser(request, response);
-        if (user == null) {
-            return;
-        }
-        String path = request.getPathInfo() == null ? "/" : request.getPathInfo();
-        switch (path) {
-            case "/":
-                showList(request, response, user);
-                break;
-            case "/form":
-                showForm(request, response, user);
-                break;
-            default:
-                response.sendError(HttpServletResponse.SC_NOT_FOUND);
+        if (user == null) return;
+
+        String path = request.getPathInfo();
+        if ("/form".equals(path)) {
+            showForm(request, response, user);
+        } else {
+            showList(request, response, user);
         }
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // HTTP POST
+    // ─────────────────────────────────────────────────────────────────────────
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         request.setCharacterEncoding("UTF-8");
         User user = authorizedUser(request, response);
-        if (user == null) {
-            return;
-        }
-        String path = request.getPathInfo() == null ? "/" : request.getPathInfo();
-        switch (path) {
-            case "/save":
-                save(request, response, user);
-                break;
-            case "/status":
-                changeStatus(request, response, user);
-                break;
-            default:
-                response.sendError(HttpServletResponse.SC_NOT_FOUND);
+        if (user == null) return;
+
+        String path = request.getPathInfo();
+        if ("/save".equals(path)) {
+            save(request, response, user);
+        } else if ("/status".equals(path)) {
+            toggleStatus(request, response, user);
+        } else {
+            response.sendRedirect(baseUrl(request, user));
         }
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // AUTH HELPER
-    // ─────────────────────────────────────────────────────────────────────────
-
-    /**
-     * Kiểm tra phiên đăng nhập và phân quyền.
-     * Cho phép ADMIN và MANAGER (manager phải có centreId).
-     *
-     * @return User nếu hợp lệ; null nếu đã redirect/error
-     */
-    private User authorizedUser(HttpServletRequest request, HttpServletResponse response)
-            throws IOException {
-        HttpSession session = request.getSession(false);
-        User user = session == null ? null : (User) session.getAttribute("user");
-        if (user == null) {
-            String redirect = request.getRequestURI();
-            response.sendRedirect(request.getContextPath() + "/login?redirect="
-                    + URLEncoder.encode(redirect, StandardCharsets.UTF_8));
-            return null;
-        }
-        boolean isAdmin = user.isAdmin();
-        boolean isManager = user.isManager() && user.getCentreId() != null;
-        if (!isAdmin && !isManager) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN,
-                    "Chỉ Admin hoặc Manager chi nhánh mới được quản lý voucher.");
-            return null;
-        }
-        // Kiểm tra đường dẫn phù hợp với vai trò
-        String uri = request.getRequestURI();
-        if (uri.contains("/admin/vouchers") && !isAdmin) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN,
-                    "Chỉ Admin mới truy cập được trang quản lý voucher toàn chuỗi.");
-            return null;
-        }
-        if (uri.contains("/manager/vouchers") && !isManager && !isAdmin) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN,
-                    "Không có quyền truy cập.");
-            return null;
-        }
-        return user;
-    }
-
-    /**
-     * Trả về base URL của trang voucher tương ứng với role hiện tại.
-     * Admin → /admin/vouchers  |  Manager → /manager/vouchers
-     */
-    private String baseUrl(HttpServletRequest request, User user) {
-        //tên ứng dụng wweb:/Cine_Flow
-        return request.getContextPath()
-                + (user.isAdmin() && request.getRequestURI().contains("/admin/") 
-                   ? "/admin/vouchers" : "/manager/vouchers");
-    }
-
-    /**
-     * Trả về scopeCentreId để truyền vào DAO.search():
-     *   - Admin (đường /admin/vouchers): null → xem tất cả
-     *   - Manager: centreId của manager
-     */
-    private Integer scopeCentreId(HttpServletRequest request, User user) {
-        if (user.isAdmin() && request.getRequestURI().contains("/admin/")) {
-            return null; // Admin xem toàn chuỗi
-        }
-        return user.getCentreId(); // Manager chỉ xem của chi nhánh mình
-    }
-    // ─────────────────────────────────────────────────────────────────────────
-    // FLASH
-    // ─────────────────────────────────────────────────────────────────────────
-
-    private void flash(HttpServletRequest request, String type, String message) {
-        HttpSession session = request.getSession();
-        session.setAttribute("voucherFlashType", type);
-        session.setAttribute("voucherFlashMessage", message);
-    }
-
-    private void showFlash(HttpServletRequest request) {
-        HttpSession session = request.getSession();
-        request.setAttribute("flashType", session.getAttribute("voucherFlashType"));
-        request.setAttribute("flashMessage", session.getAttribute("voucherFlashMessage"));
-        session.removeAttribute("voucherFlashType");
-        session.removeAttribute("voucherFlashMessage");
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // SHOW LIST
+    // 1. SHOW LIST (Hiển thị danh sách & phân trang)
     // ─────────────────────────────────────────────────────────────────────────
 
     private void showList(HttpServletRequest request, HttpServletResponse response, User user)
             throws ServletException, IOException {
-        String q = request.getParameter("q") == null ? "" : request.getParameter("q").trim();
-        if (q.length() > 100) {
-            q = q.substring(0, 100);
-        }
-        String status = request.getParameter("status") == null ? "" : request.getParameter("status").trim();
-        if (!"ACTIVE".equals(status) && !"INACTIVE".equals(status)
-                && !"EXPIRED".equals(status) && !"EXHAUSTED".equals(status)) {
-            status = "";
-        }
-        String type = request.getParameter("type") == null ? "" : request.getParameter("type").trim();
-        if (!"FIXED".equals(type) && !"PERCENT".equals(type)) {
-            type = "";
-        }
+        String q = param(request, "q");
+        String status = param(request, "status");
+        String type = param(request, "type");
         int page = 1;
         try {
-            page = Integer.parseInt(request.getParameter("page"));
-        } catch (NumberFormatException ignored) {
-        }
+            String p = request.getParameter("page");
+            if (p != null && !p.isBlank()) page = Integer.parseInt(p.trim());
+        } catch (NumberFormatException ignored) {}
 
-        
-        
-        String base = baseUrl(request, user);//tạo đường dẫn admin hoặc manager
-        Integer scope = scopeCentreId(request, user);//scope=null
+        String base = baseUrl(request, user);
+        Integer scope = scopeCentreId(request, user);
         PageDTO<Voucher> result = voucherService.searchVouchers(q, status, type, scope, page, PAGE_SIZE);
 
         String filters = "q=" + URLEncoder.encode(q, StandardCharsets.UTF_8)
                 + "&status=" + URLEncoder.encode(status, StandardCharsets.UTF_8)
                 + "&type=" + URLEncoder.encode(type, StandardCharsets.UTF_8);
+
         request.setAttribute("result", result);
         request.setAttribute("q", q);
         request.setAttribute("status", status);
@@ -210,12 +160,12 @@ public class VoucherManagementServlet extends HttpServlet {
         request.setAttribute("baseUrl", base);
         request.setAttribute("currentUser", user);
         request.setAttribute("isAdminScope", user.isAdmin() && request.getRequestURI().contains("/admin/"));
-        showFlash(request);
+
         request.getRequestDispatcher("/WEB-INF/views/admin/voucher/voucherList.jsp").forward(request, response);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // SHOW FORM
+    // 2. SHOW FORM (Mở Form Thêm mới / Sửa)
     // ─────────────────────────────────────────────────────────────────────────
 
     private void showForm(HttpServletRequest request, HttpServletResponse response, User user)
@@ -227,120 +177,109 @@ public class VoucherManagementServlet extends HttpServlet {
         voucher.setMinimumOrderValue(BigDecimal.ZERO);
         voucher.setStartDate(LocalDateTime.now().withSecond(0).withNano(0));
         voucher.setEndDate(LocalDateTime.now().plusMonths(1).withSecond(0).withNano(0));
-        // Mặc định scope theo role
         if (user.isManager()) {
             voucher.setCentreId(user.getCentreId());
         }
 
         String idText = request.getParameter("id");
-        if (idText != null && idText.matches("[0-9]+") && idText.length() < 10) {
-            //gán voucher mới 
+        if (idText != null && idText.matches("\\d+")) {
             voucher = voucherService.getVoucherById(Integer.parseInt(idText));
             if (voucher == null) {
-                flash(request, "error", "Không tìm thấy voucher.");
+                setFlash(request, "error", "Không tìm thấy voucher.");
                 response.sendRedirect(base);
                 return;
             }
-            // Manager không được sửa voucher của chi nhánh khác hoặc voucher toàn chuỗi
             if (user.isManager() && !voucherService.belongsToCentre(voucher.getVoucherId(), user.getCentreId())) {
-                flash(request, "error", "Bạn không có quyền chỉnh sửa voucher này.");
+                setFlash(request, "error", "Bạn không có quyền chỉnh sửa voucher này.");
                 response.sendRedirect(base);
                 return;
             }
         }
-        forwardForm(request, response, voucher, null, null, base, user);
+        renderForm(request, response, voucher, null, null, base, user);
     }
 
-    private void forwardForm(HttpServletRequest request, HttpServletResponse response,
-                             Voucher voucher, Map<String, String> errors, Map<String, String> raw,
-                             String base, User user) throws ServletException, IOException {
+    private void renderForm(HttpServletRequest request, HttpServletResponse response,
+                            Voucher voucher, Map<String, String> errors, Map<String, String> raw,
+                            String base, User user) throws ServletException, IOException {
         request.setAttribute("voucher", voucher);
         request.setAttribute("errors", errors);
         request.setAttribute("raw", raw);
         request.setAttribute("pageTitle", voucher.getVoucherId() == 0 ? "Thêm voucher" : "Sửa voucher");
         request.setAttribute("pageBreadcrumb", "Khuyến mãi");
-request.setAttribute("baseUrl", base);
+        request.setAttribute("baseUrl", base);
         request.setAttribute("currentUser", user);
         request.setAttribute("isAdminScope", user.isAdmin() && request.getRequestURI().contains("/admin/"));
         request.getRequestDispatcher("/WEB-INF/views/admin/voucher/voucherForm.jsp").forward(request, response);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // SAVE
+    // 3. SAVE (Tạo mới hoặc Cập nhật voucher)
     // ─────────────────────────────────────────────────────────────────────────
 
     private void save(HttpServletRequest request, HttpServletResponse response, User user)
             throws ServletException, IOException {
         String base = baseUrl(request, user);
-        Voucher voucher = new Voucher();
         String idText = request.getParameter("id");
-        boolean isEdit = false;
-        if (idText != null && idText.matches("[0-9]+") && idText.length() < 10) {
-            voucher = voucherService.getVoucherById(Integer.parseInt(idText));
-            if (voucher == null) {
-                flash(request, "error", "Không tìm thấy voucher.");
-                response.sendRedirect(base);
-                return;
-            }
-            isEdit = true;
-            // Manager không được sửa voucher của chi nhánh khác
-            if (user.isManager() && !voucherService.belongsToCentre(voucher.getVoucherId(), user.getCentreId())) {
-                flash(request, "error", "Bạn không có quyền chỉnh sửa voucher này.");
-                response.sendRedirect(base);
-                return;
-            }
+        boolean isEdit = idText != null && idText.matches("\\d+");
+        Voucher voucher = isEdit ? voucherService.getVoucherById(Integer.parseInt(idText)) : new Voucher();
+
+        if (isEdit && (voucher == null || (user.isManager() && !voucherService.belongsToCentre(voucher.getVoucherId(), user.getCentreId())))) {
+            setFlash(request, "error", "Không tìm thấy hoặc bạn không có quyền thao tác voucher này.");
+            response.sendRedirect(base);
+            return;
         }
 
-        // Gán scope: Admin đường /admin → null (toàn chuỗi); Manager → centreId của mình
-        // Khi edit, giữ nguyên CentreID gốc (không cho thay đổi scope sau khi tạo)
         if (!isEdit) {
-            if (user.isAdmin() && request.getRequestURI().contains("/admin/")) {
-                voucher.setCentreId(null);
-            } else {
-                voucher.setCentreId(user.getCentreId());
-            }
+            voucher.setCentreId(user.isManager() ? user.getCentreId() : null);
             voucher.setCreatedBy(user.getUserId());
         }
 
-        Map<String, String> errors = new LinkedHashMap<>();
-        Map<String, String> raw = new LinkedHashMap<>();
-        raw.put("discountValue", param(request, "discountValue"));
-        raw.put("minimumOrderValue", param(request, "minimumOrderValue"));
-        raw.put("maximumDiscount", param(request, "maximumDiscount"));
-        raw.put("startDate", param(request, "startDate"));
-        raw.put("endDate", param(request, "endDate"));
-        raw.put("usageLimit", param(request, "usageLimit"));
-
+        // Đọc dữ liệu từ form
         String code = param(request, "code").toUpperCase();
         String name = param(request, "name");
-        String description = param(request, "description");
-        String imageUrl = param(request, "imageUrl");
+        String desc = param(request, "description");
+        String img = param(request, "imageUrl");
         String type = param(request, "type");
         String status = param(request, "status");
+        String rawVal = param(request, "discountValue");
+        String rawMin = param(request, "minimumOrderValue");
+        String rawMax = param(request, "maximumDiscount");
+        String rawStart = param(request, "startDate");
+        String rawEnd = param(request, "endDate");
+        String rawLimit = param(request, "usageLimit");
 
-        boolean locked = voucher.getVoucherId() > 0 && voucher.getUsedCount() > 0;
-        if (locked) {
-            //vứt bỏ mã người dùng gửi lên bắt buộc phải dùng mã gốc
+        // Giữ lại raw values cho FE nếu có lỗi nhập liệu
+        Map<String, String> raw = new HashMap<>();
+        raw.put("discountValue", rawVal);
+        raw.put("minimumOrderValue", rawMin);
+        raw.put("maximumDiscount", rawMax);
+        raw.put("startDate", rawStart);
+        raw.put("endDate", rawEnd);
+        raw.put("usageLimit", rawLimit);
+
+        Map<String, String> errors = new LinkedHashMap<>();
+
+        // Khóa mã nếu voucher đã từng được sử dụng
+        if (isEdit && voucher.getUsedCount() > 0) {
             code = voucher.getVoucherCode();
         }
         voucher.setVoucherCode(code);
         voucher.setVoucherName(name);
-        voucher.setDescription(description);
-        voucher.setImageUrl(imageUrl.isEmpty() ? null : imageUrl);
+        voucher.setDescription(desc);
+        voucher.setImageUrl(img.isEmpty() ? null : img);
         voucher.setDiscountType(type);
         voucher.setStatus(status);
 
+        // 1. Validate thông tin cơ bản
         if (!code.matches("[A-Z0-9_-]{3,50}")) {
             errors.put("code", "Mã gồm 3-50 ký tự chữ hoa, số, gạch ngang hoặc gạch dưới.");
         } else if (voucherService.isVoucherCodeExists(code, voucher.getVoucherId())) {
             errors.put("code", "Mã voucher đã tồn tại.");
         }
-        if (name.isEmpty()) {
-            errors.put("name", "Tên voucher là bắt buộc.");
-        } else if (name.length() > 150) {
-            errors.put("name", "Tên voucher tối đa 150 ký tự.");
+        if (name.isEmpty() || name.length() > 150) {
+            errors.put("name", "Tên voucher không được trống và tối đa 150 ký tự.");
         }
-        if (description.length() > 500) {
+        if (desc.length() > 500) {
             errors.put("description", "Mô tả tối đa 500 ký tự.");
         }
         if (!"FIXED".equals(type) && !"PERCENT".equals(type)) {
@@ -350,154 +289,131 @@ request.setAttribute("baseUrl", base);
             errors.put("status", "Hãy chọn trạng thái.");
         }
 
+        // 2. Validate giá trị giảm
         try {
-            BigDecimal value = money(raw.get("discountValue"));
-            voucher.setDiscountValue(value);
-            if (value.signum() <= 0) {
+            BigDecimal val = new BigDecimal(rawVal.replace(",", ""));
+            voucher.setDiscountValue(val);
+            if (val.signum() <= 0) {
                 errors.put("discountValue", "Giá trị giảm phải lớn hơn 0.");
-            } else if ("PERCENT".equals(type) && value.compareTo(new BigDecimal("50")) > 0) {
-                errors.put("discountValue", "Giảm theo phần trăm tối đa 50.");
-            } else if ("FIXED".equals(type) && value.compareTo(MAX_MONEY) > 0) {
-                errors.put("discountValue", "Giá trị giảm quá lớn.");
+            } else if ("PERCENT".equals(type) && val.compareTo(BigDecimal.valueOf(50)) > 0) {
+                errors.put("discountValue", "Giảm theo phần trăm tối đa 50%.");
             }
-        } catch (NumberFormatException exception) {
+        } catch (Exception e) {
             errors.put("discountValue", "Hãy nhập giá trị giảm hợp lệ.");
         }
 
+        // 3. Validate đơn tối thiểu
         try {
-            BigDecimal minimum = raw.get("minimumOrderValue").isEmpty()
-                    ? BigDecimal.ZERO : money(raw.get("minimumOrderValue"));
-            voucher.setMinimumOrderValue(minimum);
-            if (minimum.signum() < 0 || minimum.compareTo(MAX_MONEY) > 0) {
+            BigDecimal min = rawMin.isEmpty() ? BigDecimal.ZERO : new BigDecimal(rawMin.replace(",", ""));
+            voucher.setMinimumOrderValue(min);
+            if (min.signum() < 0) {
                 errors.put("minimumOrderValue", "Giá trị đơn tối thiểu không hợp lệ.");
             }
-        } catch (NumberFormatException exception) {
+        } catch (Exception e) {
             errors.put("minimumOrderValue", "Hãy nhập giá trị đơn tối thiểu hợp lệ.");
         }
 
+        // 4. Validate mức giảm tối đa
         voucher.setMaximumDiscount(null);
-        if (!raw.get("maximumDiscount").isEmpty()) {
+        if (!rawMax.isEmpty()) {
             try {
-                BigDecimal maximum = money(raw.get("maximumDiscount"));
-                voucher.setMaximumDiscount(maximum);
-                if (maximum.signum() < 0 || maximum.compareTo(MAX_MONEY) > 0) {
-                    errors.put("maximumDiscount", "Mức giảm tối đa không hợp lệ.");
+                BigDecimal max = new BigDecimal(rawMax.replace(",", ""));
+                voucher.setMaximumDiscount(max);
+                if (max.signum() <= 0) {
+                    errors.put("maximumDiscount", "Mức giảm tối đa phải lớn hơn 0.");
                 }
-            } catch (NumberFormatException exception) {
+            } catch (Exception e) {
                 errors.put("maximumDiscount", "Hãy nhập mức giảm tối đa hợp lệ.");
             }
         }
 
-        LocalDateTime start = null;
-        LocalDateTime end = null;
+        // 5. Validate thời gian hiệu lực
+        LocalDateTime start = null, end = null;
         try {
-            start = LocalDateTime.parse(raw.get("startDate"));
+            start = LocalDateTime.parse(rawStart);
             voucher.setStartDate(start);
-        } catch (DateTimeParseException exception) {
-            errors.put("startDate", "Hãy chọn ngày bắt đầu.");
+        } catch (Exception e) {
+            errors.put("startDate", "Hãy chọn ngày bắt đầu hợp lệ.");
         }
         try {
-            end = LocalDateTime.parse(raw.get("endDate"));
+            end = LocalDateTime.parse(rawEnd);
             voucher.setEndDate(end);
-        } catch (DateTimeParseException exception) {
-            errors.put("endDate", "Hãy chọn ngày kết thúc.");
+        } catch (Exception e) {
+            errors.put("endDate", "Hãy chọn ngày kết thúc hợp lệ.");
         }
         if (start != null && end != null && !end.isAfter(start)) {
             errors.put("endDate", "Ngày kết thúc phải sau ngày bắt đầu.");
         }
 
+        // 6. Validate giới hạn lượt dùng
         voucher.setUsageLimit(null);
-        if (!raw.get("usageLimit").isEmpty()) {
-            String limitText = raw.get("usageLimit");
-            if (!limitText.matches("[0-9]+") || limitText.length() > 9) {
-                errors.put("usageLimit", "Giới hạn lượt dùng phải là số nguyên không âm.");
-            } else {
-                int limit = Integer.parseInt(limitText);
+        if (!rawLimit.isEmpty()) {
+            try {
+                int limit = Integer.parseInt(rawLimit.trim());
                 voucher.setUsageLimit(limit);
                 if (limit < voucher.getUsedCount()) {
-                    errors.put("usageLimit", "Giới hạn không được nhỏ hơn số lượt đã dùng ("
-                            + voucher.getUsedCount() + ").");
+                    errors.put("usageLimit", "Giới hạn không được nhỏ hơn số lượt đã dùng (" + voucher.getUsedCount() + ").");
                 }
+            } catch (Exception e) {
+                errors.put("usageLimit", "Giới hạn lượt dùng phải là số nguyên dương.");
             }
         }
-//nếu có lỗi 
+
+        // Nếu có lỗi -> render lại form
         if (!errors.isEmpty()) {
-            forwardForm(request, response, voucher, errors, raw, base, user);
+            renderForm(request, response, voucher, errors, raw, base, user);
             return;
         }
 
+        // Lưu vào DB
         try {
             if (voucher.getVoucherId() == 0) {
                 voucherService.createVoucher(voucher);
-                flash(request, "success", "Đã tạo voucher " + voucher.getVoucherCode() + ".");
+                setFlash(request, "success", "Đã tạo voucher " + voucher.getVoucherCode() + " thành công.");
             } else {
                 voucherService.updateVoucher(voucher);
-                flash(request, "success", "Đã cập nhật voucher " + voucher.getVoucherCode() + ".");
+                setFlash(request, "success", "Đã cập nhật voucher " + voucher.getVoucherCode() + " thành công.");
             }
-        } catch (SQLException exception) {
-            exception.printStackTrace();
-            flash(request, "error", "Không lưu được voucher, vui lòng thử lại.");
+        } catch (Exception e) {
+            setFlash(request, "error", "Không lưu được voucher: " + e.getMessage());
         }
         response.sendRedirect(base);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // CHANGE STATUS
+    // 4. TOGGLE STATUS (Bật / Tắt hoạt động voucher)
     // ─────────────────────────────────────────────────────────────────────────
 
-    private void changeStatus(HttpServletRequest request, HttpServletResponse response, User user)
+    private void toggleStatus(HttpServletRequest request, HttpServletResponse response, User user)
             throws IOException {
         String base = baseUrl(request, user);
-        // giúp người dùng quay về đúng trang  q và page
-        String back = request.getParameter("back") == null ? ""
-                : request.getParameter("back").replaceAll("[^A-Za-z0-9%&=._~+-]", "");
-        // cho nó quay về đúng chỗ 
+        String back = param(request, "back").replaceAll("[^A-Za-z0-9%&=._~+-]", "");
         String target = base + (back.isEmpty() ? "" : "?" + back);
 
-        String idText = request.getParameter("id");
-        String status = param(request, "newStatus");
-        if (idText == null || !idText.matches("[0-9]+") || idText.length() >= 10
-                || (!"ACTIVE".equals(status) && !"INACTIVE".equals(status))) {
-            flash(request, "error", "Yêu cầu không hợp lệ.");
-            response.sendRedirect(target);
-            return;
-        }
-        int id = Integer.parseInt(idText);
-        Voucher voucher = voucherService.getVoucherById(id);
-        if (voucher == null) {
-            flash(request, "error", "Không tìm thấy voucher.");
-            response.sendRedirect(target);
-            return;
-        }
-        // Manager chỉ được đổi trạng thái voucher của chi nhánh mình
-        if (user.isManager() && !voucherService.belongsToCentre(id, user.getCentreId())) {
-            flash(request, "error", "Bạn không có quyền thao tác voucher này.");
-            response.sendRedirect(target);
-            return;
-        }
         try {
+            int id = Integer.parseInt(request.getParameter("id"));
+            String status = param(request, "newStatus");
+
+            if (user.isManager() && !voucherService.belongsToCentre(id, user.getCentreId())) {
+                setFlash(request, "error", "Bạn không có quyền thao tác voucher này.");
+                response.sendRedirect(target);
+                return;
+            }
+
             voucherService.changeVoucherStatus(id, status);
-            flash(request, "success",
-                    "ACTIVE".equals(status) ? "Đã kích hoạt voucher." : "Đã tạm ngưng voucher.");
-        } catch (SQLException exception) {
-            exception.printStackTrace();
-            flash(request, "error", "Không đổi được trạng thái, vui lòng thử lại.");
+            setFlash(request, "success", "ACTIVE".equals(status) ? "Đã kích hoạt voucher thành công." : "Đã tạm ngưng voucher.");
+        } catch (Exception e) {
+            setFlash(request, "error", "Không đổi được trạng thái, vui lòng thử lại.");
         }
         response.sendRedirect(target);
     }
 
-    
+    // ─────────────────────────────────────────────────────────────────────────
+    // HELPER
+    // ─────────────────────────────────────────────────────────────────────────
 
     private String param(HttpServletRequest request, String name) {
         String value = request.getParameter(name);
         return value == null ? "" : value.trim();
-    }
-
-    private BigDecimal money(String text) {
-        BigDecimal value = new BigDecimal(text.replace(",", ""));
-        if (value.scale() > 2) {
-            throw new NumberFormatException();
-        }
-        return value;
     }
 }

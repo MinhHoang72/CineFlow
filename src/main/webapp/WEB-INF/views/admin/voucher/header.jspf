@@ -46,6 +46,12 @@
     String shellTitle = (String) request.getAttribute("pageTitle");
     String flashType = (String) request.getAttribute("flashType");
     String flashMessage = (String) request.getAttribute("flashMessage");
+    if (flashMessage == null && session != null) {
+        flashType = (String) session.getAttribute("flashType");
+        flashMessage = (String) session.getAttribute("flashMessage");
+        session.removeAttribute("flashType");
+        session.removeAttribute("flashMessage");
+    }
     String baseUrl = (String) request.getAttribute("baseUrl");
     if (baseUrl == null) {
         baseUrl = ctx + (adminUser ? "/admin/vouchers" : "/manager/vouchers");
