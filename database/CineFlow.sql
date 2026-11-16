@@ -1,4 +1,4 @@
-/* ====================================================================================
+﻿/* ====================================================================================
    CINEFLOW - MULTI-CENTRE CINEMA MANAGEMENT SYSTEM
    DATABASE: MICROSOFT SQL SERVER
    PHIÊN BẢN: 2.0 (MASTER ALL-IN-ONE CONSOLIDATED SCRIPT)
