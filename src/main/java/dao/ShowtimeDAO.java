@@ -153,6 +153,8 @@ public class ShowtimeDAO {
     private static final String BOOKABLE =
             "s.SaleState = 'OPEN' AND s.PriceLockedAt IS NOT NULL AND s.Status = 'SCHEDULED' AND s.StartTime > SYSDATETIME() AND m.Status = 'NOW_SHOWING' "
           + "AND h.Status = 'AVAILABLE' AND b.Status = 'ACTIVE' "
+          + "AND EXISTS (SELECT 1 FROM CentreMovies cm WHERE cm.MovieID = s.MovieID AND cm.CentreID = b.CentreID "
+          + "AND cm.IsActive = 1 AND cm.Status = 'ACTIVE') "
           + "AND " + CENTRE_BASE_PRICE + " IS NOT NULL ";
 
     static Showtime map(ResultSet rs) throws SQLException {
