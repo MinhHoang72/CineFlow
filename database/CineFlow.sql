@@ -25142,50 +25142,50 @@ END
 GO
 
 -- 4.5 Cấu hình 20 Voucher cho Manager Cầu Giấy (CentreID = 1)
-UPDATE Vouchers SET VoucherCode = 'CGY_VIPMEMBER', VoucherName = N'Ưu Đãi Thành Viên VIP Cầu Giấy', ImageURL = '/Cine_Flow/uploads/poster/poster-dune-2.jpg', UsedCount = 0 WHERE VoucherID = 335;
-UPDATE Vouchers SET VoucherCode = 'CGY_STUDENT', VoucherName = N'HSSV Siêu Tiết Kiệm - Giảm 20%', ImageURL = '/Cine_Flow/uploads/poster/poster-inside-out-2.jpg', UsedCount = 45 WHERE VoucherID = 334;
-UPDATE Vouchers SET VoucherCode = 'CGY_SWEETPAIR', VoucherName = N'Combo Hẹn Hò Sweetbox - Giảm 25%', ImageURL = '/Cine_Flow/uploads/poster/poster-mai.jpg', UsedCount = 18 WHERE VoucherID = 333;
-UPDATE Vouchers SET VoucherCode = 'CGY_WEEKEND_BOOM', VoucherName = N'Cuối Tuần Bùng Nổ - Giảm 40K', ImageURL = '/Cine_Flow/uploads/poster/poster-deadpool-wolverine.jpg', UsedCount = 28 WHERE VoucherID = 332;
-UPDATE Vouchers SET VoucherCode = 'CGY_HAPPY_WED', VoucherName = N'Thứ Tư Vui Vẻ - Giảm 30%', ImageURL = '/Cine_Flow/uploads/poster/poster-kung-fu-panda-4.jpg', UsedCount = 35 WHERE VoucherID = 331;
-UPDATE Vouchers SET VoucherCode = 'CGY_NIGHT_OWL', VoucherName = N'Cú Đêm Mê Phim - Giảm 35K', ImageURL = '/Cine_Flow/uploads/poster/poster-avatar-2.jpg', UsedCount = 15 WHERE VoucherID = 330;
-UPDATE Vouchers SET VoucherCode = 'CGY_EARLY_BIRD', VoucherName = N'Đặt Vé Sớm - Giảm Liền 30K', ImageURL = '/Cine_Flow/uploads/poster/poster-interstellar.jpg', UsedCount = 22 WHERE VoucherID = 329;
-UPDATE Vouchers SET VoucherCode = 'CGY_FAMILY_DAY', VoucherName = N'Gia Đình Gắn Kết - Giảm 30%', ImageURL = '/Cine_Flow/uploads/poster/poster-despicable-me-4.jpg', UsedCount = 8 WHERE VoucherID = 328;
-UPDATE Vouchers SET VoucherCode = 'CGY_POPCORN_COMBO', VoucherName = N'Đại Tiệc Bắp Nước - Giảm 20K', ImageURL = '/Cine_Flow/uploads/poster/poster-transformers-one.jpg', UsedCount = 40 WHERE VoucherID = 327;
-UPDATE Vouchers SET VoucherCode = 'CGY_NEWBIE_WELCOME', VoucherName = N'Chào Bạn Mới - Giảm 50K', ImageURL = '/Cine_Flow/uploads/poster/poster-oppenheimer.jpg', UsedCount = 50 WHERE VoucherID = 326;
+UPDATE Vouchers SET VoucherCode = 'CGY_VIPMEMBER', VoucherName = N'Ưu Đãi Thành Viên VIP Cầu Giấy', ImageURL = '/Cine_Flow/uploads/poster/poster-dune-2.jpg', UsedCount = 0 WHERE VoucherCode = 'CGY30' OR VoucherID = 335;
+UPDATE Vouchers SET VoucherCode = 'CGY_STUDENT', VoucherName = N'HSSV Siêu Tiết Kiệm - Giảm 20%', ImageURL = '/Cine_Flow/uploads/poster/poster-inside-out-2.jpg', UsedCount = 45 WHERE VoucherCode = 'CGY29' OR VoucherID = 334;
+UPDATE Vouchers SET VoucherCode = 'CGY_SWEETPAIR', VoucherName = N'Combo Hẹn Hò Sweetbox - Giảm 25%', ImageURL = '/Cine_Flow/uploads/poster/poster-mai.jpg', UsedCount = 18 WHERE VoucherCode = 'CGY28' OR VoucherID = 333;
+UPDATE Vouchers SET VoucherCode = 'CGY_WEEKEND_BOOM', VoucherName = N'Cuối Tuần Bùng Nổ - Giảm 40K', ImageURL = '/Cine_Flow/uploads/poster/poster-deadpool-wolverine.jpg', UsedCount = 28 WHERE VoucherCode = 'CGY27' OR VoucherID = 332;
+UPDATE Vouchers SET VoucherCode = 'CGY_HAPPY_WED', VoucherName = N'Thứ Tư Vui Vẻ - Giảm 30%', ImageURL = '/Cine_Flow/uploads/poster/poster-kung-fu-panda-4.jpg', UsedCount = 35 WHERE VoucherCode = 'CGY26' OR VoucherID = 331;
+UPDATE Vouchers SET VoucherCode = 'CGY_NIGHT_OWL', VoucherName = N'Cú Đêm Mê Phim - Giảm 35K', ImageURL = '/Cine_Flow/uploads/poster/poster-avatar-2.jpg', UsedCount = 15 WHERE VoucherCode = 'CGY25' OR VoucherID = 330;
+UPDATE Vouchers SET VoucherCode = 'CGY_EARLY_BIRD', VoucherName = N'Đặt Vé Sớm - Giảm Liền 30K', ImageURL = '/Cine_Flow/uploads/poster/poster-interstellar.jpg', UsedCount = 22 WHERE VoucherCode = 'CGY24' OR VoucherID = 329;
+UPDATE Vouchers SET VoucherCode = 'CGY_FAMILY_DAY', VoucherName = N'Gia Đình Gắn Kết - Giảm 30%', ImageURL = '/Cine_Flow/uploads/poster/poster-despicable-me-4.jpg', UsedCount = 8 WHERE VoucherCode = 'CGY23' OR VoucherID = 328;
+UPDATE Vouchers SET VoucherCode = 'CGY_POPCORN_COMBO', VoucherName = N'Đại Tiệc Bắp Nước - Giảm 20K', ImageURL = '/Cine_Flow/uploads/poster/poster-transformers-one.jpg', UsedCount = 40 WHERE VoucherCode = 'CGY22' OR VoucherID = 327;
+UPDATE Vouchers SET VoucherCode = 'CGY_NEWBIE_WELCOME', VoucherName = N'Chào Bạn Mới - Giảm 50K', ImageURL = '/Cine_Flow/uploads/poster/poster-oppenheimer.jpg', UsedCount = 50 WHERE VoucherCode = 'CGY21' OR VoucherID = 326;
 
-UPDATE Vouchers SET VoucherCode = 'CGY_MATINEE', VoucherName = N'Suất Chiếu Sớm Matinee - Giảm 20K', ImageURL = '/Cine_Flow/uploads/poster/poster-godzilla-kong.jpg' WHERE VoucherID = 325;
-UPDATE Vouchers SET VoucherCode = 'CGY_FAMILY_COMBO', VoucherName = N'Combo Gia Đình Cuối Tuần - Giảm 25%', ImageURL = '/Cine_Flow/uploads/poster/poster-lat-mat-7.jpg' WHERE VoucherID = 324;
-UPDATE Vouchers SET VoucherCode = 'CGY_LATE_NIGHT', VoucherName = N'Suất Chiếu Đêm Khuya - Giảm 30K', ImageURL = '/Cine_Flow/uploads/poster/poster-inception.jpg' WHERE VoucherID = 323;
-UPDATE Vouchers SET VoucherCode = 'CGY_VIET_FILM', VoucherName = N'Tôn Vinh Phim Việt - Giảm 20%', ImageURL = '/Cine_Flow/uploads/poster/poster-bo-gia.jpg' WHERE VoucherID = 322;
-UPDATE Vouchers SET VoucherCode = 'CGY_WAR_EPIC', VoucherName = N'Phim Lịch Sử Hào Hùng - Giảm 35K', ImageURL = '/Cine_Flow/uploads/poster/poster-dao-pho-va-piano.jpg' WHERE VoucherID = 321;
-UPDATE Vouchers SET VoucherCode = 'CGY_SOUTHERN_HERITAGE', VoucherName = N'Hành Trình Đất Phương Nam - Giảm 25K', ImageURL = '/Cine_Flow/uploads/poster/poster-dat-rung-phuong-nam.jpg' WHERE VoucherID = 320;
-UPDATE Vouchers SET VoucherCode = 'CGY_HISTORICAL_LEGEND', VoucherName = N'Ký Ức Lịch Sử Địa Đạo - Giảm 30%', ImageURL = '/Cine_Flow/uploads/poster/poster-dia-dao.jpg' WHERE VoucherID = 319;
-UPDATE Vouchers SET VoucherCode = 'CGY_MUSIC_PIANO', VoucherName = N'Giai Điệu Nghệ Thuật - Giảm 40K', ImageURL = '/Cine_Flow/uploads/poster/poster-the-pianist.jpg' WHERE VoucherID = 318;
-UPDATE Vouchers SET VoucherCode = 'CGY_SCI_FI_FEST', VoucherName = N'Lễ Hội Khoa Học Viễn Tưởng - Giảm 20%', ImageURL = '/Cine_Flow/uploads/poster/poster-dune-2.jpg' WHERE VoucherID = 317;
-UPDATE Vouchers SET VoucherCode = 'CGY_ANIMATION_FUN', VoucherName = N'Thế Giới Hoạt Hình - Giảm 25K', ImageURL = '/Cine_Flow/uploads/poster/poster-despicable-me-4.jpg' WHERE VoucherID = 316;
+UPDATE Vouchers SET VoucherCode = 'CGY_MATINEE', VoucherName = N'Suất Chiếu Sớm Matinee - Giảm 20K', ImageURL = '/Cine_Flow/uploads/poster/poster-godzilla-kong.jpg' WHERE VoucherCode = 'CGY20' OR VoucherID = 325;
+UPDATE Vouchers SET VoucherCode = 'CGY_FAMILY_COMBO', VoucherName = N'Combo Gia Đình Cuối Tuần - Giảm 25%', ImageURL = '/Cine_Flow/uploads/poster/poster-lat-mat-7.jpg' WHERE VoucherCode = 'CGY19' OR VoucherID = 324;
+UPDATE Vouchers SET VoucherCode = 'CGY_LATE_NIGHT', VoucherName = N'Suất Chiếu Đêm Khuya - Giảm 30K', ImageURL = '/Cine_Flow/uploads/poster/poster-inception.jpg' WHERE VoucherCode = 'CGY18' OR VoucherID = 323;
+UPDATE Vouchers SET VoucherCode = 'CGY_VIET_FILM', VoucherName = N'Tôn Vinh Phim Việt - Giảm 20%', ImageURL = '/Cine_Flow/uploads/poster/poster-bo-gia.jpg' WHERE VoucherCode = 'CGY17' OR VoucherID = 322;
+UPDATE Vouchers SET VoucherCode = 'CGY_WAR_EPIC', VoucherName = N'Phim Lịch Sử Hào Hùng - Giảm 35K', ImageURL = '/Cine_Flow/uploads/poster/poster-dao-pho-va-piano.jpg' WHERE VoucherCode = 'CGY16' OR VoucherID = 321;
+UPDATE Vouchers SET VoucherCode = 'CGY_SOUTHERN_HERITAGE', VoucherName = N'Hành Trình Đất Phương Nam - Giảm 25K', ImageURL = '/Cine_Flow/uploads/poster/poster-dat-rung-phuong-nam.jpg' WHERE VoucherCode = 'CGY15' OR VoucherID = 320;
+UPDATE Vouchers SET VoucherCode = 'CGY_HISTORICAL_LEGEND', VoucherName = N'Ký Ức Lịch Sử Địa Đạo - Giảm 30%', ImageURL = '/Cine_Flow/uploads/poster/poster-dia-dao.jpg' WHERE VoucherCode = 'CGY14' OR VoucherID = 319;
+UPDATE Vouchers SET VoucherCode = 'CGY_MUSIC_PIANO', VoucherName = N'Giai Điệu Nghệ Thuật - Giảm 40K', ImageURL = '/Cine_Flow/uploads/poster/poster-the-pianist.jpg' WHERE VoucherCode = 'CGY13' OR VoucherID = 318;
+UPDATE Vouchers SET VoucherCode = 'CGY_SCI_FI_FEST', VoucherName = N'Lễ Hội Khoa Học Viễn Tưởng - Giảm 20%', ImageURL = '/Cine_Flow/uploads/poster/poster-dune-2.jpg' WHERE VoucherCode = 'CGY12' OR VoucherID = 317;
+UPDATE Vouchers SET VoucherCode = 'CGY_ANIMATION_FUN', VoucherName = N'Thế Giới Hoạt Hình - Giảm 25K', ImageURL = '/Cine_Flow/uploads/poster/poster-despicable-me-4.jpg' WHERE VoucherCode = 'CGY11' OR VoucherID = 316;
 
 -- 4.6 Cấu hình 20 Voucher cho Admin
-UPDATE Vouchers SET VoucherCode = 'NIGHT_OWL', VoucherName = N'Cú Đêm Mê Phim - Giảm 35K', ImageURL = '/Cine_Flow/uploads/poster/poster-avatar-2.jpg' WHERE VoucherID = 435;
-UPDATE Vouchers SET VoucherCode = 'SWEET_COUPLE', VoucherName = N'Combo Hẹn Hò - Giảm 25%', ImageURL = '/Cine_Flow/uploads/poster/poster-mai.jpg' WHERE VoucherID = 434;
-UPDATE Vouchers SET VoucherCode = 'WEEKEND_BOOM', VoucherName = N'Cuối Tuần Bom Tấn - Giảm 40K', ImageURL = '/Cine_Flow/uploads/poster/poster-deadpool-wolverine.jpg' WHERE VoucherID = 433;
-UPDATE Vouchers SET VoucherCode = 'STUDENT_POWER', VoucherName = N'HSSV Siêu Ưu Đãi - Giảm 20%', ImageURL = '/Cine_Flow/uploads/poster/poster-inside-out-2.jpg' WHERE VoucherID = 432;
-UPDATE Vouchers SET VoucherCode = 'HAPPY_WEDNESDAY', VoucherName = N'Thứ Tư Vui Vẻ - Giảm 30%', ImageURL = '/Cine_Flow/uploads/poster/poster-kung-fu-panda-4.jpg' WHERE VoucherID = 431;
-UPDATE Vouchers SET VoucherCode = 'CINEFLOW_NEWBIE', VoucherName = N'Chào Bạn Mới - Giảm 50K', ImageURL = '/Cine_Flow/uploads/poster/poster-oppenheimer.jpg' WHERE VoucherID = 430;
-UPDATE Vouchers SET VoucherCode = 'TET2026_VIP', VoucherName = N'Giảm 20% Khai Xuân 2026', ImageURL = '/Cine_Flow/uploads/poster/poster-lat-mat-7.jpg' WHERE VoucherID = 429;
-UPDATE Vouchers SET VoucherCode = 'SUMMER_BLOCKBUSTER', VoucherName = N'Bom Tấn Mùa Hè - Giảm 30K', ImageURL = '/Cine_Flow/uploads/poster/poster-transformers-one.jpg' WHERE VoucherID = 428;
-UPDATE Vouchers SET VoucherCode = 'HOALAC_CAMPUS_VIP', VoucherName = N'Đặc Quyền Sinh Viên Hòa Lạc - Giảm 25%', ImageURL = '/Cine_Flow/uploads/poster/poster-interstellar.jpg' WHERE VoucherID = 427;
-UPDATE Vouchers SET VoucherCode = 'HANOI_CINEMA_PASS', VoucherName = N'Thẻ Phim Thủ Đô 2026 - Giảm 35K', ImageURL = '/Cine_Flow/uploads/poster/poster-dao-pho-va-piano.jpg' WHERE VoucherID = 426;
+UPDATE Vouchers SET VoucherCode = 'ADM_NIGHT_OWL', VoucherName = N'Cú Đêm Mê Phim - Giảm 35K', ImageURL = '/Cine_Flow/uploads/poster/poster-avatar-2.jpg' WHERE VoucherCode = 'GLB80' OR VoucherID = 435;
+UPDATE Vouchers SET VoucherCode = 'ADM_SWEET_COUPLE', VoucherName = N'Combo Hẹn Hò - Giảm 25%', ImageURL = '/Cine_Flow/uploads/poster/poster-mai.jpg' WHERE VoucherCode = 'GLB79' OR VoucherID = 434;
+UPDATE Vouchers SET VoucherCode = 'ADM_WEEKEND_BOOM', VoucherName = N'Cuối Tuần Bom Tấn - Giảm 40K', ImageURL = '/Cine_Flow/uploads/poster/poster-deadpool-wolverine.jpg' WHERE VoucherCode = 'GLB78' OR VoucherID = 433;
+UPDATE Vouchers SET VoucherCode = 'ADM_STUDENT_POWER', VoucherName = N'HSSV Siêu Ưu Đãi - Giảm 20%', ImageURL = '/Cine_Flow/uploads/poster/poster-inside-out-2.jpg' WHERE VoucherCode = 'GLB77' OR VoucherID = 432;
+UPDATE Vouchers SET VoucherCode = 'ADM_HAPPY_WEDNESDAY', VoucherName = N'Thứ Tư Vui Vẻ - Giảm 30%', ImageURL = '/Cine_Flow/uploads/poster/poster-kung-fu-panda-4.jpg' WHERE VoucherCode = 'GLB76' OR VoucherID = 431;
+UPDATE Vouchers SET VoucherCode = 'ADM_CINEFLOW_NEWBIE', VoucherName = N'Chào Bạn Mới - Giảm 50K', ImageURL = '/Cine_Flow/uploads/poster/poster-oppenheimer.jpg' WHERE VoucherCode = 'GLB75' OR VoucherID = 430;
+UPDATE Vouchers SET VoucherCode = 'ADM_TET2026_VIP', VoucherName = N'Giảm 20% Khai Xuân 2026', ImageURL = '/Cine_Flow/uploads/poster/poster-lat-mat-7.jpg' WHERE VoucherCode = 'GLB74' OR VoucherID = 429;
+UPDATE Vouchers SET VoucherCode = 'ADM_SUMMER_BLOCKBUSTER', VoucherName = N'Bom Tấn Mùa Hè - Giảm 30K', ImageURL = '/Cine_Flow/uploads/poster/poster-transformers-one.jpg' WHERE VoucherCode = 'GLB73' OR VoucherID = 428;
+UPDATE Vouchers SET VoucherCode = 'ADM_HOALAC_CAMPUS_VIP', VoucherName = N'Đặc Quyền Sinh Viên Hòa Lạc - Giảm 25%', ImageURL = '/Cine_Flow/uploads/poster/poster-interstellar.jpg' WHERE VoucherCode = 'GLB72' OR VoucherID = 427;
+UPDATE Vouchers SET VoucherCode = 'ADM_HANOI_CINEMA_PASS', VoucherName = N'Thẻ Phim Thủ Đô 2026 - Giảm 35K', ImageURL = '/Cine_Flow/uploads/poster/poster-dao-pho-va-piano.jpg' WHERE VoucherCode = 'GLB71' OR VoucherID = 426;
 
-UPDATE Vouchers SET VoucherCode = 'Q1_PREMIERE_PASS', VoucherName = N'Suất Chiếu Đặc Biệt Quận 1 - Giảm 30%', ImageURL = '/Cine_Flow/uploads/poster/poster-dune-2.jpg' WHERE VoucherID = 425;
-UPDATE Vouchers SET VoucherCode = 'Q1_MONSTER_MAYHEM', VoucherName = N'Đại Chiến Quái Thú - Giảm 40K', ImageURL = '/Cine_Flow/uploads/poster/poster-godzilla-kong.jpg' WHERE VoucherID = 424;
-UPDATE Vouchers SET VoucherCode = 'Q1_MIND_BENDER', VoucherName = N'Đỉnh Cao Trí Tuệ Điện Ảnh - Giảm 25%', ImageURL = '/Cine_Flow/uploads/poster/poster-inception.jpg' WHERE VoucherID = 423;
-UPDATE Vouchers SET VoucherCode = 'Q1_SOUTHERN_SOUL', VoucherName = N'Hương Sắc Miền Nam - Giảm 30K', ImageURL = '/Cine_Flow/uploads/poster/poster-dat-rung-phuong-nam.jpg' WHERE VoucherID = 422;
-UPDATE Vouchers SET VoucherCode = 'Q1_VIET_FAMILY', VoucherName = N'Tình Thân Gia Đình - Giảm 20%', ImageURL = '/Cine_Flow/uploads/poster/poster-bo-gia.jpg' WHERE VoucherID = 421;
-UPDATE Vouchers SET VoucherCode = 'Q1_HISTORIC_HERO', VoucherName = N'Bản Hùng Ca Lịch Sử - Giảm 35K', ImageURL = '/Cine_Flow/uploads/poster/poster-dia-dao.jpg' WHERE VoucherID = 420;
-UPDATE Vouchers SET VoucherCode = 'Q1_CLASSIC_MELODY', VoucherName = N'Giai Điệu Nghệ Thuật - Giảm 30%', ImageURL = '/Cine_Flow/uploads/poster/poster-the-pianist.jpg' WHERE VoucherID = 419;
-UPDATE Vouchers SET VoucherCode = 'Q1_MINION_MADNESS', VoucherName = N'Biệt Đội Kẻ Trộm Mặt Trăng - Giảm 25K', ImageURL = '/Cine_Flow/uploads/poster/poster-despicable-me-4.jpg' WHERE VoucherID = 418;
-UPDATE Vouchers SET VoucherCode = 'Q1_AVATAR_EXP', VoucherName = N'Trải Nghiệm Thế Giới Pandora - Giảm 50K', ImageURL = '/Cine_Flow/uploads/poster/poster-avatar-2.jpg' WHERE VoucherID = 417;
-UPDATE Vouchers SET VoucherCode = 'Q1_SUPERHERO_NIGHT', VoucherName = N'Đêm Hội Siêu Anh Hùng - Giảm 20%', ImageURL = '/Cine_Flow/uploads/poster/poster-deadpool-wolverine.jpg' WHERE VoucherID = 416;
+UPDATE Vouchers SET VoucherCode = 'ADM_PREMIERE_PASS', VoucherName = N'Suất Chiếu Đặc Biệt - Giảm 30%', ImageURL = '/Cine_Flow/uploads/poster/poster-dune-2.jpg' WHERE VoucherCode = 'GLB70' OR VoucherID = 425;
+UPDATE Vouchers SET VoucherCode = 'ADM_MONSTER_MAYHEM', VoucherName = N'Đại Chiến Quái Thú - Giảm 40K', ImageURL = '/Cine_Flow/uploads/poster/poster-godzilla-kong.jpg' WHERE VoucherCode = 'GLB69' OR VoucherID = 424;
+UPDATE Vouchers SET VoucherCode = 'ADM_MIND_BENDER', VoucherName = N'Đỉnh Cao Trí Tuệ Điện Ảnh - Giảm 25%', ImageURL = '/Cine_Flow/uploads/poster/poster-inception.jpg' WHERE VoucherCode = 'GLB68' OR VoucherID = 423;
+UPDATE Vouchers SET VoucherCode = 'ADM_SOUTHERN_SOUL', VoucherName = N'Hương Sắc Miền Nam - Giảm 30K', ImageURL = '/Cine_Flow/uploads/poster/poster-dat-rung-phuong-nam.jpg' WHERE VoucherCode = 'GLB67' OR VoucherID = 422;
+UPDATE Vouchers SET VoucherCode = 'ADM_VIET_FAMILY', VoucherName = N'Tình Thân Gia Đình - Giảm 20%', ImageURL = '/Cine_Flow/uploads/poster/poster-bo-gia.jpg' WHERE VoucherCode = 'GLB66' OR VoucherID = 421;
+UPDATE Vouchers SET VoucherCode = 'ADM_HISTORIC_HERO', VoucherName = N'Bản Hùng Ca Lịch Sử - Giảm 35K', ImageURL = '/Cine_Flow/uploads/poster/poster-dia-dao.jpg' WHERE VoucherCode = 'GLB65' OR VoucherID = 420;
+UPDATE Vouchers SET VoucherCode = 'ADM_CLASSIC_MELODY', VoucherName = N'Giai Điệu Nghệ Thuật - Giảm 30%', ImageURL = '/Cine_Flow/uploads/poster/poster-the-pianist.jpg' WHERE VoucherCode = 'GLB64' OR VoucherID = 419;
+UPDATE Vouchers SET VoucherCode = 'ADM_MINION_MADNESS', VoucherName = N'Biệt Đội Kẻ Trộm Mặt Trăng - Giảm 25K', ImageURL = '/Cine_Flow/uploads/poster/poster-despicable-me-4.jpg' WHERE VoucherCode = 'GLB63' OR VoucherID = 418;
+UPDATE Vouchers SET VoucherCode = 'ADM_AVATAR_EXP', VoucherName = N'Trải Nghiệm Thế Giới Pandora - Giảm 50K', ImageURL = '/Cine_Flow/uploads/poster/poster-avatar-2.jpg' WHERE VoucherCode = 'GLB62' OR VoucherID = 417;
+UPDATE Vouchers SET VoucherCode = 'ADM_SUPERHERO_NIGHT', VoucherName = N'Đêm Hội Siêu Anh Hùng - Giảm 20%', ImageURL = '/Cine_Flow/uploads/poster/poster-deadpool-wolverine.jpg' WHERE VoucherCode = 'GLB61' OR VoucherID = 416;
 GO
 
 /* =====================================================================================
