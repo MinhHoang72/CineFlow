@@ -136,13 +136,10 @@ public class CentreManagementServlet extends HttpServlet {
                 + "&status=" + URLEncoder.encode(status, StandardCharsets.UTF_8);
 
         request.setAttribute("result", pageResult);
-        request.setAttribute("page", pageResult);
-        request.setAttribute("centres", pageResult.getItems());
-        request.setAttribute("totalCentres", kpi.totalCentres());
-        request.setAttribute("activeCentres", kpi.activeCentres());
-        request.setAttribute("suspendedCentres", kpi.suspendedCentres());
-        request.setAttribute("inactiveCentres", kpi.inactiveCentres());
-        request.setAttribute("totalHalls", kpi.totalHalls());
+        request.setAttribute("totalCentres", totalCentres);
+        request.setAttribute("activeCentres", activeCentres);
+        request.setAttribute("inactiveCentres", inactiveCentres);
+        request.setAttribute("totalHalls", totalHalls);
         request.setAttribute("currentSearch", search != null ? search.trim() : "");
         request.setAttribute("currentStatus", status);
         //trả về cho cái phân trang lấy  filter để lấy cái giá trị cũ 
@@ -274,43 +271,10 @@ public class CentreManagementServlet extends HttpServlet {
                 return;
             }
 
-        // Chuyển trạng thái Cụm rạp (Theater.changeStatus) theo quy chuẩn nghiệp vụ phân phối phim
-        if ("changeStatus".equalsIgnoreCase(action)) {
-            String centreIdParam = request.getParameter("centreId");
-            String newStatus     = request.getParameter("newStatus");
-            String reason        = request.getParameter("reason");
-
-            int centreId;
-            try {
-                centreId = Integer.parseInt(centreIdParam.trim());
-            } catch (Exception e) {
-                redirectUrl.append("error=invalid_id");
-                response.sendRedirect(redirectUrl.toString());
+            // Kiểm tra trùng tên với cụm rạp khác
+            if (centreDAO.isCentreNameExists(centreName, centreId)) {
+                response.sendRedirect(base + "?action=edit&centreId=" + centreId + "&error=duplicate_name");
                 return;
-            }
-
-            String adminUser = (session.getAttribute("user") instanceof User)
-                    ? ((User) session.getAttribute("user")).getAccount()
-                    : "Admin";
-
-            CinemaService.Result<Centre> result = cinemaService.changeCentreStatus(centreId, newStatus, adminUser, reason);
-            if (result.isSuccess()) {
-                redirectUrl.append("success=status_changed");
-            } else {
-                redirectUrl.append("error=invalid_transition");
-            }
-            response.sendRedirect(redirectUrl.toString());
-            return;
-        }
-
-        // Toggle Status (Tương thích ngược)
-        if ("toggleStatus".equalsIgnoreCase(action)) {
-            try {
-                int centreId = Integer.parseInt(request.getParameter("centreId").trim());
-                boolean ok = cinemaService.toggleCentreStatus(centreId);
-                redirectUrl.append(ok ? "success=status_updated" : "error=failed");
-            } catch (Exception e) {
-                redirectUrl.append("error=invalid_id");
             }
 
             Centre updated = new Centre();
