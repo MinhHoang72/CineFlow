@@ -25082,6 +25082,21 @@ UPDATE Users SET CentreID = 1 WHERE Account = 'manager' OR Email = 'manager@gmai
 UPDATE Centres SET Status = 'ACTIVE' WHERE CentreID = 1;
 UPDATE Halls SET Status = 'AVAILABLE' WHERE HallID IN (1, 2, 61, 62);
 
+-- Đảm bảo Phòng 02 KHÔNG có vé tương lai (để làm phòng đối chứng tắt thành công)
+DECLARE @Bk2 TABLE (BookingID INT);
+INSERT INTO @Bk2 
+SELECT b.BookingID 
+FROM Bookings b 
+JOIN Showtimes s ON s.ShowtimeID = b.ShowtimeID 
+WHERE s.HallID = 2 AND s.StartTime > GETDATE();
+
+DELETE t FROM Tickets t JOIN BookingSeats bs ON bs.BookingSeatID = t.BookingSeatID WHERE bs.BookingID IN (SELECT BookingID FROM @Bk2);
+DELETE FROM BookingSeats WHERE BookingID IN (SELECT BookingID FROM @Bk2);
+DELETE FROM Payments WHERE BookingID IN (SELECT BookingID FROM @Bk2);
+DELETE FROM FnbOrders WHERE BookingID IN (SELECT BookingID FROM @Bk2);
+DELETE FROM VoucherUsages WHERE BookingID IN (SELECT BookingID FROM @Bk2);
+DELETE FROM Bookings WHERE BookingID IN (SELECT BookingID FROM @Bk2);
+
 -- 4.3 Cấu hình suất chiếu tương lai + vé CONFIRMED cho Phòng 01 (HallID = 1)
 DECLARE @ShowtimeID_Hall1 INT;
 SELECT TOP 1 @ShowtimeID_Hall1 = ShowtimeID FROM Showtimes WHERE HallID = 1;
