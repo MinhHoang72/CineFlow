@@ -522,10 +522,10 @@ public class CentreDAO {
      * 1. Kiểm tra quyền Admin và luồng chuyển trạng thái hợp lệ.
      * 2. Cập nhật Status của Cụm rạp (Centres.Status).
      * 3. Cập nhật hàng loạt MovieDistribution (CentreMovies):
-     *    - Rạp sang SUSPENDED: Cập nhật các bản ghi phân phối ACTIVE -> SUSPENDED (IsActive = 0, giữ cấu hình, tạm mất hiệu lực).
+     *    - ACTIVE <-> SUSPENDED: Giữ nguyên cấu hình phân phối.
      *    - Rạp sang INACTIVE: Cập nhật các bản ghi ACTIVE và SUSPENDED -> CANCELLED (IsActive = 0).
-     *    - Rạp sang ACTIVE từ SUSPENDED: Khôi phục các bản ghi SUSPENDED -> ACTIVE (IsActive = 1) CHỈ NẾU CHƯA QUÁ endDate của phim.
-     *      Các phim đã quá endDate giữ nguyên hoặc chuyển CANCELLED.
+     *    - Tạm ngưng huỷ suất tương lai và booking/vé; mở lại chỉ khôi phục suất còn tương lai
+     *      được đánh dấu do tạm ngưng. Booking/vé đã huỷ không được khôi phục.
      *    - Rạp sang ACTIVE từ INACTIVE: CANCELLED giữ nguyên (Không tự khôi phục; Admin phải tạo bản ghi mới).
      * 4. Ghi log kiểm toán (ai đổi, khi nào, lý do).
      * 5. Commit hoặc Rollback toàn bộ transaction.
@@ -548,10 +548,11 @@ public class CentreDAO {
             conn.setAutoCommit(false);
             try {
                 // Bước 2: Cập nhật Status của Cụm rạp
-                String updateCentreSql = "UPDATE Centres SET Status = ?, UpdatedAt = GETDATE() WHERE CentreID = ?";
+                String updateCentreSql = "UPDATE Centres SET Status = ?, UpdatedAt = GETDATE() WHERE CentreID = ? AND Status = ?";
                 try (PreparedStatement ps = conn.prepareStatement(updateCentreSql)) {
                     ps.setString(1, to);
                     ps.setInt(2, centreId);
+                    ps.setString(3, from);
                     int affected = ps.executeUpdate();
                     if (affected <= 0) {
                         conn.rollback();
@@ -573,10 +574,13 @@ public class CentreDAO {
                     // INACTIVE -> ACTIVE không tự khôi phục các bản ghi đã CANCELLED.
                 }
 
-                // Bước 3b: Rạp đóng cửa (SUSPENDED hoặc INACTIVE): huỷ các suất chiếu chưa bắt đầu
-                // cùng đơn, ghế, vé của các suất đó. Không hoàn tiền tự động: khách liên hệ hotline.
-                if ("SUSPENDED".equals(to) || "INACTIVE".equals(to)) {
-                    cancelUpcomingShowtimes(conn, centreId);
+                if ("SUSPENDED".equals(to)) {
+                    cancelUpcomingShowtimes(conn, centreId, true);
+                } else if ("ACTIVE".equals(to) && "SUSPENDED".equals(from)) {
+                    restoreSuspendedShowtimes(conn, centreId);
+                } else if ("INACTIVE".equals(to)) {
+                    cancelUpcomingShowtimes(conn, centreId, false);
+                    clearShowtimeSuspension(conn, centreId);
                 }
 
                 // Bước 4: Ghi log kiểm toán (ai đổi, khi nào, lý do)
@@ -597,7 +601,30 @@ public class CentreDAO {
     /** Các suất chiếu chưa bắt đầu của rạp (dùng làm điều kiện chung cho các câu huỷ). */
     private static final String UPCOMING_SHOWTIMES_OF_CENTRE =
             "SELECT s.ShowtimeID FROM Showtimes s JOIN Halls h ON h.HallID = s.HallID "
-            + "WHERE h.CentreID = ? AND s.Status = 'SCHEDULED' AND s.StartTime > SYSDATETIME()";
+            + "WHERE h.CentreID = ? AND (s.Status = 'SCHEDULED' OR s.CancelledByCentreSuspension = 1) AND s.StartTime > SYSDATETIME()";
+
+    /** Không mở lại suất đã quá giờ; giữ nguyên bảng giá đã chốt. */
+    private void restoreSuspendedShowtimes(Connection conn, int centreId) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "UPDATE s SET Status='SCHEDULED', UpdatedAt=SYSDATETIME() "
+                + "FROM Showtimes s JOIN Halls h ON h.HallID=s.HallID "
+                + "WHERE h.CentreID=? AND s.Status='CANCELLED' "
+                + "AND s.CancelledByCentreSuspension=1 AND s.StartTime>SYSDATETIME()")) {
+            ps.setInt(1, centreId);
+            ps.executeUpdate();
+        }
+        clearShowtimeSuspension(conn, centreId);
+    }
+
+    private void clearShowtimeSuspension(Connection conn, int centreId) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "UPDATE s SET CancelledByCentreSuspension=0 FROM Showtimes s "
+                + "JOIN Halls h ON h.HallID=s.HallID "
+                + "WHERE h.CentreID=? AND s.CancelledByCentreSuspension=1")) {
+            ps.setInt(1, centreId);
+            ps.executeUpdate();
+        }
+    }
 
     /**
      * Huỷ toàn bộ suất chiếu chưa bắt đầu của rạp khi rạp đóng cửa, trong transaction của changeStatus.
@@ -605,7 +632,16 @@ public class CentreDAO {
      * giao dịch đang chờ bị huỷ và đơn bắp nước kèm vé bị huỷ.
      * Giao dịch đã PAID giữ nguyên: hệ thống không hoàn tiền tự động, khách liên hệ hotline để được hoàn tiền.
      */
-    private void cancelUpcomingShowtimes(Connection conn, int centreId) throws SQLException {
+    private void cancelUpcomingShowtimes(Connection conn, int centreId, boolean temporary) throws SQLException {
+        // Khoá suất trước khi huỷ đơn để đồng bộ với luồng giữ ghế và xác nhận thanh toán.
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT s.ShowtimeID FROM Showtimes s WITH(UPDLOCK,HOLDLOCK) "
+                + "JOIN Halls h ON h.HallID=s.HallID WHERE h.CentreID=? "
+                + "AND (s.Status='SCHEDULED' OR s.CancelledByCentreSuspension=1) "
+                + "AND s.StartTime>SYSDATETIME()")) {
+            ps.setInt(1, centreId);
+            try (ResultSet rs = ps.executeQuery()) { while (rs.next()) { /* Giữ khoá tới commit. */ } }
+        }
         String target = "IN (" + UPCOMING_SHOWTIMES_OF_CENTRE + ")";
         String bookingsOfTarget = "IN (SELECT BookingID FROM Bookings WHERE ShowtimeID " + target + ")";
         String[] statements = {
@@ -626,7 +662,8 @@ public class CentreDAO {
             "UPDATE Bookings SET BookingStatus = 'CANCELLED', UpdatedAt = SYSDATETIME() "
                 + "WHERE BookingStatus IN ('PENDING', 'CONFIRMED') AND ShowtimeID " + target,
             // Cuối cùng mới huỷ suất chiếu (các câu trên cần suất còn SCHEDULED để lọc)
-            "UPDATE Showtimes SET Status = 'CANCELLED', UpdatedAt = SYSDATETIME() "
+            "UPDATE Showtimes SET Status = 'CANCELLED', CancelledByCentreSuspension="
+                + (temporary ? "1" : "0") + ", UpdatedAt = SYSDATETIME() "
                 + "WHERE ShowtimeID " + target
         };
         for (String sql : statements) {

@@ -45,6 +45,10 @@ sqlcmd -S localhost -U sa -P 123 -C -I -f 65001 -i database/CineFlowDB.sql
 
 ## 4. Đồng bộ sau khi pull
 
+Nếu giữ database hiện tại, chạy `centre_suspension_patch.sql` một lần trước khi triển khai code mới.
+Patch chỉ bổ sung dấu nhận biết suất bị huỷ do tạm ngưng rạp, không xoá dữ liệu.
+Các suất CANCELLED từ trước không tự được khôi phục vì không xác định được nguyên nhân huỷ.
+
 Toàn bộ schema, bảng giá chốt, dữ liệu demo phòng chiếu, voucher và dữ liệu bảo vệ nằm trong `CineFlowDB.sql`.
 Các bản sửa voucher trên main và phòng 02 không có booking tương lai để demo đã được giữ lại khi hợp nhất.
 Script khởi tạo sẽ xóa và tạo lại database; sao lưu dữ liệu cần giữ trước khi chạy.

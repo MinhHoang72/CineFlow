@@ -183,6 +183,7 @@ CREATE TABLE Showtimes (
     EndTime DATETIME2 NOT NULL,
     CleaningBufferMinutes INT NOT NULL DEFAULT 15,
     Status VARCHAR(20) NOT NULL DEFAULT 'SCHEDULED',
+    CancelledByCentreSuspension BIT NOT NULL CONSTRAINT DF_Showtimes_CentreSuspension DEFAULT 0,
     CreatedBy INT NULL,
     CreatedAt DATETIME2 NOT NULL DEFAULT GETDATE(),
     UpdatedAt DATETIME2 NULL,
