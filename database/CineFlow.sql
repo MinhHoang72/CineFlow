@@ -24917,3 +24917,271 @@ BEGIN
 END;
 COMMIT TRANSACTION;
 GO
+
+
+/* ====================================================================================
+   PHẦN BỔ SUNG: DỮ LIỆU DEMO BẢO VỆ & CẤU HÌNH VOUCHER, SƠ ĐỒ GHẾ HOÀN CHỈNH
+   ====================================================================================
+   Bao gồm:
+   1. Thêm / cập nhật 6 Voucher thật cho Trang chủ khách hàng (/home).
+   2. Cập nhật sơ đồ ghế Phòng 1 (Cầu Giấy) gồm 3 loại: Thường, VIP, Sweetbox đôi (56 ghế).
+   3. Bổ sung bảng giá ghế Sweetbox cho các suất mở bán của Phòng 1.
+   4. Kịch bản test nghiệp vụ bảo vệ:
+      - Đảm bảo cột ShowtimeID trong BookingSeats.
+      - Map tài khoản manager về Cụm rạp Cầu Giấy (CentreID = 1).
+      - Chặn vô hiệu hóa Phòng 01 & Phòng 2D 01 do có suất chiếu tương lai và vé CONFIRMED.
+      - 20 Voucher thực tế cho Manager Cầu Giấy (Voucher 334 khóa mã, Voucher 335 sửa mã).
+      - 20 Voucher thực tế cho Admin.
+   ==================================================================================== */
+
+SET NOCOUNT ON;
+GO
+
+-- 1. Bổ sung / Cập nhật 6 voucher thật cho trang chủ
+DECLARE @VoucherList TABLE (
+    Code VARCHAR(50),
+    Name NVARCHAR(150),
+    Description NVARCHAR(500),
+    DiscountType VARCHAR(20),
+    DiscountValue DECIMAL(12,2),
+    MinimumOrderValue DECIMAL(12,2),
+    MaximumDiscount DECIMAL(12,2)
+);
+
+INSERT INTO @VoucherList VALUES 
+('CINEFLOW_NEWBIE', N'Chào Bạn Mới - Giảm 50K', N'Ưu đãi dành riêng cho thành viên mới đăng ký tài khoản CineFlow.', 'FIXED', 50000.00, 100000.00, 50000.00),
+('HAPPY_WEDNESDAY', N'Thứ Tư Vui Vẻ - Giảm 30%', N'Tận hưởng ngày hội điện ảnh giữa tuần với giá vé cực sốc tại mọi rạp.', 'PERCENT', 30.00, 90000.00, 40000.00),
+('STUDENT_POWER', N'HSSV Siêu Ưu Đãi - Giảm 20%', N'Ưu đãi giá vé dành cho học sinh, sinh viên áp dụng tất cả các ngày.', 'PERCENT', 20.00, 80000.00, 35000.00),
+('WEEKEND_BOOM', N'Cuối Tuần Bom Tấn - Giảm 40K', N'Bùng nổ cảm xúc cùng các siêu phẩm điện ảnh hot nhất dịp cuối tuần.', 'FIXED', 40000.00, 150000.00, 40000.00),
+('SWEET_COUPLE', N'Combo Hẹn Hò - Giảm 25%', N'Ưu đãi ngọt ngào khi đặt vé ghế đôi hoặc đơn hàng từ 2 vé trở lên.', 'PERCENT', 25.00, 160000.00, 50000.00),
+('NIGHT_OWL', N'Cú Đêm Mê Phim - Giảm 35K', N'Giảm giá đặc biệt cho các suất chiếu sau 21h00 mỗi ngày.', 'FIXED', 35000.00, 110000.00, 35000.00);
+
+MERGE Vouchers AS target
+USING @VoucherList AS src
+ON target.VoucherCode = src.Code
+WHEN MATCHED THEN
+    UPDATE SET 
+        VoucherName = src.Name,
+        Description = src.Description,
+        DiscountType = src.DiscountType,
+        DiscountValue = src.DiscountValue,
+        MinimumOrderValue = src.MinimumOrderValue,
+        MaximumDiscount = src.MaximumDiscount,
+        StartDate = '2026-01-01',
+        EndDate = '2026-12-31',
+        UsageLimit = 1000,
+        Status = 'ACTIVE'
+WHEN NOT MATCHED BY TARGET THEN
+    INSERT (
+        VoucherCode, VoucherName, Description, CentreID, CreatedBy,
+        DiscountType, DiscountValue, MinimumOrderValue, MaximumDiscount,
+        StartDate, EndDate, UsageLimit, UsedCount, PerCustomerLimit, Status
+    ) VALUES (
+        src.Code, src.Name, src.Description, NULL, 1,
+        src.DiscountType, src.DiscountValue, src.MinimumOrderValue, src.MaximumDiscount,
+        '2026-01-01', '2026-12-31', 1000, 0, 1, 'ACTIVE'
+    );
+GO
+
+-- 2. Cập nhật sơ đồ ghế Phòng 1 (Cầu Giấy) gồm 3 loại ghế (Thường, VIP, Sweetbox)
+DECLARE @NewLayout TABLE (
+    SeatRow VARCHAR(5),
+    SeatNumber INT,
+    SeatType VARCHAR(20),
+    Status VARCHAR(20)
+);
+
+DECLARE @r INT = 1;
+DECLARE @c INT = 1;
+DECLARE @rName VARCHAR(5);
+DECLARE @sType VARCHAR(20);
+DECLARE @sStatus VARCHAR(20);
+
+WHILE @r <= 7
+BEGIN
+    SET @rName = CHAR(64 + @r);
+    SET @c = 1;
+    WHILE @c <= 10
+    BEGIN
+        IF @c IN (5, 6)
+            SET @sStatus = 'UNAVAILABLE';
+        ELSE
+            SET @sStatus = 'AVAILABLE';
+
+        IF @rName IN ('A', 'B', 'C', 'D')
+            SET @sType = 'STANDARD';
+        ELSE IF @rName IN ('E', 'F')
+            SET @sType = 'VIP';
+        ELSE
+            SET @sType = 'SWEETBOX';
+
+        INSERT INTO @NewLayout (SeatRow, SeatNumber, SeatType, Status)
+        VALUES (@rName, @c, @sType, @sStatus);
+
+        SET @c += 1;
+    END
+    SET @r += 1;
+END
+
+MERGE Seats AS target
+USING @NewLayout AS src
+ON target.HallID = 1 AND target.SeatRow = src.SeatRow AND target.SeatNumber = src.SeatNumber
+WHEN MATCHED THEN
+    UPDATE SET 
+        SeatType = src.SeatType,
+        Status = src.Status
+WHEN NOT MATCHED BY TARGET THEN
+    INSERT (HallID, SeatRow, SeatNumber, SeatType, Status)
+    VALUES (1, src.SeatRow, src.SeatNumber, src.SeatType, src.Status);
+
+UPDATE Seats
+SET Status = 'UNAVAILABLE'
+WHERE HallID = 1
+  AND NOT EXISTS (
+      SELECT 1 FROM @NewLayout n 
+      WHERE n.SeatRow = Seats.SeatRow AND n.SeatNumber = Seats.SeatNumber
+  );
+
+DELETE FROM Seats
+WHERE HallID = 1
+  AND Status = 'UNAVAILABLE'
+  AND SeatID NOT IN (SELECT SeatID FROM BookingSeats);
+
+UPDATE Halls
+SET Capacity = (SELECT COUNT(*) FROM Seats WHERE HallID = 1 AND Status = 'AVAILABLE')
+WHERE HallID = 1;
+GO
+
+-- 3. Bổ sung giá SWEETBOX cho các suất mở bán của Phòng 01
+INSERT ShowtimeSeatPrices(ShowtimeID, SeatType, BasePrice, CentreAmount, HallAmount, MovieAmount, TimeAmount, SeatAmount)
+SELECT p.ShowtimeID, 'SWEETBOX', p.BasePrice, p.CentreAmount, p.HallAmount, p.MovieAmount, p.TimeAmount, ISNULL(sc.Amount, 0)
+FROM ShowtimeSeatPrices p
+JOIN Showtimes s ON s.ShowtimeID = p.ShowtimeID
+JOIN Halls h ON h.HallID = s.HallID
+OUTER APPLY (SELECT TOP 1 c.Amount FROM CentreSurcharges c
+             WHERE c.CentreID = h.CentreID AND c.SurchargeType = 'SEAT' AND c.TargetValue = 'SWEETBOX'
+               AND c.EffectiveFrom <= s.StartTime AND (c.EffectiveTo IS NULL OR s.StartTime < c.EffectiveTo)
+             ORDER BY c.EffectiveFrom DESC) sc
+WHERE s.HallID = 1 AND s.SaleState = 'OPEN' AND p.SeatType = 'STANDARD'
+  AND NOT EXISTS (SELECT 1 FROM ShowtimeSeatPrices x WHERE x.ShowtimeID = p.ShowtimeID AND x.SeatType = 'SWEETBOX');
+GO
+
+-- 4. Kịch bản nghiệp vụ bảo vệ: Phòng chiếu & Voucher
+IF COL_LENGTH('BookingSeats', 'ShowtimeID') IS NULL
+BEGIN
+    ALTER TABLE BookingSeats ADD ShowtimeID INT NULL;
+    EXEC('UPDATE bs SET bs.ShowtimeID = b.ShowtimeID FROM BookingSeats bs JOIN Bookings b ON b.BookingID = bs.BookingID');
+END
+
+-- 4.1 Gán tài khoản manager về Cụm rạp Cầu Giấy (CentreID = 1)
+UPDATE Users SET CentreID = 1 WHERE Account = 'manager' OR Email = 'manager@gmail.com';
+
+-- 4.2 Đảm bảo Cụm rạp Cầu Giấy và các phòng test đang ở trạng thái Hoạt động
+UPDATE Centres SET Status = 'ACTIVE' WHERE CentreID = 1;
+UPDATE Halls SET Status = 'AVAILABLE' WHERE HallID IN (1, 2, 61, 62);
+
+-- 4.3 Cấu hình suất chiếu tương lai + vé CONFIRMED cho Phòng 01 (HallID = 1)
+DECLARE @ShowtimeID_Hall1 INT;
+SELECT TOP 1 @ShowtimeID_Hall1 = ShowtimeID FROM Showtimes WHERE HallID = 1;
+
+IF @ShowtimeID_Hall1 IS NOT NULL
+BEGIN
+    UPDATE Showtimes 
+    SET StartTime = DATEADD(DAY, 7, GETDATE()), 
+        EndTime = DATEADD(DAY, 7, DATEADD(HOUR, 2, GETDATE())),
+        Status = 'SCHEDULED'
+    WHERE ShowtimeID = @ShowtimeID_Hall1;
+
+    IF NOT EXISTS (SELECT 1 FROM Bookings WHERE BookingCode = 'BK_TEST_HALL1')
+    BEGIN
+        DECLARE @CustID INT;
+        SELECT TOP 1 @CustID = UserID FROM Users WHERE Role = 'CUSTOMER';
+        IF @CustID IS NULL SET @CustID = 1;
+
+        INSERT INTO Bookings (BookingCode, UserID, ShowtimeID, BookingType, BookingStatus, SubTotal, DiscountAmount, TotalAmount, CreatedAt, UpdatedAt)
+        VALUES ('BK_TEST_HALL1', @CustID, @ShowtimeID_Hall1, 'ONLINE', 'CONFIRMED', 100000, 0, 100000, GETDATE(), GETDATE());
+    END
+    ELSE
+    BEGIN
+        UPDATE Bookings 
+        SET ShowtimeID = @ShowtimeID_Hall1, BookingStatus = 'CONFIRMED' 
+        WHERE BookingCode = 'BK_TEST_HALL1';
+    END
+END
+
+-- 4.4 Cấu hình suất chiếu tương lai + vé CONFIRMED cho Phòng 2D 01 (HallID = 61)
+DECLARE @ShowtimeID_Hall61 INT;
+SELECT TOP 1 @ShowtimeID_Hall61 = ShowtimeID FROM Showtimes WHERE HallID = 61 AND StartTime > GETDATE() AND Status = 'SCHEDULED';
+IF @ShowtimeID_Hall61 IS NULL
+BEGIN
+    SELECT TOP 1 @ShowtimeID_Hall61 = ShowtimeID FROM Showtimes WHERE HallID = 61;
+    IF @ShowtimeID_Hall61 IS NOT NULL
+    BEGIN
+        UPDATE Showtimes 
+        SET StartTime = DATEADD(DAY, 7, GETDATE()), 
+            EndTime = DATEADD(DAY, 7, DATEADD(HOUR, 2, GETDATE())),
+            Status = 'SCHEDULED'
+        WHERE ShowtimeID = @ShowtimeID_Hall61;
+    END
+END
+
+IF @ShowtimeID_Hall61 IS NOT NULL
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM Bookings WHERE BookingCode = 'BK_TEST_HALL61')
+    BEGIN
+        INSERT INTO Bookings (BookingCode, UserID, ShowtimeID, BookingType, BookingStatus, SubTotal, DiscountAmount, TotalAmount, CreatedAt, UpdatedAt)
+        VALUES ('BK_TEST_HALL61', 1, @ShowtimeID_Hall61, 'ONLINE', 'CONFIRMED', 100000, 0, 100000, GETDATE(), GETDATE());
+    END
+    ELSE
+    BEGIN
+        UPDATE Bookings SET ShowtimeID = @ShowtimeID_Hall61, BookingStatus = 'CONFIRMED' WHERE BookingCode = 'BK_TEST_HALL61';
+    END
+END
+GO
+
+-- 4.5 Cấu hình 20 Voucher cho Manager Cầu Giấy (CentreID = 1)
+UPDATE Vouchers SET VoucherCode = 'CGY_VIPMEMBER', VoucherName = N'Ưu Đãi Thành Viên VIP Cầu Giấy', ImageURL = '/Cine_Flow/uploads/poster/poster-dune-2.jpg', UsedCount = 0 WHERE VoucherID = 335;
+UPDATE Vouchers SET VoucherCode = 'CGY_STUDENT', VoucherName = N'HSSV Siêu Tiết Kiệm - Giảm 20%', ImageURL = '/Cine_Flow/uploads/poster/poster-inside-out-2.jpg', UsedCount = 45 WHERE VoucherID = 334;
+UPDATE Vouchers SET VoucherCode = 'CGY_SWEETPAIR', VoucherName = N'Combo Hẹn Hò Sweetbox - Giảm 25%', ImageURL = '/Cine_Flow/uploads/poster/poster-mai.jpg', UsedCount = 18 WHERE VoucherID = 333;
+UPDATE Vouchers SET VoucherCode = 'CGY_WEEKEND_BOOM', VoucherName = N'Cuối Tuần Bùng Nổ - Giảm 40K', ImageURL = '/Cine_Flow/uploads/poster/poster-deadpool-wolverine.jpg', UsedCount = 28 WHERE VoucherID = 332;
+UPDATE Vouchers SET VoucherCode = 'CGY_HAPPY_WED', VoucherName = N'Thứ Tư Vui Vẻ - Giảm 30%', ImageURL = '/Cine_Flow/uploads/poster/poster-kung-fu-panda-4.jpg', UsedCount = 35 WHERE VoucherID = 331;
+UPDATE Vouchers SET VoucherCode = 'CGY_NIGHT_OWL', VoucherName = N'Cú Đêm Mê Phim - Giảm 35K', ImageURL = '/Cine_Flow/uploads/poster/poster-avatar-2.jpg', UsedCount = 15 WHERE VoucherID = 330;
+UPDATE Vouchers SET VoucherCode = 'CGY_EARLY_BIRD', VoucherName = N'Đặt Vé Sớm - Giảm Liền 30K', ImageURL = '/Cine_Flow/uploads/poster/poster-interstellar.jpg', UsedCount = 22 WHERE VoucherID = 329;
+UPDATE Vouchers SET VoucherCode = 'CGY_FAMILY_DAY', VoucherName = N'Gia Đình Gắn Kết - Giảm 30%', ImageURL = '/Cine_Flow/uploads/poster/poster-despicable-me-4.jpg', UsedCount = 8 WHERE VoucherID = 328;
+UPDATE Vouchers SET VoucherCode = 'CGY_POPCORN_COMBO', VoucherName = N'Đại Tiệc Bắp Nước - Giảm 20K', ImageURL = '/Cine_Flow/uploads/poster/poster-transformers-one.jpg', UsedCount = 40 WHERE VoucherID = 327;
+UPDATE Vouchers SET VoucherCode = 'CGY_NEWBIE_WELCOME', VoucherName = N'Chào Bạn Mới - Giảm 50K', ImageURL = '/Cine_Flow/uploads/poster/poster-oppenheimer.jpg', UsedCount = 50 WHERE VoucherID = 326;
+
+UPDATE Vouchers SET VoucherCode = 'CGY_MATINEE', VoucherName = N'Suất Chiếu Sớm Matinee - Giảm 20K', ImageURL = '/Cine_Flow/uploads/poster/poster-godzilla-kong.jpg' WHERE VoucherID = 325;
+UPDATE Vouchers SET VoucherCode = 'CGY_FAMILY_COMBO', VoucherName = N'Combo Gia Đình Cuối Tuần - Giảm 25%', ImageURL = '/Cine_Flow/uploads/poster/poster-lat-mat-7.jpg' WHERE VoucherID = 324;
+UPDATE Vouchers SET VoucherCode = 'CGY_LATE_NIGHT', VoucherName = N'Suất Chiếu Đêm Khuya - Giảm 30K', ImageURL = '/Cine_Flow/uploads/poster/poster-inception.jpg' WHERE VoucherID = 323;
+UPDATE Vouchers SET VoucherCode = 'CGY_VIET_FILM', VoucherName = N'Tôn Vinh Phim Việt - Giảm 20%', ImageURL = '/Cine_Flow/uploads/poster/poster-bo-gia.jpg' WHERE VoucherID = 322;
+UPDATE Vouchers SET VoucherCode = 'CGY_WAR_EPIC', VoucherName = N'Phim Lịch Sử Hào Hùng - Giảm 35K', ImageURL = '/Cine_Flow/uploads/poster/poster-dao-pho-va-piano.jpg' WHERE VoucherID = 321;
+UPDATE Vouchers SET VoucherCode = 'CGY_SOUTHERN_HERITAGE', VoucherName = N'Hành Trình Đất Phương Nam - Giảm 25K', ImageURL = '/Cine_Flow/uploads/poster/poster-dat-rung-phuong-nam.jpg' WHERE VoucherID = 320;
+UPDATE Vouchers SET VoucherCode = 'CGY_HISTORICAL_LEGEND', VoucherName = N'Ký Ức Lịch Sử Địa Đạo - Giảm 30%', ImageURL = '/Cine_Flow/uploads/poster/poster-dia-dao.jpg' WHERE VoucherID = 319;
+UPDATE Vouchers SET VoucherCode = 'CGY_MUSIC_PIANO', VoucherName = N'Giai Điệu Nghệ Thuật - Giảm 40K', ImageURL = '/Cine_Flow/uploads/poster/poster-the-pianist.jpg' WHERE VoucherID = 318;
+UPDATE Vouchers SET VoucherCode = 'CGY_SCI_FI_FEST', VoucherName = N'Lễ Hội Khoa Học Viễn Tưởng - Giảm 20%', ImageURL = '/Cine_Flow/uploads/poster/poster-dune-2.jpg' WHERE VoucherID = 317;
+UPDATE Vouchers SET VoucherCode = 'CGY_ANIMATION_FUN', VoucherName = N'Thế Giới Hoạt Hình - Giảm 25K', ImageURL = '/Cine_Flow/uploads/poster/poster-despicable-me-4.jpg' WHERE VoucherID = 316;
+
+-- 4.6 Cấu hình 20 Voucher cho Admin
+UPDATE Vouchers SET VoucherCode = 'NIGHT_OWL', VoucherName = N'Cú Đêm Mê Phim - Giảm 35K', ImageURL = '/Cine_Flow/uploads/poster/poster-avatar-2.jpg' WHERE VoucherID = 435;
+UPDATE Vouchers SET VoucherCode = 'SWEET_COUPLE', VoucherName = N'Combo Hẹn Hò - Giảm 25%', ImageURL = '/Cine_Flow/uploads/poster/poster-mai.jpg' WHERE VoucherID = 434;
+UPDATE Vouchers SET VoucherCode = 'WEEKEND_BOOM', VoucherName = N'Cuối Tuần Bom Tấn - Giảm 40K', ImageURL = '/Cine_Flow/uploads/poster/poster-deadpool-wolverine.jpg' WHERE VoucherID = 433;
+UPDATE Vouchers SET VoucherCode = 'STUDENT_POWER', VoucherName = N'HSSV Siêu Ưu Đãi - Giảm 20%', ImageURL = '/Cine_Flow/uploads/poster/poster-inside-out-2.jpg' WHERE VoucherID = 432;
+UPDATE Vouchers SET VoucherCode = 'HAPPY_WEDNESDAY', VoucherName = N'Thứ Tư Vui Vẻ - Giảm 30%', ImageURL = '/Cine_Flow/uploads/poster/poster-kung-fu-panda-4.jpg' WHERE VoucherID = 431;
+UPDATE Vouchers SET VoucherCode = 'CINEFLOW_NEWBIE', VoucherName = N'Chào Bạn Mới - Giảm 50K', ImageURL = '/Cine_Flow/uploads/poster/poster-oppenheimer.jpg' WHERE VoucherID = 430;
+UPDATE Vouchers SET VoucherCode = 'TET2026_VIP', VoucherName = N'Giảm 20% Khai Xuân 2026', ImageURL = '/Cine_Flow/uploads/poster/poster-lat-mat-7.jpg' WHERE VoucherID = 429;
+UPDATE Vouchers SET VoucherCode = 'SUMMER_BLOCKBUSTER', VoucherName = N'Bom Tấn Mùa Hè - Giảm 30K', ImageURL = '/Cine_Flow/uploads/poster/poster-transformers-one.jpg' WHERE VoucherID = 428;
+UPDATE Vouchers SET VoucherCode = 'HOALAC_CAMPUS_VIP', VoucherName = N'Đặc Quyền Sinh Viên Hòa Lạc - Giảm 25%', ImageURL = '/Cine_Flow/uploads/poster/poster-interstellar.jpg' WHERE VoucherID = 427;
+UPDATE Vouchers SET VoucherCode = 'HANOI_CINEMA_PASS', VoucherName = N'Thẻ Phim Thủ Đô 2026 - Giảm 35K', ImageURL = '/Cine_Flow/uploads/poster/poster-dao-pho-va-piano.jpg' WHERE VoucherID = 426;
+
+UPDATE Vouchers SET VoucherCode = 'Q1_PREMIERE_PASS', VoucherName = N'Suất Chiếu Đặc Biệt Quận 1 - Giảm 30%', ImageURL = '/Cine_Flow/uploads/poster/poster-dune-2.jpg' WHERE VoucherID = 425;
+UPDATE Vouchers SET VoucherCode = 'Q1_MONSTER_MAYHEM', VoucherName = N'Đại Chiến Quái Thú - Giảm 40K', ImageURL = '/Cine_Flow/uploads/poster/poster-godzilla-kong.jpg' WHERE VoucherID = 424;
+UPDATE Vouchers SET VoucherCode = 'Q1_MIND_BENDER', VoucherName = N'Đỉnh Cao Trí Tuệ Điện Ảnh - Giảm 25%', ImageURL = '/Cine_Flow/uploads/poster/poster-inception.jpg' WHERE VoucherID = 423;
+UPDATE Vouchers SET VoucherCode = 'Q1_SOUTHERN_SOUL', VoucherName = N'Hương Sắc Miền Nam - Giảm 30K', ImageURL = '/Cine_Flow/uploads/poster/poster-dat-rung-phuong-nam.jpg' WHERE VoucherID = 422;
+UPDATE Vouchers SET VoucherCode = 'Q1_VIET_FAMILY', VoucherName = N'Tình Thân Gia Đình - Giảm 20%', ImageURL = '/Cine_Flow/uploads/poster/poster-bo-gia.jpg' WHERE VoucherID = 421;
+UPDATE Vouchers SET VoucherCode = 'Q1_HISTORIC_HERO', VoucherName = N'Bản Hùng Ca Lịch Sử - Giảm 35K', ImageURL = '/Cine_Flow/uploads/poster/poster-dia-dao.jpg' WHERE VoucherID = 420;
+UPDATE Vouchers SET VoucherCode = 'Q1_CLASSIC_MELODY', VoucherName = N'Giai Điệu Nghệ Thuật - Giảm 30%', ImageURL = '/Cine_Flow/uploads/poster/poster-the-pianist.jpg' WHERE VoucherID = 419;
+UPDATE Vouchers SET VoucherCode = 'Q1_MINION_MADNESS', VoucherName = N'Biệt Đội Kẻ Trộm Mặt Trăng - Giảm 25K', ImageURL = '/Cine_Flow/uploads/poster/poster-despicable-me-4.jpg' WHERE VoucherID = 418;
+UPDATE Vouchers SET VoucherCode = 'Q1_AVATAR_EXP', VoucherName = N'Trải Nghiệm Thế Giới Pandora - Giảm 50K', ImageURL = '/Cine_Flow/uploads/poster/poster-avatar-2.jpg' WHERE VoucherID = 417;
+UPDATE Vouchers SET VoucherCode = 'Q1_SUPERHERO_NIGHT', VoucherName = N'Đêm Hội Siêu Anh Hùng - Giảm 20%', ImageURL = '/Cine_Flow/uploads/poster/poster-deadpool-wolverine.jpg' WHERE VoucherID = 416;
+GO
