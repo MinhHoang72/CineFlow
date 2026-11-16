@@ -72,11 +72,7 @@
                     <span>⚠</span> <strong>Lỗi:</strong> Không thể thực hiện thao tác. Vui lòng thử lại sau!
                 </div>
             </c:if>
-            <c:if test="${param.error == 'invalid_transition'}">
-                <div class="cf-alert cf-alert-danger">
-                    <span>⚠</span> <strong>Lỗi:</strong> Không thể chuyển trực tiếp giữa hai trạng thái này. Cụm rạp INACTIVE cần được chuyển về ACTIVE trước khi chuyển sang SUSPENDED.
-                </div>
-            </c:if>
+
 
             <!-- Thẻ thống kê (Stat Cards) -->
             <div class="cf-stats-grid">
