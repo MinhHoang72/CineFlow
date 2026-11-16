@@ -268,7 +268,7 @@ public class ShowtimeService implements ServletContextListener {
     }
 
     public List<Showtime> getShowtimesByCentre(int centreId) {
-        return showtimeDAO.getByCentre(centreId);
+        return showtimeDAO.getByCentre(centreId, true);
     }
 
     public List<model.entity.Movie> getAvailableMoviesByCentre(int centreId) {

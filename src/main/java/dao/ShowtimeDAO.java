@@ -529,6 +529,10 @@ public class ShowtimeDAO {
        ===================================================== */
     public List<Showtime> getByCentre(
             int centreId) {
+        return getByCentre(centreId, false);
+    }
+
+    public List<Showtime> getByCentre(int centreId, boolean onlyDistributed) {
 
         List<Showtime> list
                 = new ArrayList<>();
@@ -541,6 +545,8 @@ public class ShowtimeDAO {
                 + "JOIN Movies m "
                 + "ON m.MovieID = s.MovieID "
                 + "WHERE h.CentreID = ? "
+                // Danh sách Manager ẩn phim đã hủy phân phối, không xóa lịch chiếu hoặc vé.
+                + (onlyDistributed ? "AND EXISTS (SELECT 1 FROM CentreMovies cm WHERE cm.CentreID=h.CentreID AND cm.MovieID=s.MovieID AND cm.Status IN ('ACTIVE','SUSPENDED')) " : "")
                 + "ORDER BY s.StartTime";
 
         try (Connection connection = DBContext.getConnection();
