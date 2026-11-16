@@ -27,7 +27,7 @@ import java.time.LocalDateTime;
 @WebServlet(name = "VoucherManagementServlet", urlPatterns = {"/admin/vouchers", "/admin/vouchers/*", "/manager/vouchers", "/manager/vouchers/*"})
 public class VoucherManagementServlet extends HttpServlet {
 
-    public static final int MAX_DISCOUNT_PERCENT = 50; // Hằng số cấu hình mức trần giảm giá (%)
+    public static final int MAX_DISCOUNT_PERCENT = 50;
     private static final int PAGE_SIZE = 10;
     private final VoucherDAO voucherDAO = new VoucherDAO();
 
@@ -265,7 +265,7 @@ public class VoucherManagementServlet extends HttpServlet {
             return;
         }
 
-        // 3. Validate giá trị giảm: phải là số hợp lệ, > 0, PERCENT không vượt 50%
+      //giá trị giảm 
         BigDecimal discountVal;
         try {
             discountVal = new BigDecimal(discountValue.trim().replace(",", ""));
