@@ -29,7 +29,7 @@ BEGIN
         Status = 'SCHEDULED'
     WHERE ShowtimeID = @ShowtimeID_Hall1;
 
-    IF NOT EXISTS (SELECT 1 FROM Bookings WHERE ShowtimeID = @ShowtimeID_Hall1)
+    IF NOT EXISTS (SELECT 1 FROM Bookings WHERE BookingCode = 'BK_TEST_HALL1')
     BEGIN
         DECLARE @CustID INT;
         SELECT TOP 1 @CustID = UserID FROM Users WHERE Role = 'CUSTOMER';
@@ -41,8 +41,8 @@ BEGIN
     ELSE
     BEGIN
         UPDATE Bookings 
-        SET BookingStatus = 'CONFIRMED' 
-        WHERE ShowtimeID = @ShowtimeID_Hall1;
+        SET ShowtimeID = @ShowtimeID_Hall1, BookingStatus = 'CONFIRMED' 
+        WHERE BookingCode = 'BK_TEST_HALL1';
     END
     PRINT N'   => Đã thiết lập xong: Phòng 01 có suất chiếu tương lai + vé đặt CONFIRMED!';
 END
@@ -65,22 +65,16 @@ END
 
 IF @ShowtimeID_Hall61 IS NOT NULL
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM Bookings WHERE ShowtimeID = @ShowtimeID_Hall61)
+    IF NOT EXISTS (SELECT 1 FROM Bookings WHERE BookingCode = 'BK_TEST_HALL61')
     BEGIN
         INSERT INTO Bookings (BookingCode, UserID, ShowtimeID, BookingType, BookingStatus, SubTotal, DiscountAmount, TotalAmount, CreatedAt, UpdatedAt)
         VALUES ('BK_TEST_HALL61', 1, @ShowtimeID_Hall61, 'ONLINE', 'CONFIRMED', 100000, 0, 100000, GETDATE(), GETDATE());
     END
     ELSE
     BEGIN
-        UPDATE Bookings SET BookingStatus = 'CONFIRMED' WHERE ShowtimeID = @ShowtimeID_Hall61;
+        UPDATE Bookings SET ShowtimeID = @ShowtimeID_Hall61, BookingStatus = 'CONFIRMED' WHERE BookingCode = 'BK_TEST_HALL61';
     END
     PRINT N'   => Đã thiết lập xong: Phòng 2D 01 (HallID 61) có suất chiếu tương lai + vé đặt CONFIRMED!';
-END
-    PRINT N'   => Đã thiết lập xong: Phòng 01 có suất chiếu tương lai + vé đặt CONFIRMED!';
-END
-ELSE
-BEGIN
-    PRINT N'   => Lưu ý: Chưa tìm thấy suất chiếu nào của HallID = 1.';
 END
 
 
