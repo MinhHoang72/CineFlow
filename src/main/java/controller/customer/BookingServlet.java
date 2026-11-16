@@ -296,6 +296,10 @@ public class BookingServlet extends HttpServlet {
     private void history(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         User user = WebUtil.requireUser(req, resp);
         if (user == null) return;
+        if (user.getRole() == null || !"CUSTOMER".equalsIgnoreCase(user.getRole())) {
+            resp.sendRedirect(req.getContextPath() + WebUtil.getRoleDefaultPath(user));
+            return;
+        }
         req.setAttribute("bookingHistory", new UserDAO().getBookingHistory(user.getUserId()));
         req.getRequestDispatcher(VIEW_DIR + "booking/bookingHistory.jsp").forward(req, resp);
     }
