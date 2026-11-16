@@ -20,7 +20,10 @@ BEGIN
     EXEC('UPDATE bs SET bs.ShowtimeID = b.ShowtimeID FROM BookingSeats bs JOIN Bookings b ON b.BookingID = bs.BookingID');
 END
 
--- 1.1 Đảm bảo Cụm rạp Cầu Giấy và các phòng test đang ở trạng thái Hoạt động
+-- 1.1 Gán tài khoản 'manager' về Cụm rạp Cầu Giấy (CentreID = 1) để đăng nhập tài khoản nào cũng vào đúng Cầu Giấy
+UPDATE Users SET CentreID = 1 WHERE Account = 'manager';
+
+-- 1.2 Đảm bảo Cụm rạp Cầu Giấy và các phòng test đang ở trạng thái Hoạt động
 UPDATE Centres SET Status = 'ACTIVE' WHERE CentreID = 1;
 UPDATE Halls SET Status = 'AVAILABLE' WHERE HallID IN (1, 2, 61, 62);
 
