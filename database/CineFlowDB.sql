@@ -99,7 +99,7 @@ CREATE TABLE Halls (
     CONSTRAINT FK_Halls_Centres FOREIGN KEY (CentreID) REFERENCES Centres(CentreID),
     CONSTRAINT CK_Halls_Type CHECK (HallType IN ('2D','3D')),
     CONSTRAINT CK_Halls_Capacity CHECK (Capacity > 0),
-    CONSTRAINT CK_Halls_Status CHECK (Status IN ('AVAILABLE','MAINTENANCE','INACTIVE'))
+    CONSTRAINT CK_Halls_Status CHECK (Status IN ('AVAILABLE','INACTIVE','SUSPENDED'))
 );
 GO
 

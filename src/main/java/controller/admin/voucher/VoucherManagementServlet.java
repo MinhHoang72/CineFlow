@@ -310,7 +310,7 @@ public class VoucherManagementServlet extends HttpServlet {
                 return;
             }
         }
-
+//chỉ cho phép nếu chưa có lượt dùng 
         try {
             // Không đổi mã nếu voucher đã từng có người sử dụng
             if (!isEdit || voucher.getUsedCount() == 0) {

@@ -42,15 +42,14 @@ public class HallDAO {
             params.add(kw);
         }
 
-        // Lọc theo trạng thái hoặc định dạng kỹ thuật
+        // Lọc theo trạng thái
         if (status != null && !status.trim().isEmpty() && !"ALL".equalsIgnoreCase(status)) {
             if ("ACTIVE".equalsIgnoreCase(status)) {
                 where.append("AND UPPER(h.Status) = 'AVAILABLE' ");
+            } else if ("SUSPENDED".equalsIgnoreCase(status)) {
+                where.append("AND UPPER(h.Status) = 'SUSPENDED' ");
             } else if ("INACTIVE".equalsIgnoreCase(status)) {
-                where.append("AND UPPER(h.Status) IN ('INACTIVE', 'MAINTENANCE') ");
-            } else if ("2D".equalsIgnoreCase(status) || "3D".equalsIgnoreCase(status)) {
-                where.append("AND UPPER(h.HallType) = ? ");
-                params.add(status.trim().toUpperCase());
+                where.append("AND UPPER(h.Status) = 'INACTIVE' ");
             }
         }
 
@@ -341,7 +340,7 @@ public class HallDAO {
             return "HAS_FUTURE_BOOKINGS";
         }
 
-        String newStatus = currentHall.isActive() ? "INACTIVE" : "AVAILABLE";
+        String newStatus = currentHall.isActive() ? "SUSPENDED" : "AVAILABLE";
         String sql = "UPDATE Halls SET Status = ? WHERE HallID = ?";
 
         try (Connection conn = DBContext.getConnection();
@@ -368,8 +367,10 @@ public class HallDAO {
         String sql;
         if ("ACTIVE".equalsIgnoreCase(status)) {
             sql = "SELECT COUNT(*) FROM Halls WHERE CentreID = ? AND UPPER(Status) = 'AVAILABLE'";
+        } else if ("SUSPENDED".equalsIgnoreCase(status)) {
+            sql = "SELECT COUNT(*) FROM Halls WHERE CentreID = ? AND UPPER(Status) = 'SUSPENDED'";
         } else if ("INACTIVE".equalsIgnoreCase(status)) {
-            sql = "SELECT COUNT(*) FROM Halls WHERE CentreID = ? AND UPPER(Status) IN ('INACTIVE', 'MAINTENANCE')";
+            sql = "SELECT COUNT(*) FROM Halls WHERE CentreID = ? AND UPPER(Status) = 'INACTIVE'";
         } else {
             sql = "SELECT COUNT(*) FROM Halls WHERE CentreID = ?";
         }

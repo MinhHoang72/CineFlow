@@ -160,8 +160,8 @@
                         <div class="cf-stat-card">
                             <div class="cf-stat-icon warning">⏸</div>
                             <div class="cf-stat-info">
-                                <h3>${inactiveHalls != null ? inactiveHalls : 0}</h3>
-                                <p>Tạm ngưng (Inactive)</p>
+                                <h3>${suspendedHalls != null ? suspendedHalls : 0}</h3>
+                                <p>Tạm ngưng (Suspended)</p>
                             </div>
                         </div>
                         <div class="cf-stat-card">
@@ -187,11 +187,10 @@
                             </div>
 
                             <select name="status" class="cf-select">
-                                <option value="ALL" ${currentStatus == 'ALL' || empty currentStatus ? 'selected' : ''}>Tất cả trạng thái & định dạng</option>
-                                <option value="ACTIVE" ${currentStatus == 'ACTIVE' ? 'selected' : ''}>Đang hoạt động (Active)</option>
-                                <option value="INACTIVE" ${currentStatus == 'INACTIVE' ? 'selected' : ''}>Tạm ngưng (Inactive)</option>
-                                <option value="2D" ${currentStatus == '2D' ? 'selected' : ''}>Định dạng 2D</option>
-                                <option value="3D" ${currentStatus == '3D' ? 'selected' : ''}>Định dạng 3D</option>
+                                <option value="ALL" ${currentStatus == 'ALL' || empty currentStatus ? 'selected' : ''}>Tất cả trạng thái</option>
+                                <option value="ACTIVE" ${currentStatus == 'ACTIVE' ? 'selected' : ''}>Đang hoạt động (ACTIVE)</option>
+                                <option value="SUSPENDED" ${currentStatus == 'SUSPENDED' ? 'selected' : ''}>Tạm ngưng (SUSPENDED)</option>
+                                <option value="INACTIVE" ${currentStatus == 'INACTIVE' ? 'selected' : ''}>Ngừng hoạt động (INACTIVE)</option>
                             </select>
 
                             <button type="submit" class="cf-btn cf-btn-primary">Lọc</button>
@@ -239,8 +238,11 @@
                                                         <c:when test="${isActive}">
                                                             <span class="cf-badge cf-badge-active">● Đang hoạt động</span>
                                                         </c:when>
+                                                        <c:when test="${h.status == 'SUSPENDED'}">
+                                                            <span class="cf-badge" style="background: rgba(245, 158, 11, 0.15); color: #F59E0B; border: 1px solid rgba(245, 158, 11, 0.3);">● Tạm ngưng</span>
+                                                        </c:when>
                                                         <c:otherwise>
-                                                            <span class="cf-badge cf-badge-inactive">● Tạm ngưng</span>
+                                                            <span class="cf-badge cf-badge-inactive">● Ngừng hoạt động</span>
                                                         </c:otherwise>
                                                     </c:choose>
                                                 </td>

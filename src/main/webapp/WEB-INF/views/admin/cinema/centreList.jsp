@@ -129,9 +129,9 @@
 
                     <select name="status" class="cf-select">
                         <option value="ALL" ${currentStatus == 'ALL' || empty currentStatus ? 'selected' : ''}>Tất cả trạng thái</option>
-                        <option value="ACTIVE" ${currentStatus == 'ACTIVE' ? 'selected' : ''}>Đang hoạt động</option>
-                        <option value="SUSPENDED" ${currentStatus == 'SUSPENDED' ? 'selected' : ''}>Tạm ngưng</option>
-                        <option value="INACTIVE" ${currentStatus == 'INACTIVE' ? 'selected' : ''}>Ngừng hoạt động</option>
+                        <option value="ACTIVE" ${currentStatus == 'ACTIVE' ? 'selected' : ''}>Đang hoạt động (ACTIVE)</option>
+                        <option value="SUSPENDED" ${currentStatus == 'SUSPENDED' ? 'selected' : ''}>Tạm ngưng (SUSPENDED)</option>
+                        <option value="INACTIVE" ${currentStatus == 'INACTIVE' ? 'selected' : ''}>Ngừng hoạt động (INACTIVE)</option>
                     </select>
 
                     <button type="submit" class="cf-btn cf-btn-primary">Lọc</button>

@@ -130,8 +130,11 @@
                                 <option value="AVAILABLE" ${hall == null || hall.status == 'AVAILABLE' || hall.status == 'ACTIVE' ? 'selected' : ''}>
                                     Đang hoạt động (AVAILABLE)
                                 </option>
-                                <option value="INACTIVE" ${hall != null && (hall.status == 'INACTIVE' || hall.status == 'MAINTENANCE') ? 'selected' : ''}>
-                                    Tạm ngưng / Bảo trì (INACTIVE)
+                                <option value="SUSPENDED" ${hall != null && hall.status == 'SUSPENDED' ? 'selected' : ''}>
+                                    Tạm ngưng (SUSPENDED)
+                                </option>
+                                <option value="INACTIVE" ${hall != null && hall.status == 'INACTIVE' ? 'selected' : ''}>
+                                    Ngừng hoạt động (INACTIVE)
                                 </option>
                             </select>
                         </div>

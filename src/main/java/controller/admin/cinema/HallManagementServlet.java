@@ -144,6 +144,7 @@ public class HallManagementServlet extends HttpServlet {
         // Gọi thẳng HallDAO đếm KPI
         int totalHalls = hallDAO.countHallsByStatus(centreId, "ALL");
         int activeHalls = hallDAO.countHallsByStatus(centreId, "ACTIVE");
+        int suspendedHalls = hallDAO.countHallsByStatus(centreId, "SUSPENDED");
         int inactiveHalls = hallDAO.countHallsByStatus(centreId, "INACTIVE");
         int totalCapacity = hallDAO.sumCapacityByCentre(centreId);
 
@@ -161,9 +162,11 @@ public class HallManagementServlet extends HttpServlet {
         request.setAttribute("targetCentreId", centreId);
         request.setAttribute("totalHalls", totalHalls);
         request.setAttribute("activeHalls", activeHalls);
+        request.setAttribute("suspendedHalls", suspendedHalls);
         request.setAttribute("inactiveHalls", inactiveHalls);
         request.setAttribute("totalCapacity", totalCapacity);
         request.setAttribute("pagerBase", base + "?" + filters + "&page=");
+        //back
         request.setAttribute("backQuery", filters + "&page=" + pageResult.getPage());
         request.setAttribute("baseUrl", base);
         request.setAttribute("activeNav", "halls");
@@ -270,9 +273,9 @@ public class HallManagementServlet extends HttpServlet {
                 return;
             }
 
-            // Chặn chuyển sang INACTIVE nếu có suất chiếu tương lai đã có khách đặt
+            // Chặn chuyển sang INACTIVE / SUSPENDED nếu có suất chiếu tương lai đã có khách đặt
             boolean isDeactivating = existingHall.isActive()
-                    && ("INACTIVE".equalsIgnoreCase(status) || "MAINTENANCE".equalsIgnoreCase(status));
+                    && ("INACTIVE".equalsIgnoreCase(status) || "SUSPENDED".equalsIgnoreCase(status));
             if (isDeactivating && hallDAO.hasFutureBookedShowtimes(hallId)) {
                 response.sendRedirect(base + "?action=edit&hallId=" + hallId + "&error=has_future_bookings");
                 return;
