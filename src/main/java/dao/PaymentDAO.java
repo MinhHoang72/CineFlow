@@ -120,7 +120,7 @@ public class PaymentDAO {
     }
 
     public boolean bookingStillMatchesShowtime(Connection conn, int bookingId) throws SQLException {
-        try (PreparedStatement ps = conn.prepareStatement("SELECT 1 FROM Bookings b JOIN Showtimes s ON s.ShowtimeID=b.ShowtimeID WHERE b.BookingID=? AND b.BookingStatus<>'CANCELLED' AND s.Status='SCHEDULED' AND s.StartTime>SYSDATETIME() AND s.SaleState='OPEN'")) {
+        try (PreparedStatement ps = conn.prepareStatement("SELECT 1 FROM Bookings b JOIN Showtimes s ON s.ShowtimeID=b.ShowtimeID JOIN Halls h ON h.HallID=s.HallID JOIN Movies m ON m.MovieID=s.MovieID JOIN Centres c ON c.CentreID=h.CentreID WHERE b.BookingID=? AND b.BookingStatus<>'CANCELLED' AND s.Status='SCHEDULED' AND s.StartTime>SYSDATETIME() AND s.SaleState='OPEN' AND m.Status='NOW_SHOWING' AND c.Status='ACTIVE' AND h.Status='AVAILABLE' AND EXISTS (SELECT 1 FROM CentreMovies cm WHERE cm.MovieID=s.MovieID AND cm.CentreID=c.CentreID AND cm.IsActive=1 AND cm.Status='ACTIVE')")) {
             ps.setInt(1, bookingId);
             try (ResultSet rs = ps.executeQuery()) { return rs.next(); }
         }
