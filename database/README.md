@@ -25,13 +25,16 @@ Default Password: 123 (hoặc mật khẩu SQL Server của máy bạn)
 
 ---
 
-## 3. Gỡ soát vé và đánh giá phim trên CSDL cũ
+## 3. Sau khi pull code mới: chạy lại `CineFlow.sql`
 
-Nếu CineFlowDB được tạo từ bản CineFlow.sql trước ngày 15/11/2026, chạy **`database/remove_checkin_rating.sql`** một lần để xoá bảng CheckInLogs, MovieRatings, trigger soát vé, cột CheckedInAt/CheckedInBy và chuyển nhân viên soát vé thành nhân viên bán vé.
+Từ ngày 16/11/2026, mọi thay đổi CSDL của nhóm đã được gộp vào **`database/CineFlow.sql`** (giá chốt theo suất chiếu, bỏ soát vé và đánh giá phim, hàng ghế Sweetbox Phòng 01 Cầu Giấy và giá Sweetbox, voucher trang chủ, dữ liệu demo bảo vệ, 7 phòng demo phân trang, voucher TEST01–TEST12). Không còn file patch riêng.
+
+Nếu ứng dụng báo lỗi 500 sau khi pull, nhiều khả năng CSDL trên máy đang cũ hơn code: chạy lại `CineFlow.sql` (script tự xoá và tạo lại CineFlowDB, dữ liệu test cũ trên máy sẽ mất), rồi Clean and Build và chạy lại Tomcat.
+
+Khi thêm hoặc sửa dữ liệu dùng chung, ghi thẳng vào `CineFlow.sql` thay vì sửa trên giao diện hoặc tạo file patch riêng, để máy nào cũng có cùng dữ liệu.
 
 ---
 
-## 4. Thư mục `database/demo/` (Kịch bản thuyết trình bảo vệ)
+## 4. Dữ liệu demo bảo vệ
 
-Thư mục `database/demo/` chứa các kịch bản SQL độc lập phục vụ lúc **thuyết trình / demo trước hội đồng**:
-- `demo_voucher_data.sql`: Kịch bản nạp voucher thử nghiệm riêng.
+Dữ liệu demo bảo vệ (đơn test để thử chặn tắt phòng chiếu, tên voucher demo) đã nằm trong `CineFlow.sql`. File `database/demo_defense_data_setup.sql` vẫn giữ để chạy lại riêng phần này khi cần làm mới dữ liệu demo (ví dụ đưa suất test về 7 ngày sau thời điểm demo).

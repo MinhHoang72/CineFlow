@@ -1,6 +1,6 @@
 # Pricing và lịch mở bán
 
-Áp dụng `pricing_sale_lifecycle.sql` **sau** database gốc, trước khi chạy phiên bản ứng dụng này. Chạy bằng client dừng khi có lỗi; transaction bao trùm các batch `GO`. Không chạy riêng từng đoạn. Có thể chạy lại script mà không sao chép trùng dữ liệu cũ.
+Đã gộp vào `CineFlow.sql` (ngày 16/11/2026), không cần chạy riêng file `pricing_sale_lifecycle.sql` nữa. Các quy tắc dưới đây vẫn áp dụng.
 
 - Admin quản lý `CentrePricing`. Manager đọc giá cơ bản nhưng chỉ chỉnh phụ thu của cụm rạp được phân công.
 - `CentreSurcharges` lưu 5 nhóm: chi nhánh, loại phòng, loại ghế, từng phim, khung giờ. Mỗi lần lưu tạo một phiên bản; thời điểm áp dụng dựa trên giờ bắt đầu chiếu. Khung giờ dùng khoảng `[từ giờ, đến giờ)` và không chồng lấn trong cùng giai đoạn hiệu lực.

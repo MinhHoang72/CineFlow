@@ -25185,3 +25185,49 @@ UPDATE Vouchers SET VoucherCode = 'Q1_MINION_MADNESS', VoucherName = N'Biệt Đ
 UPDATE Vouchers SET VoucherCode = 'Q1_AVATAR_EXP', VoucherName = N'Trải Nghiệm Thế Giới Pandora - Giảm 50K', ImageURL = '/Cine_Flow/uploads/poster/poster-avatar-2.jpg' WHERE VoucherID = 417;
 UPDATE Vouchers SET VoucherCode = 'Q1_SUPERHERO_NIGHT', VoucherName = N'Đêm Hội Siêu Anh Hùng - Giảm 20%', ImageURL = '/Cine_Flow/uploads/poster/poster-deadpool-wolverine.jpg' WHERE VoucherID = 416;
 GO
+
+/* =====================================================================================
+   PHẦN BỔ SUNG (gộp từ seed_halls_demo.sql và demo/demo_voucher_data.sql ngày 16/11/2026):
+   B. 7 phòng chiếu demo phân trang cho Cầu Giấy
+   C. 12 voucher TEST01..TEST12 (demo phân trang, lọc, nhãn trạng thái)
+   ===================================================================================== */
+USE CineFlowDB;
+GO
+IF NOT EXISTS (SELECT 1 FROM Halls WHERE CentreID = 1 AND HallName = N'Phòng 03 (Standard)')
+BEGIN
+    INSERT INTO Halls (CentreID, HallName, HallType, Capacity, Status, CreatedAt) VALUES 
+    (1, N'Phòng 03 (Standard)',   N'2D', 65,  'AVAILABLE', GETDATE()),
+    (1, N'Phòng 04 (Digital 3D)',  N'3D', 80,  'AVAILABLE', GETDATE()),
+    (1, N'Phòng 05 (VIP Lounge)',  N'2D', 50,  'AVAILABLE', GETDATE()),
+    (1, N'Phòng 06 (IMAX Laser)',  N'3D', 120, 'AVAILABLE', GETDATE()),
+    (1, N'Phòng 07 (Standard)',   N'2D', 60,  'AVAILABLE', GETDATE()),
+    (1, N'Phòng 08 (Gold Class)',  N'2D', 40,  'AVAILABLE', GETDATE()),
+    (1, N'Phòng 09 (Tạm ngưng)',   N'2D', 60,  'INACTIVE',  GETDATE());
+END
+GO
+
+USE CineFlowDB;
+GO
+DECLARE @i INT = 1;
+WHILE @i <= 12
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM Vouchers WHERE VoucherCode = 'TEST' + RIGHT('0' + CAST(@i AS VARCHAR(2)), 2))
+        INSERT INTO Vouchers (VoucherCode, VoucherName, DiscountType, DiscountValue,
+                              MinimumOrderValue, StartDate, EndDate, UsageLimit, UsedCount, Status)
+        VALUES (
+            'TEST' + RIGHT('0' + CAST(@i AS VARCHAR(2)), 2),
+            N'Voucher thử số ' + CAST(@i AS NVARCHAR(2)),
+            CASE WHEN @i % 2 = 0 THEN 'FIXED' ELSE 'PERCENT' END,
+            CASE WHEN @i % 2 = 0 THEN 20000 ELSE 10 END,
+            0,
+            '2026-01-01',
+            CASE WHEN @i <= 3 THEN '2026-02-01' ELSE '2026-12-31' END,
+            CASE WHEN @i = 4 THEN 0 ELSE 100 END,
+            0,
+            CASE WHEN @i = 5 THEN 'INACTIVE' ELSE 'ACTIVE' END
+        );
+    SET @i += 1;
+END
+GO
+PRINT N'Hoàn tất nạp toàn bộ cấu trúc và dữ liệu CineFlow!';
+GO
