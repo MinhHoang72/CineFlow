@@ -24937,7 +24937,9 @@ GO
 SET NOCOUNT ON;
 GO
 
--- 1. Bổ sung / Cập nhật 6 voucher thật cho trang chủ
+-- 1. Bổ sung / Cập nhật 6 voucher thật cho trang chủ (xóa các voucher TEST rác nếu có)
+DELETE FROM Vouchers WHERE VoucherCode LIKE 'TEST%';
+
 DECLARE @VoucherList TABLE (
     Code VARCHAR(50),
     Name NVARCHAR(150),
