@@ -24790,7 +24790,7 @@ GO
 -- PHAN BO SUNG: PRICING & SALE LIFECYCLE (MIGRATION)
 -- ==========================================================
 
-/* Apply after CineFlow.sql (or Cine_Flow.sql). No business rows are deleted.
+/* Apply after CineFlowDB.sql (or Cine_Flow.sql). No business rows are deleted.
    Existing global seat/hall policies are copied for each centre, time policies retain their centre.
    Run with a client that stops on SQL errors. The transaction spans GO batches.
    Keep this patch with the application release; rerunning it does not recopy legacy policies. */
