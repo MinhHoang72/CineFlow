@@ -153,7 +153,27 @@ SET Capacity = (SELECT COUNT(*) FROM Seats WHERE HallID = 1 AND Status = 'AVAILA
 WHERE HallID = 1;
 
 PRINT N'-> Cập nhật sơ đồ ghế Phòng 1 thành công!';
+
+-- =====================================================================================
+-- PHẦN 3: BỔ SUNG GIÁ SWEETBOX CHO CÁC SUẤT ĐÃ CHỐT GIÁ CỦA PHÒNG 01
+-- =====================================================================================
+PRINT N'3. Đang bổ sung giá SWEETBOX cho các suất đã mở bán của Phòng 01...';
+
+-- Bổ sung giá SWEETBOX cho các suất đã chốt giá của Phòng 01 (trước đây phòng chưa có ghế Sweetbox)
+INSERT ShowtimeSeatPrices(ShowtimeID, SeatType, BasePrice, CentreAmount, HallAmount, MovieAmount, TimeAmount, SeatAmount)
+SELECT p.ShowtimeID, 'SWEETBOX', p.BasePrice, p.CentreAmount, p.HallAmount, p.MovieAmount, p.TimeAmount, ISNULL(sc.Amount, 0)
+FROM ShowtimeSeatPrices p
+JOIN Showtimes s ON s.ShowtimeID = p.ShowtimeID
+JOIN Halls h ON h.HallID = s.HallID
+OUTER APPLY (SELECT TOP 1 c.Amount FROM CentreSurcharges c
+             WHERE c.CentreID = h.CentreID AND c.SurchargeType = 'SEAT' AND c.TargetValue = 'SWEETBOX'
+               AND c.EffectiveFrom <= s.StartTime AND (c.EffectiveTo IS NULL OR s.StartTime < c.EffectiveTo)
+             ORDER BY c.EffectiveFrom DESC) sc
+WHERE s.HallID = 1 AND s.SaleState = 'OPEN' AND p.SeatType = 'STANDARD'
+  AND NOT EXISTS (SELECT 1 FROM ShowtimeSeatPrices x WHERE x.ShowtimeID = p.ShowtimeID AND x.SeatType = 'SWEETBOX');
+
+PRINT N'-> Đã bổ sung giá SWEETBOX cho các suất mở bán của Phòng 01 thành công!';
 PRINT N'======================================================';
-PRINT N'ĐÃ HOÀN TẤT PATCH TOÀN BỘ VOUCHER VÀ GHẾ!';
+PRINT N'ĐÃ HOÀN TẤT PATCH TOÀN BỘ VOUCHER, GHẾ VÀ GIÁ SWEETBOX!';
 PRINT N'======================================================';
 GO
