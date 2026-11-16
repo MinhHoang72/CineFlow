@@ -1,38 +1,5 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ page import="model.entity.Centre,model.entity.Hall,java.util.List" %>
-<%
-    // 1. Kiểm tra quyền hạn Admin (RBAC)
-    String authRole = (String) session.getAttribute("role");
-    if (authRole == null && session.getAttribute("user") instanceof model.entity.User) {
-        authRole = ((model.entity.User) session.getAttribute("user")).getRole();
-    }
-    if (!"ADMIN".equalsIgnoreCase(authRole)) {
-        response.sendError(HttpServletResponse.SC_FORBIDDEN, "Chỉ Quản trị viên (ADMIN) mới có quyền truy cập trang này.");
-        return;
-    }
-
-    request.setAttribute("activeNav", "centres");
-    request.setAttribute("pageTitle", "Quản lý Cụm rạp");
-
-    List<Centre> centres = (List<Centre>) request.getAttribute("centres");
-    Integer totalCentres = (Integer) request.getAttribute("totalCentres");
-    Integer activeCentres = (Integer) request.getAttribute("activeCentres");
-    Integer suspendedCentres = (Integer) request.getAttribute("suspendedCentres");
-    Integer inactiveCentres = (Integer) request.getAttribute("inactiveCentres");
-    Integer totalHalls = (Integer) request.getAttribute("totalHalls");
-
-    model.dto.common.PageDTO<?> pg = (model.dto.common.PageDTO<?>) request.getAttribute("page");
-    int currentPage = (pg != null) ? pg.getPage() : 1;
-    int pageSize    = (pg != null) ? pg.getSize() : 6;
-    int totalPages  = (pg != null) ? pg.getTotalPages() : 1;
-    int totalFilteredCentres = (pg != null) ? pg.getTotal() : 0;
-
-    String currentSearch = (String) request.getAttribute("currentSearch");
-    String currentStatus = (String) request.getAttribute("currentStatus");
-
-    String successParam = request.getParameter("success");
-    String errorParam = request.getParameter("error");
-%>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -89,13 +56,10 @@
                 <div class="cf-alert cf-alert-success">
                     <span>✓</span> <strong>Thành công!</strong> Đã cập nhật thông tin liên hệ và địa chỉ cụm rạp thành công.
                 </div>
-            <% } else if ("status_updated".equals(successParam) || "status_changed".equals(successParam)) { %>
+            </c:if>
+            <c:if test="${param.success == 'status_updated'}">
                 <div class="cf-alert cf-alert-success">
-                    <span>✓</span> <strong>Thành công!</strong> Đã chuyển trạng thái cụm rạp và tự động cập nhật phân phối phim theo quy tắc.
-                </div>
-            <% } else if ("invalid_transition".equals(errorParam)) { %>
-                <div class="cf-alert cf-alert-danger">
-                    <span>⚠</span> <strong>Lỗi:</strong> Luồng chuyển trạng thái không hợp lệ. Rạp đang INACTIVE không thể chuyển trực tiếp sang SUSPENDED (phải kích hoạt về ACTIVE trước)!
+                    <span>✓</span> <strong>Thành công!</strong> Đã cập nhật trạng thái hoạt động của cụm rạp.
                 </div>
             </c:if>
             <c:if test="${param.error == 'invalid_id'}">
@@ -126,24 +90,17 @@
                     </div>
                 </div>
                 <div class="cf-stat-card">
-                    <div class="cf-stat-icon warning" style="color: #fbbf24;">⏸</div>
+                    <div class="cf-stat-icon warning">⏸</div>
                     <div class="cf-stat-info">
-                        <h3><%= suspendedCentres != null ? suspendedCentres : 0 %></h3>
+                        <h3>${inactiveCentres != null ? inactiveCentres : 0}</h3>
                         <p>Tạm ngưng</p>
-                    </div>
-                </div>
-                <div class="cf-stat-card">
-                    <div class="cf-stat-icon danger" style="color: #f87171;">⛔</div>
-                    <div class="cf-stat-info">
-                        <h3><%= inactiveCentres != null ? inactiveCentres : 0 %></h3>
-                        <p>Ngừng HĐ</p>
                     </div>
                 </div>
                 <div class="cf-stat-card">
                     <div class="cf-stat-icon info">🎬</div>
                     <div class="cf-stat-info">
-                        <h3><%= totalHalls != null ? totalHalls : 0 %></h3>
-                        <p>Tổng số phòng chiếu</p>
+                        <h3>${totalHalls != null ? totalHalls : 0}</h3>
+                        <p>Tổng số Phòng chiếu (Halls)</p>
                     </div>
                 </div>
             </div>
@@ -159,10 +116,9 @@
                     </div>
 
                     <select name="status" class="cf-select">
-                        <option value="ALL" <%= "ALL".equalsIgnoreCase(currentStatus) ? "selected" : "" %>>Tất cả trạng thái</option>
-                        <option value="ACTIVE" <%= "ACTIVE".equalsIgnoreCase(currentStatus) ? "selected" : "" %>>Hoạt động</option>
-                        <option value="SUSPENDED" <%= "SUSPENDED".equalsIgnoreCase(currentStatus) ? "selected" : "" %>>Tạm ngưng</option>
-                        <option value="INACTIVE" <%= "INACTIVE".equalsIgnoreCase(currentStatus) ? "selected" : "" %>>Ngừng HĐ</option>
+                        <option value="ALL" ${currentStatus == 'ALL' || empty currentStatus ? 'selected' : ''}>Tất cả trạng thái</option>
+                        <option value="ACTIVE" ${currentStatus == 'ACTIVE' ? 'selected' : ''}>Đang hoạt động (ACTIVE)</option>
+                        <option value="INACTIVE" ${currentStatus == 'INACTIVE' ? 'selected' : ''}>Tạm ngưng (INACTIVE)</option>
                     </select>
 
                     <button type="submit" class="cf-btn cf-btn-primary">Lọc</button>
@@ -175,89 +131,97 @@
                 <table class="cf-table">
                     <thead>
                         <tr>
-                            <th style="width: 48px; text-align: center;">STT</th>
-                            <th style="min-width: 140px;">Tên Cụm rạp</th>
-                            <th style="min-width: 190px;">Địa chỉ & Thành phố</th>
-                            <th style="min-width: 110px;">Hotline</th>
-                            <th style="min-width: 120px;">Phòng chiếu</th>
-                            <th style="width: 125px; text-align: center;">Trạng thái</th>
-                            <th style="width: 80px; text-align: center;">Thao tác</th>
+                            <th style="min-width: 180px;">Tên Cụm rạp</th>
+                            <th style="min-width: 240px;">Địa chỉ & Thành phố</th>
+                            <th style="min-width: 130px;">Hotline</th>
+                            <th style="min-width: 170px;">Phòng chiếu trực thuộc</th>
+                            <th style="min-width: 120px;">Trạng thái</th>
+                            <th style="min-width: 190px; text-align: right;">Thao tác</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <%
-                            if (centres != null && !centres.isEmpty()) {
-                                int centreIndex = (pg != null) ? pg.getFrom() - 1 : 0;
-                                for (Centre c : centres) {
-                                    centreIndex++;
-                                    boolean isActive = "ACTIVE".equalsIgnoreCase(c.getStatus());
-                        %>
-                        <tr>
-                            <td style="text-align: center; color: var(--cf-muted);"><%= centreIndex %></td>
-                            <td>
-                                <strong style="color: #F8FAFC; font-size: 15px;"><%= c.getCentreName() %></strong>
-                            </td>
-                            <td>
-                                <div style="color: #F8FAFC;"><%= c.getAddress() %></div>
-                                <% if (c.getCity() != null && !c.getCity().trim().isEmpty()) { %>
-                                    <small style="color: #94A3B8;"><%= c.getCity() %></small>
-                                <% } %>
-                            </td>
-                            <td>
-                                <%= (c.getPhone() != null && !c.getPhone().trim().isEmpty()) ? "<span style='color: #F8FAFC;'>" + c.getPhone() + "</span>" : "<span style='color: #94A3B8;'>Chưa có</span>" %>
-                            </td>
-                            <td>
-                                <!-- BR-HS-01: Một Centre quản lý danh sách các Hall trực thuộc -->
-                                <button type="button" class="cf-badge cf-badge-halls"
-                                        onclick="openViewHallsModal(<%= c.getCentreId() %>, '<%= c.getCentreName() != null ? c.getCentreName().replace("'", "\\'") : "" %>')"
-                                        title="Bấm để xem danh sách phòng chiếu trực thuộc">
-                                    <%= c.getHallCount() %> phòng chiếu
-                                </button>
-                            </td>
-                            <td style="text-align: center;">
-                                <%
-                                    String cStat = c.getStatus() != null ? c.getStatus().toUpperCase() : "ACTIVE";
-                                    String badgeStatusClass = "ACTIVE".equals(cStat) ? "status-active" :
-                                                              "SUSPENDED".equals(cStat) ? "status-suspended" : "status-inactive";
-                                %>
-                                <form method="POST" action="${baseUrl != null ? baseUrl : pageContext.request.contextPath.concat('/admin/centres')}" style="display: inline-block; margin: 0;">
-                                    <input type="hidden" name="action" value="changeStatus">
-                                    <input type="hidden" name="centreId" value="<%= c.getCentreId() %>">
-                                    <input type="hidden" name="back" value="${backQuery}">
-                                    <input type="hidden" name="search" value="<%= currentSearch != null ? currentSearch : "" %>">
-                                    <input type="hidden" name="status" value="<%= currentStatus != null ? currentStatus : "ALL" %>">
-                                    <input type="hidden" name="page" value="<%= currentPage %>">
+                        <c:choose>
+                            <c:when test="${not empty result.items}">
+                                <c:forEach items="${result.items}" var="c">
+                                    <c:set var="isActive" value="${c.status == 'ACTIVE'}" />
+                                    <tr>
+                                        <td>
+                                            <strong style="color: #F8FAFC; font-size: 15px;">${c.centreName}</strong>
+                                        </td>
+                                        <td>
+                                            <div style="color: #F8FAFC;">${c.address}</div>
+                                            <c:if test="${not empty c.city}">
+                                                <small style="color: #94A3B8;">${c.city}</small>
+                                            </c:if>
+                                        </td>
+                                        <td>
+                                            <c:choose>
+                                                <c:when test="${not empty c.phone}">
+                                                    <span style="color: #F8FAFC;">${c.phone}</span>
+                                                </c:when>
+                                                <c:otherwise>
+                                                    <span style="color: #94A3B8;">Chưa có</span>
+                                                </c:otherwise>
+                                            </c:choose>
+                                        </td>
+                                        <td>
+                                            <span class="cf-badge cf-badge-halls" style="cursor: default;">
+                                                <span>🎬</span>
+                                                <span>${c.hallCount} Phòng (${c.seatCount} ghế)</span>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <c:choose>
+                                                <c:when test="${isActive}">
+                                                    <span class="cf-badge cf-badge-active">● Hoạt động</span>
+                                                </c:when>
+                                                <c:otherwise>
+                                                    <span class="cf-badge cf-badge-inactive">● Tạm ngưng</span>
+                                                </c:otherwise>
+                                            </c:choose>
+                                        </td>
+                                        <td style="text-align: right;">
+                                            <div class="cf-actions" style="justify-content: flex-end;">
+<%--------- SỬA--%>
+                                                <a href="${baseUrl}?action=edit&centreId=${c.centreId}" class="cf-btn cf-btn-secondary cf-btn-sm">
+                                                    Sửa
+                                                </a>
+<!-- Nút Toggle Status (Bật / Tắt trạng thái) -->                                           
+                                                <form method="POST" action="${baseUrl}" style="display: inline-block; margin: 0;">
+                                                    <input type="hidden" name="action" value="toggleStatus">
+                                                    <input type="hidden" name="centreId" value="${c.centreId}">
+                                                    <%-- gửi action và centrerid --%>
+                                                    <input type="hidden" name="back" value="${backQuery}">
+                                                    <input type="hidden" name="search" value="${currentSearch}">
+                                                    <input type="hidden" name="status" value="${currentStatus}">
+                                                    <input type="hidden" name="page" value="${result.page}">
 
-                                    <select name="newStatus" class="cf-status-badge-select <%= badgeStatusClass %>"
-                                            onchange="handleCentreStatusChange(this, '<%= c.getCentreName() != null ? c.getCentreName().replace("'", "\\'") : "" %>', '<%= cStat %>')"
-                                            title="Bấm để thay đổi trạng thái cụm rạp">
-                                        <option value="ACTIVE" <%= "ACTIVE".equals(cStat) ? "selected" : "" %>>Hoạt động</option>
-                                        <option value="SUSPENDED" <%= "SUSPENDED".equals(cStat) ? "selected" : "" %> <%= "INACTIVE".equals(cStat) ? "disabled" : "" %>>Tạm ngưng<%= "INACTIVE".equals(cStat) ? " (Cần Active)" : "" %></option>
-                                        <option value="INACTIVE" <%= "INACTIVE".equals(cStat) ? "selected" : "" %>>Ngừng HĐ</option>
-                                    </select>
-                                </form>
-                            </td>
-                            <td style="text-align: center;">
-                                <div class="cf-actions" style="justify-content: center;">
-                                    <!-- Nút Sửa -->
-                                    <button type="button" class="cf-btn cf-btn-secondary cf-btn-sm"
-                                            onclick="openEditCentreModal(<%= c.getCentreId() %>, '<%= c.getCentreName() != null ? c.getCentreName().replace("'", "\\'") : "" %>', '<%= c.getAddress() != null ? c.getAddress().replace("'", "\\'") : "" %>', '<%= c.getPhone() != null ? c.getPhone().replace("'", "\\'") : "" %>', '<%= c.getCity() != null ? c.getCity().replace("'", "\\'") : "" %>')">
-                                        Sửa
-                                    </button>
-
-                                </div>
-                            </td>
-                        </tr>
-                        <%
-                                }
-                            } else {
-                        %>
-                        <tr>
-                            <td colspan="7" style="text-align: center; padding: 40px; color: #94A3B8;">
-                                Không tìm thấy Cụm rạp nào phù hợp với điều kiện tìm kiếm.
-                            </td>
-                        </tr>
-                        <% } %>
+                                                    <c:choose>
+                                                        <c:when test="${isActive}">
+                                                            <button type="submit" class="cf-btn cf-btn-danger cf-btn-sm" title="Tạm ngưng hoạt động cụm rạp">
+                                                                Tắt
+                                                            </button>
+                                                        </c:when>
+                                                        <c:otherwise>
+                                                            <button type="submit" class="cf-btn cf-btn-primary cf-btn-sm" style="background: #16A34A; border-color: #16A34A;" title="Kích hoạt lại cụm rạp">
+                                                                Bật
+                                                            </button>
+                                                        </c:otherwise>
+                                                    </c:choose>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </c:forEach>
+                            </c:when>
+                            <c:otherwise>
+                                <tr>
+                                    <td colspan="6" style="text-align: center; padding: 40px; color: #94A3B8;">
+                                        Không tìm thấy Cụm rạp nào phù hợp với điều kiện tìm kiếm.
+                                    </td>
+                                </tr>
+                            </c:otherwise>
+                        </c:choose>
                     </tbody>
                 </table>
 
@@ -285,114 +249,6 @@
                 alert.style.opacity = "0";
                 setTimeout(function () { alert.remove(); }, 400);
             }, 3500);
-        });
-    });
-
-    // Mở / Đóng Modal Thêm Centre
-    function openCreateCentreModal() {
-        document.getElementById('createCentreModal').classList.add('active');
-    }
-    function closeCreateCentreModal() {
-        document.getElementById('createCentreModal').classList.remove('active');
-    }
-
-    // Mở / Đóng Modal Sửa Centre
-    function openEditCentreModal(id, name, address, phone, city) {
-        document.getElementById('editCentreId').value = id;
-        document.getElementById('editCentreName').value = name;
-        document.getElementById('editAddress').value = address;
-        document.getElementById('editPhone').value = phone;
-        document.getElementById('editCity').value = city;
-        document.getElementById('editCentreModal').classList.add('active');
-    }
-    function closeEditCentreModal() {
-        document.getElementById('editCentreModal').classList.remove('active');
-    }
-
-    // Xử lý chuyển trạng thái cụm rạp từ dropdown trực tiếp ở cột Trạng thái
-    function handleCentreStatusChange(selectElem, centreName, currentStatus) {
-        var newStatus = selectElem.value;
-        var originalVal = currentStatus;
-        if (!newStatus || newStatus === originalVal) {
-            selectElem.value = originalVal;
-            return;
-        }
-
-        var message = "";
-        if (newStatus === 'ACTIVE') {
-            if (currentStatus === 'SUSPENDED') {
-                message = "Khôi phục cụm rạp \"" + centreName + "\" sang HOẠT ĐỘNG (ACTIVE)?\n\nCác phân phối phim chưa hết hạn chiếu sẽ được tự động khôi phục.";
-            } else {
-                message = "Kích hoạt lại cụm rạp \"" + centreName + "\" sang HOẠT ĐỘNG (ACTIVE)?\n\nLưu ý: Các phân phối phim đã bị hủy trước đó sẽ không tự khôi phục, bạn cần phân phối lại.";
-            }
-        } else if (newStatus === 'SUSPENDED') {
-            message = "Xác nhận chuyển cụm rạp \"" + centreName + "\" sang TẠM NGƯNG (SUSPENDED)?\n\nCác phân phối phim đang hiệu lực tại rạp sẽ tạm ngưng.\nToàn bộ suất chiếu chưa bắt đầu và vé đã bán của các suất đó sẽ bị HUỶ; khách liên hệ hotline để được hoàn tiền.";
-        } else if (newStatus === 'INACTIVE') {
-            message = "CẢNH BÁO: Chuyển cụm rạp \"" + centreName + "\" sang NGỪNG HOẠT ĐỘNG (INACTIVE)?\n\nToàn bộ phân phối phim của rạp sẽ bị HỦY (CANCELLED).\nToàn bộ suất chiếu chưa bắt đầu và vé đã bán của các suất đó sẽ bị HUỶ; khách liên hệ hotline để được hoàn tiền.";
-        }
-
-        if (confirm(message)) {
-            selectElem.form.submit();
-        } else {
-            selectElem.value = originalVal;
-        }
-    }
-
-    // BR-HS-01: Mở Modal xem danh sách các Hall trực thuộc Centre
-    function openViewHallsModal(centreId, centreName) {
-        document.getElementById('viewHallsTitle').innerText = "Danh sách phòng chiếu - " + centreName;
-        document.getElementById('hallsLoading').style.display = 'block';
-        document.getElementById('hallsContent').style.display = 'none';
-        document.getElementById('viewHallsModal').classList.add('active');
-
-        // Gọi AJAX lấy danh sách Hall của Centre
-        fetch('${pageContext.request.contextPath}/admin/centres?action=getHalls&centreId=' + centreId)
-            .then(function(res) { return res.json(); })
-            .then(function(data) {
-                var tbody = document.getElementById('hallsTableBody');
-                tbody.innerHTML = '';
-
-                if (!data || data.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 24px; color: #94A3B8;">Cụm rạp này hiện chưa có phòng chiếu nào trực thuộc.</td></tr>';
-                } else {
-                    data.forEach(function(hall, index) {
-                        var statusBadge = '';
-                        if (hall.status === 'AVAILABLE') {
-                            statusBadge = '<span class="cf-badge cf-badge-active">Hoạt động</span>';
-                        } else if (hall.status === 'MAINTENANCE') {
-                            statusBadge = '<span class="cf-badge" style="background: rgba(245, 158, 11, 0.15); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.35);">Bảo trì</span>';
-                        } else {
-                            statusBadge = '<span class="cf-badge cf-badge-inactive">Tạm ngưng</span>';
-                        }
-
-                        var tr = document.createElement('tr');
-                        tr.innerHTML = '<td><strong>#' + (index + 1) + '</strong></td>'
-                                     + '<td><strong style="color: #F8FAFC;">' + hall.hallName + '</strong></td>'
-                                     + '<td><span class="cf-badge" style="background: rgba(56, 189, 248, 0.15); color: #38BDF8; border: 1px solid rgba(56, 189, 248, 0.3);">' + hall.hallType + '</span></td>'
-                                     + '<td><strong style="color: #F8FAFC;">' + hall.capacity + '</strong> ghế</td>'
-                                     + '<td>' + statusBadge + '</td>';
-                        tbody.appendChild(tr);
-                    });
-                }
-
-                document.getElementById('hallsLoading').style.display = 'none';
-                document.getElementById('hallsContent').style.display = 'block';
-            })
-            .catch(function(err) {
-                console.error(err);
-                document.getElementById('hallsLoading').innerHTML = '<span style="color: #DC2626;">Không thể tải danh sách phòng chiếu. Vui lòng thử lại sau!</span>';
-            });
-    }
-    function closeViewHallsModal() {
-        document.getElementById('viewHallsModal').classList.remove('active');
-    }
-
-    // Đóng modal khi click ra ngoài backdrop
-    document.querySelectorAll('.cf-modal-backdrop').forEach(function(modal) {
-        modal.addEventListener('click', function(e) {
-            if (e.target === this) {
-                this.classList.remove('active');
-            }
         });
     });
 </script>
