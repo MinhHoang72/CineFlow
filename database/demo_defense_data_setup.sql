@@ -13,6 +13,13 @@ PRINT N'>>> BẮT ĐẦU CẤU HÌNH DỮ LIỆU TEST BẢO VỆ...';
 -- =========================================================================================
 PRINT N'1. Đang cấu hình test case Phòng chiếu 01 (Cầu Giấy)...';
 
+-- Đảm bảo bảng BookingSeats có cột ShowtimeID (tránh lỗi 500 khi vào sơ đồ ghế)
+IF COL_LENGTH('BookingSeats', 'ShowtimeID') IS NULL
+BEGIN
+    ALTER TABLE BookingSeats ADD ShowtimeID INT NULL;
+    EXEC('UPDATE bs SET bs.ShowtimeID = b.ShowtimeID FROM BookingSeats bs JOIN Bookings b ON b.BookingID = bs.BookingID');
+END
+
 -- 1.1 Đảm bảo Cụm rạp Cầu Giấy và các phòng test đang ở trạng thái Hoạt động
 UPDATE Centres SET Status = 'ACTIVE' WHERE CentreID = 1;
 UPDATE Halls SET Status = 'AVAILABLE' WHERE HallID IN (1, 2, 61, 62);
