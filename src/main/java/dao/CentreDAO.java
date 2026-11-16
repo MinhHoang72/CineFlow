@@ -638,24 +638,15 @@ public class CentreDAO {
     }
 
     /**
-     * Toggle Status: Bật/tắt trạng thái (Active / Inactive) của Centre.
-     * Quy tắc nghiệp vụ: Nếu Inactive, các Hall và Suất chiếu của Centre này sẽ tự động
-     * tạm ngưng hoạt động trên luồng đặt vé (vì luồng đặt vé ShowtimeDAO ràng buộc b.Status = 'ACTIVE').
-     *
-     * @param centreId mã định danh rạp cần bật/tắt trạng thái
-     * @return true nếu đổi trạng thái thành công, ngược lại false
+     * Bật/tắt nhanh trạng thái (tương thích ngược với các lời gọi cũ).
      */
     public boolean toggleStatus(int centreId) {
-        String sql = "UPDATE Centres "
-                   + "SET Status = CASE WHEN UPPER(Status) = 'ACTIVE' THEN 'INACTIVE' ELSE 'ACTIVE' END, "
-                   + "    UpdatedAt = GETDATE() "
-                   + "WHERE CentreID = ?";
-
-        try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setInt(1, centreId);
-            return ps.executeUpdate() > 0;
+        Centre centre = getCentreById(centreId);
+        if (centre == null) return false;
+        String current = centre.getStatus();
+        String target = "ACTIVE".equalsIgnoreCase(current) ? "SUSPENDED" : "ACTIVE";
+        try {
+            return changeStatus(centreId, current, target, "Admin", "Toggle status qua giao diện");
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
