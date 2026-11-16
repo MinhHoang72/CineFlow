@@ -102,13 +102,6 @@
                     </div>
                 </div>
                 <div class="cf-stat-card">
-                    <div class="cf-stat-icon" style="background: rgba(239,68,68,.12); color: #F87171;">■</div>
-                    <div class="cf-stat-info">
-                        <h3>${inactiveCentres != null ? inactiveCentres : 0}</h3>
-                        <p>Ngừng hoạt động</p>
-                    </div>
-                </div>
-                <div class="cf-stat-card">
                     <div class="cf-stat-icon info">🎬</div>
                     <div class="cf-stat-info">
                         <h3>${totalHalls != null ? totalHalls : 0}</h3>
@@ -149,7 +142,7 @@
                             <th style="min-width: 130px;">Hotline</th>
                             <th style="min-width: 170px;">Phòng chiếu trực thuộc</th>
                             <th style="min-width: 120px;">Trạng thái</th>
-                            <th style="min-width: 310px; text-align: right;">Thao tác / trạng thái</th>
+                            <th style="min-width: 190px; text-align: right;">Thao tác</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -207,17 +200,27 @@
                                                 <a href="${baseUrl}?action=edit&centreId=${c.centreId}" class="cf-btn cf-btn-secondary cf-btn-sm">
                                                     Sửa
                                                 </a>
-                                                <form method="POST" action="${baseUrl}" style="display: inline-flex; align-items: center; gap: 6px; margin: 0;"
-                                                      onsubmit="return confirm('Xác nhận cập nhật trạng thái cụm rạp? Việc tạm ngưng hoặc ngừng hoạt động có thể hủy các suất chiếu tương lai và vé liên quan.');">
-                                                    <input type="hidden" name="action" value="changeStatus">
+<!-- Nút Toggle Status (Bật / Tắt trạng thái) -->                                           
+                                                <form method="POST" action="${baseUrl}" style="display: inline-block; margin: 0;">
+                                                    <input type="hidden" name="action" value="toggleStatus">
                                                     <input type="hidden" name="centreId" value="${c.centreId}">
                                                     <input type="hidden" name="back" value="${backQuery}">
-                                                    <select name="targetStatus" class="cf-select" aria-label="Trạng thái cụm rạp" style="min-width: 155px; padding: 7px 26px 7px 9px;">
-                                                        <option value="ACTIVE" ${isActive ? 'selected' : ''}>ACTIVE</option>
-                                                        <option value="SUSPENDED" ${isSuspended ? 'selected' : ''}>SUSPENDED</option>
-                                                        <option value="INACTIVE" ${isInactive ? 'selected' : ''}>INACTIVE</option>
-                                                    </select>
-                                                    <button type="submit" class="cf-btn cf-btn-primary cf-btn-sm">Lưu</button>
+                                                    <input type="hidden" name="search" value="${currentSearch}">
+                                                    <input type="hidden" name="status" value="${currentStatus}">
+                                                    <input type="hidden" name="page" value="${result.page}">
+
+                                                    <c:choose>
+                                                        <c:when test="${isActive}">
+                                                            <button type="submit" class="cf-btn cf-btn-danger cf-btn-sm" title="Tạm ngưng hoạt động cụm rạp">
+                                                                Tắt
+                                                            </button>
+                                                        </c:when>
+                                                        <c:otherwise>
+                                                            <button type="submit" class="cf-btn cf-btn-primary cf-btn-sm" style="background: #16A34A; border-color: #16A34A;" title="Kích hoạt lại cụm rạp">
+                                                                Bật
+                                                            </button>
+                                                        </c:otherwise>
+                                                    </c:choose>
                                                 </form>
                                             </div>
                                         </td>
