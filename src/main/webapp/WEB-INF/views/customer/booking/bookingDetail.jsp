@@ -30,11 +30,11 @@
 <%-- Suat chieu bi huy (rap dong cua): ve het hieu luc, khach lien he de duoc hoan tien. --%>
 <c:if test="${showtimeCancelled}">
     <div class="alert alert-danger mb-3" role="alert">
-        <strong>Suất chiếu đã bị huỷ</strong> do rạp tạm ngưng hoạt động, vé của đơn này không còn hiệu lực.
-        <c:if test="${not empty tickets}">
-            <br>Để được hoàn tiền, vui lòng liên hệ hotline <strong>1900 6868</strong> hoặc email <strong>cskh@cineflow.vn</strong>
-            kèm mã đơn <code><c:out value="${booking.code}"/></code>.
-        </c:if>
+        <strong>Suất chiếu đã bị huỷ</strong>, vé của đơn này không còn hiệu lực.
+        <br>Để được hỗ trợ và đối soát hoàn tiền, vui lòng liên hệ
+        <a href="${ctx}/support">Trung tâm hỗ trợ</a> hoặc hotline <strong>1900 6868</strong>,
+        email <strong>cskh@cineflow.vn</strong> và cung cấp mã đơn
+        <code><c:out value="${booking.code}"/></code>.
     </div>
 </c:if>
 

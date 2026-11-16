@@ -462,6 +462,24 @@ public class MovieDAO {
         try (Connection connection = DBContext.getConnection()) {
             connection.setAutoCommit(false);
             try {
+                // Capture centres that are about to lose distribution so their upcoming
+                // showtimes and existing bookings are cancelled in the same transaction.
+                List<Integer> removedCentreIds = new ArrayList<>();
+                String currentSql = "SELECT CentreID FROM CentreMovies WHERE MovieID = ? AND Status IN ('ACTIVE', 'SUSPENDED')";
+                try (PreparedStatement current = connection.prepareStatement(currentSql)) {
+                    current.setInt(1, movieId);
+                    try (ResultSet rs = current.executeQuery()) {
+                        while (rs.next()) {
+                            int centreId = rs.getInt(1);
+                            if (selectedCentreIDs == null || !selectedCentreIDs.contains(centreId)) removedCentreIds.add(centreId);
+                        }
+                    }
+                }
+
+                for (Integer centreId : removedCentreIds) {
+                    cancelUpcomingShowtimesForDistribution(connection, movieId, centreId);
+                }
+
                 try (PreparedStatement disable = connection.prepareStatement(disableAllSql)) {
                     disable.setInt(1, movieId);
                     disable.executeUpdate();
@@ -488,6 +506,29 @@ public class MovieDAO {
         } catch (Exception exception) {
             exception.printStackTrace();
             return false;
+        }
+    }
+
+    /** Cancel future showtimes and invalidate associated tickets when a movie is undistributed. */
+    private void cancelUpcomingShowtimesForDistribution(Connection connection, int movieId, int centreId)
+            throws SQLException {
+        String target = "IN (SELECT s.ShowtimeID FROM Showtimes s JOIN Halls h ON h.HallID=s.HallID "
+                + "WHERE s.MovieID=? AND h.CentreID=? AND s.Status='SCHEDULED' AND s.StartTime>SYSDATETIME())";
+        String bookings = "IN (SELECT BookingID FROM Bookings WHERE ShowtimeID " + target + ")";
+        String[] statements = {
+            "UPDATE t SET t.TicketStatus='CANCELLED' FROM Tickets t JOIN BookingSeats bs ON bs.BookingSeatID=t.BookingSeatID WHERE t.TicketStatus='VALID' AND bs.ShowtimeID " + target,
+            "UPDATE BookingSeats SET SeatStatus='CANCELLED' WHERE SeatStatus IN ('HELD','CONFIRMED') AND ShowtimeID " + target,
+            "UPDATE Payments SET PaymentStatus='CANCELLED' WHERE PaymentStatus='PENDING' AND BookingID " + bookings,
+            "UPDATE FnbOrders SET OrderStatus='CANCELLED',UpdatedAt=SYSDATETIME() WHERE OrderStatus<>'CANCELLED' AND BookingID " + bookings,
+            "UPDATE Bookings SET BookingStatus='CANCELLED',UpdatedAt=SYSDATETIME() WHERE BookingStatus IN ('PENDING','CONFIRMED') AND ShowtimeID " + target,
+            "UPDATE Showtimes SET Status='CANCELLED',UpdatedAt=SYSDATETIME() WHERE ShowtimeID " + target
+        };
+        for (String sql : statements) {
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                ps.setInt(1, movieId);
+                ps.setInt(2, centreId);
+                ps.executeUpdate();
+            }
         }
     }
 

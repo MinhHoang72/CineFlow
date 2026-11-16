@@ -143,7 +143,7 @@ public class ShowtimeDAO {
 
     static final String SELECT =
             "SELECT s.ShowtimeID, s.MovieID, m.Title, b.CentreID, b.CentreName, h.HallID, h.HallName, "
-          + "       h.HallType, s.StartTime, s.EndTime, " + TICKET_PRICE + " AS TicketPrice "
+          + "       h.HallType, s.StartTime, s.EndTime, s.Status, " + TICKET_PRICE + " AS TicketPrice "
           + "FROM Showtimes s "
           + "JOIN Movies m ON m.MovieID = s.MovieID "
           + "JOIN Halls h ON h.HallID = s.HallID "
@@ -158,10 +158,12 @@ public class ShowtimeDAO {
           + "AND " + CENTRE_BASE_PRICE + " IS NOT NULL ";
 
     static Showtime map(ResultSet rs) throws SQLException {
-        return new Showtime(rs.getInt("ShowtimeID"), rs.getInt("MovieID"), rs.getString("Title"),
+        Showtime showtime = new Showtime(rs.getInt("ShowtimeID"), rs.getInt("MovieID"), rs.getString("Title"),
                 rs.getInt("CentreID"), rs.getString("CentreName"), rs.getInt("HallID"),
                 rs.getString("HallName"), rs.getString("HallType"), rs.getTimestamp("StartTime"),
                 rs.getTimestamp("EndTime"), rs.getBigDecimal("TicketPrice"));
+        showtime.setStatus(rs.getString("Status"));
+        return showtime;
     }
 
     /** Cac ngay con suat chieu cua phim tai chi nhanh. */

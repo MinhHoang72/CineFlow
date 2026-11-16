@@ -84,6 +84,19 @@ public class LoginServlet extends HttpServlet {
         session.setAttribute("userId", user.getUserId());
         session.setAttribute("role", user.getRole());
 
+        // Show a one-time notice after customer login when a previously purchased
+        // booking belongs to a showtime that has since been cancelled.
+        if ("CUSTOMER".equalsIgnoreCase(user.getRole())) {
+            java.util.List<model.dto.booking.BookingHistoryDTO> cancelledBookings = userDAO
+                    .getBookingHistory(user.getUserId()).stream()
+                    .filter(model.dto.booking.BookingHistoryDTO::isShowtimeCancelled)
+                    .filter(model.dto.booking.BookingHistoryDTO::isPaidTicketCancelled)
+                    .toList();
+            if (!cancelledBookings.isEmpty()) {
+                session.setAttribute("loginShowtimeCancellationNotices", cancelledBookings);
+            }
+        }
+
         // 8. Cập nhật thời điểm đăng nhập gần nhất (Last Login) vào cơ sở dữ liệu
         userDAO.updateLastLogin(user.getUserId());
 

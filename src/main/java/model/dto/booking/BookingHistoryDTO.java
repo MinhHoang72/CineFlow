@@ -21,6 +21,7 @@ public class BookingHistoryDTO {
     private Timestamp createdAt;
     /** Trạng thái suất chiếu; CANCELLED khi rạp đóng cửa và đơn bị huỷ theo. */
     private String showtimeStatus;
+    private boolean paidTicketCancelled;
 
     public BookingHistoryDTO() {
     }
@@ -42,6 +43,8 @@ public class BookingHistoryDTO {
 
     /** Đơn bị huỷ vì suất chiếu bị huỷ (rạp đóng cửa), khác với khách tự huỷ đơn chưa thanh toán. */
     public boolean isShowtimeCancelled() { return "CANCELLED".equalsIgnoreCase(showtimeStatus); }
+    public boolean isPaidTicketCancelled() { return paidTicketCancelled; }
+    public void setPaidTicketCancelled(boolean paidTicketCancelled) { this.paidTicketCancelled = paidTicketCancelled; }
 
     public int getBookingId() { return bookingId; }
     public void setBookingId(int bookingId) { this.bookingId = bookingId; }

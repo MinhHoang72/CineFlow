@@ -521,7 +521,12 @@ public class UserDAO {
      */
     public List<BookingHistoryDTO> getBookingHistory(int userId) {
         String sql = "SELECT b.BookingID, b.BookingCode, m.Title, br.CentreName, s.StartTime, "
-                + "b.BookingStatus, b.TotalAmount, b.CreatedAt, s.Status AS ShowtimeStatus, "
+                + "b.BookingStatus, b.TotalAmount, b.CreatedAt, "
+                + "CASE WHEN s.Status = 'CANCELLED' OR cm.Status = 'CANCELLED' "
+                + "THEN 'CANCELLED' ELSE s.Status END AS ShowtimeStatus, "
+                + "CASE WHEN EXISTS (SELECT 1 FROM Payments p WHERE p.BookingID = b.BookingID AND p.PaymentStatus = 'PAID') "
+                + "AND EXISTS (SELECT 1 FROM BookingSeats bs JOIN Tickets t ON t.BookingSeatID = bs.BookingSeatID "
+                + "WHERE bs.BookingID = b.BookingID AND t.TicketStatus = 'CANCELLED') THEN 1 ELSE 0 END AS PaidTicketCancelled, "
                 // Don cho thanh toan con trong thoi gian giu ghe (de hien nut Thanh toan)
                 + "CASE WHEN b.BookingStatus = 'PENDING' AND EXISTS (SELECT 1 FROM BookingSeats bs "
                 + "  WHERE bs.BookingID = b.BookingID AND bs.SeatStatus = 'HELD' AND bs.HoldUntil > SYSDATETIME()) "
@@ -531,6 +536,7 @@ public class UserDAO {
                 + "JOIN Movies m ON m.MovieID = s.MovieID "
                 + "JOIN Halls h ON h.HallID = s.HallID "
                 + "JOIN Centres br ON br.CentreID = h.CentreID "
+                + "LEFT JOIN CentreMovies cm ON cm.MovieID = s.MovieID AND cm.CentreID = h.CentreID "
                 + "WHERE b.UserID = ? ORDER BY b.CreatedAt DESC";
         List<BookingHistoryDTO> history = new ArrayList<>();
         try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -548,6 +554,7 @@ public class UserDAO {
                     item.setTotalAmount(rs.getBigDecimal("TotalAmount"));
                     item.setCreatedAt(rs.getTimestamp("CreatedAt"));
                     item.setShowtimeStatus(rs.getString("ShowtimeStatus"));
+                    item.setPaidTicketCancelled(rs.getInt("PaidTicketCancelled") == 1);
                     history.add(item);
                 }
             }
