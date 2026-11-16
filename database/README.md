@@ -1,16 +1,25 @@
 # HƯỚNG DẪN CƠ SỞ DỮ LIỆU CINEFLOW (SQL SERVER)
 
-Cơ sở dữ liệu hệ thống **CineFlow - Multi-Centre Cinema Management System** đã được chuẩn hóa và hợp nhất toàn diện thành **1 File Master duy nhất**.
+Cơ sở dữ liệu hệ thống **CineFlow - Multi-Centre Cinema Management System** đã được chuẩn hóa, dọn dẹp và hợp nhất toàn diện thành **1 File Master duy nhất**: `CineFlowDB.sql`.
 
 ---
 
 ## 1. Khởi tạo Cơ sở dữ liệu (All-in-One Master)
 
 Chỉ cần thực hiện **1 bước duy nhất**:
-1. Mở file **`database/CineFlow.sql`** bằng **SQL Server Management Studio (SSMS)** hoặc **Azure Data Studio**.
+1. Mở file **`database/CineFlowDB.sql`** bằng **SQL Server Management Studio (SSMS)** hoặc **Azure Data Studio**.
 2. Nhấn phím **F5** (hoặc nút **Execute**) để khởi chạy.
 
-> **Tự động hóa hoàn toàn:** Script sẽ tự động xóa CSDL cũ (nếu có), tạo mới `CineFlowDB`, thiết lập đầy đủ các bảng, quan hệ khóa ngoại, ràng buộc nghiệp vụ, và nạp toàn bộ dữ liệu mẫu (16 cụm rạp, 64 phòng chiếu, hàng ngàn ghế, suất chiếu, giá vé chi nhánh & khung giờ, F&B bắp nước, 204 Vouchers, 15 nhân viên, vé đặt).
+> **Tự động hóa hoàn toàn (Chỉ mất khoảng 10-15 giây):**
+> - Tự động xóa CSDL cũ (nếu tồn tại) và tạo mới database `CineFlowDB` hoàn chỉnh.
+> - Thiết lập toàn bộ 30 bảng thực thể, quan hệ khóa ngoại, ràng buộc nghiệp vụ, view, function và stored procedure.
+> - Nạp đầy đủ dữ liệu mẫu chuẩn hóa:
+>   - **16 Cụm rạp**: Bao gồm rạp Cầu Giấy, Hà Đông, Hoàn Kiếm, Quận 1...
+>   - **70+ Phòng chiếu**: Đầy đủ 2D, 3D, IMAX Laser, VIP Lounge... với cấu hình phân trang quản lý (>6 phòng).
+>   - **Sơ đồ ghế chuẩn**: Phòng 01 Cầu Giấy chuẩn 56 ghế (7 hàng A-G x 10 cột, hàng cuối Sweetbox đôi ghép cặp, 2 cột lối đi ở giữa).
+>   - **Suất chiếu & Bảng giá**: Cơ chế giá động theo cụm rạp, khung giờ, loại phòng, loại ghế và phim.
+>   - **204+ Vouchers**: Bao gồm 6 voucher thật toàn hệ thống hiển thị khối Tin mới trang chủ (`/home`), 20 voucher demo thực tế cho Manager Cầu Giấy và 20 voucher cho Admin.
+>   - **Kịch bản Demo bảo vệ**: Tích hợp sẵn test case suất chiếu tương lai có vé đặt `CONFIRMED` cho Phòng 01 và Phòng 61 để kiểm tra logic chặn đóng phòng chiếu khi có vé bán trước.
 
 ---
 
@@ -25,16 +34,19 @@ Default Password: 123 (hoặc mật khẩu SQL Server của máy bạn)
 
 ---
 
-## 3. Sau khi pull code mới: chạy lại `CineFlow.sql`
+## 3. Chạy qua dòng lệnh (Command Line)
 
-Từ ngày 16/11/2026, mọi thay đổi CSDL của nhóm đã được gộp vào **`database/CineFlow.sql`** (giá chốt theo suất chiếu, bỏ soát vé và đánh giá phim, hàng ghế Sweetbox Phòng 01 Cầu Giấy và giá Sweetbox, voucher trang chủ, dữ liệu demo bảo vệ, 7 phòng demo phân trang, voucher TEST01–TEST12). Không còn file patch riêng.
+Nếu không dùng SSMS, bạn có thể chạy bằng công cụ `sqlcmd` với cờ `-I` và mã hóa UTF-8 `-f 65001`:
 
-Nếu ứng dụng báo lỗi 500 sau khi pull, nhiều khả năng CSDL trên máy đang cũ hơn code: chạy lại `CineFlow.sql` (script tự xoá và tạo lại CineFlowDB, dữ liệu test cũ trên máy sẽ mất), rồi Clean and Build và chạy lại Tomcat.
+```bash
+sqlcmd -S localhost -U sa -P 123 -C -I -f 65001 -i database/CineFlowDB.sql
+```
 
-Khi thêm hoặc sửa dữ liệu dùng chung, ghi thẳng vào `CineFlow.sql` thay vì sửa trên giao diện hoặc tạo file patch riêng, để máy nào cũng có cùng dữ liệu.
 
----
+## 4. Đồng bộ sau khi pull
 
-## 4. Dữ liệu demo bảo vệ
-
-Dữ liệu demo bảo vệ (đơn test để thử chặn tắt phòng chiếu, tên voucher demo) đã nằm trong `CineFlow.sql`. File `database/demo_defense_data_setup.sql` vẫn giữ để chạy lại riêng phần này khi cần làm mới dữ liệu demo (ví dụ đưa suất test về 7 ngày sau thời điểm demo).
+Toàn bộ schema, bảng giá chốt, dữ liệu demo phòng chiếu, voucher và dữ liệu bảo vệ nằm trong `CineFlowDB.sql`.
+Các bản sửa voucher trên main và phòng 02 không có booking tương lai để demo đã được giữ lại khi hợp nhất.
+Script khởi tạo sẽ xóa và tạo lại database; sao lưu dữ liệu cần giữ trước khi chạy.
+Sau khi cập nhật database, Clean and Build rồi triển khai lại ứng dụng.
+Không cần chạy các file patch cũ đã được gộp vào master.

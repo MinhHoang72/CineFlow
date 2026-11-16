@@ -1,4 +1,4 @@
-/* ====================================================================================
+﻿/* ====================================================================================
    CINEFLOW - MULTI-CENTRE CINEMA MANAGEMENT SYSTEM
    DATABASE: MICROSOFT SQL SERVER
    PHIÊN BẢN: 2.0 (MASTER ALL-IN-ONE CONSOLIDATED SCRIPT)
@@ -24790,7 +24790,7 @@ GO
 -- PHAN BO SUNG: PRICING & SALE LIFECYCLE (MIGRATION)
 -- ==========================================================
 
-/* Apply after CineFlow.sql (or Cine_Flow.sql). No business rows are deleted.
+/* Apply after CineFlowDB.sql (or Cine_Flow.sql). No business rows are deleted.
    Existing global seat/hall policies are copied for each centre, time policies retain their centre.
    Run with a client that stops on SQL errors. The transaction spans GO batches.
    Keep this patch with the application release; rerunning it does not recopy legacy policies. */
@@ -25081,6 +25081,21 @@ UPDATE Users SET CentreID = 1 WHERE Account = 'manager' OR Email = 'manager@gmai
 -- 4.2 Đảm bảo Cụm rạp Cầu Giấy và các phòng test đang ở trạng thái Hoạt động
 UPDATE Centres SET Status = 'ACTIVE' WHERE CentreID = 1;
 UPDATE Halls SET Status = 'AVAILABLE' WHERE HallID IN (1, 2, 61, 62);
+
+-- Đảm bảo Phòng 02 KHÔNG có vé tương lai (để làm phòng đối chứng tắt thành công)
+DECLARE @Bk2 TABLE (BookingID INT);
+INSERT INTO @Bk2 
+SELECT b.BookingID 
+FROM Bookings b 
+JOIN Showtimes s ON s.ShowtimeID = b.ShowtimeID 
+WHERE s.HallID = 2 AND s.StartTime > GETDATE();
+
+DELETE t FROM Tickets t JOIN BookingSeats bs ON bs.BookingSeatID = t.BookingSeatID WHERE bs.BookingID IN (SELECT BookingID FROM @Bk2);
+DELETE FROM BookingSeats WHERE BookingID IN (SELECT BookingID FROM @Bk2);
+DELETE FROM Payments WHERE BookingID IN (SELECT BookingID FROM @Bk2);
+DELETE FROM FnbOrders WHERE BookingID IN (SELECT BookingID FROM @Bk2);
+DELETE FROM VoucherUsages WHERE BookingID IN (SELECT BookingID FROM @Bk2);
+DELETE FROM Bookings WHERE BookingID IN (SELECT BookingID FROM @Bk2);
 
 -- 4.3 Cấu hình suất chiếu tương lai + vé CONFIRMED cho Phòng 01 (HallID = 1)
 DECLARE @ShowtimeID_Hall1 INT;
