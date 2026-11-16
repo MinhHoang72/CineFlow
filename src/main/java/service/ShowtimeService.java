@@ -42,6 +42,7 @@ public class ShowtimeService implements ServletContextListener {
     public ShowtimeService() {
     }
 
+    /** Tạo/sửa suất trong rạp của Manager; DAO kiểm tra và chốt giá trong cùng giao dịch. */
     public void saveShowtime(HttpServletRequest request,Integer id,int movie,int hall,LocalDateTime start) throws SQLException {
         requireManager(request);
         try {
@@ -53,6 +54,7 @@ public class ShowtimeService implements ServletContextListener {
         }
     }
 
+    /** Kiểm tra quyền rồi hủy suất trong đúng rạp; DAO quyết định booking có khóa thao tác không. */
     public void cancelShowtime(HttpServletRequest request,int id) throws SQLException {
         requireManager(request);
         showtimeDAO.cancelShowtime(requireCentreId(request),id);

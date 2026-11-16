@@ -1,5 +1,6 @@
 (() => {
     'use strict';
+    // Bộ lọc bảng giá Admin chạy trên dữ liệu đã tải, hỗ trợ tìm tên rạp không dấu.
     const centreSearch = document.getElementById('cp-search');
     if (centreSearch) {
         const city = document.getElementById('cp-city'), priceState = document.getElementById('cp-price-state');
@@ -26,6 +27,7 @@
             centreSearch.value = ''; city.value = ''; priceState.value = ''; filterCentres(); centreSearch.focus();
         });
     }
+    // Dùng chung bộ lọc ngày/người cập nhật và phân trang 5 dòng cho giá cơ bản, phụ thu.
     const historyFrom = document.getElementById('bp-history-from');
     if (historyFrom) {
         const historyTo = document.getElementById('bp-history-to');
@@ -33,6 +35,7 @@
         const rows = [...document.querySelectorAll('[data-price-history]')];
         let historyPage = 1, filteredHistory = rows;
         const previous = document.getElementById('bp-history-prev'), next = document.getElementById('bp-history-next');
+        // Chỉ ẩn/hiện dòng trên trình duyệt; không thay đổi hay truy vấn lại database.
         const renderHistory = () => {
             const count = filteredHistory.length, pages = Math.max(1,Math.ceil(count / 5));
             historyPage = Math.max(1,Math.min(historyPage,pages));
@@ -63,6 +66,7 @@
         next.addEventListener('click', () => { historyPage++; renderHistory(); });
         renderHistory();
     }
+    // Form phụ thu mặc định thu gọn; nút thêm mở form ngay trong trang.
     const policyEditor = document.getElementById('policy-editor');
     const policyAdd = document.getElementById('policy-add');
     if (policyEditor && policyAdd) {
@@ -77,6 +81,7 @@
         });
         if (!policyEditor.hidden) focusEditor();
     }
+    // Định dạng tiền khi nhập; sự kiện formdata chuyển về số không có dấu phân cách khi gửi.
     const moneyInputs = [...document.querySelectorAll('[data-money]')];
     const digits = value => value.replace(/\./g, '');
     function formatMoney(input, preserveCaret = true) {
@@ -163,6 +168,7 @@
         dialog.addEventListener('close', () => open.focus());
         if (dialog.dataset.reopen === 'true') dialog.showModal();
     }
+    // Chỉ hiện và gửi ngày áp dụng khi người dùng chọn lên lịch.
     const policyMode=document.getElementById('policy-mode'),policyFrom=document.getElementById('policy-from');
     if(policyMode && policyFrom){
         const policyField=document.getElementById('policy-effective-field');
@@ -265,6 +271,7 @@
         });
         ['beforeinput','paste','drop'].forEach(name=>input.addEventListener(name,event=>{if(pickerAvailable)event.preventDefault();}));
     });
+    //xem gia cua ghe
     const inspectButtons = [...document.querySelectorAll('[data-seat-inspect]')];
     if (inspectButtons.length) {
         const byId = id => document.getElementById(id);

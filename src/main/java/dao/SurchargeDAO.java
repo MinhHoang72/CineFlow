@@ -8,6 +8,7 @@ import model.entity.Surcharge;
 
 public class SurchargeDAO extends DBContext {
 
+    /** Lấy chính sách và lịch sử theo đúng CentreID, kèm tên người cập nhật và trạng thái hiệu lực. */
     public java.util.List<java.util.Map<String,Object>> policies(int centreId,String type) throws SQLException {
         var rows=new java.util.ArrayList<java.util.Map<String,Object>>();
         try(Connection c=DBContext.getConnection();PreparedStatement ps=c.prepareStatement("SELECT p.*,u.FullName UpdatedByName,CASE WHEN p.EffectiveTo IS NOT NULL AND (p.EffectiveTo<=p.EffectiveFrom OR p.EffectiveTo<=SYSDATETIME()) THEN N'Đã kết thúc' WHEN p.EffectiveFrom>SYSDATETIME() THEN N'Chờ áp dụng' ELSE N'Đang áp dụng' END PolicyState FROM CentreSurcharges p LEFT JOIN Users u ON u.UserID=p.UpdatedBy WHERE p.CentreID=? AND p.SurchargeType=? ORDER BY p.EffectiveFrom DESC,p.SurchargeID DESC")) {
@@ -21,6 +22,7 @@ public class SurchargeDAO extends DBContext {
         return rows;
     }
 
+    /** Map mã → tên cho ô chọn đối tượng; chỉ lấy phòng, ghế, phim thuộc rạp. */
     public java.util.Map<String,String> targets(int centreId,String type) throws SQLException {
         String sql=switch(type){
             case "CENTRE" -> "SELECT CAST(CentreID AS VARCHAR(30)),CentreName FROM Centres WHERE CentreID=?";
@@ -44,6 +46,7 @@ public class SurchargeDAO extends DBContext {
         try(Connection c=DBContext.getConnection()){
             c.setAutoCommit(false);
             try{
+                // Khóa rạp trong giao dịch để hai lần cập nhật không tạo chính sách chồng lấn.
                 try(PreparedStatement ps=c.prepareStatement("SELECT CentreID FROM Centres WITH(UPDLOCK,HOLDLOCK) WHERE CentreID=?")){
                     ps.setInt(1,centreId);try(ResultSet rs=ps.executeQuery()){if(!rs.next())throw new IllegalArgumentException("Không tìm thấy cụm rạp.");}
                 }
@@ -78,6 +81,7 @@ public class SurchargeDAO extends DBContext {
         }
     }
 
+    /** Đóng hiệu lực chính sách thuộc rạp; giữ bản ghi để tra cứu lịch sử. */
     public void endPolicy(int centreId,int id) throws SQLException {
         try(Connection c=DBContext.getConnection()){
             c.setAutoCommit(false);

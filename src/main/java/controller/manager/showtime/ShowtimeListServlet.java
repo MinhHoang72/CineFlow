@@ -20,8 +20,10 @@ public class ShowtimeListServlet extends HttpServlet {
             throws ServletException, IOException {
 
         int centreId = ShowtimeService.requireCentreId(request);
+        // Tách trạng thái lọc/phân trang trên trình duyệt theo tài khoản và cụm rạp.
         request.setAttribute("showtimeListStateKey", ShowtimeService.requireUserId(request) + ":" + centreId);
 
+        // Yêu cầu kiểm tra lịch từ form trả JSON; mở trang bình thường trả JSP.
         if ("availability".equals(request.getParameter("action"))) {
             previewAvailability(request, response, centreId);
             return;

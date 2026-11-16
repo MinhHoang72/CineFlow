@@ -44,9 +44,9 @@ public class ManagerDashboardServlet extends HttpServlet {
             role = ((User) session.getAttribute("user")).getRole();
         }
 
-        if (!"MANAGER".equalsIgnoreCase(role) && !"ADMIN".equalsIgnoreCase(role)) {
+        if (!"MANAGER".equalsIgnoreCase(role)) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN,
-                    "Chỉ Quản lý (MANAGER) hoặc Quản trị viên (ADMIN) mới có quyền truy cập trang này.");
+                    "Trang này chỉ dành cho Quản lý cụm rạp (MANAGER).");
             return;
         }
 

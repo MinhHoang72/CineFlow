@@ -33,6 +33,7 @@ public class UpdateShowtimeServlet extends HttpServlet {
             int movieId = Integer.parseInt(request.getParameter("movieId"));
             int hallId = Integer.parseInt(request.getParameter("hallId"));
             LocalDateTime startTime = LocalDateTime.parse(request.getParameter("startTime"));
+            // DAO kiểm tra lại booking lúc lưu, kể cả khi khách vừa đặt sau lúc mở form sửa.
             showtimeService.saveShowtime(request,showtimeId,movieId,hallId,startTime);
             request.getSession().setAttribute("message", "Cập nhật suất chiếu #" + showtimeId + " thành công.");
         } catch (IllegalArgumentException | IllegalStateException e) {

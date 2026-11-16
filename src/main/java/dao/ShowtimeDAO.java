@@ -19,6 +19,7 @@ import java.util.List;
 public class ShowtimeDAO {
 
     /** The parent showtime lock is also taken by BookingService before it inserts a booking. */
+    // Khóa suất trước khi kiểm tra booking để không có khách đặt chen vào lúc sửa/hủy.
     private void lockEditable(Connection c,int centre,int id) throws SQLException {
         try(PreparedStatement ps=c.prepareStatement("SELECT s.Status,s.SaleState,s.StartTime FROM Showtimes s WITH(UPDLOCK,HOLDLOCK) JOIN Halls h ON h.HallID=s.HallID WHERE s.ShowtimeID=? AND h.CentreID=?")){
             ps.setInt(1,id);ps.setInt(2,centre);
@@ -34,6 +35,7 @@ public class ShowtimeDAO {
         }
     }
 
+    /** id null: tạo mới; có id: sửa. Chỉ commit khi lịch, thông tin và bảng giá đều hợp lệ. */
     public void saveShowtime(int centre,int user,Integer id,int movie,int hall,LocalDateTime start) throws SQLException {
         try(Connection c=DBContext.getConnection()){
             c.setAutoCommit(false);
@@ -68,12 +70,14 @@ public class ShowtimeDAO {
                 }
                 // Rebuild the snapshot atomically while the parent row blocks new bookings.
                 try(PreparedStatement ps=c.prepareStatement("UPDATE Showtimes SET SaleState='DRAFT',PriceLockedAt=NULL,SaleOpensAt=NULL WHERE ShowtimeID=?")){ps.setInt(1,id);ps.executeUpdate();}
+                // Chốt giá theo giờ bắt đầu chiếu và mở bán ngay; lỗi sẽ rollback cả lần lưu.
                 try(PreparedStatement ps=c.prepareStatement("EXEC dbo.CfOpenShowtime ?")){ps.setInt(1,id);ps.execute();}
                 c.commit();
             }catch(Exception e){if(!c.isClosed())c.rollback();throw e;}
         }
     }
 
+    /** Chỉ đổi trạng thái sang CANCELLED; giữ lịch chiếu và bảng giá để tra cứu. */
     public void cancelShowtime(int centre,int id) throws SQLException {
         try(Connection c=DBContext.getConnection()){
             c.setAutoCommit(false);

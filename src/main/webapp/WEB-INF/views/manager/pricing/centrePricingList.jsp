@@ -9,6 +9,7 @@
 <fmt:setLocale value="vi_VN" />
 <section class="st-panel">
     <div class="st-panel-heading"><div><h2>Bảng giá theo rạp <span class="st-count" id="cp-result-count" aria-live="polite">${fn:length(centrePrices)}</span></h2></div></div>
+    <%-- Bộ lọc bảng giá toàn hệ thống của Admin, xử lý tại trình duyệt bởi pricing.js. --%>
     <div class="bp-history-filters" role="search" aria-label="Lọc bảng giá các rạp">
         <div class="st-field"><label for="cp-search">Tên rạp</label><input id="cp-search" type="search" placeholder="Tìm theo tên rạp"></div>
         <div class="st-field"><label for="cp-city">Thành phố</label><select id="cp-city"><option value="">Tất cả</option></select></div>
@@ -18,6 +19,7 @@
     <div class="st-table-scroll" tabindex="0" role="region" aria-label="Bảng giá cơ bản tất cả rạp">
         <table class="st-table st-table-compact">
             <thead><tr><th scope="col">Rạp / Thành phố</th><th scope="col">Giá hiện tại</th><th scope="col">Người cập nhật</th><th scope="col">Giá đã lên lịch</th><th scope="col">Thao tác</th></tr></thead>
+            <%-- Mỗi dòng là một rạp; liên kết sửa truyền centreId để Admin chọn đúng bảng giá. --%>
             <tbody><c:forEach var="p" items="${centrePrices}">
                 <tr data-centre-id="${p.CentreID}" data-centre-name="<c:out value='${p.CentreName}' />" data-city="<c:out value='${p.City}' />" data-price-set="${p.BasePrice != null}" data-price-scheduled="${p.NextPrice != null}">
                     <td><strong><c:out value="${p.CentreName}" /></strong><br><small><c:out value="${p.City}" /> · <c:choose><c:when test="${p.Status == 'ACTIVE'}">Hoạt động</c:when><c:when test="${p.Status == 'SUSPENDED'}">Tạm ngưng</c:when><c:otherwise>Ngừng hoạt động</c:otherwise></c:choose></small></td>

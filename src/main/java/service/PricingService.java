@@ -8,6 +8,7 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 
 public class PricingService {
+    /** Ánh xạ URL tab thành mã loại phụ thu được lưu trong database. */
     public static String policyType(String path) {
         if(path.endsWith("centre-surcharges"))return "CENTRE";
         if(path.endsWith("hall-surcharges"))return "HALL";
@@ -17,6 +18,7 @@ public class PricingService {
         throw new IllegalArgumentException("Loại phụ thu không hợp lệ.");
     }
 
+    /** Kiểm tra dữ liệu form và ngữ cảnh người dùng trước khi DAO lưu phiên bản phụ thu. */
     public void savePolicy(jakarta.servlet.http.HttpServletRequest request) throws java.sql.SQLException {
         String type=request.getParameter("type");
         if(!java.util.Set.of("CENTRE","HALL","SEAT","MOVIE","TIME").contains(type==null?"":type))throw new IllegalArgumentException("Loại phụ thu không hợp lệ.");
@@ -24,12 +26,14 @@ public class PricingService {
         String target=request.getParameter("target"),name=request.getParameter("name");
         if(name==null||name.isBlank()||name.trim().length()>100)throw new IllegalArgumentException("Tên phụ thu phải có từ 1 đến 100 ký tự.");
         java.sql.Time start=null,end=null;
+        // Phụ thu giờ dùng khoảng [bắt đầu, kết thúc); các loại khác dùng mã đối tượng.
         if("TIME".equals(type)){
             start=java.sql.Time.valueOf(java.time.LocalTime.parse(request.getParameter("startTime")));
             end=java.sql.Time.valueOf(java.time.LocalTime.parse(request.getParameter("endTime")));
             if(!start.before(end))throw new IllegalArgumentException("Giờ kết thúc phải sau giờ bắt đầu. Khung qua đêm cần tách thành hai khung.");
             target=start.toString()+"-"+end.toString();
         }else if(!surchargeDAO.targets(centre,type).containsKey(target))throw new IllegalArgumentException("Đối tượng không thuộc cụm rạp của bạn.");
+        // null nghĩa là áp dụng ngay; lên lịch phải có ngày/giờ cụ thể.
         String mode=request.getParameter("effectiveMode");
         if(!"now".equals(mode)&&!"scheduled".equals(mode))throw new IllegalArgumentException("Chọn thời điểm áp dụng.");
         java.sql.Timestamp from="scheduled".equals(mode)?java.sql.Timestamp.valueOf(java.time.LocalDateTime.parse(request.getParameter("effectiveFrom"))):null;

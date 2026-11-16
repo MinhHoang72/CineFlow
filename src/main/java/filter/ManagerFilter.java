@@ -20,7 +20,8 @@ import java.nio.charset.StandardCharsets;
  * Filter: Bảo vệ khu vực Quản lý (Manager): /manager/*, /manager, /reports.
  * Quy tắc:
  * - Chưa đăng nhập: chuyển hướng về /login kèm URL redirect.
- * - Cho phép tài khoản MANAGER và ADMIN truy cập.
+ * - URL riêng của Manager chỉ cho MANAGER truy cập.
+ * - ADMIN chỉ được truy cập các URL dùng chung theo quy tắc bên dưới.
  * - Tài khoản khác bị từ chối 403.
  */
 public class ManagerFilter implements Filter {
@@ -137,6 +138,16 @@ public class ManagerFilter implements Filter {
         }
 
         String servletPath = httpRequest.getServletPath();
+        // Chặn ngay tại URL, kể cả Admin gõ trực tiếp hoặc gửi POST ngoài giao diện.
+        boolean managerOnlyRoute = servletPath != null && (
+                "/manager".equals(servletPath) || servletPath.startsWith("/manager/")
+                || "/staffList".equals(servletPath)
+                || "/showtimes".equals(servletPath) || servletPath.startsWith("/showtimes/"));
+        if (managerOnlyRoute && (!isManager(session) || isAdmin(session))) {
+            httpResponse.sendError(HttpServletResponse.SC_FORBIDDEN,
+                    "Trang này chỉ dành cho Quản lý cụm rạp (MANAGER).");
+            return;
+        }
         boolean pricingRoute = "/pricing".equals(servletPath)
                 || (servletPath != null && servletPath.startsWith("/pricing/"));
         if (pricingRoute) {

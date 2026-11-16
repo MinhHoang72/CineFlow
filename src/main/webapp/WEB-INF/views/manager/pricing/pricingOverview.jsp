@@ -10,6 +10,7 @@
     <c:if test="${sessionScope.role == 'ADMIN'}">
         <a class="st-button st-button-muted bp-back" href="${pageContext.request.contextPath}/pricing">← Bảng giá các rạp</a>
     </c:if>
+    <%-- Giá đang hiệu lực chỉ để xem; form cập nhật bên dưới dành riêng cho Admin. --%>
     <section class="bp-summary" aria-label="Giá cơ bản hiện tại">
         <div class="bp-current">
             <div class="bp-centre"><span class="bp-centre-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 10h2m2 0h2m-6 4h2m2 0h2m-5 7v-4h4v4"/></svg></span><h2><c:out value="${centreName}" /></h2></div>
@@ -49,6 +50,7 @@
         </form>
         </section>
     </c:if>
+    <%-- Lịch sử và dữ liệu lọc được render từ server, sau đó pricing.js phân trang. --%>
     <section class="st-panel bp-history">
         <div class="st-panel-heading"><h2>Lịch sử điều chỉnh <span class="st-count" id="bp-history-count" aria-live="polite">${fn:length(history)}</span></h2></div>
         <div class="bp-history-filters" role="search" aria-label="Lọc lịch sử giá cơ bản">

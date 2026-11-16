@@ -5,6 +5,7 @@
     if (!search || !date || !hall || !status) return;
     let rows = Array.from(document.querySelectorAll('[data-showtime]'));
     let page = 1, view = 'table', refreshing = false;
+    // sessionStorage giữ trang, bộ lọc và vị trí cuộn khi quay lại từ xem ghế/sửa/hủy.
     const stateKey = 'cineflow:showtimes:' + document.body.dataset.listStateKey;
     let savedState = null;
     try { savedState = JSON.parse(sessionStorage.getItem(stateKey)); } catch (error) { /* Storage may be unavailable. */ }
@@ -89,6 +90,7 @@
         }
         $('st-timeline-summary').textContent = `${count} suất chiếu trong ngày${conflictCount ? ` · ${conflictCount} suất có xung đột (gồm thời gian dọn phòng)` : ''}. Bấm vào suất chiếu để xem ghế.`;
     }
+    // Cập nhật thống kê theo ngày rồi lọc/phân trang danh sách; không gửi thao tác sửa lên server.
     function render() {
         const statsDate = date.value || today(), dayStart = midnight(statsDate), dayEnd = nextDay(dayStart);
         const counts = {ACTIVE:0, SCHEDULED:0, ONGOING:0, COMPLETED:0};
@@ -155,6 +157,7 @@
     let checkController, checkVersion = 0, checkTimer;
     const formatInput = value => fullTime(parse(value));
     function feedbackState(message, state) { if (feedback) { feedback.textContent = message; feedback.className = `st-availability ${state || ''}`; } }
+    // Kiểm tra lịch trước khi tạo để phản hồi sớm; server vẫn kiểm tra lại khi lưu.
     async function checkAvailability() {
         if (!dialog || !form || !submit || !feedback) return false;
         const movieEl = $('movieId'), roomEl = $('hallId'), startEl = $('startTime');
@@ -206,6 +209,7 @@
     });
     window.addEventListener('pagehide', saveListState);
 
+    // Tải dữ liệu trạng thái mới định kỳ, giữ nguyên bộ lọc và trang hiện tại.
     async function refreshStatuses() {
         if (document.hidden || refreshing) return; refreshing = true;
         try {

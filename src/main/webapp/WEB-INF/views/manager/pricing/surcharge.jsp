@@ -8,11 +8,13 @@
 %>
 <%@ include file="/WEB-INF/fragments/cinemaBegin.jspf" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
+<%-- Form dùng chung năm loại phụ thu; editPolicy quyết định thêm mới hay chỉnh sửa. --%>
 <section class="st-panel" id="policy-editor" aria-labelledby="policy-editor-title" ${empty editPolicy && param.create != 'true' ? 'hidden' : ''}>
     <div class="st-panel-heading"><div><h2 id="policy-editor-title" tabindex="-1"><c:out value="${empty editPolicy ? 'Thêm chính sách' : 'Điều chỉnh chính sách'}" /></h2><p><c:out value="${centreName}" /></p></div></div>
     <form class="st-create-form" method="post" action="${pageContext.request.contextPath}/pricing/surcharges/save">
         <input type="hidden" name="type" value="${policyType}"><input type="hidden" name="id" value="${editPolicy.SurchargeID}">
         <div class="st-form-grid">
+            <%-- Phụ thu giờ nhập khoảng thời gian; các loại khác chọn đối tượng do DAO cung cấp. --%>
             <c:choose><c:when test="${policyType == 'TIME'}">
                 <div class="st-field"><label for="policy-start">Từ giờ</label><input id="policy-start" type="time" step="1" name="startTime" value="${editPolicy.StartTime}" required></div>
                 <div class="st-field"><label for="policy-end">Đến giờ (không bao gồm)</label><input id="policy-end" type="time" step="1" name="endTime" value="${editPolicy.EndTime}" required></div>
@@ -33,6 +35,7 @@
 </section>
 <section class="st-panel">
     <div class="st-panel-heading"><div><h2>Chính sách &amp; lịch sử</h2><p><c:out value="${centreName}" /></p></div><a class="st-button st-button-primary" href="?create=true#policy-editor" id="policy-add" aria-controls="policy-editor" aria-expanded="${not empty editPolicy || param.create == 'true'}" ${not empty editPolicy || param.create == 'true' ? 'hidden' : ''}>+ Thêm phụ thu</a></div>
+    <%-- pricing.js lọc dữ liệu của bảng theo ngày bắt đầu hiệu lực và người cập nhật. --%>
     <div class="bp-history-filters" role="search" aria-label="Lọc lịch sử phụ thu">
         <div class="st-field"><label for="bp-history-from">Áp dụng từ ngày</label><input id="bp-history-from" type="date"></div>
         <div class="st-field"><label for="bp-history-to">Đến ngày</label><input id="bp-history-to" type="date"></div>
@@ -42,6 +45,7 @@
     </div>
     <div class="st-table-scroll"><table class="st-table st-table-compact pr-policy-table">
         <thead><tr><th>Tên / Đối tượng</th><th>Phụ thu</th><th>Hiệu lực từ</th><th>Hiệu lực đến</th><th>Người cập nhật</th><th class="pr-policy-actions-cell">Thao tác</th></tr></thead>
+        <%-- Thuộc tính data-* phục vụ lọc/phân trang; c:out escape dữ liệu trước khi hiển thị. --%>
         <tbody><c:forEach var="p" items="${policies}">
             <tr data-price-history data-effective-date="${fn:substring(p.EffectiveFrom, 0, 10)}" data-updater="<c:out value='${empty p.UpdatedByName ? "Hệ thống" : p.UpdatedByName}' />"><td><strong><c:out value="${p.SurchargeName}" /></strong><br><c:out value="${policyType == 'TIME' ? p.TargetValue : targets[p.TargetValue]}" /><br><small><c:out value="${p.PolicyState}" /></small></td>
                 <td><fmt:formatNumber value="${p.Amount}" maxFractionDigits="0" /> đ</td><td><fmt:formatDate value="${p.EffectiveFrom}" pattern="dd/MM/yyyy HH:mm" /></td>
@@ -58,6 +62,7 @@
             </tr>
         </c:forEach><tr id="bp-history-empty" ${not empty policies ? 'hidden' : ''}><td colspan="6" class="bp-empty">${empty policies ? 'Chưa có phụ thu' : 'Không có chính sách phù hợp'}</td></tr></tbody>
     </table></div>
+    <%-- Phân trang phía trình duyệt, tối đa năm bản ghi trên mỗi trang. --%>
     <footer class="st-list-footer">
         <span id="bp-history-range" role="status" aria-live="polite"></span>
         <span id="bp-history-count" hidden></span>

@@ -32,6 +32,7 @@ public class CreateShowtimeServlet extends HttpServlet {
             int movieId = Integer.parseInt(request.getParameter("movieId"));
             int hallId = Integer.parseInt(request.getParameter("hallId"));
             LocalDateTime startTime = LocalDateTime.parse(request.getParameter("startTime"));
+            // Một lần lưu bao gồm tạo suất, kiểm tra xung đột, chốt giá và mở bán.
             showtimeService.saveShowtime(request,null,movieId,hallId,startTime);
             request.getSession().setAttribute("message", "Đã tạo suất chiếu, chốt giá và mở bán.");
         } catch (IllegalArgumentException | IllegalStateException e) {
