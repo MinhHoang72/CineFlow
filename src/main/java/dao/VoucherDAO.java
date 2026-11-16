@@ -113,6 +113,7 @@ public class VoucherDAO {
         String sql = "SELECT TOP (?) " + COLUMNS + FROM_JOIN
                 + " WHERE v.Status = 'ACTIVE' AND v.StartDate <= GETDATE() AND v.EndDate >= GETDATE()"
                 + " AND (v.UsageLimit IS NULL OR v.UsedCount < v.UsageLimit)"
+                + " AND v.VoucherCode NOT LIKE 'TEST%'"
                 + " ORDER BY v.VoucherID DESC";
         try (Connection connection = DBContext.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
