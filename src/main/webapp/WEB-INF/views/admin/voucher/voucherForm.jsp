@@ -4,17 +4,14 @@
 <%
     // Format ngày giờ yyyy-MM-ddTHH:mm cho thẻ input type="datetime-local"
     model.entity.Voucher v = (model.entity.Voucher) request.getAttribute("voucher");
-    java.util.Map<String, String> rawMap = (java.util.Map<String, String>) request.getAttribute("raw");
     java.time.format.DateTimeFormatter fmt = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
-    String startVal = rawMap != null ? rawMap.get("startDate") : (v != null && v.getStartDate() != null ? v.getStartDate().format(fmt) : "");
-    String endVal = rawMap != null ? rawMap.get("endDate") : (v != null && v.getEndDate() != null ? v.getEndDate().format(fmt) : "");
-    pageContext.setAttribute("startVal", startVal);
-    pageContext.setAttribute("endVal", endVal);
+    pageContext.setAttribute("startVal", (v != null && v.getStartDate() != null) ? v.getStartDate().format(fmt) : "");
+    pageContext.setAttribute("endVal", (v != null && v.getEndDate() != null) ? v.getEndDate().format(fmt) : "");
 %>
 
 <div class="cf-page-header">
     <div>
-        <h1>${voucher.voucherId == 0 ? 'Thêm voucher' : 'Sửa voucher'}</h1>
+        <h1>${pageTitle}</h1>
         <c:choose>
             <c:when test="${isAdminScope}">
                 <p>Voucher áp dụng cho <strong>toàn chuỗi</strong> CineFlow (CentreID = NULL).</p>
@@ -32,24 +29,23 @@
         <input type="hidden" name="id" value="${voucher.voucherId == 0 ? '' : voucher.voucherId}">
 
         <div class="cf-form-group">
-            <label class="cf-form-label">Mã voucher</label>
+            <label class="cf-form-label">Mã voucher <span style="color: #ef4444;">*</span></label>
             <input class="cf-form-control" type="text" name="code" maxlength="50" 
-                   value="${voucher.voucherCode}" 
+                   value="${voucher.voucherCode}" required
+                   placeholder="Ví dụ: CGY_STUDENT, VIP2026..."
+                   <%-- 'readonly' chỉ đọc  --%>
                    ${voucher.voucherId > 0 && voucher.usedCount > 0 ? 'readonly' : ''}>
+            <span class="cf-form-hint" style="display: block; font-size: 0.82rem; color: #64748b; margin-top: 4px;">Hệ thống sẽ kiểm tra đảm bảo mã không bị trùng lặp.</span>
             <c:if test="${voucher.voucherId > 0 && voucher.usedCount > 0}">
-                <div class="cf-help">Voucher đã được sử dụng nên không đổi được mã.</div>
-            </c:if>
-            <c:if test="${not empty errors.code}">
-                <div class="vc-error">${errors.code}</div>
+                <span class="cf-form-hint" style="display: block; font-size: 0.82rem; color: #64748b; margin-top: 2px;">Voucher đã được sử dụng nên không thể thay đổi mã.</span>
             </c:if>
         </div>
 
         <div class="cf-form-group">
-            <label class="cf-form-label">Tên voucher</label>
-            <input class="cf-form-control" type="text" name="name" maxlength="150" value="${voucher.voucherName}">
-            <c:if test="${not empty errors.name}">
-                <div class="vc-error">${errors.name}</div>
-            </c:if>
+            <label class="cf-form-label">Tên voucher <span style="color: #ef4444;">*</span></label>
+            <input class="cf-form-control" type="text" name="name" maxlength="150" value="${voucher.voucherName}" 
+                   placeholder="Ví dụ: HSSV Siêu Tiết Kiệm - Giảm 20%" required>
+            <span class="cf-form-hint" style="display: block; font-size: 0.82rem; color: #64748b; margin-top: 4px;">Tên hiển thị cho khách hàng nhận diện ưu đãi (3 - 150 ký tự).</span>
         </div>
 
         <div class="cf-form-group">
@@ -57,9 +53,6 @@
             <input class="cf-form-control" type="text" name="imageUrl" id="voucherImageUrl" maxlength="500"
                    placeholder="Dán đường dẫn ảnh (VD: https://...)"
                    value="${voucher.imageUrl}" oninput="updateVoucherImagePreview(this.value)">
-            <c:if test="${not empty errors.imageUrl}">
-                <div class="vc-error">${errors.imageUrl}</div>
-            </c:if>
             <div id="voucherImagePreviewContainer" style="margin-top: 10px; display: ${not empty voucher.imageUrl ? 'block' : 'none'};">
                 <img id="voucherImagePreview" src="${voucher.imageUrl}" alt="Preview"
                      style="max-width: 260px; max-height: 140px; border-radius: 6px; border: 1px solid #cbd5e1; object-fit: cover;"
@@ -70,9 +63,6 @@
         <div class="cf-form-group">
             <label class="cf-form-label">Mô tả</label>
             <textarea class="cf-form-textarea" name="description" rows="3" maxlength="500">${voucher.description}</textarea>
-            <c:if test="${not empty errors.description}">
-                <div class="vc-error">${errors.description}</div>
-            </c:if>
         </div>
 
         <div class="cf-form-group">
@@ -81,63 +71,46 @@
                 <option value="PERCENT" ${voucher.discountType == 'PERCENT' ? 'selected' : ''}>Phần trăm (%)</option>
                 <option value="FIXED" ${voucher.discountType == 'FIXED' ? 'selected' : ''}>Số tiền cố định (đ)</option>
             </select>
-            <c:if test="${not empty errors.type}">
-                <div class="vc-error">${errors.type}</div>
-            </c:if>
         </div>
 
         <div class="cf-form-group">
-            <label class="cf-form-label">Giá trị giảm</label>
-            <input class="cf-form-control" type="text" name="discountValue" 
-                   value="${not empty raw.discountValue ? raw.discountValue : voucher.discountValue}">
-            <c:if test="${not empty errors.discountValue}">
-                <div class="vc-error">${errors.discountValue}</div>
-            </c:if>
+            <label class="cf-form-label">Giá trị giảm <span style="color: #ef4444;">*</span></label>
+            <input class="cf-form-control" type="text" name="discountValue" required
+                   placeholder="Nhập số % (VD: 20) hoặc số tiền (VD: 30000)"
+                   value="${not empty voucher.discountValue ? voucher.discountValue.stripTrailingZeros().toPlainString() : ''}">
+            <span class="cf-form-hint" style="display: block; font-size: 0.82rem; color: #64748b; margin-top: 4px;">Đối với loại Phần trăm (%), mức giảm tối đa không được vượt quá ${not empty maxDiscountPercent ? maxDiscountPercent : 50}%.</span>
         </div>
 
         <div class="cf-form-group">
             <label class="cf-form-label">Giá trị đơn tối thiểu (đ)</label>
             <input class="cf-form-control" type="text" name="minimumOrderValue" 
-                   value="${not empty raw.minimumOrderValue ? raw.minimumOrderValue : (empty voucher.minimumOrderValue ? '0' : voucher.minimumOrderValue)}">
-            <c:if test="${not empty errors.minimumOrderValue}">
-                <div class="vc-error">${errors.minimumOrderValue}</div>
-            </c:if>
+                   value="${not empty voucher.minimumOrderValue ? voucher.minimumOrderValue.stripTrailingZeros().toPlainString() : '0'}">
+            <span class="cf-form-hint" style="display: block; font-size: 0.82rem; color: #64748b; margin-top: 4px;">Tổng tiền vé của khách phải đạt mức này mới được áp dụng (mặc định 0đ).</span>
         </div>
 
         <div class="cf-form-group">
             <label class="cf-form-label">Mức giảm tối đa (đ, để trống nếu không giới hạn)</label>
             <input class="cf-form-control" type="text" name="maximumDiscount" 
-                   value="${not empty raw.maximumDiscount ? raw.maximumDiscount : voucher.maximumDiscount}">
-            <c:if test="${not empty errors.maximumDiscount}">
-                <div class="vc-error">${errors.maximumDiscount}</div>
-            </c:if>
+                   placeholder="Chỉ áp dụng cho loại giảm % (VD: 50000)"
+                   value="${not empty voucher.maximumDiscount ? voucher.maximumDiscount.stripTrailingZeros().toPlainString() : ''}">
+            <span class="cf-form-hint" style="display: block; font-size: 0.82rem; color: #64748b; margin-top: 4px;">Giới hạn trần số tiền được giảm khi áp dụng voucher theo tỷ lệ %.</span>
         </div>
 
         <div class="cf-form-group">
-            <label class="cf-form-label">Bắt đầu</label>
-            <input class="cf-form-control" type="datetime-local" name="startDate" value="${startVal}">
-            <c:if test="${not empty errors.startDate}">
-                <div class="vc-error">${errors.startDate}</div>
-            </c:if>
+            <label class="cf-form-label">Bắt đầu <span style="color: #ef4444;">*</span></label>
+            <input class="cf-form-control" type="datetime-local" name="startDate" value="${startVal}" required>
         </div>
 
         <div class="cf-form-group">
-            <label class="cf-form-label">Kết thúc</label>
-            <input class="cf-form-control" type="datetime-local" name="endDate" value="${endVal}">
-            <c:if test="${not empty errors.endDate}">
-                <div class="vc-error">${errors.endDate}</div>
-            </c:if>
+            <label class="cf-form-label">Kết thúc <span style="color: #ef4444;">*</span></label>
+            <input class="cf-form-control" type="datetime-local" name="endDate" value="${endVal}" required>
         </div>
 
         <div class="cf-form-group">
             <label class="cf-form-label">Giới hạn lượt dùng (để trống nếu không giới hạn)</label>
-            <input class="cf-form-control" type="text" name="usageLimit" 
-                   value="${not empty raw.usageLimit ? raw.usageLimit : voucher.usageLimit}">
+            <input class="cf-form-control" type="text" name="usageLimit" value="${voucher.usageLimit}">
             <c:if test="${voucher.voucherId > 0}">
                 <div class="cf-help">Đã dùng: ${voucher.usedCount}</div>
-            </c:if>
-            <c:if test="${not empty errors.usageLimit}">
-                <div class="vc-error">${errors.usageLimit}</div>
             </c:if>
         </div>
 
@@ -147,9 +120,6 @@
                 <option value="ACTIVE" ${voucher.status == 'ACTIVE' ? 'selected' : ''}>Hoạt động</option>
                 <option value="INACTIVE" ${voucher.status == 'INACTIVE' ? 'selected' : ''}>Tạm ngưng</option>
             </select>
-            <c:if test="${not empty errors.status}">
-                <div class="vc-error">${errors.status}</div>
-            </c:if>
         </div>
 
         <button class="cf-btn cf-btn-primary" type="submit">Lưu</button>

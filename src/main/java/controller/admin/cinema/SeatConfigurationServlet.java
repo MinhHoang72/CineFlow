@@ -1,115 +1,150 @@
 package controller.admin.cinema;
 
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
+import dao.CentreDAO;
+import dao.HallDAO;
+import dao.SeatDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import model.dto.common.PageDTO;
+import model.dto.pricing.SeatConfigDTO;
 import model.entity.Centre;
 import model.entity.Hall;
-import model.dto.pricing.SeatConfigDTO;
 import model.entity.User;
-import service.CinemaService;
 
 import java.io.IOException;
-import java.lang.reflect.Type;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Controller điều khiển cấu hình Sơ đồ Ghế (UC-FE-03.3: Configure Cinema Hall Seat Layout).
- * Phân quyền chuẩn: Chỉ Branch Manager mới được quyền cấu hình sơ đồ ghế cho phòng chiếu thuộc chi nhánh mình.
- * Admin quản lý hệ thống vĩ mô, không trực tiếp vẽ hay cấu hình sơ đồ ghế.
- * Toàn bộ logic nghiệp vụ được ủy quyền cho CinemaService (Mô hình 3 lớp).
+ * Controller Cấu hình Sơ đồ Ghế (Seat Configuration). Đồng nhất 100% theo form
+ * Voucher / Centre / Hall: - Gọi trực tiếp SeatDAO, HallDAO, CentreDAO (không
+ * qua service trung gian thừa). - Kiểm tra phiên tập trung qua
+ * authorizedUser(). - Phân tách 4 luồng: showSeats (GET), createNewGrid (POST),
+ * saveSeats (POST), toggleSeatStatus (POST).
  */
 @WebServlet(name = "SeatConfigurationServlet", urlPatterns = {"/manager/seat-config", "/admin/seat-config"})
 public class SeatConfigurationServlet extends HttpServlet {
 
-    private final CinemaService cinemaService = new CinemaService();
-    private final Gson gson = new Gson();
+    private static final int PAGE_SIZE = 10;
+    private final SeatDAO seatDAO = new SeatDAO();
+    private final HallDAO hallDAO = new HallDAO();
+    private final CentreDAO centreDAO = new CentreDAO();
 
-    /**
-     * Kiểm tra người dùng hiện tại có vai trò MANAGER hay không.
-     */
-    private boolean isManager(HttpSession session) {
-        if (session == null) {
-            return false;
-        }
-        Object roleObj = session.getAttribute("role");
-        if (roleObj instanceof String) {
-            String role = (String) roleObj;
-            if ("MANAGER".equalsIgnoreCase(role)) {
-                return true;
-            }
-        }
-        Object userObj = session.getAttribute("user");
-        if (userObj instanceof User) {
-            String role = ((User) userObj).getRole();
-            return role != null && "MANAGER".equalsIgnoreCase(role);
-        }
-        return false;
-    }
-
-    private User getCurrentUser(HttpSession session) {
-        if (session == null) {
-            return null;
-        }
-        Object userObj = session.getAttribute("user");
-        return userObj instanceof User ? (User) userObj : null;
-    }
-
-    @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-
+    // ─────────────────────────────────────────────────────────────────────────
+    // AUTHENTICATION & AUTHORIZATION
+    // ─────────────────────────────────────────────────────────────────────────
+    private User authorizedUser(HttpServletRequest request, HttpServletResponse response)
+            throws IOException {
         HttpSession session = request.getSession(false);
-        if (session == null || session.getAttribute("userId") == null) {
+        User user = (session == null) ? null : (User) session.getAttribute("user");
+
+        if (user == null || session.getAttribute("userId") == null) {
             String redirectUrl = request.getContextPath() + "/login?redirect="
                     + URLEncoder.encode("/manager/halls", StandardCharsets.UTF_8);
             response.sendRedirect(redirectUrl);
-            return;
+            return null;
         }
 
-        // Chỉ cho phép Quản lý chi nhánh
-        if (!isManager(session)) {
+        if (!"MANAGER".equalsIgnoreCase(user.getRole()) && !user.isManager()) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN,
-                    "Chức năng cấu hình sơ đồ ghế chỉ dành cho Quản lý chi nhánh (Manager). Quản trị viên (Admin) không trực tiếp cấu hình ghế.");
+                    "Chức năng cấu hình sơ đồ ghế chỉ dành cho Quản lý chi nhánh (Manager).");
+            return null;
+        }
+
+        return user;
+    }
+
+    private String baseUrl(HttpServletRequest request) {
+        return request.getContextPath() + "/manager/seat-config";
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // HTTP GET
+    // ─────────────────────────────────────────────────────────────────────────
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        User user = authorizedUser(request, response);
+        if (user == null) {
             return;
         }
 
-        String hallIdParam = request.getParameter("hallId");
         int hallId;
         try {
-            hallId = Integer.parseInt(hallIdParam.trim());
+            hallId = Integer.parseInt(request.getParameter("hallId").trim());
         } catch (Exception e) {
             response.sendRedirect(request.getContextPath() + "/manager/halls?error=invalid_hall");
             return;
         }
 
-        Hall hall = cinemaService.getHallById(hallId);
+        Hall hall = hallDAO.getHallById(hallId);
         if (hall == null) {
             response.sendRedirect(request.getContextPath() + "/manager/halls?error=invalid_hall");
             return;
         }
-
-        User user = getCurrentUser(session);
-
-        // Bắt buộc phòng chiếu phải thuộc Cụm rạp mà Manager phụ trách
-        if (user == null || user.getCentreId() == null || !user.getCentreId().equals(hall.getCentreId())) {
+        //check hall đã trùng với manager đã trùng centrer ID 
+        if (user.getCentreId() == null || !user.getCentreId().equals(hall.getCentreId())) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN, "Bạn chỉ được cấu hình sơ đồ ghế cho Cụm rạp mình phụ trách.");
             return;
         }
 
-        Centre centre = cinemaService.getCentreById(hall.getCentreId());
-        boolean hasBookedShowtimes = cinemaService.hasFutureBookedShowtimes(hallId);
+        showSeats(request, response, hall);
+    }
 
-        List<SeatConfigDTO> existingSeats = cinemaService.getSeatConfigsByHall(hallId);
-        String seatsJson = gson.toJson(existingSeats);
+    // ─────────────────────────────────────────────────────────────────────────
+    // HTTP POST
+    // ─────────────────────────────────────────────────────────────────────────
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        request.setCharacterEncoding("UTF-8");
+        User user = authorizedUser(request, response);
+        if (user == null) {
+            return;
+        }
 
+        int hallId;
+        try {
+            hallId = Integer.parseInt(request.getParameter("hallId").trim());
+        } catch (Exception e) {
+            response.sendRedirect(request.getContextPath() + "/manager/halls?error=invalid_hall");
+            return;
+        }
+
+        Hall hall = hallDAO.getHallById(hallId);
+        if (hall == null || user.getCentreId() == null || !user.getCentreId().equals(hall.getCentreId())) {
+            response.sendRedirect(request.getContextPath() + "/manager/halls?error=invalid_hall");
+            return;
+        }
+
+        String action = request.getParameter("action");
+        if ("toggleMaintenance".equalsIgnoreCase(action)) {
+            toggleSeatStatus(request, response, hallId);
+        } else if ("generateGrid".equalsIgnoreCase(action)) {
+            createNewGrid(request, response, hallId);
+        } else {
+            saveSeats(request, response, hallId);
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 1. SHOW SEATS (Đổ dữ liệu sơ đồ & phân trang)
+    // ─────────────────────────────────────────────────────────────────────────
+    private void showSeats(HttpServletRequest request, HttpServletResponse response,
+            Hall hall) throws ServletException, IOException {
+        int hallId = hall.getHallId();
+        Centre centre = centreDAO.getCentreById(hall.getCentreId());
+
+    
+        List<SeatConfigDTO> Seats = seatDAO.getSeatConfigsByHall(hallId);
+
+        // Tham số tìm kiếm và lọc ghế
         String search = request.getParameter("search");
         String seatType = request.getParameter("seatType");
         String seatStatus = request.getParameter("seatStatus");
@@ -121,7 +156,6 @@ public class SeatConfigurationServlet extends HttpServlet {
         }
 
         int page = 1;
-        int pageSize = 12;
         try {
             String pageParam = request.getParameter("page");
             if (pageParam != null && !pageParam.trim().isEmpty()) {
@@ -129,164 +163,130 @@ public class SeatConfigurationServlet extends HttpServlet {
             }
         } catch (NumberFormatException ignored) {
         }
-        if (page < 1) {
-            page = 1;
-        }
 
-        int totalFilteredSeats = cinemaService.countSeatsByHall(hallId, search, seatType, seatStatus);
-        int totalPages = (int) Math.ceil((double) totalFilteredSeats / pageSize);
-        if (totalPages < 1) {
-            totalPages = 1;
-        }
-        if (page > totalPages) {
-            page = totalPages;
-        }
+        // Đếm và lấy danh sách phân trang trực tiếp từ SeatDAO
+        int total = seatDAO.countSeatsByHall(hallId, search, seatType, seatStatus);
+        List<SeatConfigDTO> items = seatDAO.getSeatsByHallPaged(hallId, search, seatType, seatStatus, page, PAGE_SIZE);
+        PageDTO<SeatConfigDTO> seatPageResult = new PageDTO<>(items, page, PAGE_SIZE, total);
 
-        List<SeatConfigDTO> pagedSeats = cinemaService.getSeatsByHallPaged(hallId, search, seatType, seatStatus, page, pageSize);
-        model.dto.common.PageDTO<SeatConfigDTO> seatPageResult = new model.dto.common.PageDTO<>(pagedSeats, page, pageSize, totalFilteredSeats);
-        String base = request.getContextPath() + "/manager/seat-config";
+        String base = baseUrl(request);
         String filters = "hallId=" + hallId
                 + "&search=" + URLEncoder.encode(search != null ? search.trim() : "", StandardCharsets.UTF_8)
                 + "&seatType=" + URLEncoder.encode(seatType, StandardCharsets.UTF_8)
                 + "&seatStatus=" + URLEncoder.encode(seatStatus, StandardCharsets.UTF_8);
-        request.setAttribute("result", seatPageResult);
-        request.setAttribute("page", seatPageResult);
-        request.setAttribute("pagerBase", base + "?" + filters + "&page=");
-        request.setAttribute("backQuery", filters + "&page=" + seatPageResult.getPage());
-        request.setAttribute("baseUrl", base);
 
         request.setAttribute("hall", hall);
         request.setAttribute("centre", centre);
-        request.setAttribute("existingSeats", existingSeats);
-        request.setAttribute("seatsJson", seatsJson);
-        request.setAttribute("hasBookedShowtimes", hasBookedShowtimes);
+  //gửi list sang jsp 
+        request.setAttribute("existingSeats", Seats);
+        request.setAttribute("hasBookedShowtimes", false);
         request.setAttribute("isAdmin", false);
 
-        request.setAttribute("pagedSeats", pagedSeats);
-        request.setAttribute("currentPage", page);
-        request.setAttribute("pageSize", pageSize);
-        request.setAttribute("totalPages", totalPages);
-        request.setAttribute("totalFilteredSeats", totalFilteredSeats);
+        request.setAttribute("pagedSeats", seatPageResult.getItems());
+        request.setAttribute("result", seatPageResult);
+        request.setAttribute("page", seatPageResult);
+        request.setAttribute("currentPage", seatPageResult.getPage());
+        request.setAttribute("pageSize", PAGE_SIZE);
+        request.setAttribute("totalPages", seatPageResult.getTotalPages());
+        request.setAttribute("totalFilteredSeats", seatPageResult.getTotal());
         request.setAttribute("currentSearch", search != null ? search.trim() : "");
         request.setAttribute("currentSeatType", seatType);
         request.setAttribute("currentSeatStatus", seatStatus);
 
+        request.setAttribute("pagerBase", base + "?" + filters + "&page=");
+        request.setAttribute("backQuery", filters + "&page=" + seatPageResult.getPage());
+        request.setAttribute("baseUrl", base);
         request.setAttribute("activeNav", "halls");
         request.setAttribute("pageTitle", "Cấu hình Sơ đồ ghế - " + hall.getHallName());
 
         request.getRequestDispatcher("/WEB-INF/views/admin/cinema/seatConfig.jsp").forward(request, response);
     }
 
-    @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-
-        request.setCharacterEncoding("UTF-8");
-
-        HttpSession session = request.getSession(false);
-        if (!isManager(session)) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Bạn không có quyền thực hiện thao tác này. Chức năng chỉ dành cho Quản lý chi nhánh (Manager).");
-            return;
-        }
-
-        String hallIdParam = request.getParameter("hallId");
-        int hallId;
+    // ─────────────────────────────────────────────────────────────────────────
+    // 2. CREATE NEW GRID (Tạo lưới sơ đồ mới theo số hàng x cột)
+    // ─────────────────────────────────────────────────────────────────────────
+    private void createNewGrid(HttpServletRequest request, HttpServletResponse response, int hallId)
+            throws IOException {
+        String base = baseUrl(request);
+        int numRows = 6;
+        int numCols = 10;
         try {
-            hallId = Integer.parseInt(hallIdParam.trim());
-        } catch (Exception e) {
-            response.sendRedirect(request.getContextPath() + "/manager/halls?error=invalid_hall");
+            numRows = Integer.parseInt(request.getParameter("rows").trim());
+            numCols = Integer.parseInt(request.getParameter("cols").trim());
+        } catch (Exception ignored) {
+        }
+
+        if (numRows < 1 || numRows > 26 || numCols < 1 || numCols > 30) {
+            response.sendRedirect(base + "?hallId=" + hallId + "&error=failed");
             return;
         }
 
-        Hall hall = cinemaService.getHallById(hallId);
-        if (hall == null) {
-            response.sendRedirect(request.getContextPath() + "/manager/halls?error=invalid_hall");
-            return;
-        }
-
-        User user = getCurrentUser(session);
-
-        if (user == null || user.getCentreId() == null || !user.getCentreId().equals(hall.getCentreId())) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Bạn chỉ được cấu hình sơ đồ ghế cho Cụm rạp mình phụ trách.");
-            return;
-        }
-
-        String action = request.getParameter("action");
-        String filterSearch = request.getParameter("search");
-        String filterSeatType = request.getParameter("seatType");
-        String filterSeatStatus = request.getParameter("seatStatus");
-        String pageParam = request.getParameter("page");
-        String back = request.getParameter("back");
-
-        StringBuilder redirectUrl;
-        if (back != null && !back.trim().isEmpty()) {
-            redirectUrl = new StringBuilder(request.getContextPath() + "/manager/seat-config?" + back.replaceAll("[^A-Za-z0-9%&=._~+-]", "") + "&");
-        } else {
-            redirectUrl = new StringBuilder(request.getContextPath() + "/manager/seat-config?hallId=" + hallId + "&");
-            if (filterSearch != null && !filterSearch.trim().isEmpty()) {
-                redirectUrl.append("search=").append(URLEncoder.encode(filterSearch.trim(), StandardCharsets.UTF_8)).append("&");
-            }
-            if (filterSeatType != null && !filterSeatType.trim().isEmpty()) {
-                redirectUrl.append("seatType=").append(URLEncoder.encode(filterSeatType.trim(), StandardCharsets.UTF_8)).append("&");
-            }
-            if (filterSeatStatus != null && !filterSeatStatus.trim().isEmpty()) {
-                redirectUrl.append("seatStatus=").append(URLEncoder.encode(filterSeatStatus.trim(), StandardCharsets.UTF_8)).append("&");
-            }
-            if (pageParam != null && !pageParam.trim().isEmpty()) {
-                redirectUrl.append("page=").append(URLEncoder.encode(pageParam.trim(), StandardCharsets.UTF_8)).append("&");
+        List<SeatConfigDTO> newSeats = new ArrayList<>();
+        for (int i = 0; i < numRows; i++) {
+            String rowName = String.valueOf((char) ('A' + i));
+            for (int c = 1; c <= numCols; c++) {
+                newSeats.add(new SeatConfigDTO(0, hallId, rowName, c, "STANDARD", "AVAILABLE"));
             }
         }
 
-        // Khóa / Mở bảo trì nhanh một ghế
-        if ("toggleMaintenance".equalsIgnoreCase(action)) {
-            String seatIdParam = request.getParameter("seatId");
-            try {
-                int seatId = Integer.parseInt(seatIdParam.trim());
-                CinemaService.Result<String> result = cinemaService.toggleSeatMaintenance(hallId, seatId);
-                if (result.isSuccess()) {
-                    redirectUrl.append("success=maintenance_toggled");
-                } else if (result.getStatus() == CinemaService.Status.BOOKED_SEAT) {
-                    redirectUrl.append("error=booked_seat&msg=").append(URLEncoder.encode(result.getMessage(), StandardCharsets.UTF_8));
-                } else {
-                    redirectUrl.append("error=failed");
-                }
-            } catch (Exception e) {
-                redirectUrl.append("error=invalid_id");
-            }
-            response.sendRedirect(redirectUrl.toString());
-            return;
-        }
+        boolean ok = seatDAO.saveSeatLayout(hallId, newSeats, true);
+        response.sendRedirect(base + "?hallId=" + hallId + (ok ? "&success=saved" : "&error=failed"));
+    }
 
-        String seatDataJson = request.getParameter("seatData");
-        boolean isRegenerating = "true".equalsIgnoreCase(request.getParameter("isRegenerating"));
+    // ─────────────────────────────────────────────────────────────────────────
+    // 3. SAVE SEATS (Đọc trực tiếp từ form HTML, không qua JSON)
+    // ─────────────────────────────────────────────────────────────────────────
+    private void saveSeats(HttpServletRequest request, HttpServletResponse response, int hallId)
+            throws IOException {
+        String base = baseUrl(request);
+        String[] rows = request.getParameterValues("seatRow");
+        String[] numbers = request.getParameterValues("seatNumber");
+        String[] types = request.getParameterValues("seatType");
+        String[] statuses = request.getParameterValues("status");
 
-        if (seatDataJson == null || seatDataJson.trim().isEmpty()) {
-            redirectUrl.append("error=empty_data");
-            response.sendRedirect(redirectUrl.toString());
+        if (rows == null || numbers == null || types == null || statuses == null
+                || rows.length == 0
+                || rows.length != numbers.length
+                || rows.length != types.length
+                || rows.length != statuses.length) {
+            response.sendRedirect(base + "?hallId=" + hallId + "&error=empty_data");
             return;
         }
 
         try {
-            Type listType = new TypeToken<List<SeatConfigDTO>>() {}.getType();
-            List<SeatConfigDTO> seatList = gson.fromJson(seatDataJson, listType);
-
-            CinemaService.Result<Void> result = cinemaService.saveSeatLayout(hallId, seatList, isRegenerating);
-            if (result.isSuccess()) {
-                redirectUrl.append("success=saved");
-            } else if (result.getStatus() == CinemaService.Status.CANNOT_REGENERATE) {
-                redirectUrl.append("error=cannot_regenerate");
-            } else if (result.getStatus() == CinemaService.Status.BOOKED_SEAT) {
-                redirectUrl.append("error=booked_seat&msg=").append(URLEncoder.encode(result.getMessage(), StandardCharsets.UTF_8));
-            } else if (result.getStatus() == CinemaService.Status.EMPTY_DATA) {
-                redirectUrl.append("error=empty_data");
-            } else {
-                redirectUrl.append("error=failed");
+            List<SeatConfigDTO> seatList = new ArrayList<>();
+            for (int i = 0; i < rows.length; i++) {
+                int seatNum = Integer.parseInt(numbers[i].trim());
+                seatList.add(new SeatConfigDTO(0, hallId, rows[i], seatNum, types[i], statuses[i]));
             }
+
+            boolean ok = seatDAO.saveSeatLayout(hallId, seatList, false);
+            response.sendRedirect(base + "?hallId=" + hallId + (ok ? "&success=saved" : "&error=failed"));
         } catch (Exception e) {
             e.printStackTrace();
-            redirectUrl.append("error=json_error");
+            response.sendRedirect(base + "?hallId=" + hallId + "&error=failed");
         }
+    }
 
-        response.sendRedirect(redirectUrl.toString());
+    // ─────────────────────────────────────────────────────────────────────────
+    // 3. TOGGLE SEAT STATUS
+    // ─────────────────────────────────────────────────────────────────────────
+    private void toggleSeatStatus(HttpServletRequest request, HttpServletResponse response, int hallId)
+            throws IOException {
+        String base = baseUrl(request);
+        String seatIdParam = request.getParameter("seatId");
+        String back = request.getParameter("back");
+        String redirectBase = (back != null && !back.trim().isEmpty())
+                ? (base + "?" + back.replaceAll("[^A-Za-z0-9%&=._~+-]", "") + "&")
+                : (base + "?hallId=" + hallId + "&");
+
+        try {
+            int seatId = Integer.parseInt(seatIdParam.trim());
+            String result = seatDAO.toggleSeatMaintenance(seatId, hallId);
+            boolean ok = "SUCCESS".equalsIgnoreCase(result);
+            response.sendRedirect(redirectBase + (ok ? "success=maintenance_toggled" : "error=failed"));
+        } catch (Exception e) {
+            response.sendRedirect(redirectBase + "error=invalid_id");
+        }
     }
 }

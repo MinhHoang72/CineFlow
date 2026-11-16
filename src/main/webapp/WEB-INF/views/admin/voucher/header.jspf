@@ -9,27 +9,7 @@
                 .replace("\"", "&quot;").replace("'", "&#39;");
     }
 
-    static String pager(String ctx, String base, int page, int totalPages) {
-        if (totalPages <= 1) {
-            return "";
-        }
-        String prefix = (base != null && ctx != null && !ctx.isEmpty() && base.startsWith(ctx)) ? base : (ctx + base);
-        StringBuilder html = new StringBuilder("<nav class=\"vc-pages\">");
-        html.append(page > 1 ? "<a href=\"" + prefix + (page - 1) + "\">&lsaquo;</a>" : "<span class=\"disabled\">&lsaquo;</span>");
-        int last = 0;
-        for (int i = 1; i <= totalPages; i++) {
-            if (i == 1 || i == totalPages || Math.abs(i - page) <= 1) {
-                if (last != 0 && i - last > 1) {
-                    html.append("<span class=\"gap\">&hellip;</span>");
-                }
-                html.append(i == page ? "<span class=\"active\">" + i + "</span>" : "<a href=\"" + prefix + i + "\">" + i + "</a>");
-                last = i;
-            }
-        }
-        html.append(page < totalPages ? "<a href=\"" + prefix + (page + 1) + "\">&rsaquo;</a>" : "<span class=\"disabled\">&rsaquo;</span>");
-        return html.append("</nav>").toString();
-    }
-// code lấy 15000 thành 15.000
+    // code lấy 15000 thành 15.000
     static String money(java.math.BigDecimal value) {
         if (value == null) {
             return "";
@@ -46,6 +26,34 @@
     String shellTitle = (String) request.getAttribute("pageTitle");
     String flashType = (String) request.getAttribute("flashType");
     String flashMessage = (String) request.getAttribute("flashMessage");
+
+    String paramSuccess = request.getParameter("success");
+    String paramError = request.getParameter("error");
+    if (paramSuccess != null) {
+        flashType = "success";
+        if ("created".equals(paramSuccess)) flashMessage = "Đã thêm mới voucher thành công!";
+        else if ("updated".equals(paramSuccess)) flashMessage = "Đã cập nhật thông tin voucher thành công!";
+        else if ("status_updated".equals(paramSuccess)) flashMessage = "Đã cập nhật trạng thái hoạt động của voucher!";
+        else flashMessage = "Thao tác thành công!";
+    } else if (paramError != null) {
+        flashType = "error";
+        if ("missing_fields".equals(paramError)) flashMessage = "Vui lòng nhập đầy đủ các thông tin bắt buộc!";
+        else if ("duplicate_code".equals(paramError)) flashMessage = "Mã voucher đã tồn tại trong hệ thống. Vui lòng chọn mã khác!";
+        else if ("invalid_id".equals(paramError)) flashMessage = "Mã voucher không hợp lệ hoặc không tồn tại!";
+        else if ("forbidden".equals(paramError)) flashMessage = "Bạn không có quyền thao tác trên voucher này!";
+        else if ("invalid_discount".equals(paramError)) flashMessage = "Giá trị giảm phải là số hợp lệ và lớn hơn 0!";
+        else if ("discount_over_50".equals(paramError) || "discount_over_limit".equals(paramError)) flashMessage = "Mức giảm theo phần trăm đã vượt quá giới hạn cho phép!";
+        else if ("invalid_date".equals(paramError)) flashMessage = "Ngày bắt đầu hoặc ngày kết thúc không hợp lệ!";
+        else if ("enddate_before_start".equals(paramError)) flashMessage = "Ngày kết thúc phải sau ngày bắt đầu!";
+        else if ("invalid_limit".equals(paramError)) flashMessage = "Giới hạn lượt dùng không được nhỏ hơn số lượt đã sử dụng!";
+        else if ("invalid_data".equals(paramError)) flashMessage = "Dữ liệu nhập vào không hợp lệ (số tiền hoặc ngày giờ)!";
+        else flashMessage = "Không thể thực hiện thao tác. Vui lòng thử lại sau!";
+    } else if (flashMessage == null && session != null) {
+        flashType = (String) session.getAttribute("flashType");
+        flashMessage = (String) session.getAttribute("flashMessage");
+        session.removeAttribute("flashType");
+        session.removeAttribute("flashMessage");
+    }
     String baseUrl = (String) request.getAttribute("baseUrl");
     if (baseUrl == null) {
         baseUrl = ctx + (adminUser ? "/admin/vouchers" : "/manager/vouchers");

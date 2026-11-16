@@ -1,6 +1,6 @@
 package controller.admin.cinema;
 
-import com.google.gson.Gson;
+import dao.CentreDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -9,81 +9,129 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import model.dto.common.PageDTO;
 import model.entity.Centre;
-import model.entity.Hall;
 import model.entity.User;
-import service.CinemaService;
 
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 
 /**
- * Controller: Quản lý Cụm rạp (Centres).
- * Toàn bộ logic nghiệp vụ được ủy quyền cho CinemaService (Mô hình 3 lớp).
+ * Controller Quản lý Cụm rạp (Centre Management).
+ * Cấu trúc tinh gọn tương tác trực tiếp với CentreDAO (chuẩn Voucher & Hall):
+ * - Kiểm tra phiên và quyền Admin tập trung qua authorizedUser().
+ * - Phân tách 4 luồng rõ ràng: showList, showForm, save, toggleStatus.
  */
 @WebServlet(name = "CentreManagementServlet", urlPatterns = {"/admin/centres", "/admin/centre"})
 public class CentreManagementServlet extends HttpServlet {
 
-    private static final int PAGE_SIZE = 6;
-    private final CinemaService cinemaService = new CinemaService();
-    private final Gson gson = new Gson();
+    private static final int PAGE_SIZE = 10;
+    private final CentreDAO centreDAO = new CentreDAO();
 
-    private boolean isAdmin(HttpSession session) {
-        if (session == null) return false;
-        Object role = session.getAttribute("role");
-        if (role == null && session.getAttribute("user") instanceof User) {
-            role = ((User) session.getAttribute("user")).getRole();
+    // ─────────────────────────────────────────────────────────────────────────
+    // AUTHENTICATION & AUTHORIZATION
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private User authorizedUser(HttpServletRequest request, HttpServletResponse response)
+            throws IOException {
+        HttpSession session = request.getSession(false);
+        User user = (session == null) ? null : (User) session.getAttribute("user");
+
+        // 1. Kiểm tra đăng nhập
+        if (user == null || session.getAttribute("userId") == null) {
+            response.sendRedirect(request.getContextPath() + "/login?redirect="
+                    + URLEncoder.encode("/admin/centres", StandardCharsets.UTF_8));
+            return null;
         }
-        return "ADMIN".equalsIgnoreCase((String) role);
+
+        // 2. Kiểm tra quyền ADMIN
+        if (!"ADMIN".equalsIgnoreCase(user.getRole()) && !user.isAdmin()) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN,
+                    "Chỉ Quản trị viên (ADMIN) mới có quyền truy cập trang Quản lý Cụm rạp.");
+            return null;
+        }
+
+        return user;
     }
+
+    private String baseUrl(HttpServletRequest request) {
+        return request.getContextPath() + "/admin/centres";
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // HTTP GET
+    // ─────────────────────────────────────────────────────────────────────────
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-
-        HttpSession session = request.getSession(false);
-        if (session == null || session.getAttribute("userId") == null) {
-            response.sendRedirect(request.getContextPath() + "/login?redirect="
-                    + URLEncoder.encode("/admin/centres", StandardCharsets.UTF_8));
-            return;
-        }
-        if (!isAdmin(session)) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN,
-                    "Chỉ Quản trị viên (ADMIN) mới có quyền truy cập trang Quản lý Cụm rạp.");
+        User user = authorizedUser(request, response);
+        if (user == null) {
             return;
         }
 
-        // AJAX: lấy danh sách Hall của một Centre (BR-HS-01)
         String action = request.getParameter("action");
-        if ("getHalls".equalsIgnoreCase(action)) {
-            response.setContentType("application/json;charset=UTF-8");
-            try {
-                int centreId = Integer.parseInt(request.getParameter("centreId").trim());
-                List<Hall> halls = cinemaService.getHallsByCentreId(centreId);
-                response.getWriter().write(gson.toJson(halls));
-            } catch (Exception e) {
-                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                response.getWriter().write("[]");
-            }
+        if ("create".equalsIgnoreCase(action) || "edit".equalsIgnoreCase(action)) {
+            showForm(request, response, action);
+        } else {
+            showList(request, response);
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // HTTP POST
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        request.setCharacterEncoding("UTF-8");
+        User user = authorizedUser(request, response);
+        if (user == null) {
             return;
         }
 
-        // Đọc tham số tìm kiếm và phân trang
+        String action = request.getParameter("action");
+        if ("create".equalsIgnoreCase(action) || "update".equalsIgnoreCase(action)) {
+            save(request, response, action);
+        } else if ("toggleStatus".equalsIgnoreCase(action)) {
+            toggleStatus(request, response);
+        } else {
+            response.sendRedirect(baseUrl(request));
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 1. SHOW LIST (Hiển thị danh sách cụm rạp & phân trang)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private void showList(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
         String search = request.getParameter("search");
         String status = request.getParameter("status");
-        if (status == null || status.trim().isEmpty()) status = "ALL";
+        if (status == null || status.trim().isEmpty()) {
+            status = "ALL";
+        }
 
         int page = 1;
         try {
             String p = request.getParameter("page");
-            if (p != null && !p.trim().isEmpty()) page = Integer.parseInt(p.trim());
-        } catch (NumberFormatException ignored) { }
+            if (p != null && !p.trim().isEmpty()) {
+                page = Integer.parseInt(p.trim());
+            }
+        } catch (NumberFormatException ignored) {}
+     
+      
+       
+        PageDTO<Centre> pageResult = centreDAO.search(search, status, page, PAGE_SIZE);
 
-        PageDTO<Centre> pageResult = cinemaService.searchCentres(search, status, page, PAGE_SIZE);
-        CinemaService.CentreKpi kpi = cinemaService.getCentresKpi();
-
-        String base = request.getContextPath() + "/admin/centres";
+        // Gọi thẳng CentreDAO đếm KPI thống kê
+        int totalCentres = centreDAO.countCentresByStatus("ALL");
+        int activeCentres = centreDAO.countCentresByStatus("ACTIVE");
+        int inactiveCentres = centreDAO.countCentresByStatus("INACTIVE");
+        int totalHalls = centreDAO.countTotalHalls();
+        //lấy đường dẫn để tiện gửi page phân trang 
+         String base = baseUrl(request);
+         //lấy lại search cũ để ấn trang chỉ cần điền page 
         String filters = "search=" + URLEncoder.encode(search != null ? search.trim() : "", StandardCharsets.UTF_8)
                 + "&status=" + URLEncoder.encode(status, StandardCharsets.UTF_8);
 
@@ -97,7 +145,8 @@ public class CentreManagementServlet extends HttpServlet {
         request.setAttribute("totalHalls", kpi.totalHalls());
         request.setAttribute("currentSearch", search != null ? search.trim() : "");
         request.setAttribute("currentStatus", status);
-        request.setAttribute("pagerBase", base + "?" + filters + "&page=");
+        //trả về cho cái phân trang lấy  filter để lấy cái giá trị cũ 
+        request.setAttribute("Base", base + "?" + filters + "&page=");
         request.setAttribute("backQuery", filters + "&page=" + pageResult.getPage());
         request.setAttribute("baseUrl", base);
         request.setAttribute("activeNav", "centres");
@@ -106,83 +155,124 @@ public class CentreManagementServlet extends HttpServlet {
         request.getRequestDispatcher("/WEB-INF/views/admin/cinema/centreList.jsp").forward(request, response);
     }
 
-    @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+    // ─────────────────────────────────────────────────────────────────────────
+    // 2. SHOW FORM (Mở form Thêm mới / Sửa cụm rạp)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private void showForm(HttpServletRequest request, HttpServletResponse response, String action)
             throws ServletException, IOException {
+        String base = baseUrl(request);
+        Centre centre = null;
 
-        request.setCharacterEncoding("UTF-8");
-        HttpSession session = request.getSession(false);
-        if (!isAdmin(session)) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Bạn không có quyền thực hiện thao tác này.");
-            return;
-        }
-
-        String action    = request.getParameter("action");
-        String search    = request.getParameter("search");
-        String status    = request.getParameter("status");
-        String pageParam = request.getParameter("page");
-        String back      = request.getParameter("back");
-
-        StringBuilder redirectUrl;
-        if (back != null && !back.trim().isEmpty()) {
-            redirectUrl = new StringBuilder(request.getContextPath() + "/admin/centres?" + back.replaceAll("[^A-Za-z0-9%&=._~+-]", "") + "&");
-        } else {
-            redirectUrl = new StringBuilder(request.getContextPath() + "/admin/centres?");
-            if (search != null && !search.trim().isEmpty())
-                redirectUrl.append("search=").append(URLEncoder.encode(search.trim(), StandardCharsets.UTF_8)).append("&");
-            if (status != null && !status.trim().isEmpty())
-                redirectUrl.append("status=").append(URLEncoder.encode(status.trim(), StandardCharsets.UTF_8)).append("&");
-            if (pageParam != null && !pageParam.trim().isEmpty())
-                redirectUrl.append("page=").append(URLEncoder.encode(pageParam.trim(), StandardCharsets.UTF_8)).append("&");
-        }
-
-        // Thêm Centre mới
-        if ("create".equalsIgnoreCase(action)) {
-            String centreName = request.getParameter("centreName");
-            String address    = request.getParameter("address");
-            String phone      = request.getParameter("phone");
-            String city       = request.getParameter("city");
-
-            CinemaService.Result<Centre> result = cinemaService.createCentre(centreName, address, phone, city);
-            if (result.isSuccess()) {
-                redirectUrl.append("success=created");
-            } else {
-                String err = (result.getStatus() == CinemaService.Status.DUPLICATE_NAME) ? "duplicate_name"
-                           : (result.getStatus() == CinemaService.Status.MISSING_FIELDS) ? "missing_fields" : "failed";
-                redirectUrl.append("error=").append(err);
+        if ("edit".equalsIgnoreCase(action)) {
+            try {
+                int centreId = Integer.parseInt(request.getParameter("centreId"));
+                centre = centreDAO.getCentreById(centreId);
+                if (centre == null) {
+                    response.sendRedirect(base + "?error=invalid_id");
+                    return;
+                }
+            } catch (Exception e) {
+                response.sendRedirect(base + "?error=invalid_id");
+                return;
             }
-            response.sendRedirect(redirectUrl.toString());
+        }
+
+        request.setAttribute("centre", centre);
+        request.setAttribute("baseUrl", base);
+        request.setAttribute("activeNav", "centres");
+        request.setAttribute("pageTitle", centre != null ? "Sửa Cụm rạp" : "Thêm Cụm rạp mới");
+
+        request.getRequestDispatcher("/WEB-INF/views/admin/cinema/centreForm.jsp").forward(request, response);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 3. SAVE (Tạo mới hoặc Cập nhật cụm rạp)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private void save(HttpServletRequest request, HttpServletResponse response, String action)
+            throws IOException {
+        String base = baseUrl(request);
+        String centreName = request.getParameter("centreName");
+        String address = request.getParameter("address");
+        String phone = request.getParameter("phone");
+        String city = request.getParameter("city");
+        String centreIdParam = request.getParameter("centreId");
+
+        String returnPrefix = "create".equalsIgnoreCase(action)
+                ? (base + "?action=create&error=")
+                : (base + "?action=edit&centreId=" + (centreIdParam != null ? centreIdParam.trim() : "") + "&error=");
+
+        // 1. Validate không được để trống
+        if (centreName == null || centreName.trim().isEmpty()
+                || address == null || address.trim().isEmpty()
+                || phone == null || phone.trim().isEmpty()
+                || city == null || city.trim().isEmpty()) {
+            response.sendRedirect(returnPrefix + "missing_fields");
             return;
         }
 
-        // Sửa thông tin Centre
-        if ("update".equalsIgnoreCase(action)) {
-            String centreIdParam = request.getParameter("centreId");
-            String centreName    = request.getParameter("centreName");
-            String address       = request.getParameter("address");
-            String phone         = request.getParameter("phone");
-            String city          = request.getParameter("city");
+        centreName = centreName.trim();
+        address = address.trim();
+        phone = phone.trim();
+        city = city.trim();
 
+        // 2. Validate độ dài Tên cụm rạp (3 - 100 ký tự)
+        if (centreName.length() < 3 || centreName.length() > 100) {
+            response.sendRedirect(returnPrefix + "invalid_name");
+            return;
+        }
+
+        // 3. Validate độ dài Địa chỉ (5 - 200 ký tự)
+        if (address.length() < 3 || address.length() > 100) {
+            response.sendRedirect(returnPrefix + "invalid_address");
+            return;
+        }
+
+        // 4. Validate Số điện thoại Hotline: Phải bắt đầu bằng số 0, gồm 10 đến 11 chữ số {} số lần xuát hiện tối thiểu 
+        if (!phone.matches("^0[0-9]{9,10}$")) {
+            response.sendRedirect(returnPrefix + "invalid_phone");
+            return;
+        }
+
+        // 5. Validate Tên thành phố (2 - 50 ký tự)
+        if (city.length() < 3 || city.length() > 100) {
+            response.sendRedirect(returnPrefix + "invalid_city");
+            return;
+        }
+// create
+        if ("create".equalsIgnoreCase(action)) {
+            // Kiểm tra trùng tên cụm rạp
+            if (centreDAO.isCentreNameExists(centreName, 0)) {
+                response.sendRedirect(base + "?action=create&error=duplicate_name");
+                return;
+            }
+
+            Centre centre = new Centre();
+            centre.setCentreName(centreName);
+            centre.setAddress(address);
+            centre.setPhone(phone);
+            centre.setCity(city);
+            centre.setStatus("ACTIVE");
+
+            boolean ok = centreDAO.addCentre(centre);
+            response.sendRedirect(ok ? (base + "?success=created") : (base + "?action=create&error=failed"));
+//update
+        } else {
+            // Update
             int centreId;
             try {
                 centreId = Integer.parseInt(centreIdParam.trim());
             } catch (Exception e) {
-                redirectUrl.append("error=invalid_id");
-                response.sendRedirect(redirectUrl.toString());
+                response.sendRedirect(base + "?error=invalid_id");
                 return;
             }
 
-            CinemaService.Result<Centre> result = cinemaService.updateCentre(centreId, centreName, address, phone, city);
-            if (result.isSuccess()) {
-                redirectUrl.append("success=updated");
-            } else {
-                String err = (result.getStatus() == CinemaService.Status.DUPLICATE_NAME) ? "duplicate_name"
-                           : (result.getStatus() == CinemaService.Status.MISSING_FIELDS) ? "missing_fields" : "failed";
-                redirectUrl.append("error=").append(err);
+            Centre existingCentre = centreDAO.getCentreById(centreId);
+            if (existingCentre == null) {
+                response.sendRedirect(base + "?error=invalid_id");
+                return;
             }
-            response.sendRedirect(redirectUrl.toString());
-            return;
-        }
 
         // Chuyển trạng thái Cụm rạp (Theater.changeStatus) theo quy chuẩn nghiệp vụ phân phối phim
         if ("changeStatus".equalsIgnoreCase(action)) {
@@ -222,10 +312,38 @@ public class CentreManagementServlet extends HttpServlet {
             } catch (Exception e) {
                 redirectUrl.append("error=invalid_id");
             }
-            response.sendRedirect(redirectUrl.toString());
-            return;
-        }
 
-        response.sendRedirect(redirectUrl.toString());
+            Centre updated = new Centre();
+            updated.setCentreId(centreId);
+            updated.setCentreName(centreName);
+            updated.setAddress(address);
+            updated.setPhone(phone);
+            updated.setCity(city);
+            updated.setStatus(existingCentre.getStatus());
+
+            boolean ok = centreDAO.updateCentre(updated);
+            response.sendRedirect(ok ? (base + "?success=updated") : (base + "?action=edit&centreId=" + centreId + "&error=failed"));
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 4. TOGGLE STATUS (Bật / Tắt hoạt động của cụm rạp)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private void toggleStatus(HttpServletRequest request, HttpServletResponse response)
+            throws IOException {
+        String base = baseUrl(request);
+        String back = request.getParameter("back");
+        String redirectBase = (back != null && !back.trim().isEmpty())
+                ? (base + "?" + back.replaceAll("[^A-Za-z0-9%&=._~+-]", "") + "&")
+                : (base + "?");
+
+        try {
+            int centreId = Integer.parseInt(request.getParameter("centreId").trim());
+            boolean ok = centreDAO.toggleStatus(centreId);
+            response.sendRedirect(redirectBase + (ok ? "success=status_updated" : "error=failed"));
+        } catch (Exception e) {
+            response.sendRedirect(redirectBase + "error=invalid_id");
+        }
     }
 }

@@ -55,7 +55,7 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/common/alerts.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/manager/shell.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin/dashboard.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin/centres.css?v=<%= System.currentTimeMillis() %>">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin/centres.css">
 </head>
 <body>
 <div class="cf-manager-shell">
@@ -73,18 +73,19 @@
                     <h1>Quản lý Cụm rạp</h1>
                     <p>Danh sách các cụm rạp, thông tin liên hệ và trạng thái hoạt động trên toàn hệ thống</p>
                 </div>
-                <button type="button" class="cf-btn cf-btn-primary" onclick="openCreateCentreModal()" style="display: flex; align-items: center; gap: 8px;">
+                <a href="${baseUrl}?action=create" class="cf-btn cf-btn-primary" style="display: flex; align-items: center; gap: 8px;">
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                     Thêm Cụm rạp mới
-                </button>
+                </a>
             </div>
 
             <!-- Thông báo thành công / lỗi -->
-            <% if ("created".equals(successParam)) { %>
+            <c:if test="${param.success == 'created'}">
                 <div class="cf-alert cf-alert-success">
                     <span>✓</span> <strong>Thành công!</strong> Đã thêm mới cụm rạp vào hệ thống.
                 </div>
-            <% } else if ("updated".equals(successParam)) { %>
+            </c:if>
+            <c:if test="${param.success == 'updated'}">
                 <div class="cf-alert cf-alert-success">
                     <span>✓</span> <strong>Thành công!</strong> Đã cập nhật thông tin liên hệ và địa chỉ cụm rạp thành công.
                 </div>
@@ -96,33 +97,31 @@
                 <div class="cf-alert cf-alert-danger">
                     <span>⚠</span> <strong>Lỗi:</strong> Luồng chuyển trạng thái không hợp lệ. Rạp đang INACTIVE không thể chuyển trực tiếp sang SUSPENDED (phải kích hoạt về ACTIVE trước)!
                 </div>
-            <% } else if ("duplicate_name".equals(errorParam)) { %>
+            </c:if>
+            <c:if test="${param.error == 'invalid_id'}">
                 <div class="cf-alert cf-alert-danger">
-                    <span>⚠</span> <strong>Lỗi:</strong> Tên cụm rạp đã tồn tại trong hệ thống. Vui lòng chọn tên khác!
+                    <span>⚠</span> <strong>Lỗi:</strong> Cụm rạp không tồn tại hoặc mã định danh không hợp lệ!
                 </div>
-            <% } else if ("missing_fields".equals(errorParam)) { %>
-                <div class="cf-alert cf-alert-danger">
-                    <span>⚠</span> <strong>Lỗi:</strong> Vui lòng điền đầy đủ các thông tin bắt buộc (Tên cụm rạp, Địa chỉ, Hotline).
-                </div>
-            <% } else if ("failed".equals(errorParam)) { %>
+            </c:if>
+            <c:if test="${param.error == 'failed'}">
                 <div class="cf-alert cf-alert-danger">
                     <span>⚠</span> <strong>Lỗi:</strong> Không thể thực hiện thao tác. Vui lòng thử lại sau!
                 </div>
-            <% } %>
+            </c:if>
 
             <!-- Thẻ thống kê (Stat Cards) -->
             <div class="cf-stats-grid">
                 <div class="cf-stat-card">
                     <div class="cf-stat-icon primary">🏢</div>
                     <div class="cf-stat-info">
-                        <h3><%= totalCentres != null ? totalCentres : 0 %></h3>
+                        <h3>${totalCentres != null ? totalCentres : 0}</h3>
                         <p>Tổng số Cụm rạp</p>
                     </div>
                 </div>
                 <div class="cf-stat-card">
                     <div class="cf-stat-icon success">✓</div>
                     <div class="cf-stat-info">
-                        <h3><%= activeCentres != null ? activeCentres : 0 %></h3>
+                        <h3>${activeCentres != null ? activeCentres : 0}</h3>
                         <p>Đang hoạt động</p>
                     </div>
                 </div>
@@ -156,7 +155,7 @@
                         <span class="icon">
                             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                         </span>
-                        <input type="text" name="search" placeholder="Tìm theo tên cụm rạp, hotline, địa chỉ, thành phố..." value="<%= currentSearch != null ? currentSearch : "" %>">
+                        <input type="text" name="search" placeholder="Tìm theo tên cụm rạp, hotline, địa chỉ, thành phố..." value="${currentSearch}">
                     </div>
 
                     <select name="status" class="cf-select">
@@ -167,13 +166,11 @@
                     </select>
 
                     <button type="submit" class="cf-btn cf-btn-primary">Lọc</button>
-                    <% if ((currentSearch != null && !currentSearch.isEmpty()) || (currentStatus != null && !"ALL".equalsIgnoreCase(currentStatus))) { %>
-                        <a href="${pageContext.request.contextPath}/admin/centres" class="cf-btn cf-btn-secondary">Xóa lọc</a>
-                    <% } %>
+                    <a href="${baseUrl}" class="cf-btn cf-btn-secondary">Xóa lọc</a>
                 </form>
             </div>
 
-            <!-- Bảng danh sách Cụm rạp -->
+            <!---------------------------------------------------- Bảng danh sách Cụm rạp ------------------------------------------------------>
             <div class="cf-table-container">
                 <table class="cf-table">
                     <thead>
@@ -264,191 +261,17 @@
                     </tbody>
                 </table>
 
-                <% if (totalFilteredCentres > 0) { %>
-                <!-- THANH PHÂN TRANG (PAGINATION) -->
-                <div class="cf-pagination-bar">
-                    <div class="cf-pagination-info">
-                        Hiển thị <strong>${result.from} - ${result.to}</strong> trên tổng số <strong>${result.total}</strong> cụm rạp
+                <c:if test="${result.total > 0}">
+                    <!-- THANH PHÂN TRANG (PAGINATION) -->
+                    <div class="cf-pagination-bar">
+                        <div class="cf-pagination-info">
+                            Hiển thị <strong>${result.from} - ${result.to}</strong> trên tổng số <strong>${result.total}</strong> cụm rạp
+                        </div>
+                        ${result.renderPager(pagerBase)}
                     </div>
-                    <% if (totalPages > 1) { %>
-                    <div class="cf-pagination-controls">
-                        <!-- Nút trang trước (Previous) -->
-                        <% if (currentPage > 1) { %>
-                            <a href="${pagerBase}<%= currentPage - 1 %>" 
-                               class="cf-page-btn" title="Trang trước">«</a>
-                        <% } else { %>
-                            <span class="cf-page-btn disabled" title="Trang trước">«</span>
-                        <% } %>
-
-                        <!-- Danh sách các số trang -->
-                        <% for (int i = 1; i <= totalPages; i++) { 
-                            if (i == 1 || i == totalPages || Math.abs(i - currentPage) <= 2) {
-                        %>
-                            <% if (i == currentPage) { %>
-                                <span class="cf-page-btn active"><%= i %></span>
-                            <% } else { %>
-                                <a href="${pagerBase}<%= i %>" 
-                                   class="cf-page-btn"><%= i %></a>
-                            <% } %>
-                        <% 
-                            } else if (i == currentPage - 3 || i == currentPage + 3) { 
-                        %>
-                            <span class="cf-page-ellipsis">...</span>
-                        <% 
-                            }
-                        } 
-                        %>
-
-                        <!-- Nút trang sau (Next) -->
-                        <% if (currentPage < totalPages) { %>
-                            <a href="${pagerBase}<%= currentPage + 1 %>" 
-                               class="cf-page-btn" title="Trang sau">»</a>
-                        <% } else { %>
-                            <span class="cf-page-btn disabled" title="Trang sau">»</span>
-                        <% } %>
-                    </div>
-                    <% } %>
-                </div>
-                <% } %>
+                </c:if>
             </div>
         </main>
-    </div>
-</div>
-
-<!-- ============================================================== -->
-<!-- MODAL 1: THÊM CỤM RẠP MỚI -->
-<!-- ============================================================== -->
-<div class="cf-modal-backdrop" id="createCentreModal">
-    <div class="cf-modal">
-        <div class="cf-modal-header">
-            <h3>Thêm Cụm rạp mới</h3>
-            <button type="button" class="cf-modal-close" onclick="closeCreateCentreModal()">&times;</button>
-        </div>
-        <form method="POST" action="${baseUrl}">
-            <input type="hidden" name="action" value="create">
-            <input type="hidden" name="back" value="${backQuery}">
-            <input type="hidden" name="search" value="<%= currentSearch != null ? currentSearch : "" %>">
-            <input type="hidden" name="status" value="<%= currentStatus != null ? currentStatus : "ALL" %>">
-            <input type="hidden" name="page" value="1">
-
-            <div class="cf-modal-body">
-                <div class="cf-form-group">
-                    <label>Tên Cụm rạp *</label>
-                    <input type="text" name="centreName" placeholder="Ví dụ: CineFlow Cầu Giấy" required>
-                    <span class="cf-form-hint">Hệ thống sẽ kiểm tra đảm bảo không trùng tên với cụm rạp khác.</span>
-                </div>
-
-                <div class="cf-form-group">
-                    <label>Địa chỉ chi tiết *</label>
-                    <input type="text" name="address" placeholder="Ví dụ: 123 Cầu Giấy, Quan Hoa" required>
-                </div>
-
-                <div class="cf-form-group">
-                    <label>Hotline / Điện thoại liên hệ *</label>
-                    <input type="text" name="phone" placeholder="Ví dụ: 02411111111" required>
-                </div>
-
-                <div class="cf-form-group">
-                    <label>Thành phố / Tỉnh thành</label>
-                    <input type="text" name="city" placeholder="Ví dụ: Hà Nội, TP. Hồ Chí Minh, Đà Nẵng...">
-                </div>
-            </div>
-
-            <div class="cf-modal-footer">
-                <button type="button" class="cf-btn cf-btn-secondary" onclick="closeCreateCentreModal()">Hủy</button>
-                <button type="submit" class="cf-btn cf-btn-primary">Lưu Cụm rạp</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- ============================================================== -->
-<!-- MODAL 2: SỬA THÔNG TIN CỤM RẠP -->
-<!-- ============================================================== -->
-<div class="cf-modal-backdrop" id="editCentreModal">
-    <div class="cf-modal">
-        <div class="cf-modal-header">
-            <h3>Sửa thông tin Cụm rạp</h3>
-            <button type="button" class="cf-modal-close" onclick="closeEditCentreModal()">&times;</button>
-        </div>
-        <form method="POST" action="${baseUrl}">
-            <input type="hidden" name="action" value="update">
-            <input type="hidden" name="centreId" id="editCentreId">
-            <input type="hidden" name="back" value="${backQuery}">
-            <input type="hidden" name="search" value="<%= currentSearch != null ? currentSearch : "" %>">
-            <input type="hidden" name="status" value="<%= currentStatus != null ? currentStatus : "ALL" %>">
-            <input type="hidden" name="page" value="<%= currentPage %>">
-
-            <div class="cf-modal-body">
-                <div class="cf-form-group">
-                    <label>Tên Cụm rạp *</label>
-                    <input type="text" name="centreName" id="editCentreName" required>
-                    <span class="cf-form-hint">Kiểm tra không trùng lặp với tên của cụm rạp khác.</span>
-                </div>
-
-                <div class="cf-form-group">
-                    <label>Địa chỉ chi tiết *</label>
-                    <input type="text" name="address" id="editAddress" required>
-                </div>
-
-                <div class="cf-form-group">
-                    <label>Hotline / Điện thoại liên hệ *</label>
-                    <input type="text" name="phone" id="editPhone" required>
-                </div>
-
-                <div class="cf-form-group">
-                    <label>Thành phố / Tỉnh thành</label>
-                    <input type="text" name="city" id="editCity">
-                </div>
-            </div>
-
-            <div class="cf-modal-footer">
-                <button type="button" class="cf-btn cf-btn-secondary" onclick="closeEditCentreModal()">Hủy</button>
-                <button type="submit" class="cf-btn cf-btn-primary">Cập nhật thay đổi</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- ============================================================== -->
-<!-- MODAL 3: XEM DANH SÁCH HALL TRỰC THUỘC (BR-HS-01) -->
-<!-- ============================================================== -->
-<div class="cf-modal-backdrop" id="viewHallsModal">
-    <div class="cf-modal cf-modal-lg">
-        <div class="cf-modal-header">
-            <div>
-                <h3 id="viewHallsTitle">Danh sách phòng chiếu</h3>
-                <small id="viewHallsSubtitle" style="color: #94A3B8; font-size: 13px;">Danh sách các phòng chiếu hiện có trực thuộc cụm rạp này</small>
-            </div>
-            <button type="button" class="cf-modal-close" onclick="closeViewHallsModal()">&times;</button>
-        </div>
-
-        <div class="cf-modal-body" style="padding: 0;">
-            <div id="hallsLoading" style="text-align: center; padding: 30px; color: #94A3B8;">
-                Đang tải danh sách phòng chiếu...
-            </div>
-
-            <div id="hallsContent" style="display: none;">
-                <table class="cf-halls-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 70px;">STT</th>
-                            <th>Tên phòng chiếu</th>
-                            <th>Loại phòng</th>
-                            <th>Sức chứa (Ghế)</th>
-                            <th>Trạng thái phòng</th>
-                        </tr>
-                    </thead>
-                    <tbody id="hallsTableBody">
-                        <!-- Render qua Javascript AJAX -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <div class="cf-modal-footer">
-            <button type="button" class="cf-btn cf-btn-secondary" onclick="closeViewHallsModal()">Đóng</button>
-        </div>
     </div>
 </div>
 

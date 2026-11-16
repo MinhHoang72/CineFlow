@@ -1,5 +1,7 @@
 package controller.admin.cinema;
 
+import dao.CentreDAO;
+import dao.HallDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -10,75 +12,65 @@ import model.dto.common.PageDTO;
 import model.entity.Centre;
 import model.entity.Hall;
 import model.entity.User;
-import service.CinemaService;
 
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
-/**
- * Controller điều khiển phân hệ Quản lý Phòng chiếu (UC-FE-03.2: Manage Cinema Halls).
- * Phân quyền chuẩn: Chỉ Branch Manager mới được quyền quản lý phòng chiếu của chi nhánh mình.
- * Admin chỉ quản lý vĩ mô cụm rạp, không trực tiếp quản lý/chỉnh sửa phòng chiếu của chi nhánh.
- * Toàn bộ logic nghiệp vụ được ủy quyền cho CinemaService (Mô hình 3 lớp).
- */
+
+
 @WebServlet(name = "HallManagementServlet", urlPatterns = {"/manager/halls", "/admin/halls"})
 public class HallManagementServlet extends HttpServlet {
 
-    private final CinemaService cinemaService = new CinemaService();
+    private static final int PAGE_SIZE = 10;
+    private final HallDAO hallDAO = new HallDAO();
+    private final CentreDAO centreDAO = new CentreDAO();
 
-    /**
-     * Kiểm tra người dùng hiện tại có vai trò MANAGER hay không.
-     */
-    private boolean isManager(HttpSession session) {
-        if (session == null) {
-            return false;
-        }
-        Object roleObj = session.getAttribute("role");
-        if (roleObj instanceof String) {
-            String role = (String) roleObj;
-            if ("MANAGER".equalsIgnoreCase(role)) {
-                return true;
-            }
-        }
-        Object userObj = session.getAttribute("user");
-        if (userObj instanceof User) {
-            String role = ((User) userObj).getRole();
-            return role != null && "MANAGER".equalsIgnoreCase(role);
-        }
-        return false;
-    }
+    // ─────────────────────────────────────────────────────────────────────────
+    // AUTHENTICATION & AUTHORIZATION
+    // ─────────────────────────────────────────────────────────────────────────
 
-    private User getCurrentUser(HttpSession session) {
-        if (session == null) {
+    private User authorizedUser(HttpServletRequest request, HttpServletResponse response)
+            throws IOException {
+        //nếu người dùng chưa đăng nhập => session thành null => đã đăng nhập 
+        HttpSession session = request.getSession(false);
+        User user = (session == null) ? null : (User) session.getAttribute("user");
+
+        if (user == null || session.getAttribute("userId") == null) {
+            String redirectUrl = request.getContextPath() + "/login?redirect="
+                    + URLEncoder.encode("/manager/halls", StandardCharsets.UTF_8);
+            response.sendRedirect(redirectUrl);
             return null;
         }
-        Object userObj = session.getAttribute("user");
-        return userObj instanceof User ? (User) userObj : null;
+        // phân role => đăng nhập phải có vai trò là manager
+        if (!"MANAGER".equalsIgnoreCase(user.getRole()) && !user.isManager()) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN,
+                    "Chức năng này chỉ dành cho Quản lý chi nhánh (Branch Manager). Quản trị viên (Admin) không trực tiếp quản lý phòng chiếu.");
+            return null;
+        }
+
+        return user;
     }
+
+    private String baseUrl(HttpServletRequest request) {
+        return request.getContextPath() + "/manager/halls";
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // HTTP GET
+    // ─────────────────────────────────────────────────────────────────────────
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-
-        HttpSession session = request.getSession(false);
-        if (session == null || session.getAttribute("userId") == null) {
-            String redirectUrl = request.getContextPath() + "/login?redirect="
-                    + URLEncoder.encode("/manager/halls", StandardCharsets.UTF_8);
-            response.sendRedirect(redirectUrl);
+        User user = authorizedUser(request, response);
+        if (user == null) {
             return;
         }
-
-        if (!isManager(session)) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN,
-                    "Chức năng này chỉ dành cho Quản lý chi nhánh (Branch Manager). Quản trị viên (Admin) không trực tiếp quản lý phòng chiếu.");
-            return;
-        }
-
-        User user = getCurrentUser(session);
-        int targetCentreId = (user != null && user.getCentreId() != null) ? user.getCentreId() : 0;
-
-        if (targetCentreId <= 0) {
+  //khóa phạm vi hall
+        int centreId = (user.getCentreId() != null) ? user.getCentreId() : 0;
+       
+        if (centreId <= 0) {
             request.setAttribute("noCentreAssigned", true);
             request.setAttribute("activeNav", "halls");
             request.setAttribute("pageTitle", "Quản lý Phòng chiếu");
@@ -86,8 +78,51 @@ public class HallManagementServlet extends HttpServlet {
             return;
         }
 
-        Centre currentCentre = cinemaService.getCentreById(targetCentreId);
+        String action = request.getParameter("action");
+        if ("create".equalsIgnoreCase(action) || "edit".equalsIgnoreCase(action)) {
+            showForm(request, response, centreId, action);
+        } else {
+            showList(request, response, centreId);
+        }
+    }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // HTTP POST
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        request.setCharacterEncoding("UTF-8");
+        User user = authorizedUser(request, response);
+        if (user == null) {
+            return;
+        }
+// khóa phạm vi hall 
+        int centreId = (user.getCentreId() != null) ? user.getCentreId() : 0;
+        
+        
+        if (centreId <= 0) {
+            response.sendRedirect(baseUrl(request) + "?error=no_centre");
+            return;
+        }
+
+        String action = request.getParameter("action");
+        if ("create".equalsIgnoreCase(action) || "update".equalsIgnoreCase(action)) {
+            save(request, response, centreId, action);
+        } else if ("toggleStatus".equalsIgnoreCase(action)) {
+            toggleStatus(request, response, centreId);
+        } else {
+            response.sendRedirect(baseUrl(request));
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 1. SHOW LIST (Hiển thị danh sách phòng & phân trang)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private void showList(HttpServletRequest request, HttpServletResponse response, int centreId)
+            throws ServletException, IOException {
         String search = request.getParameter("search");
         String status = request.getParameter("status");
         if (status == null || status.trim().isEmpty()) {
@@ -97,30 +132,37 @@ public class HallManagementServlet extends HttpServlet {
         int page = 1;
         try {
             String pageParam = request.getParameter("page");
-            if (pageParam != null && !pageParam.trim().isEmpty())
+            if (pageParam != null && !pageParam.trim().isEmpty()) {
                 page = Integer.parseInt(pageParam.trim());
-        } catch (NumberFormatException ignored) { }
+            }
+        } catch (NumberFormatException ignored) {}
 
-        PageDTO<Hall> pageResult = cinemaService.searchHalls(targetCentreId, search, status, page, 6);
-        CinemaService.HallKpi kpi = cinemaService.getHallsKpi(targetCentreId);
+        String base = baseUrl(request);
+  
+        PageDTO<Hall> pageResult = hallDAO.search(centreId, search, status, page, PAGE_SIZE);
 
-        String base = request.getContextPath() + "/manager/halls";
+        // Gọi thẳng HallDAO đếm KPI
+        int totalHalls = hallDAO.countHallsByStatus(centreId, "ALL");
+        int activeHalls = hallDAO.countHallsByStatus(centreId, "ACTIVE");
+        int inactiveHalls = hallDAO.countHallsByStatus(centreId, "INACTIVE");
+        int totalCapacity = hallDAO.sumCapacityByCentre(centreId);
+
+        // Lấy thông tin cụm rạp
+        Centre currentCentre = centreDAO.getCentreById(centreId);
+
         String filters = "search=" + URLEncoder.encode(search != null ? search.trim() : "", StandardCharsets.UTF_8)
                 + "&status=" + URLEncoder.encode(status, StandardCharsets.UTF_8);
 
         request.setAttribute("result", pageResult);
         request.setAttribute("page", pageResult);
         request.setAttribute("currentCentre", currentCentre);
-        request.setAttribute("targetCentreId", targetCentreId);
-        request.setAttribute("allCentres", null);
-        request.setAttribute("isAdmin", false);
-        request.setAttribute("halls", pageResult.getItems());
-        request.setAttribute("currentSearch", search != null ? search.trim() : "");
+        request.setAttribute("currentSearch", search);
         request.setAttribute("currentStatus", status);
-        request.setAttribute("totalHalls", kpi.totalHalls());
-        request.setAttribute("activeHalls", kpi.activeHalls());
-        request.setAttribute("inactiveHalls", kpi.inactiveHalls());
-        request.setAttribute("totalCapacity", kpi.totalCapacity());
+        request.setAttribute("targetCentreId", centreId);
+        request.setAttribute("totalHalls", totalHalls);
+        request.setAttribute("activeHalls", activeHalls);
+        request.setAttribute("inactiveHalls", inactiveHalls);
+        request.setAttribute("totalCapacity", totalCapacity);
         request.setAttribute("pagerBase", base + "?" + filters + "&page=");
         request.setAttribute("backQuery", filters + "&page=" + pageResult.getPage());
         request.setAttribute("baseUrl", base);
@@ -130,133 +172,165 @@ public class HallManagementServlet extends HttpServlet {
         request.getRequestDispatcher("/WEB-INF/views/admin/cinema/hallList.jsp").forward(request, response);
     }
 
-    @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+    // ─────────────────────────────────────────────────────────────────────────
+    // 2. SHOW FORM (Mở Form Thêm mới / Sửa)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private void showForm(HttpServletRequest request, HttpServletResponse response, int centreId, String action)
             throws ServletException, IOException {
+        String base = baseUrl(request);
+        Hall hall = null;
 
-        request.setCharacterEncoding("UTF-8");
+        if ("edit".equalsIgnoreCase(action)) {
+            try {
+                int hallId = Integer.parseInt(request.getParameter("hallId"));
+                hall = hallDAO.getHallById(hallId);
+                if (hall == null || hall.getCentreId() != centreId) {
+                    response.sendRedirect(base + "?error=invalid_hall");
+                    return;
+                }
+            } catch (Exception e) {
+                response.sendRedirect(base + "?error=invalid_id");
+                return;
+            }
+        }
 
-        HttpSession session = request.getSession(false);
-        if (!isManager(session)) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN,
-                    "Bạn không có quyền thực hiện thao tác này. Chức năng chỉ dành cho Quản lý chi nhánh (Manager).");
+        Centre currentCentre = centreDAO.getCentreById(centreId);
+
+        request.setAttribute("hall", hall);
+        request.setAttribute("currentCentre", currentCentre);
+        request.setAttribute("targetCentreId", centreId);
+        request.setAttribute("baseUrl", base);
+        request.setAttribute("activeNav", "halls");
+        request.setAttribute("pageTitle", hall != null ? "Sửa Phòng chiếu" : "Thêm Phòng chiếu mới");
+
+        request.getRequestDispatcher("/WEB-INF/views/admin/cinema/hallForm.jsp").forward(request, response);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 3. SAVE (Tạo mới hoặc Cập nhật phòng chiếu)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private void save(HttpServletRequest request, HttpServletResponse response, int centreId, String action)
+            throws IOException {
+        String base = baseUrl(request);
+        String hallName = request.getParameter("hallName");
+        String hallType = request.getParameter("hallType");
+        String capacityParam = request.getParameter("capacity");
+        String status = request.getParameter("status");
+
+        // Validate cơ bản
+        if (hallName == null || hallName.trim().isEmpty()) {
+            String errorUrl = "create".equalsIgnoreCase(action)
+                    ? (base + "?action=create&error=missing_fields")
+                    : (base + "?action=edit&hallId=" + request.getParameter("hallId") + "&error=missing_fields");
+            response.sendRedirect(errorUrl);
             return;
         }
 
-        User user = getCurrentUser(session);
-        int centreId = (user != null && user.getCentreId() != null) ? user.getCentreId() : 0;
-
-        if (centreId <= 0) {
-            response.sendRedirect(request.getContextPath() + "/manager/halls?error=no_centre");
-            return;
-        }
-
-        String filterSearch = request.getParameter("search");
-        String filterStatus = request.getParameter("status");
-        String pageParam = request.getParameter("page");
-        String back = request.getParameter("back");
-
-        StringBuilder redirectUrl;
-        if (back != null && !back.trim().isEmpty()) {
-            redirectUrl = new StringBuilder(request.getContextPath() + "/manager/halls?" + back.replaceAll("[^A-Za-z0-9%&=._~+-]", "") + "&");
-        } else {
-            redirectUrl = new StringBuilder(request.getContextPath() + "/manager/halls?");
-            if (filterSearch != null && !filterSearch.trim().isEmpty()) {
-                redirectUrl.append("search=").append(URLEncoder.encode(filterSearch.trim(), StandardCharsets.UTF_8)).append("&");
+        hallName = hallName.trim();
+        int capacity = 60;
+        try {
+            if (capacityParam != null && !capacityParam.trim().isEmpty()) {
+                capacity = Integer.parseInt(capacityParam.trim());
+                if (capacity <= 0) capacity = 60;
             }
-            if (filterStatus != null && !filterStatus.trim().isEmpty()) {
-                redirectUrl.append("status=").append(URLEncoder.encode(filterStatus.trim(), StandardCharsets.UTF_8)).append("&");
-            }
-            if (pageParam != null && !pageParam.trim().isEmpty()) {
-                redirectUrl.append("page=").append(URLEncoder.encode(pageParam.trim(), StandardCharsets.UTF_8)).append("&");
-            }
-        }
+        } catch (NumberFormatException ignored) {}
 
-        String action = request.getParameter("action");
-
-        // Thêm mới phòng chiếu
         if ("create".equalsIgnoreCase(action)) {
-            String hallName = request.getParameter("hallName");
-            String hallType = request.getParameter("hallType");
-            String capacityParam = request.getParameter("capacity");
-            String status = request.getParameter("status");
-
-            CinemaService.Result<Hall> result = cinemaService.createHall(centreId, hallName, hallType, capacityParam, status);
-            if (result.isSuccess()) {
-                redirectUrl.append("success=created");
-            } else {
-                String err = switch (result.getStatus()) {
-                    case MISSING_FIELDS -> "missing_fields";
-                    case DUPLICATE_NAME -> "duplicate_name";
-                    default -> "failed";
-                };
-                redirectUrl.append("error=").append(err);
-            }
-            response.sendRedirect(redirectUrl.toString());
-            return;
-        }
-
-        // Chỉnh sửa phòng chiếu
-        if ("update".equalsIgnoreCase(action)) {
-            String hallIdParam = request.getParameter("hallId");
-            String hallName = request.getParameter("hallName");
-            String hallType = request.getParameter("hallType");
-            String capacityParam = request.getParameter("capacity");
-            String newStatus = request.getParameter("status");
-
-            int hallId;
-            try {
-                hallId = Integer.parseInt(hallIdParam.trim());
-            } catch (Exception e) {
-                redirectUrl.append("error=invalid_id");
-                response.sendRedirect(redirectUrl.toString());
+            // Kiểm tra trùng tên phòng trong chi nhánh
+            if (hallDAO.isHallNameExists(centreId, hallName, 0)) {
+                response.sendRedirect(base + "?action=create&error=duplicate_name");
                 return;
             }
 
-            CinemaService.Result<Hall> result = cinemaService.updateHall(centreId, hallId, hallName, hallType, capacityParam, newStatus);
-            if (result.isSuccess()) {
-                redirectUrl.append("success=updated");
-            } else {
-                String err = switch (result.getStatus()) {
-                    case INVALID_HALL -> "invalid_hall";
-                    case MISSING_FIELDS -> "missing_fields";
-                    case HAS_FUTURE_BOOKINGS -> "has_future_bookings";
-                    case DUPLICATE_NAME -> "duplicate_name";
-                    default -> "failed";
-                };
-                redirectUrl.append("error=").append(err);
-            }
-            response.sendRedirect(redirectUrl.toString());
-            return;
-        }
+            Hall hall = new Hall();
+            hall.setCentreId(centreId);
+            hall.setHallName(hallName);
+            hall.setHallType(hallType != null ? hallType.trim() : "2D");
+            hall.setCapacity(capacity);
+            hall.setStatus(status != null && !status.trim().isEmpty() ? status.trim() : "AVAILABLE");
 
-        // Toggle Status
-        if ("toggleStatus".equalsIgnoreCase(action)) {
-            String hallIdParam = request.getParameter("hallId");
+            boolean ok = hallDAO.addHall(hall);
+            response.sendRedirect(ok ? (base + "?success=created") : (base + "?action=create&error=failed"));
+
+        } else {
+            // Cập nhật (update)
             int hallId;
             try {
-                hallId = Integer.parseInt(hallIdParam.trim());
+                hallId = Integer.parseInt(request.getParameter("hallId").trim());
             } catch (Exception e) {
-                redirectUrl.append("error=invalid_id");
-                response.sendRedirect(redirectUrl.toString());
+                response.sendRedirect(base + "?error=invalid_id");
                 return;
             }
 
-            CinemaService.Result<Void> result = cinemaService.toggleHallStatus(centreId, hallId);
-            if (result.isSuccess()) {
-                redirectUrl.append("success=status_updated");
-            } else {
-                String err = switch (result.getStatus()) {
-                    case INVALID_HALL -> "invalid_hall";
-                    case HAS_FUTURE_BOOKINGS -> "has_future_bookings";
-                    default -> "failed";
-                };
-                redirectUrl.append("error=").append(err);
+            Hall existingHall = hallDAO.getHallById(hallId);
+            if (existingHall == null || existingHall.getCentreId() != centreId) {
+                response.sendRedirect(base + "?error=invalid_hall");
+                return;
             }
-            response.sendRedirect(redirectUrl.toString());
+
+            // Chặn chuyển sang INACTIVE nếu có suất chiếu tương lai đã có khách đặt
+            boolean isDeactivating = existingHall.isActive()
+                    && ("INACTIVE".equalsIgnoreCase(status) || "MAINTENANCE".equalsIgnoreCase(status));
+            if (isDeactivating && hallDAO.hasFutureBookedShowtimes(hallId)) {
+                response.sendRedirect(base + "?action=edit&hallId=" + hallId + "&error=has_future_bookings");
+                return;
+            }
+
+            // Kiểm tra trùng tên với phòng khác
+            if (hallDAO.isHallNameExists(centreId, hallName, hallId)) {
+                response.sendRedirect(base + "?action=edit&hallId=" + hallId + "&error=duplicate_name");
+                return;
+            }
+
+            Hall updated = new Hall();
+            updated.setHallId(hallId);
+            updated.setCentreId(centreId);
+            updated.setHallName(hallName);
+            updated.setHallType(hallType != null ? hallType.trim() : "2D");
+            updated.setCapacity(capacity);
+            updated.setStatus(status != null ? status.trim() : "AVAILABLE");
+
+            boolean ok = hallDAO.updateHall(updated);
+            response.sendRedirect(ok ? (base + "?success=updated") : (base + "?action=edit&hallId=" + hallId + "&error=failed"));
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 4. TOGGLE STATUS (Bật / Tắt hoạt động trực tiếp)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private void toggleStatus(HttpServletRequest request, HttpServletResponse response, int centreId)
+            throws IOException {
+        String base = baseUrl(request);
+        String back = request.getParameter("back");
+        String redirectBase = (back != null && !back.trim().isEmpty())
+                ? (base + "?" + back.replaceAll("[^A-Za-z0-9%&=._~+-]", "") + "&")
+                : (base + "?");
+
+        int hallId;
+        try {
+            hallId = Integer.parseInt(request.getParameter("hallId").trim());
+        } catch (Exception e) {
+            response.sendRedirect(redirectBase + "error=invalid_id");
             return;
         }
 
-        response.sendRedirect(redirectUrl.toString());
+        Hall existingHall = hallDAO.getHallById(hallId);
+        if (existingHall == null || existingHall.getCentreId() != centreId) {
+            response.sendRedirect(redirectBase + "error=invalid_hall");
+            return;
+        }
+
+    
+        String result = hallDAO.toggleStatus(hallId);
+        if ("SUCCESS".equalsIgnoreCase(result)) {
+            response.sendRedirect(redirectBase + "success=status_updated");
+        } else if ("HAS_FUTURE_BOOKINGS".equalsIgnoreCase(result)) {
+            response.sendRedirect(redirectBase + "error=has_future_bookings");
+        } else {
+            response.sendRedirect(redirectBase + "error=failed");
+        }
     }
 }

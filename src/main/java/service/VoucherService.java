@@ -97,9 +97,10 @@ public class VoucherService {
                     "Đơn hàng chưa đạt giá trị tối thiểu " + voucher.getMinimumOrderValue() + "đ để áp dụng voucher này.",
                     BigDecimal.ZERO, voucher);
         }
-
+//set lại giảm tối đa 
         BigDecimal discount = BigDecimal.ZERO;
         if ("PERCENT".equalsIgnoreCase(voucher.getDiscountType()) || "PERCENTAGE".equalsIgnoreCase(voucher.getDiscountType())) {
+            
             discount = orderAmount.multiply(voucher.getDiscountValue())
                     .divide(BigDecimal.valueOf(100), 0, RoundingMode.HALF_UP);
             if (voucher.getMaximumDiscount() != null && discount.compareTo(voucher.getMaximumDiscount()) > 0) {
