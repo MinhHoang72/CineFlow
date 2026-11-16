@@ -72,6 +72,11 @@
                     <span>⚠</span> <strong>Lỗi:</strong> Không thể thực hiện thao tác. Vui lòng thử lại sau!
                 </div>
             </c:if>
+            <c:if test="${param.error == 'invalid_transition'}">
+                <div class="cf-alert cf-alert-danger">
+                    <span>⚠</span> <strong>Lỗi:</strong> Không thể chuyển trực tiếp giữa hai trạng thái này. Cụm rạp INACTIVE cần được chuyển về ACTIVE trước khi chuyển sang SUSPENDED.
+                </div>
+            </c:if>
 
             <!-- Thẻ thống kê (Stat Cards) -->
             <div class="cf-stats-grid">
@@ -92,8 +97,15 @@
                 <div class="cf-stat-card">
                     <div class="cf-stat-icon warning">⏸</div>
                     <div class="cf-stat-info">
-                        <h3>${inactiveCentres != null ? inactiveCentres : 0}</h3>
+                        <h3>${suspendedCentres != null ? suspendedCentres : 0}</h3>
                         <p>Tạm ngưng</p>
+                    </div>
+                </div>
+                <div class="cf-stat-card">
+                    <div class="cf-stat-icon" style="background: rgba(239,68,68,.12); color: #F87171;">■</div>
+                    <div class="cf-stat-info">
+                        <h3>${inactiveCentres != null ? inactiveCentres : 0}</h3>
+                        <p>Ngừng hoạt động</p>
                     </div>
                 </div>
                 <div class="cf-stat-card">
@@ -117,8 +129,9 @@
 
                     <select name="status" class="cf-select">
                         <option value="ALL" ${currentStatus == 'ALL' || empty currentStatus ? 'selected' : ''}>Tất cả trạng thái</option>
-                        <option value="ACTIVE" ${currentStatus == 'ACTIVE' ? 'selected' : ''}>Đang hoạt động (ACTIVE)</option>
-                        <option value="INACTIVE" ${currentStatus == 'INACTIVE' ? 'selected' : ''}>Tạm ngưng (INACTIVE)</option>
+                        <option value="ACTIVE" ${currentStatus == 'ACTIVE' ? 'selected' : ''}>Đang hoạt động</option>
+                        <option value="SUSPENDED" ${currentStatus == 'SUSPENDED' ? 'selected' : ''}>Tạm ngưng</option>
+                        <option value="INACTIVE" ${currentStatus == 'INACTIVE' ? 'selected' : ''}>Ngừng hoạt động</option>
                     </select>
 
                     <button type="submit" class="cf-btn cf-btn-primary">Lọc</button>
@@ -136,7 +149,7 @@
                             <th style="min-width: 130px;">Hotline</th>
                             <th style="min-width: 170px;">Phòng chiếu trực thuộc</th>
                             <th style="min-width: 120px;">Trạng thái</th>
-                            <th style="min-width: 190px; text-align: right;">Thao tác</th>
+                            <th style="min-width: 310px; text-align: right;">Thao tác / trạng thái</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -144,6 +157,8 @@
                             <c:when test="${not empty result.items}">
                                 <c:forEach items="${result.items}" var="c">
                                     <c:set var="isActive" value="${c.status == 'ACTIVE'}" />
+                                    <c:set var="isSuspended" value="${c.status == 'SUSPENDED'}" />
+                                    <c:set var="isInactive" value="${c.status == 'INACTIVE'}" />
                                     <tr>
                                         <td>
                                             <strong style="color: #F8FAFC; font-size: 15px;">${c.centreName}</strong>
@@ -173,10 +188,16 @@
                                         <td>
                                             <c:choose>
                                                 <c:when test="${isActive}">
-                                                    <span class="cf-badge cf-badge-active">● Hoạt động</span>
+                                                    <span class="cf-badge cf-badge-active">Đang hoạt động</span>
+                                                </c:when>
+                                                <c:when test="${isSuspended}">
+                                                    <span class="cf-badge" style="background: rgba(245,158,11,.15); color: #FBBF24; border: 1px solid rgba(245,158,11,.35);">Tạm ngưng</span>
+                                                </c:when>
+                                                <c:when test="${isInactive}">
+                                                    <span class="cf-badge cf-badge-inactive">Ngừng hoạt động</span>
                                                 </c:when>
                                                 <c:otherwise>
-                                                    <span class="cf-badge cf-badge-inactive">● Tạm ngưng</span>
+                                                    <span class="cf-badge cf-badge-inactive">● <c:out value="${c.status}"/></span>
                                                 </c:otherwise>
                                             </c:choose>
                                         </td>
@@ -186,28 +207,17 @@
                                                 <a href="${baseUrl}?action=edit&centreId=${c.centreId}" class="cf-btn cf-btn-secondary cf-btn-sm">
                                                     Sửa
                                                 </a>
-<!-- Nút Toggle Status (Bật / Tắt trạng thái) -->                                           
-                                                <form method="POST" action="${baseUrl}" style="display: inline-block; margin: 0;">
-                                                    <input type="hidden" name="action" value="toggleStatus">
+                                                <form method="POST" action="${baseUrl}" style="display: inline-flex; align-items: center; gap: 6px; margin: 0;"
+                                                      onsubmit="return confirm('Xác nhận cập nhật trạng thái cụm rạp? Việc tạm ngưng hoặc ngừng hoạt động có thể hủy các suất chiếu tương lai và vé liên quan.');">
+                                                    <input type="hidden" name="action" value="changeStatus">
                                                     <input type="hidden" name="centreId" value="${c.centreId}">
-                                                    <%-- gửi action và centrerid --%>
                                                     <input type="hidden" name="back" value="${backQuery}">
-                                                    <input type="hidden" name="search" value="${currentSearch}">
-                                                    <input type="hidden" name="status" value="${currentStatus}">
-                                                    <input type="hidden" name="page" value="${result.page}">
-
-                                                    <c:choose>
-                                                        <c:when test="${isActive}">
-                                                            <button type="submit" class="cf-btn cf-btn-danger cf-btn-sm" title="Tạm ngưng hoạt động cụm rạp">
-                                                                Tắt
-                                                            </button>
-                                                        </c:when>
-                                                        <c:otherwise>
-                                                            <button type="submit" class="cf-btn cf-btn-primary cf-btn-sm" style="background: #16A34A; border-color: #16A34A;" title="Kích hoạt lại cụm rạp">
-                                                                Bật
-                                                            </button>
-                                                        </c:otherwise>
-                                                    </c:choose>
+                                                    <select name="targetStatus" class="cf-select" aria-label="Trạng thái cụm rạp" style="min-width: 155px; padding: 7px 26px 7px 9px;">
+                                                        <option value="ACTIVE" ${isActive ? 'selected' : ''}>ACTIVE</option>
+                                                        <option value="SUSPENDED" ${isSuspended ? 'selected' : ''}>SUSPENDED</option>
+                                                        <option value="INACTIVE" ${isInactive ? 'selected' : ''}>INACTIVE</option>
+                                                    </select>
+                                                    <button type="submit" class="cf-btn cf-btn-primary cf-btn-sm">Lưu</button>
                                                 </form>
                                             </div>
                                         </td>

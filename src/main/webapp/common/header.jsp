@@ -66,9 +66,16 @@
     List<BookingHistoryDTO> loginCancellationNotices = null;
     if ("CUSTOMER".equalsIgnoreCase(headerRole)) {
         Object noticeValue = session.getAttribute("loginShowtimeCancellationNotices");
-        if (noticeValue instanceof List<?>) {
-            loginCancellationNotices = (List<BookingHistoryDTO>) noticeValue;
-            session.removeAttribute("loginShowtimeCancellationNotices");
+        Object cycleValue = session.getAttribute("loginCancellationNoticeCycle");
+        Object shownCycleValue = session.getAttribute("loginCancellationNoticeShownCycle");
+        long cycle = cycleValue instanceof Number ? ((Number) cycleValue).longValue() : 0;
+        long shownCycle = shownCycleValue instanceof Number ? ((Number) shownCycleValue).longValue() : -1;
+        if (noticeValue instanceof List<?> && cycle != shownCycle) {
+            List<?> notices = (List<?>) noticeValue;
+            if (!notices.isEmpty() && notices.get(0) instanceof BookingHistoryDTO) {
+                loginCancellationNotices = (List<BookingHistoryDTO>) notices;
+            }
+            session.setAttribute("loginCancellationNoticeShownCycle", cycle);
         }
     }
 %>

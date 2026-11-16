@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpSession;
 import model.dto.common.PageDTO;
 import model.entity.Centre;
 import model.entity.User;
+import service.CinemaService;
 
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -19,13 +20,14 @@ import java.nio.charset.StandardCharsets;
  * Controller Quản lý Cụm rạp (Centre Management).
  * Cấu trúc tinh gọn tương tác trực tiếp với CentreDAO (chuẩn Voucher & Hall):
  * - Kiểm tra phiên và quyền Admin tập trung qua authorizedUser().
- * - Phân tách 4 luồng rõ ràng: showList, showForm, save, toggleStatus.
+ * - Phân tách luồng danh sách, biểu mẫu, lưu thông tin và đổi trạng thái theo lifecycle.
  */
 @WebServlet(name = "CentreManagementServlet", urlPatterns = {"/admin/centres", "/admin/centre"})
 public class CentreManagementServlet extends HttpServlet {
 
     private static final int PAGE_SIZE = 10;
     private final CentreDAO centreDAO = new CentreDAO();
+    private final CinemaService cinemaService = new CinemaService();
 
     // ─────────────────────────────────────────────────────────────────────────
     // AUTHENTICATION & AUTHORIZATION
@@ -93,6 +95,8 @@ public class CentreManagementServlet extends HttpServlet {
         String action = request.getParameter("action");
         if ("create".equalsIgnoreCase(action) || "update".equalsIgnoreCase(action)) {
             save(request, response, action);
+        } else if ("changeStatus".equalsIgnoreCase(action)) {
+            changeStatus(request, response, user);
         } else if ("toggleStatus".equalsIgnoreCase(action)) {
             toggleStatus(request, response);
         } else {
@@ -127,6 +131,7 @@ public class CentreManagementServlet extends HttpServlet {
         // Gọi thẳng CentreDAO đếm KPI thống kê
         int totalCentres = centreDAO.countCentresByStatus("ALL");
         int activeCentres = centreDAO.countCentresByStatus("ACTIVE");
+        int suspendedCentres = centreDAO.countCentresByStatus("SUSPENDED");
         int inactiveCentres = centreDAO.countCentresByStatus("INACTIVE");
         int totalHalls = centreDAO.countTotalHalls();
         //lấy đường dẫn để tiện gửi page phân trang 
@@ -138,6 +143,7 @@ public class CentreManagementServlet extends HttpServlet {
         request.setAttribute("result", pageResult);
         request.setAttribute("totalCentres", totalCentres);
         request.setAttribute("activeCentres", activeCentres);
+        request.setAttribute("suspendedCentres", suspendedCentres);
         request.setAttribute("inactiveCentres", inactiveCentres);
         request.setAttribute("totalHalls", totalHalls);
         request.setAttribute("currentSearch", search != null ? search.trim() : "");
@@ -306,6 +312,35 @@ public class CentreManagementServlet extends HttpServlet {
             int centreId = Integer.parseInt(request.getParameter("centreId").trim());
             boolean ok = centreDAO.toggleStatus(centreId);
             response.sendRedirect(redirectBase + (ok ? "success=status_updated" : "error=failed"));
+        } catch (Exception e) {
+            response.sendRedirect(redirectBase + "error=invalid_id");
+        }
+    }
+
+    /** Apply one of the three supported centre states through the business lifecycle service. */
+    private void changeStatus(HttpServletRequest request, HttpServletResponse response, User admin)
+            throws IOException {
+        String base = baseUrl(request);
+        String back = request.getParameter("back");
+        String redirectBase = (back != null && !back.trim().isEmpty())
+                ? (base + "?" + back.replaceAll("[^A-Za-z0-9%&=._~+-]", "") + "&")
+                : (base + "?");
+
+        try {
+            int centreId = Integer.parseInt(request.getParameter("centreId").trim());
+            String targetStatus = request.getParameter("targetStatus");
+            String adminName = admin.getAccount() != null ? admin.getAccount() : "Admin";
+            CinemaService.Result<Centre> result = cinemaService.changeCentreStatus(
+                    centreId, targetStatus, adminName, "Admin cập nhật trạng thái từ màn hình quản lý cụm rạp");
+            if (result.isSuccess()) {
+                response.sendRedirect(redirectBase + "success=status_updated");
+            } else {
+                String error = result.getStatus() == CinemaService.Status.INVALID_ID ? "invalid_id"
+                        : result.getMessage() != null && (result.getMessage().contains("Luồng chuyển trạng thái không hợp lệ")
+                                || result.getMessage().contains("không thể chuyển trực tiếp"))
+                                ? "invalid_transition" : "failed";
+                response.sendRedirect(redirectBase + "error=" + error);
+            }
         } catch (Exception e) {
             response.sendRedirect(redirectBase + "error=invalid_id");
         }
