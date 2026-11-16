@@ -13,14 +13,11 @@ PRINT N'>>> BẮT ĐẦU CẤU HÌNH DỮ LIỆU TEST BẢO VỆ...';
 -- =========================================================================================
 PRINT N'1. Đang cấu hình test case Phòng chiếu 01 (Cầu Giấy)...';
 
--- 1.1 Đảm bảo Cụm rạp Cầu Giấy và Phòng 01 đang ở trạng thái Hoạt động
+-- 1.1 Đảm bảo Cụm rạp Cầu Giấy và các phòng test đang ở trạng thái Hoạt động
 UPDATE Centres SET Status = 'ACTIVE' WHERE CentreID = 1;
-UPDATE Halls SET Status = 'AVAILABLE' WHERE HallID = 1;
+UPDATE Halls SET Status = 'AVAILABLE' WHERE HallID IN (1, 2, 61, 62);
 
--- 1.2 Đảm bảo Phòng 02 đang Hoạt động để làm đối chứng (tắt thành công)
-UPDATE Halls SET Status = 'AVAILABLE' WHERE HallID = 2;
-
--- 1.3 Cập nhật suất chiếu của Phòng 01 sang tương lai (+7 ngày kể từ lúc chạy lệnh này)
+-- 1.2 Cập nhật suất chiếu của Phòng 01 (HallID = 1) và Phòng 2D 01 (HallID = 61) sang tương lai (+7 ngày)
 DECLARE @ShowtimeID_Hall1 INT;
 SELECT TOP 1 @ShowtimeID_Hall1 = ShowtimeID FROM Showtimes WHERE HallID = 1;
 
@@ -32,7 +29,6 @@ BEGIN
         Status = 'SCHEDULED'
     WHERE ShowtimeID = @ShowtimeID_Hall1;
 
-    -- 1.4 Đảm bảo có ít nhất 1 vé đã đặt thành công cho suất chiếu tương lai này
     IF NOT EXISTS (SELECT 1 FROM Bookings WHERE ShowtimeID = @ShowtimeID_Hall1)
     BEGIN
         DECLARE @CustID INT;
@@ -48,6 +44,38 @@ BEGIN
         SET BookingStatus = 'CONFIRMED' 
         WHERE ShowtimeID = @ShowtimeID_Hall1;
     END
+    PRINT N'   => Đã thiết lập xong: Phòng 01 có suất chiếu tương lai + vé đặt CONFIRMED!';
+END
+
+-- 1.3 Cấu hình thêm cho Phòng 2D 01 (HallID = 61) để bấm phòng nào cũng bị chặn đúng luật!
+DECLARE @ShowtimeID_Hall61 INT;
+SELECT TOP 1 @ShowtimeID_Hall61 = ShowtimeID FROM Showtimes WHERE HallID = 61 AND StartTime > GETDATE() AND Status = 'SCHEDULED';
+IF @ShowtimeID_Hall61 IS NULL
+BEGIN
+    SELECT TOP 1 @ShowtimeID_Hall61 = ShowtimeID FROM Showtimes WHERE HallID = 61;
+    IF @ShowtimeID_Hall61 IS NOT NULL
+    BEGIN
+        UPDATE Showtimes 
+        SET StartTime = DATEADD(DAY, 7, GETDATE()), 
+            EndTime = DATEADD(DAY, 7, DATEADD(HOUR, 2, GETDATE())),
+            Status = 'SCHEDULED'
+        WHERE ShowtimeID = @ShowtimeID_Hall61;
+    END
+END
+
+IF @ShowtimeID_Hall61 IS NOT NULL
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM Bookings WHERE ShowtimeID = @ShowtimeID_Hall61)
+    BEGIN
+        INSERT INTO Bookings (BookingCode, UserID, ShowtimeID, BookingType, BookingStatus, SubTotal, DiscountAmount, TotalAmount, CreatedAt, UpdatedAt)
+        VALUES ('BK_TEST_HALL61', 1, @ShowtimeID_Hall61, 'ONLINE', 'CONFIRMED', 100000, 0, 100000, GETDATE(), GETDATE());
+    END
+    ELSE
+    BEGIN
+        UPDATE Bookings SET BookingStatus = 'CONFIRMED' WHERE ShowtimeID = @ShowtimeID_Hall61;
+    END
+    PRINT N'   => Đã thiết lập xong: Phòng 2D 01 (HallID 61) có suất chiếu tương lai + vé đặt CONFIRMED!';
+END
     PRINT N'   => Đã thiết lập xong: Phòng 01 có suất chiếu tương lai + vé đặt CONFIRMED!';
 END
 ELSE
