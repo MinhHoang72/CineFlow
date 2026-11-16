@@ -186,7 +186,7 @@
                 </span>Theo dõi giao dịch
             </a>
         </nav>
-
+<%-- voucher --%>
         <div class="cf-sidebar-section">KHUYẾN MÃI</div>
         <nav class="cf-sidebar-nav">
             <a class="<%= "vouchers".equals(activeNav) ? "active" : "" %>" href="<%= cfPath %>/manager/vouchers">

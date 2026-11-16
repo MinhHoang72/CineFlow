@@ -32,6 +32,9 @@ public class VoucherDAO {
 
     public PageDTO<Voucher> search(String key, String status, String type,
                                    Integer scopeCentreId, int page, int size) {
+        if (page < 1) page = 1;
+        if (size < 1) size = 10;
+
         StringBuilder where = new StringBuilder(" WHERE 1=1");
         List<Object> params = new ArrayList<>();
 
@@ -40,6 +43,7 @@ public class VoucherDAO {
             where.append(" AND v.CentreID = ?");
             params.add(scopeCentreId);
         }
+        //bỏ qua thì lấy của admin 
 
         if (key != null && !key.isEmpty()) {
             where.append(" AND (v.VoucherCode COLLATE Latin1_General_100_CI_AI LIKE ?"
@@ -48,12 +52,16 @@ public class VoucherDAO {
             params.add(like);
             params.add(like);
         }
+      //voucher hết hạn 
         if ("EXPIRED".equals(status)) {
             where.append(" AND v.EndDate < GETDATE()");
+            //hết lượt 
         } else if ("EXHAUSTED".equals(status)) {
             where.append(" AND v.UsageLimit IS NOT NULL AND v.UsedCount >= v.UsageLimit");
         } else if ("ACTIVE".equals(status)) {
+            //voucher còn hiệu lục 
             where.append(" AND v.Status = 'ACTIVE' AND v.EndDate >= GETDATE()");
+            //tạm ngưng 
         } else if ("INACTIVE".equals(status)) {
             where.append(" AND v.Status = 'INACTIVE'");
         }
@@ -62,7 +70,7 @@ public class VoucherDAO {
             where.append(" AND v.DiscountType = ?");
             params.add(type);
         }
-
+//count total=> pages
         List<Voucher> rows = new ArrayList<>();
         int total = 0;
         try (Connection connection = DBContext.getConnection()) {
@@ -77,27 +85,26 @@ public class VoucherDAO {
                     }
                 }
             }
-            int pages = Math.max(1, (total + size - 1) / size); 
-            int current = Math.min(Math.max(1, page), pages);
             String sql = "SELECT " + COLUMNS + FROM_JOIN + where
                     + " ORDER BY v.VoucherID DESC OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
+            List<Object> dataParams = new ArrayList<>(params);
+            dataParams.add((page - 1) * size);
+            dataParams.add(size);
+
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                int index = 1;
-                for (Object param : params) {
-                    statement.setObject(index++, param);
+                for (int i = 0; i < dataParams.size(); i++) {
+                    statement.setObject(i + 1, dataParams.get(i));
                 }
-                statement.setInt(index++, (current - 1) * size);
-                statement.setInt(index, size);
                 try (ResultSet rs = statement.executeQuery()) {
                     while (rs.next()) {
                         rows.add(read(rs));
                     }
                 }
             }
-            return new PageDTO<>(rows, current, size, total);
+            return new PageDTO<>(rows, page, size, total);
         } catch (SQLException exception) {
             exception.printStackTrace();
-            return new PageDTO<>(rows, 1, size, 0);
+            return new PageDTO<>(rows, page, size, 0);
         }
     }
 
@@ -192,6 +199,44 @@ public class VoucherDAO {
             statement.setInt(2, id);
             statement.executeUpdate();
         }
+    }
+
+    public boolean addVoucher(Voucher voucher) {
+        try {
+            insert(voucher);
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean updateVoucher(Voucher voucher) {
+        try {
+            update(voucher);
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean toggleStatus(int id, String status) {
+        try {
+            setStatus(id, status);
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public Voucher getVoucherById(int id) {
+        return find(id);
+    }
+
+    public boolean isVoucherCodeExists(String code, int excludeId) {
+        return codeExists(code, excludeId);
     }
 
     public boolean belongsToCentre(int voucherId, int centreId) {

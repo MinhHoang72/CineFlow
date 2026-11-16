@@ -1,6 +1,6 @@
 <%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
-<%@ page import="model.dto.common.PageDTO, model.entity.Voucher, model.entity.User" %>
+<%@ page import="model.dto.common.PageDTO, model.entity.Voucher" %>
 <%@ include file="header.jspf" %>
 <%
     java.time.format.DateTimeFormatter fmt = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
@@ -140,9 +140,10 @@
                         </c:choose>
                     </td>
 
-                    <!-- THAO TÁC (Sửa & Form POST đổi trạng thái) -->
+ <!-- THAO TÁC (Sửa & Form POST đổi trạng thái) -->
                     <td class="cf-table-actions">
                         <a class="cf-btn cf-btn-sm cf-btn-secondary" href="${baseUrl}/form?id=${v.voucherId}">Sửa</a>
+                        
                         
                         <form class="vc-inline" method="post" action="${baseUrl}/status">
                             <input type="hidden" name="id" value="${v.voucherId}">
@@ -162,7 +163,7 @@
     <!-- PHÂN TRANG -->
     <div class="vc-pager">
         <span class="info">Hiển thị ${result.from}-${result.to} trên tổng ${result.total} kết quả</span>
-        <%= pager(ctx, (String)request.getAttribute("pagerBase"), ((model.dto.common.PageDTO<?>)request.getAttribute("result")).getPage(), ((model.dto.common.PageDTO<?>)request.getAttribute("result")).getTotalPages()) %>
+        ${result.renderPager(pagerBase)}
     </div>
 </div>
 

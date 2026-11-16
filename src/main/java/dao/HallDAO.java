@@ -236,9 +236,9 @@ public class HallDAO {
                    + "FROM Showtimes s "
                    + "JOIN Bookings b ON b.ShowtimeID = s.ShowtimeID "
                    + "WHERE s.HallID = ? "
-                   + "  AND s.StartTime > GETDATE() "
-                   + "  AND UPPER(s.Status) = 'SCHEDULED' "
-                   + "  AND UPPER(b.BookingStatus) IN ('CONFIRMED', 'COMPLETED')";
+                   + "  AND s.StartTime > GETDATE() " //xuất trong tương lai 
+                   + "  AND UPPER(s.Status) = 'SCHEDULED' " //đang mở bán 
+                   + "  AND UPPER(b.BookingStatus) IN ('CONFIRMED', 'COMPLETED')"; //đã thanh toán 
 
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
