@@ -323,7 +323,7 @@ public class HallManagementServlet extends HttpServlet {
             return;
         }
 
-        // Gọi hàm toggleStatus trực tiếp của DAO
+    
         String result = hallDAO.toggleStatus(hallId);
         if ("SUCCESS".equalsIgnoreCase(result)) {
             response.sendRedirect(redirectBase + "success=status_updated");

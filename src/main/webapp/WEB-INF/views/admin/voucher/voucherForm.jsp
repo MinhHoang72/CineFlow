@@ -35,8 +35,9 @@
                    placeholder="Ví dụ: CGY_STUDENT, VIP2026..."
                    <%-- 'readonly' chỉ đọc  --%>
                    ${voucher.voucherId > 0 && voucher.usedCount > 0 ? 'readonly' : ''}>
+            <span class="cf-form-hint" style="display: block; font-size: 0.82rem; color: #64748b; margin-top: 4px;">Hệ thống sẽ kiểm tra đảm bảo mã không bị trùng lặp.</span>
             <c:if test="${voucher.voucherId > 0 && voucher.usedCount > 0}">
-                <div class="cf-help">Voucher đã được sử dụng nên không đổi được mã.</div>
+                <span class="cf-form-hint" style="display: block; font-size: 0.82rem; color: #64748b; margin-top: 2px;">Voucher đã được sử dụng nên không thể thay đổi mã.</span>
             </c:if>
         </div>
 
@@ -44,6 +45,7 @@
             <label class="cf-form-label">Tên voucher <span style="color: #ef4444;">*</span></label>
             <input class="cf-form-control" type="text" name="name" maxlength="150" value="${voucher.voucherName}" 
                    placeholder="Ví dụ: HSSV Siêu Tiết Kiệm - Giảm 20%" required>
+            <span class="cf-form-hint" style="display: block; font-size: 0.82rem; color: #64748b; margin-top: 4px;">Tên hiển thị cho khách hàng nhận diện ưu đãi (3 - 150 ký tự).</span>
         </div>
 
         <div class="cf-form-group">
@@ -76,12 +78,14 @@
             <input class="cf-form-control" type="text" name="discountValue" required
                    placeholder="Nhập số % (VD: 20) hoặc số tiền (VD: 30000)"
                    value="${not empty voucher.discountValue ? voucher.discountValue.stripTrailingZeros().toPlainString() : ''}">
+            <span class="cf-form-hint" style="display: block; font-size: 0.82rem; color: #64748b; margin-top: 4px;">Đối với loại Phần trăm (%), mức giảm tối đa không được vượt quá ${not empty maxDiscountPercent ? maxDiscountPercent : 50}%.</span>
         </div>
 
         <div class="cf-form-group">
             <label class="cf-form-label">Giá trị đơn tối thiểu (đ)</label>
             <input class="cf-form-control" type="text" name="minimumOrderValue" 
                    value="${not empty voucher.minimumOrderValue ? voucher.minimumOrderValue.stripTrailingZeros().toPlainString() : '0'}">
+            <span class="cf-form-hint" style="display: block; font-size: 0.82rem; color: #64748b; margin-top: 4px;">Tổng tiền vé của khách phải đạt mức này mới được áp dụng (mặc định 0đ).</span>
         </div>
 
         <div class="cf-form-group">
@@ -89,6 +93,7 @@
             <input class="cf-form-control" type="text" name="maximumDiscount" 
                    placeholder="Chỉ áp dụng cho loại giảm % (VD: 50000)"
                    value="${not empty voucher.maximumDiscount ? voucher.maximumDiscount.stripTrailingZeros().toPlainString() : ''}">
+            <span class="cf-form-hint" style="display: block; font-size: 0.82rem; color: #64748b; margin-top: 4px;">Giới hạn trần số tiền được giảm khi áp dụng voucher theo tỷ lệ %.</span>
         </div>
 
         <div class="cf-form-group">

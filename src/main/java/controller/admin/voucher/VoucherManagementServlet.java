@@ -27,6 +27,7 @@ import java.time.LocalDateTime;
 @WebServlet(name = "VoucherManagementServlet", urlPatterns = {"/admin/vouchers", "/admin/vouchers/*", "/manager/vouchers", "/manager/vouchers/*"})
 public class VoucherManagementServlet extends HttpServlet {
 
+    public static final int MAX_DISCOUNT_PERCENT = 50; // Hằng số cấu hình mức trần giảm giá (%)
     private static final int PAGE_SIZE = 10;
     private final VoucherDAO voucherDAO = new VoucherDAO();
 
@@ -203,6 +204,7 @@ public class VoucherManagementServlet extends HttpServlet {
         request.setAttribute("baseUrl", base);
         request.setAttribute("currentUser", user);
         request.setAttribute("isAdminScope", user.isAdmin() && request.getRequestURI().contains("/admin/"));
+        request.setAttribute("maxDiscountPercent", MAX_DISCOUNT_PERCENT);
 
         request.getRequestDispatcher("/WEB-INF/views/admin/voucher/voucherForm.jsp").forward(request, response);
     }
@@ -275,8 +277,8 @@ public class VoucherManagementServlet extends HttpServlet {
             response.sendRedirect(formUrl + "error=invalid_discount");
             return;
         }
-        if ("PERCENT".equals(type) && discountVal.compareTo(BigDecimal.valueOf(50)) > 0) {
-            response.sendRedirect(formUrl + "error=discount_over_50");
+        if ("PERCENT".equals(type) && discountVal.compareTo(BigDecimal.valueOf(MAX_DISCOUNT_PERCENT)) > 0) {
+            response.sendRedirect(formUrl + "error=discount_over_limit");
             return;
         }
 

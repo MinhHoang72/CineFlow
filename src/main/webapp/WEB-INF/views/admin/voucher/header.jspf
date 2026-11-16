@@ -42,7 +42,7 @@
         else if ("invalid_id".equals(paramError)) flashMessage = "Mã voucher không hợp lệ hoặc không tồn tại!";
         else if ("forbidden".equals(paramError)) flashMessage = "Bạn không có quyền thao tác trên voucher này!";
         else if ("invalid_discount".equals(paramError)) flashMessage = "Giá trị giảm phải là số hợp lệ và lớn hơn 0!";
-        else if ("discount_over_50".equals(paramError)) flashMessage = "Giảm theo phần trăm không được vượt quá 50%!";
+        else if ("discount_over_50".equals(paramError) || "discount_over_limit".equals(paramError)) flashMessage = "Mức giảm theo phần trăm đã vượt quá giới hạn cho phép!";
         else if ("invalid_date".equals(paramError)) flashMessage = "Ngày bắt đầu hoặc ngày kết thúc không hợp lệ!";
         else if ("enddate_before_start".equals(paramError)) flashMessage = "Ngày kết thúc phải sau ngày bắt đầu!";
         else if ("invalid_limit".equals(paramError)) flashMessage = "Giới hạn lượt dùng không được nhỏ hơn số lượt đã sử dụng!";

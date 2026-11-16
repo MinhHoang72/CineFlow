@@ -258,7 +258,7 @@
                                                             Sửa
                                                         </a>
 
-                                                        <!-- Nút Toggle Status (Bật/Tắt) -->
+                        <!-- Nút Toggle Status (Bật/Tắt) -->
                                                         <form method="POST" action="${baseUrl}" style="display: inline-block; margin: 0;">
                                                             <input type="hidden" name="action" value="toggleStatus">
                                                             <input type="hidden" name="hallId" value="${h.hallId}">
