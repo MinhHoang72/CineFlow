@@ -1,59 +1,47 @@
 
+<%--
+    Trang JSP: Quản lý Tài khoản Khách hàng dành cho Quản trị viên (Admin).
+    Controller phục vụ: CustomerManagementServlet (GET/POST /admin/customers).
+    Chức năng:
+    - Hiển thị KPI tổng số khách hàng, đang hoạt động và bị tạm khóa.
+    - Tìm kiếm không dấu, lọc trạng thái và phân trang trên bảng (admin-pagination.js + customer-management.js).
+    - Gửi POST action="toggleStatus" để Khóa (LOCKED) hoặc Mở khóa (ACTIVE) tài khoản khách hàng.
+--%>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ page import="model.entity.User,java.util.List,java.math.BigDecimal" %>
+<%@ page import="model.entity.User, java.util.List" %>
 <%
+    // 1. Bảo vệ trang: chỉ Quản trị viên (ADMIN) mới được truy cập
     String authRole = (String) session.getAttribute("role");
-
     if (authRole == null && session.getAttribute("user") instanceof model.entity.User) {
         authRole = ((model.entity.User) session.getAttribute("user")).getRole();
     }
-
     if (!"ADMIN".equalsIgnoreCase(authRole)) {
-        response.sendError(
-            HttpServletResponse.SC_FORBIDDEN,
-            "Chỉ Quản trị viên (ADMIN) mới có quyền truy cập trang này."
-        );
+        response.sendError(HttpServletResponse.SC_FORBIDDEN, "Chỉ Quản trị viên (ADMIN) mới có quyền truy cập trang này.");
         return;
     }
 
+    // 2. Thiết lập Sidebar/Topbar & nhận dữ liệu từ CustomerManagementServlet
     request.setAttribute("activeNav", "customers");
     request.setAttribute("pageTitle", "Tài khoản Khách hàng");
 
-    List<User> customers =(List<User>) request.getAttribute("customers");
+    List<User> customers = (List<User>) request.getAttribute("customers");
+    Integer totalCustomers = (Integer) request.getAttribute("totalCustomers");
+    Integer activeCustomers = (Integer) request.getAttribute("activeCustomers");
+    Integer lockedCustomers = (Integer) request.getAttribute("lockedCustomers");
+    String currentSearch = (String) request.getAttribute("currentSearch");
+    String currentStatus = (String) request.getAttribute("currentStatus");
 
-    Integer totalCustomers =(Integer) request.getAttribute("totalCustomers");
-
-    Integer activeCustomers =(Integer) request.getAttribute("activeCustomers");
-
-    Integer lockedCustomers =(Integer) request.getAttribute("lockedCustomers");
-
-    String currentSearch =(String) request.getAttribute("currentSearch");
-
-    String currentStatus =(String) request.getAttribute("currentStatus");
-    
     String successParam = request.getParameter("success");
     String errorParam = request.getParameter("error");
-
 %>
-
+<%-- Hàm esc() mã hóa ký tự HTML đặc biệt để chống tấn công XSS khi in dữ liệu người dùng --%>
 <%!
     private String esc(String value) {
-        if (value == null) {
-            return "";
-        }
-
+        if (value == null) return "";
         return value.replace("&", "&amp;")
                     .replace("<", "&lt;")
                     .replace(">", "&gt;")
                     .replace("\"", "&quot;");
-    }
-
-    private String money(BigDecimal amount) {
-        if (amount == null) {
-            return "0 đ";
-        }
-
-        return String.format("%,.0f đ", amount);
     }
 %>
 
@@ -402,48 +390,6 @@
         </div>
 
         <script src="${pageContext.request.contextPath}/js/admin-pagination.js?v=<%= System.currentTimeMillis() %>"></script>
-        <script>
-            document.addEventListener('DOMContentLoaded', function () {
-                var countLabel = document.getElementById('customerCountLabel');
-                initTablePagination({
-                    tableBodyId: 'customerTableBody',
-                    rowSelector: 'tr.customer-row',
-                    emptyRowId: 'customerTableEmptyRow',
-                    paginationId: 'customerPaginationControls',
-                    infoDisplayId: 'customerPaginationInfo',
-                    pageSizeSelectId: 'customerPageSizeSelect',
-                    searchInputId: 'customerSearchInput',
-                    searchClearBtnId: 'customerSearchClearBtn',
-                    statusFilterSelectId: 'statusFilterSelect',
-                    statusPillSelector: '.filter-tabs .filter-tab[data-status]',
-                    defaultStatus: '<%= esc(currentStatus != null ? currentStatus : "ALL") %>',
-                    itemLabel: 'khách hàng',
-                    defaultPageSize: 10,
-                    onPageChange: function (state) {
-                        if (countLabel) {
-                            countLabel.textContent = state.totalFiltered + ' tài khoản đang hiển thị.';
-                        }
-                    }
-                });
-
-                document.querySelectorAll(
-                        '.cf-alert-success, .cf-alert-danger'
-                        ).forEach(function (alert) {
-                    setTimeout(function () {
-                        alert.style.transition =
-                                'opacity .4s ease, transform .4s ease';
-
-                        alert.style.opacity = '0';
-                        alert.style.transform = 'translateY(-8px)';
-
-                        setTimeout(function () {
-                            if (alert.parentNode) {
-                                alert.parentNode.removeChild(alert);
-                            }
-                        }, 400);
-                    }, 1000);
-                });
-            });
-        </script>
+        <script src="${pageContext.request.contextPath}/js/customer-management.js?v=<%= System.currentTimeMillis() %>"></script>
     </body>
 </html>

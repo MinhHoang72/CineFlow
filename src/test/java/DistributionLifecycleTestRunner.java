@@ -69,14 +69,14 @@ public class DistributionLifecycleTestRunner {
             test5_SuspendedToActiveRestoresOnlyNonExpired(testCentreId, testMovieActiveId, testMovieExpiredId);
 
             // -------------------------------------------------------------
-            // TEST 6: Rạp chuyển sang INACTIVE -> Tất cả phân phối thành CANCELLED
+            // TEST 6: Rạp chuyển sang INACTIVE -> Phân phối giữ nguyên (không tự huỷ thừa thãi)
             // -------------------------------------------------------------
-            test6_TheatreInactiveMakesAllDistributionsCancelled(testCentreId, testMovieActiveId);
+            test6_TheatreInactiveKeepsDistributionIntact(testCentreId, testMovieActiveId);
 
             // -------------------------------------------------------------
-            // TEST 7: Rạp INACTIVE sang ACTIVE -> CANCELLED giữ nguyên (không tự khôi phục)
+            // TEST 7: Rạp INACTIVE sang ACTIVE -> Quyền phân phối vẫn bảo toàn
             // -------------------------------------------------------------
-            test7_InactiveToActiveKeepsCancelled(testCentreId, testMovieActiveId);
+            test7_InactiveToActivePreservesDistribution(testCentreId, testMovieActiveId);
 
             System.out.println("\n======================================================================");
             System.out.println("  [SUCCESS] TẤT CẢ 7 TEST CASE ĐẶC TẢ NGHIỆP VỤ ĐỀU ĐẠT CHUẨN 100%!");
@@ -203,8 +203,8 @@ public class DistributionLifecycleTestRunner {
         System.out.println("  [PASS] Rạp mở lại từ SUSPENDED chỉ khôi phục các phim chưa quá endDate.");
     }
 
-    private static void test6_TheatreInactiveMakesAllDistributionsCancelled(int centreId, int movieId) {
-        System.out.println("\n[TEST 6] Rạp chuyển sang INACTIVE -> Tất cả phân phối thành CANCELLED");
+    private static void test6_TheatreInactiveKeepsDistributionIntact(int centreId, int movieId) {
+        System.out.println("\n[TEST 6] Rạp chuyển sang INACTIVE -> Phân phối giữ nguyên (không tự động huỷ phân phối)");
 
         setCentreStatusDirect(centreId, "ACTIVE");
         Set<Integer> set = new HashSet<>();
@@ -216,23 +216,23 @@ public class DistributionLifecycleTestRunner {
         cinemaService.changeCentreStatus(centreId, "INACTIVE", "Admin", "Đóng cửa rạp lâu dài");
 
         String distStatus = getDistributionStatus(centreId, movieId);
-        assertCondition("CANCELLED".equals(distStatus), "Phân phối phải chuyển sang CANCELLED khi rạp INACTIVE, thực tế: " + distStatus);
+        assertCondition("ACTIVE".equals(distStatus), "Phân phối phải GIỮ NGUYÊN khi rạp INACTIVE, thực tế: " + distStatus);
 
-        System.out.println("  [PASS] Khi rạp INACTIVE, toàn bộ phân phối chuyển sang CANCELLED.");
+        System.out.println("  [PASS] Khi rạp INACTIVE, quyền phân phối được bảo toàn (không tự huỷ thừa thãi).");
     }
 
-    private static void test7_InactiveToActiveKeepsCancelled(int centreId, int movieId) {
-        System.out.println("\n[TEST 7] Rạp INACTIVE sang ACTIVE -> CANCELLED giữ nguyên (Không tự khôi phục)");
+    private static void test7_InactiveToActivePreservesDistribution(int centreId, int movieId) {
+        System.out.println("\n[TEST 7] Rạp INACTIVE sang ACTIVE -> Quyền phân phối vẫn bảo toàn");
 
-        assertCondition("CANCELLED".equals(getDistributionStatus(centreId, movieId)), "Phân phối phải đang CANCELLED");
+        assertCondition("ACTIVE".equals(getDistributionStatus(centreId, movieId)), "Phân phối phải đang ACTIVE");
 
         // Kích hoạt lại rạp sang ACTIVE
         cinemaService.changeCentreStatus(centreId, "ACTIVE", "Admin", "Tái kích hoạt rạp");
 
         String distStatus = getDistributionStatus(centreId, movieId);
-        assertCondition("CANCELLED".equals(distStatus), "CANCELLED phải giữ nguyên sau khi rạp mở lại từ INACTIVE, thực tế: " + distStatus);
+        assertCondition("ACTIVE".equals(distStatus), "ACTIVE phải giữ nguyên sau khi rạp mở lại từ INACTIVE, thực tế: " + distStatus);
 
-        System.out.println("  [PASS] Rạp mở lại từ INACTIVE bảo toàn bản ghi CANCELLED không tự khôi phục nhầm.");
+        System.out.println("  [PASS] Rạp mở lại từ INACTIVE tiếp tục giữ nguyên quyền phân phối.");
     }
 
     // --- HELPER METHODS ---

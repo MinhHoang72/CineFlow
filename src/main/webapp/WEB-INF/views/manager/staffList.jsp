@@ -34,6 +34,25 @@
     String errorParam = request.getParameter("error");
     String searchParam = request.getParameter("search");
 
+    java.util.Map<String, String> successMsgs = java.util.Map.of(
+        "created", "Đã tạo tài khoản nhân viên thành công.",
+        "updated", "Đã cập nhật thông tin nhân viên thành công.",
+        "status_updated", "Đã cập nhật trạng thái nhân viên."
+    );
+    java.util.Map<String, String> errorMsgs = java.util.Map.ofEntries(
+        java.util.Map.entry("account_exists", "Tên tài khoản đã tồn tại."),
+        java.util.Map.entry("email_exists", "Email đã được sử dụng."),
+        java.util.Map.entry("missing_fields", "Vui lòng điền đầy đủ thông tin bắt buộc."),
+        java.util.Map.entry("invalid_name", "Họ và tên phải từ 2 đến 100 ký tự."),
+        java.util.Map.entry("invalid_account", "Tên tài khoản không hợp lệ."),
+        java.util.Map.entry("invalid_email", "Email không đúng định dạng."),
+        java.util.Map.entry("disposable_email", "Không được sử dụng email tạm thời."),
+        java.util.Map.entry("weak_password", "Mật khẩu tối thiểu 8 ký tự, có kí tự viết hoa, có kí tự đặc biệt."),
+        java.util.Map.entry("invalid_phone", "Số điện thoại không hợp lệ (tối đa 20 ký tự)."),
+        java.util.Map.entry("unassigned_manager", "Bạn chưa được bổ nhiệm trung tâm."),
+        java.util.Map.entry("create_failed", "Không thể tạo tài khoản nhân viên.")
+    );
+
     request.setAttribute("activeNav", "staff");
     request.setAttribute("pageTitle", "Quản lý nhân sự");
     request.setAttribute("pageBreadcrumb", "Nhân sự");
@@ -123,80 +142,13 @@
             </div>
 
             <!-- THÔNG BÁO -->
-            <% if ("created".equals(successParam)) { %>
+            <% if (successParam != null && successMsgs.containsKey(successParam)) { %>
                 <div class="cf-alert cf-alert-success">
-                    ✓ <strong>Thành công!</strong>
-                    Đã tạo tài khoản nhân viên.
+                    ✓ <strong>Thành công!</strong> <%= successMsgs.get(successParam) %>
                 </div>
-
-            <% } else if ("updated".equals(successParam)) { %>
-                <div class="cf-alert cf-alert-success">
-                    ✓ Đã cập nhật thông tin nhân viên.
-                </div>
-
-            <% } else if ("status_updated".equals(successParam)) { %>
-                <div class="cf-alert cf-alert-success">
-                    ✓ Đã cập nhật trạng thái nhân viên.
-                </div>
-
-            <% } else if ("account_exists".equals(errorParam)) { %>
-                <div class="cf-alert cf-alert-danger">
-                    Tên tài khoản đã tồn tại.
-                </div>
-
-            <% } else if ("email_exists".equals(errorParam)) { %>
-                <div class="cf-alert cf-alert-danger">
-                    Email đã được sử dụng.
-                </div>
-
-            <% } else if ("missing_fields".equals(errorParam)) { %>
-                <div class="cf-alert cf-alert-danger">
-                    Vui lòng điền đầy đủ thông tin bắt buộc.
-                </div>
-
-            <% } else if ("invalid_name".equals(errorParam)) { %>
-                <div class="cf-alert cf-alert-danger">
-                    Họ và tên phải từ 2 đến 100 ký tự.
-                </div>
-
-            <% } else if ("invalid_account".equals(errorParam)) { %>
-                <div class="cf-alert cf-alert-danger">
-                    Tên tài khoản không hợp lệ.
-                </div>
-
-            <% } else if ("invalid_email".equals(errorParam)) { %>
-                <div class="cf-alert cf-alert-danger">
-                    Email không đúng định dạng.
-                </div>
-
-            <% } else if ("disposable_email".equals(errorParam)) { %>
-                <div class="cf-alert cf-alert-danger">
-                    Không được sử dụng email tạm thời.
-                </div>
-
-            <% } else if ("weak_password".equals(errorParam)) { %>
-                <div class="cf-alert cf-alert-danger">
-                        Mật khẩu tối thiểu 8 ký tự, có kí tự viết hoa, có kí tự đặc biệt.
-                </div>
-
-            <% } else if ("invalid_phone".equals(errorParam)) { %>
-                <div class="cf-alert cf-alert-danger">
-                    Số điện thoại không được quá 20 ký tự.
-                </div>
-
-            <% } else if ("unassigned_manager".equals(errorParam)) { %>
-                <div class="cf-alert cf-alert-danger">
-                    Bạn chưa được bổ nhiệm trung tâm.
-                </div>
-
-            <% } else if ("create_failed".equals(errorParam)) { %>
-                <div class="cf-alert cf-alert-danger">
-                    Không thể tạo tài khoản nhân viên.
-                </div>
-
             <% } else if (errorParam != null) { %>
                 <div class="cf-alert cf-alert-danger">
-                    Thao tác không thành công. Vui lòng kiểm tra lại.
+                    ⚠ <strong>Lỗi:</strong> <%= errorMsgs.getOrDefault(errorParam, "Thao tác không thành công. Vui lòng kiểm tra lại.") %>
                 </div>
             <% } %>
 
@@ -767,246 +719,7 @@
 
 <div id="cf-toast-container" aria-live="polite"></div>
 
-<script src="${pageContext.request.contextPath}/js/admin-pagination.js"></script>
-
-<script>
-    function openCreateStaffModal() {
-        document.getElementById("createStaffModal").classList.add("active");
-    }
-
-    function closeCreateStaffModal() {
-        document.getElementById("createStaffModal").classList.remove("active");
-    }
-
-    function openEditStaffModal(id, code, fullName, phone, email, role) {
-        document.getElementById("editStaffUserId").value = id;
-        document.getElementById("editStaffCode").textContent = code;
-        document.getElementById("editStaffFullName").value = fullName;
-        document.getElementById("editStaffPhone").value = phone;
-        document.getElementById("editStaffEmail").value = email;
-        document.getElementById("editStaffRole").value = role;
-
-        document.getElementById("editStaffModal").classList.add("active");
-    }
-
-    function closeEditStaffModal() {
-        document.getElementById("editStaffModal").classList.remove("active");
-    }
-
-    document.querySelectorAll(".cf-modal-backdrop").forEach(function(modal) {
-        modal.addEventListener("click", function(event) {
-            if (event.target === modal) {
-                modal.classList.remove("active");
-            }
-        });
-    });
-
-    document.addEventListener("keydown", function(event) {
-        if (event.key === "Escape") {
-            closeCreateStaffModal();
-            closeEditStaffModal();
-        }
-    });
-
-    var staffPagination = null;
-
-    document.addEventListener("DOMContentLoaded", function() {
-
-        var countLabel = document.getElementById("staffCountLabel");
-        var roleFilter = document.getElementById("staffRoleFilter");
-        var searchInput = document.getElementById("staffFilterInput");
-        var searchForm = document.getElementById("staffSearchForm");
-
-        if (!document.getElementById("staffTableBody")) {
-            return;
-        }
-
-        staffPagination = initTablePagination({
-            tableBodyId: "staffTableBody",
-            rowSelector: "tr.staff-row",
-            emptyRowId: "staffTableEmptyRow",
-            paginationId: "staffPaginationControls",
-            infoDisplayId: "staffPaginationInfo",
-            pageSizeSelectId: "staffPageSizeSelect",
-            searchInputId: "staffFilterInput",
-            searchClearBtnId: "staffSearchClearBtn",
-            statusFilterSelectId: "staffStatusFilter",
-            itemLabel: "nhân viên",
-            defaultPageSize: 10,
-
-            customFilter: function(row) {
-                var roleValue = roleFilter ? roleFilter.value : "";
-
-                if (roleValue && !row.classList.contains(roleValue)) {
-                    return false;
-                }
-
-                return true;
-            },
-
-            onPageChange: function(state) {
-                if (countLabel) {
-                    countLabel.textContent =
-                        state.totalFiltered + " tài khoản đang hiển thị.";
-                }
-            }
-        });
-
-        if (roleFilter) {
-            roleFilter.addEventListener("change", function() {
-                staffPagination.setPage(1);
-            });
-        }
-
-        if (searchForm) {
-            searchForm.addEventListener("submit", function(event) {
-                event.preventDefault();
-
-                if (searchInput) {
-                    staffPagination.setSearch(searchInput.value);
-                }
-            });
-        }
-    });
-
-    function handleStaffStatusChange(selectEl) {
-
-        var userId = selectEl.getAttribute("data-userid");
-        var staffName = selectEl.getAttribute("data-name") || "nhân viên";
-        var newStatus = selectEl.value;
-        var previousStatus = selectEl.getAttribute("data-previous-status");
-
-        var badge = document.getElementById("badge-status-" + userId);
-        var row = selectEl.closest(".staff-row");
-
-        selectEl.disabled = true;
-
-        var formData = new URLSearchParams();
-
-        formData.append("action", "status");
-        formData.append("ajax", "1");
-        formData.append("userId", userId);
-        formData.append("status", newStatus);
-
-        fetch("${pageContext.request.contextPath}/staffList", {
-            method: "POST",
-
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-                "X-Requested-With": "XMLHttpRequest"
-            },
-
-            body: formData.toString()
-        })
-
-        .then(function(response) {
-            return response.json().then(function(data) {
-                if (!response.ok || !data.success) {
-                    throw new Error(data.message || "Cập nhật thất bại.");
-                }
-
-                return data;
-            });
-        })
-
-        .then(function() {
-
-            selectEl.setAttribute("data-previous-status", newStatus);
-            selectEl.className =
-                "cf-status-select val-" + newStatus.toLowerCase();
-
-            if (badge) {
-
-                if (newStatus === "ACTIVE") {
-                    badge.className = "cf-badge cf-badge-success";
-                    badge.textContent = "Hoạt động";
-
-                } else if (newStatus === "INACTIVE") {
-                    badge.className = "cf-badge cf-badge-warning";
-                    badge.textContent = "Tạm ngưng";
-
-                } else {
-                    badge.className = "cf-badge cf-badge-danger";
-                    badge.textContent = "Đã khóa";
-                }
-            }
-
-            if (row) {
-                row.classList.remove("st-active", "st-inactive", "st-locked");
-                row.classList.add("st-" + newStatus.toLowerCase());
-                row.setAttribute("data-status", newStatus);
-            }
-
-            if (staffPagination) {
-                staffPagination.refreshRows();
-            }
-
-            updateStaffKPI();
-
-            showToast("Đã cập nhật trạng thái của " + staffName + ".", "success");
-        })
-
-        .catch(function(error) {
-
-            selectEl.value = previousStatus;
-
-            showToast(
-                error.message || "Cập nhật trạng thái thất bại.",
-                "error"
-            );
-        })
-
-        .finally(function() {
-            selectEl.disabled = false;
-        });
-    }
-
-    function updateStaffKPI() {
-
-        var rows = document.querySelectorAll(".staff-row");
-
-        var active = 0;
-        var inactive = 0;
-
-        rows.forEach(function(row) {
-            var status = row.getAttribute("data-status");
-
-            if (status === "ACTIVE") {
-                active++;
-            } else {
-                inactive++;
-            }
-        });
-
-        document.getElementById("kpiActiveStaff").textContent = active;
-        document.getElementById("kpiInactiveStaff").textContent = inactive;
-    }
-
-    function showToast(message, type) {
-
-        var container = document.getElementById("cf-toast-container");
-
-        if (!container) {
-            return;
-        }
-
-        var toast = document.createElement("div");
-
-        toast.className =
-            "cf-toast" + (type === "error" ? " cf-toast-error" : "");
-
-        toast.textContent = message;
-        container.appendChild(toast);
-
-        setTimeout(function() {
-            toast.classList.add("cf-toast-fadeout");
-
-            setTimeout(function() {
-                toast.remove();
-            }, 400);
-        }, 2500);
-    }
-</script>
-
+<script src="${pageContext.request.contextPath}/js/admin-pagination.js?v=<%= System.currentTimeMillis() %>"></script>
+<script src="${pageContext.request.contextPath}/js/staff-management.js?v=<%= System.currentTimeMillis() %>"></script>
 </body>
 </html>

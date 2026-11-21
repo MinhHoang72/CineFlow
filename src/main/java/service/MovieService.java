@@ -68,6 +68,19 @@ public class MovieService {
     }
 
     /**
+     * Kiểm tra xem phim có suất chiếu nào chưa bắt đầu trong tương lai hay không.
+     *
+     * @param movieId mã định danh phim
+     * @return true nếu còn suất chiếu tương lai
+     */
+    public boolean hasUpcomingShowtimes(int movieId) {
+        if (movieId <= 0) {
+            return false;
+        }
+        return movieDAO.hasUpcomingShowtimes(movieId);
+    }
+
+    /**
      * Tự động xác định phim được chọn cho màn hình phân phối/chi tiết:
      * - Nếu có movieId hợp lệ từ client -> tìm và trả về phim đó.
      * - Nếu không truyền movieId -> ưu tiên chọn phim đầu tiên đang chiếu (NOW_SHOWING) hoặc sắp chiếu (COMING_SOON).
@@ -141,7 +154,8 @@ public class MovieService {
         Movie existing = movie.getMovieId() > 0 ? movieDAO.getMovieById(movie.getMovieId()) : null;
 
         // ENDED/ARCHIVED: giữ lại ngày đã có làm hồ sơ lịch sử.
-        // Chỉ chốt EndDate = hôm nay khi ngày kết thúc đang trống hoặc còn ở tương lai.
+        // - Nếu phim đã khởi chiếu (ReleaseDate <= hôm nay): chốt EndDate = hôm nay khi còn ở tương lai.
+        // - Nếu phim chưa tới ngày khởi chiếu (COMING_SOON bị cấm/hủy sớm): chốt EndDate = ReleaseDate để luôn đảm bảo EndDate >= ReleaseDate.
         if ("ARCHIVED".equals(status) || "ENDED".equals(status)) {
             if (movie.getReleaseDate() == null && existing != null) {
                 movie.setReleaseDate(existing.getReleaseDate());
@@ -149,8 +163,11 @@ public class MovieService {
             if (movie.getEndDate() == null && existing != null) {
                 movie.setEndDate(existing.getEndDate());
             }
-            if (movie.getEndDate() == null || movie.getEndDate().after(today)) {
-                movie.setEndDate(today);
+            Date minEndDate = (movie.getReleaseDate() != null && movie.getReleaseDate().after(today))
+                    ? movie.getReleaseDate()
+                    : today;
+            if (movie.getEndDate() == null || movie.getEndDate().after(minEndDate)) {
+                movie.setEndDate(minEndDate);
             }
         }
 
@@ -338,13 +355,11 @@ public class MovieService {
                 return DistributionResult.MOVIE_ENDED_OR_ARCHIVED;
             }
         }
+        // Admin tự do phân phối phim tới bất kỳ cụm rạp nào có trong hệ thống đúng như giao diện hiển thị
         if (selectedCentreIds != null && !selectedCentreIds.isEmpty()) {
             Set<Integer> validCentreIds = new java.util.HashSet<>();
             for (Centre centre : getDistributionCentres(movieId)) {
-                String centreStatus = centre.getStatus() == null ? "" : centre.getStatus().trim().toUpperCase();
-                if ("ACTIVE".equals(centreStatus) || "SUSPENDED".equals(centreStatus)) {
-                    validCentreIds.add(centre.getCentreId());
-                }
+                validCentreIds.add(centre.getCentreId());
             }
             for (Integer centreId : selectedCentreIds) {
                 if (centreId == null || !validCentreIds.contains(centreId)) {

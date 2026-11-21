@@ -60,9 +60,9 @@ public class MovieArchiveAndReissueTestRunner {
             assertCondition(foundActive, "Rạp test phải có trạng thái Distributed = true");
 
             // -------------------------------------------------------------
-            // TEST 1: Khi archive phim -> EndDate lập tức thành hôm nay & phân phối bị hủy
+            // TEST 1: Khi archive phim -> EndDate lập tức thành hôm nay & phân phối được bảo toàn
             // -------------------------------------------------------------
-            System.out.println("\n[TEST 1] Archive phim -> EndDate = hôm nay và hủy toàn bộ phân phối");
+            System.out.println("\n[TEST 1] Archive phim -> EndDate = hôm nay và bảo toàn lịch sử phân phối");
             boolean archiveOk = movieService.updateMovieStatus(testMovieId, "ARCHIVED");
             assertCondition(archiveOk, "Cập nhật phim sang ARCHIVED phải thành công");
 
@@ -71,17 +71,10 @@ public class MovieArchiveAndReissueTestRunner {
             assertCondition(archivedMovie.getEndDate() != null && archivedMovie.getEndDate().toLocalDate().equals(LocalDate.now()),
                     "EndDate của phim ARCHIVED phải được cập nhật ngay lập tức thành hôm nay: " + archivedMovie.getEndDate());
 
-            // Kiểm tra CentreMovies trong database đã chuyển sang CANCELLED và IsActive = 0
+            // Kiểm tra CentreMovies trong database được bảo toàn (Status = ACTIVE)
             String distStatusInDb = getCentreMovieStatus(testCentreId, testMovieId);
-            assertCondition("CANCELLED".equalsIgnoreCase(distStatusInDb), "Bản ghi CentreMovies phải chuyển sang CANCELLED, thực tế: " + distStatusInDb);
+            assertCondition("ACTIVE".equalsIgnoreCase(distStatusInDb), "Bản ghi CentreMovies phải được bảo toàn lịch sử, thực tế: " + distStatusInDb);
 
-            // Kiểm tra getDistributionCentres trả về isDistributed = false
-            List<Centre> postCentres = movieDAO.getDistributionCentres(testMovieId);
-            for (Centre c : postCentres) {
-                if (c.getCentreId() == testCentreId) {
-                    assertCondition(!c.isDistributed(), "Sau khi archive, rạp không còn được phân phối (isDistributed = false)");
-                }
-            }
             System.out.println("  [PASS] Test 1 hoàn thành xuất sắc.");
 
             // -------------------------------------------------------------

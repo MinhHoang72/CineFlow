@@ -7,6 +7,7 @@
 <c:set var="ctx" value="${pageContext.request.contextPath}"/>
 <c:set var="st" value="${booking.showtime}"/>
 <c:set var="showtimeCancelled" value="${not empty st and st.status == 'CANCELLED'}"/>
+<c:set var="showCancellationNotice" value="${showtimeCancelled or paidTicketCancelled}"/>
 <c:set var="isCancelled" value="${booking.status == 'CANCELLED' or (not empty st and st.status == 'CANCELLED')}"/>
 
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
@@ -27,10 +28,10 @@
     </div>
 </div>
 
-<%-- Suat chieu bi huy (rap dong cua): ve het hieu luc, khach lien he de duoc hoan tien. --%>
-<c:if test="${showtimeCancelled}">
+<%-- Suat chieu bi huy hoac ve da huy sau khi thanh toan: khach lien he de duoc ho tro hoan tien. --%>
+<c:if test="${showCancellationNotice}">
     <div class="alert alert-danger mb-3" role="alert">
-        <strong>Suất chiếu đã bị huỷ</strong>, vé của đơn này không còn hiệu lực.
+        <strong>Vé của đơn này đã bị huỷ</strong> và không còn hiệu lực.
         <br>Để được hỗ trợ và đối soát hoàn tiền, vui lòng liên hệ
         <a href="${ctx}/support">Trung tâm hỗ trợ</a> hoặc hotline <strong>1900 6868</strong>,
         email <strong>cskh@cineflow.vn</strong> và cung cấp mã đơn

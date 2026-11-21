@@ -27,6 +27,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import model.dto.booking.PaymentTransaction;
+import model.entity.Ticket;
 
 /**
  * FE-05 Dat ve (controller: doc request, goi service, chuyen trang; nghiep vu nam o BookingService):
@@ -316,8 +318,13 @@ public class BookingServlet extends HttpServlet {
             return;
         }
         req.setAttribute("booking", booking);
-        req.setAttribute("tickets", paymentService.getTickets(booking.getId()));
-        req.setAttribute("transactions", paymentService.getTransactions(booking.getId()));
+        List<Ticket> tickets = paymentService.getTickets(booking.getId());
+        List<PaymentTransaction> transactions = paymentService.getTransactions(booking.getId());
+        boolean paidTicketCancelled = transactions.stream().anyMatch(p -> "PAID".equalsIgnoreCase(p.getStatus()))
+                && tickets.stream().anyMatch(t -> "CANCELLED".equalsIgnoreCase(t.getStatus()));
+        req.setAttribute("tickets", tickets);
+        req.setAttribute("transactions", transactions);
+        req.setAttribute("paidTicketCancelled", paidTicketCancelled);
         req.setAttribute("isOwner", booking.getUserId() != null && booking.getUserId() == user.getUserId());
         req.getRequestDispatcher(VIEW_DIR + "booking/bookingDetail.jsp").forward(req, resp);
     }

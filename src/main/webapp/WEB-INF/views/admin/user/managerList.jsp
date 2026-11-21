@@ -1,6 +1,16 @@
+<%--
+    Trang JSP: Quản lý Tài khoản Quản lý chi nhánh (Manager) dành cho Quản trị viên (Admin).
+    Controller phục vụ: ManagerManagementServlet (GET/POST /admin/managers).
+    Chức năng:
+    - Hiển thị KPI tổng số Manager theo trạng thái (Hoạt động, Tạm ngưng, Đã khóa).
+    - Tìm kiếm, lọc trạng thái và phân trang bằng JS (admin-pagination.js + manager-management.js).
+    - Modal 1: Tạo tài khoản Manager mới kèm chọn cụm rạp còn trống Quản lý (action="create").
+    - Modal 2: Cập nhật thông tin cá nhân của Manager (action="update").
+--%>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ page import="model.entity.User,java.util.List,model.entity.Centre" %>
+<%@ page import="model.entity.User, java.util.List, model.entity.Centre" %>
 <%
+    // 1. Bảo vệ trang: chỉ Quản trị viên (ADMIN) mới có quyền truy cập
     String authRole = (String) session.getAttribute("role");
     if (authRole == null && session.getAttribute("user") instanceof model.entity.User) {
         authRole = ((model.entity.User) session.getAttribute("user")).getRole();
@@ -10,12 +20,14 @@
         return;
     }
 
+    // 2. Lấy danh sách Manager & danh sách cụm rạp chưa có Quản lý từ ManagerManagementServlet
     List<User> managers = (List<User>) request.getAttribute("managers");
     List<Centre> centres = (List<Centre>) request.getAttribute("centres");
 
     request.setAttribute("activeNav", "managers");
     request.setAttribute("pageTitle", "Tài khoản Quản lý");
 
+    // 3. Thống kê số lượng Manager theo trạng thái để hiển thị trên 4 thẻ KPI
     int totalManagers = managers != null ? managers.size() : 0;
     int activeCount = 0;
     int suspendedCount = 0;
@@ -34,8 +46,31 @@
         }
     }
 
+    // 4. Ánh xạ mã thông báo thành công / mã lỗi từ URL sang nội dung tiếng Việt
     String successParam = request.getParameter("success");
     String errorParam = request.getParameter("error");
+
+    java.util.Map<String, String> successMsgs = java.util.Map.of(
+        "created", "Đã tạo mới tài khoản Quản lý và phân công phụ trách cụm rạp thành công.",
+        "updated", "Đã cập nhật thông tin Quản lý (Manager) thành công.",
+        "status_updated", "Đã cập nhật trạng thái hoạt động của tài khoản Manager."
+    );
+    java.util.Map<String, String> errorMsgs = java.util.Map.ofEntries(
+        java.util.Map.entry("account_exists", "Tên tài khoản (Account) đã tồn tại trong hệ thống."),
+        java.util.Map.entry("email_exists", "Địa chỉ Email đã được sử dụng bởi người dùng khác."),
+        java.util.Map.entry("missing_fields", "Vui lòng điền đầy đủ các thông tin bắt buộc."),
+        java.util.Map.entry("invalid_name", "Họ và tên phải từ 2 đến 100 ký tự."),
+        java.util.Map.entry("invalid_account", "Tên tài khoản từ 3-30 ký tự, chỉ gồm chữ cái, số, gạch dưới, gạch ngang hoặc dấu chấm."),
+        java.util.Map.entry("invalid_email", "Địa chỉ email không đúng định dạng chuẩn."),
+        java.util.Map.entry("disposable_email", "Vui lòng không sử dụng địa chỉ email rác / email tạm thời."),
+        java.util.Map.entry("weak_password", "Mật khẩu yếu: Yêu cầu tối thiểu 8 ký tự, gồm ít nhất 1 chữ hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt."),
+        java.util.Map.entry("invalid_phone", "Số điện thoại không hợp lệ (yêu cầu số điện thoại di động Việt Nam 10 số)."),
+        java.util.Map.entry("missing_centre", "Theo quy định bắt buộc của hệ thống, tài khoản Quản lý phải được phân công một cụm rạp phụ trách."),
+        java.util.Map.entry("centre_has_manager", "Cụm rạp được chọn hiện đã có Quản lý đang phụ trách (mỗi rạp chỉ có 1 Quản lý)."),
+        java.util.Map.entry("centre_already_has_manager", "Cụm rạp được chọn hiện đã có Quản lý đang phụ trách."),
+        java.util.Map.entry("status_failed", "Cập nhật trạng thái Quản lý thất bại. Vui lòng thử lại."),
+        java.util.Map.entry("not_manager", "Tài khoản không tồn tại hoặc không phải là Quản lý.")
+    );
 %>
 <!DOCTYPE html>
 <html lang="vi">
@@ -53,20 +88,6 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin/dashboard.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/admin/managers.css?v=<%= System.currentTimeMillis() %>">
 </head>
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-        document.querySelectorAll(".cf-alert").forEach(function (alert) {
-            setTimeout(function () {
-                alert.style.transition = "opacity 0.4s ease";
-                alert.style.opacity = "0";
-
-                setTimeout(function () {
-                    alert.remove();
-                }, 400);
-            }, 1000);
-        });
-    });
-</script>
 <body>
 <div class="cf-manager-shell">
     <jsp:include page="/WEB-INF/fragments/adminSidebar.jspf" />
@@ -84,73 +105,13 @@
                 </button>
             </div>
 
-            <% if ("created".equals(successParam)) { %>
+            <% if (successParam != null && successMsgs.containsKey(successParam)) { %>
                 <div class="cf-alert cf-alert-success">
-                    <span>✓</span> <strong>Thành công!</strong> Đã tạo mới tài khoản Quản lý và phân công phụ trách cụm rạp thành công.
-                </div>
-            <% } else if ("updated".equals(successParam)) { %>
-                <div class="cf-alert cf-alert-success">
-                    <span></span> <strong>Thành công!</strong> Đã cập nhật thông tin Quản lý (Manager) thành công.
-                </div>
-            <% } else if ("status_updated".equals(successParam)) { %>
-                <div class="cf-alert cf-alert-success">
-                    <span></span> Đã cập nhật trạng thái hoạt động của tài khoản Manager.
-                </div>
-            <% } else if ("account_exists".equals(errorParam)) { %>
-                <div class="cf-alert cf-alert-danger">
-                    <span>⚠</span> <strong>Lỗi:</strong> Tên tài khoản (Account) đã tồn tại trong hệ thống.
-                </div>
-            <% } else if ("email_exists".equals(errorParam)) { %>
-                <div class="cf-alert cf-alert-danger">
-                    <span>⚠</span> <strong>Lỗi:</strong> Địa chỉ Email đã được sử dụng bởi người dùng khác.
-                </div>
-            <% } else if ("missing_fields".equals(errorParam)) { %>
-                <div class="cf-alert cf-alert-danger">
-                    <span>⚠</span> <strong>Lỗi:</strong> Vui lòng điền đầy đủ các thông tin bắt buộc.
-                </div>
-            <% } else if ("invalid_name".equals(errorParam)) { %>
-                <div class="cf-alert cf-alert-danger">
-                    <span>⚠</span> <strong>Lỗi:</strong> Họ và tên phải từ 2 đến 100 ký tự.
-                </div>
-            <% } else if ("invalid_account".equals(errorParam)) { %>
-                <div class="cf-alert cf-alert-danger">
-                    <span>⚠</span> <strong>Lỗi:</strong> Tên tài khoản từ 3-30 ký tự, chỉ gồm chữ cái, số, gạch dưới, gạch ngang hoặc dấu chấm.
-                </div>
-            <% } else if ("invalid_email".equals(errorParam)) { %>
-                <div class="cf-alert cf-alert-danger">
-                    <span>⚠</span> <strong>Lỗi:</strong> Địa chỉ email không đúng định dạng chuẩn.
-                </div>
-            <% } else if ("disposable_email".equals(errorParam)) { %>
-                <div class="cf-alert cf-alert-danger">
-                    <span>⚠</span> <strong>Lỗi:</strong> Vui lòng không sử dụng địa chỉ email rác / email tạm thời.
-                </div>
-            <% } else if ("weak_password".equals(errorParam)) { %>
-                <div class="cf-alert cf-alert-danger">
-                    <span>⚠</span> <strong>Mật khẩu yếu:</strong> Yêu cầu tối thiểu 8 ký tự, gồm ít nhất 1 chữ hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt.
-                </div>
-            <% } else if ("invalid_phone".equals(errorParam)) { %>
-                <div class="cf-alert cf-alert-danger">
-                    <span>⚠</span> <strong>Lỗi:</strong> Số điện thoại không hợp lệ (yêu cầu số điện thoại di động Việt Nam 10 số).
-                </div>
-            <% } else if ("missing_centre".equals(errorParam)) { %>
-                <div class="cf-alert cf-alert-danger">
-                    <span>⚠</span> <strong>Lỗi:</strong> Theo quy định bắt buộc của hệ thống, tài khoản Quản lý phải được phân công một cụm rạp phụ trách.
-                </div>
-            <% } else if ("centre_has_manager".equals(errorParam) || "centre_already_has_manager".equals(errorParam)) { %>
-                <div class="cf-alert cf-alert-danger">
-                    <span>⚠</span> <strong>Cụm rạp đã có Quản lý:</strong> Cụm rạp được chọn hiện đã có Quản lý đang phụ trách (mỗi rạp chỉ có 1 Quản lý). Để thay thế hoặc phân công Quản lý, vui lòng sử dụng chức năng Bổ nhiệm & Miễn nhiệm tại mục Bổ nhiệm & Điều chuyển.
-                </div>
-            <% } else if ("status_failed".equals(errorParam)) { %>
-                <div class="cf-alert cf-alert-danger">
-                    <span>⚠</span> <strong>Lỗi:</strong> Cập nhật trạng thái Quản lý thất bại. Vui lòng thử lại.
-                </div>
-            <% } else if ("not_manager".equals(errorParam)) { %>
-                <div class="cf-alert cf-alert-danger">
-                    <span>⚠</span> <strong>Lỗi:</strong> Tài khoản không tồn tại hoặc không phải là Quản lý.
+                    <span>✓</span> <strong>Thành công!</strong> <%= successMsgs.get(successParam) %>
                 </div>
             <% } else if (errorParam != null) { %>
                 <div class="cf-alert cf-alert-danger">
-                    <span>⚠</span> Thao tác thất bại. Vui lòng kiểm tra lại thông tin.
+                    <span>⚠</span> <strong>Lỗi:</strong> <%= errorMsgs.getOrDefault(errorParam, "Thao tác thất bại. Vui lòng kiểm tra lại thông tin.") %>
                 </div>
             <% } %>
 
@@ -307,7 +268,7 @@
     </div>
 </div>
 
-<!-- MODAL 1: TẠO TÀI KHOẢN MANAGER MỚI -->
+<%-- MODAL 1: Biểu mẫu POST (action="create") tạo tài khoản Manager mới kèm phân công cụm rạp trống --%>
 <div class="cf-modal-backdrop" id="createManagerModal">
     <div class="cf-modal">
         <div class="cf-modal-header">
@@ -330,7 +291,7 @@
                         <% } %>
                     </select>
                     <% if (centres == null || centres.isEmpty()) { %>
-                        <small class="modal-warning-danger">⚠ Tất cả các cụm rạp hiện đã có Quản lý phụ trách. Nếu muốn thay thế Quản lý, vui lòng sử dụng chức năng Bổ nhiệm Quản lý.</small>
+                        <small class="modal-warning-danger">⚠ Tất cả các cụm rạp hiện đã có Quản lý phụ trách. Mỗi rạp chỉ được phân công 1 Quản lý.</small>
                     <% } else { %>
                         <small class="modal-helper-text">Hệ thống chỉ liệt kê các cụm rạp đang TRỐNG (chưa có Quản lý) để bảo đảm quy tắc 1 rạp - 1 Quản lý.</small>
                     <% } %>
@@ -367,7 +328,7 @@
     </div>
 </div>
 
-<!-- MODAL 2: CHỈNH SỬA THÔNG TIN CÁ NHÂN MANAGER -->
+<%-- MODAL 2: Biểu mẫu POST (action="update") chỉnh sửa họ tên, SĐT, email của Manager --%>
 <div class="cf-modal-backdrop" id="editManagerModal">
     <div class="cf-modal">
         <div class="cf-modal-header">
@@ -402,82 +363,17 @@
         </form>
     </div>
 </div>
+<%-- Nạp JS phân trang dùng chung, xử lý modal Manager và tự ẩn thông báo sau 1.5s --%>
 <script src="${pageContext.request.contextPath}/js/admin-pagination.js?v=<%= System.currentTimeMillis() %>"></script>
+<script src="${pageContext.request.contextPath}/js/manager-management.js?v=<%= System.currentTimeMillis() %>"></script>
 <script>
-    
-    
-    function handleManagerStatusChange(selectEl) {
-        var newStatus = selectEl.value;
-        var currentStatus = selectEl.getAttribute('data-current-status') || 'ACTIVE';
-        var managerName = selectEl.getAttribute('data-name') || 'Quản lý';
-
-        if (newStatus === currentStatus) {
-            return;
-        }
-
-        var message = "";
-        if (newStatus === 'ACTIVE') {
-            message = "Kích hoạt lại tài khoản cho Quản lý \"" + managerName + "\" sang HOẠT ĐỘNG?\n\n(Lưu ý: Sau khi kích hoạt, bạn có thể phân công Quản lý này vào cụm rạp).";
-        } else if (newStatus === 'INACTIVE') {
-            message = "Chuyển tài khoản Quản lý \"" + managerName + "\" sang TẠM NGƯNG?\n\n(Dành cho trường hợp nghỉ ốm, nghỉ phép dài hạn. Hệ thống sẽ tạm thời giải phóng rạp để bổ nhiệm Quản lý tạm thời).";
-        } else if (newStatus === 'LOCKED') {
-            message = "CẢNH BÁO: Bạn có chắc chắn muốn KHÓA tài khoản Quản lý \"" + managerName + "\"?\n\n(Dành cho trường hợp thôi việc hoặc vi phạm kỷ luật. Tài khoản sẽ bị khóa hoàn toàn).";
-        }
-
-        if (confirm(message)) {
-            selectEl.form.submit();
-        } else {
-            selectEl.value = currentStatus;
-        }
-    }
-
-    function openCreateManagerModal() {
-        document.getElementById('createManagerModal').classList.add('active');
-    }
-    
-    function closeCreateManagerModal() {
-        document.getElementById('createManagerModal').classList.remove('active');
-    }
-
-    function openEditManagerModal(id, code, fullName, phone, email) {
-        document.getElementById('editUserId').value = id;
-        document.getElementById('editManagerCode').textContent = code;
-        document.getElementById('editFullName').value = fullName;
-        document.getElementById('editPhone').value = phone;
-        document.getElementById('editEmail').value = email;
-        document.getElementById('editManagerModal').classList.add('active');
-    }
-    function closeEditManagerModal() {
-        document.getElementById('editManagerModal').classList.remove('active');
-    }
-
-    document.querySelectorAll('.cf-modal-backdrop').forEach(function(modal) {
-        modal.addEventListener('click', function(e) {
-            if (e.target === this) {
-                this.classList.remove('active');
-            }
-        });
-    });
-
-    document.addEventListener('DOMContentLoaded', function() {
-        var countLabel = document.getElementById('managerCountLabel');
-        initTablePagination({
-            tableBodyId: 'managerTableBody',
-            rowSelector: 'tr.manager-row',
-            emptyRowId: 'managerTableEmptyRow',
-            paginationId: 'managerPaginationControls',
-            infoDisplayId: 'managerPaginationInfo',
-            pageSizeSelectId: 'managerPageSizeSelect',
-            searchInputId: 'managerFilterInput',
-            searchClearBtnId: 'managerSearchClearBtn',
-            statusFilterSelectId: 'statusFilterSelect',
-            itemLabel: 'quản lý',
-            defaultPageSize: 10,
-            onPageChange: function(state) {
-                if (countLabel) {
-                    countLabel.textContent = state.totalFiltered + ' tài khoản đang hiển thị.';
-                }
-            }
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll(".cf-alert").forEach(function (alert) {
+            setTimeout(function () {
+                alert.style.transition = "opacity 0.4s ease";
+                alert.style.opacity = "0";
+                setTimeout(function () { alert.remove(); }, 400);
+            }, 1500);
         });
     });
 </script>

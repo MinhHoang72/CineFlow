@@ -139,106 +139,118 @@ public class ManagerManagementServlet extends HttpServlet {
         int sessionUserId = (int) session.getAttribute("userId");
         String action = request.getParameter("action");
 
-        // =================================================================
-        // HÀNH ĐỘNG 1: TẠO MỚI TÀI KHOẢN MANAGER
-        // =================================================================
         if ("create".equalsIgnoreCase(action)) {
-            String fullName = request.getParameter("fullName");
-            String account = request.getParameter("account");
-            String email = request.getParameter("email");
-            String password = request.getParameter("password");
-            String phone = request.getParameter("phone");
-            String centreIdParam = request.getParameter("centreId");
+            handleCreateManager(request, response, sessionUserId);
+        } else if ("update".equalsIgnoreCase(action)) {
+            handleUpdateManager(request, response);
+        } else if ("toggle_status".equalsIgnoreCase(action)) {
+            handleToggleStatus(request, response, sessionUserId);
+        } else {
+            response.sendRedirect(request.getContextPath() + "/admin/managers");
+        }
+    }
 
-            // Ủy quyền xử lý cho tầng Service (kiểm tra tính hợp lệ dữ liệu, mã hóa mật khẩu, gán rạp)
-            UserService.ManagerOpResult result = userService.createManager(
-                    sessionUserId, fullName, account, email, password, phone, centreIdParam
-            );
+    /**
+     * Tạo tài khoản Manager mới và phân công cụm rạp phụ trách ban đầu.
+     *
+     * @param request       yêu cầu HTTP chứa thông tin tạo mới từ modal
+     * @param response      phản hồi HTTP dùng để chuyển hướng kèm kết quả
+     * @param sessionUserId mã Admin đang thực hiện tạo tài khoản
+     * @throws IOException nếu xảy ra lỗi chuyển hướng
+     */
+    private void handleCreateManager(HttpServletRequest request, HttpServletResponse response, int sessionUserId)
+            throws IOException {
+        String fullName = request.getParameter("fullName");
+        String account = request.getParameter("account");
+        String email = request.getParameter("email");
+        String password = request.getParameter("password");
+        String phone = request.getParameter("phone");
+        String centreIdParam = request.getParameter("centreId");
 
-            // Xử lý thành công
-            if (result.isSuccess()) {
-                response.sendRedirect(request.getContextPath() + "/admin/managers?success=created");
-                return;
-            }
+        UserService.ManagerOpResult result = userService.createManager(
+                sessionUserId, fullName, account, email, password, phone, centreIdParam
+        );
 
-            // Chuyển đổi trạng thái lỗi từ enum sang mã lỗi trên URL
-            String errorCode = switch (result.status()) {
-                case MISSING_FIELDS -> "missing_fields";
-                case INVALID_CENTRE -> "invalid_centre";
-                case CENTRE_HAS_MANAGER -> "centre_has_manager";
-                case INVALID_NAME -> "invalid_name";
-                case INVALID_ACCOUNT -> "invalid_account";
-                case INVALID_EMAIL -> "invalid_email";
-                case DISPOSABLE_EMAIL -> "disposable_email";
-                case WEAK_PASSWORD -> "weak_password";
-                case INVALID_PHONE -> "invalid_phone";
-                case ACCOUNT_EXISTS -> "account_exists";
-                case EMAIL_EXISTS -> "email_exists";
-                default -> "create_failed";
-            };
-            response.sendRedirect(request.getContextPath() + "/admin/managers?error=" + errorCode);
+        if (result.isSuccess()) {
+            response.sendRedirect(request.getContextPath() + "/admin/managers?success=created");
             return;
         }
 
-        // =================================================================
-        // HÀNH ĐỘNG 2: CẬP NHẬT THÔNG TIN MANAGER
-        // =================================================================
-        if ("update".equalsIgnoreCase(action)) {
-            try {
-                int userId = Integer.parseInt(request.getParameter("userId"));
-                String fullName = request.getParameter("fullName");
-                String phone = request.getParameter("phone");
-                String email = request.getParameter("email");
+        String errorCode = switch (result.status()) {
+            case MISSING_FIELDS -> "missing_fields";
+            case INVALID_CENTRE -> "invalid_centre";
+            case CENTRE_HAS_MANAGER -> "centre_has_manager";
+            case INVALID_NAME -> "invalid_name";
+            case INVALID_ACCOUNT -> "invalid_account";
+            case INVALID_EMAIL -> "invalid_email";
+            case DISPOSABLE_EMAIL -> "disposable_email";
+            case WEAK_PASSWORD -> "weak_password";
+            case INVALID_PHONE -> "invalid_phone";
+            case ACCOUNT_EXISTS -> "account_exists";
+            case EMAIL_EXISTS -> "email_exists";
+            default -> "create_failed";
+        };
+        response.sendRedirect(request.getContextPath() + "/admin/managers?error=" + errorCode);
+    }
 
-                // Gọi tầng Service cập nhật thông tin
-                UserService.ManagerOpResult result = userService.updateManager(userId, fullName, phone, email);
-                if (result.isSuccess()) {
-                    response.sendRedirect(request.getContextPath() + "/admin/managers?success=updated");
-                    return;
-                }
+    /**
+     * Cập nhật thông tin cá nhân của Manager (Họ tên, SĐT, Email).
+     *
+     * @param request  yêu cầu HTTP chứa dữ liệu chỉnh sửa từ modal
+     * @param response phản hồi HTTP dùng để chuyển hướng kèm kết quả
+     * @throws IOException nếu xảy ra lỗi chuyển hướng
+     */
+    private void handleUpdateManager(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        try {
+            int userId = Integer.parseInt(request.getParameter("userId"));
+            String fullName = request.getParameter("fullName");
+            String phone = request.getParameter("phone");
+            String email = request.getParameter("email");
 
-                // Xử lý mã lỗi tương ứng
-                String errorCode = switch (result.status()) {
-                    case MISSING_FIELDS -> "missing_fields";
-                    case INVALID_NAME -> "invalid_name";
-                    case INVALID_EMAIL -> "invalid_email";
-                    case DISPOSABLE_EMAIL -> "disposable_email";
-                    case INVALID_PHONE -> "invalid_phone";
-                    case NOT_MANAGER -> "not_manager";
-                    case EMAIL_EXISTS -> "email_exists";
-                    default -> "update_failed";
-                };
-                response.sendRedirect(request.getContextPath() + "/admin/managers?error=" + errorCode);
-                return;
-            } catch (Exception e) {
-                response.sendRedirect(request.getContextPath() + "/admin/managers?error=invalid_data");
-                return;
-            }
-        }
-
-        // =================================================================
-        // HÀNH ĐỘNG 3: BẬT/TẮT TRẠNG THÁI TÀI KHOẢN (ACTIVE / INACTIVE)
-        // =================================================================
-        if ("toggle_status".equalsIgnoreCase(action)) {
-            try {
-                int userId = Integer.parseInt(request.getParameter("userId"));
-                String status = request.getParameter("status");
-
-                // Gọi Service để cập nhật trạng thái hoạt động của quản lý
-                UserService.ManagerStatusResult result = userService.toggleManagerStatus(userId, status, sessionUserId);
-                switch (result) {
-                    case SUCCESS -> response.sendRedirect(request.getContextPath() + "/admin/managers?success=status_updated");
-                    case NOT_MANAGER, NOT_FOUND -> response.sendRedirect(request.getContextPath() + "/admin/managers?error=not_manager");
-                    case FAILED -> response.sendRedirect(request.getContextPath() + "/admin/managers?error=status_failed");
-                }
-                return;
-            } catch (Exception e) {
-                response.sendRedirect(request.getContextPath() + "/admin/managers?error=status_failed");
+            UserService.ManagerOpResult result = userService.updateManager(userId, fullName, phone, email);
+            if (result.isSuccess()) {
+                response.sendRedirect(request.getContextPath() + "/admin/managers?success=updated");
                 return;
             }
-        }
 
-        // Mặc định chuyển hướng về trang danh sách
-        response.sendRedirect(request.getContextPath() + "/admin/managers");
+            String errorCode = switch (result.status()) {
+                case MISSING_FIELDS -> "missing_fields";
+                case INVALID_NAME -> "invalid_name";
+                case INVALID_EMAIL -> "invalid_email";
+                case DISPOSABLE_EMAIL -> "disposable_email";
+                case INVALID_PHONE -> "invalid_phone";
+                case NOT_MANAGER -> "not_manager";
+                case EMAIL_EXISTS -> "email_exists";
+                default -> "update_failed";
+            };
+            response.sendRedirect(request.getContextPath() + "/admin/managers?error=" + errorCode);
+        } catch (Exception e) {
+            response.sendRedirect(request.getContextPath() + "/admin/managers?error=invalid_data");
+        }
+    }
+
+    /**
+     * Chuyển đổi trạng thái hoạt động của tài khoản Manager (ACTIVE / INACTIVE / LOCKED).
+     *
+     * @param request       yêu cầu HTTP chứa {@code userId} và {@code status} mới
+     * @param response      phản hồi HTTP dùng để chuyển hướng kèm kết quả
+     * @param sessionUserId mã Admin thực hiện thao tác
+     * @throws IOException nếu xảy ra lỗi chuyển hướng
+     */
+    private void handleToggleStatus(HttpServletRequest request, HttpServletResponse response, int sessionUserId)
+            throws IOException {
+        try {
+            int userId = Integer.parseInt(request.getParameter("userId"));
+            String status = request.getParameter("status");
+
+            UserService.ManagerStatusResult result = userService.toggleManagerStatus(userId, status, sessionUserId);
+            switch (result) {
+                case SUCCESS -> response.sendRedirect(request.getContextPath() + "/admin/managers?success=status_updated");
+                case NOT_MANAGER, NOT_FOUND -> response.sendRedirect(request.getContextPath() + "/admin/managers?error=not_manager");
+                case FAILED -> response.sendRedirect(request.getContextPath() + "/admin/managers?error=status_failed");
+            }
+        } catch (Exception e) {
+            response.sendRedirect(request.getContextPath() + "/admin/managers?error=status_failed");
+        }
     }
 }
