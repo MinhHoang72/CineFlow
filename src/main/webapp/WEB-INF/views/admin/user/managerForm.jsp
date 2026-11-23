@@ -173,7 +173,7 @@
 
             <div class="cf-form-card">
                 <form method="POST" action="${pageContext.request.contextPath}/admin/managers">
-                    <input type="hidden" name="action" value="${manager != null ? 'update' : 'create'}">
+                    <input type="hidden" name="action" value="save">
                     <c:if test="${manager != null}">
                         <input type="hidden" name="userId" value="${manager.userId}">
                     </c:if>

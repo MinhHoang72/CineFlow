@@ -100,51 +100,57 @@ public class ManagerManagementServlet extends HttpServlet {
         int sessionUserId = (int) session.getAttribute("userId");
         String action = request.getParameter("action");
 
-        if ("create".equalsIgnoreCase(action)) {
-            handleCreateManager(request, response, sessionUserId);
-        } else if ("update".equalsIgnoreCase(action)) {
-            handleUpdateManager(request, response);
-        } else if ("toggle_status".equalsIgnoreCase(action)) {
+        if ("save".equalsIgnoreCase(action)) {
+            handleSaveManager(request, response, sessionUserId);
+        } else if ("status".equalsIgnoreCase(action) || "toggle_status".equalsIgnoreCase(action)) {
             handleToggleStatus(request, response, sessionUserId);
         } else {
             response.sendRedirect(request.getContextPath() + "/admin/managers");
         }
     }
 
-    private void handleCreateManager(HttpServletRequest request, HttpServletResponse response, int sessionUserId)
+    /**
+     * Xử lý lưu thông tin Manager từ managerForm.jsp:
+     * - Nếu có userId > 0  -> Thực hiện CẬP NHẬT (Sửa).
+     * - Nếu không có userId -> Thực hiện TẠO MỚI.
+     */
+    private void handleSaveManager(HttpServletRequest request, HttpServletResponse response, int sessionUserId)
             throws IOException {
-        String error = userService.createManager(
-                sessionUserId,
-                request.getParameter("fullName"),
-                request.getParameter("account"),
-                request.getParameter("email"),
-                request.getParameter("password"),
-                request.getParameter("phone"),
-                request.getParameter("centreId")
-        );
-        if (error == null) {
-            response.sendRedirect(request.getContextPath() + "/admin/managers?success=created");
-        } else {
-            response.sendRedirect(request.getContextPath() + "/admin/managers?action=create&error=" + error);
-        }
-    }
+        String userIdParam = request.getParameter("userId");
+        boolean isUpdate = userIdParam != null && !userIdParam.isBlank();
 
-    private void handleUpdateManager(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        try {
-            int userId = Integer.parseInt(request.getParameter("userId"));
-            String error = userService.updateManager(
-                    userId,
+        if (isUpdate) {
+            try {
+                int userId = Integer.parseInt(userIdParam.trim());
+                String error = userService.updateManager(
+                        userId,
+                        request.getParameter("fullName"),
+                        request.getParameter("phone"),
+                        request.getParameter("email")
+                );
+                if (error == null) {
+                    response.sendRedirect(request.getContextPath() + "/admin/managers?success=updated");
+                } else {
+                    response.sendRedirect(request.getContextPath() + "/admin/managers?action=edit&userId=" + userId + "&error=" + error);
+                }
+            } catch (NumberFormatException e) {
+                response.sendRedirect(request.getContextPath() + "/admin/managers?error=invalid_data");
+            }
+        } else {
+            String error = userService.createManager(
+                    sessionUserId,
                     request.getParameter("fullName"),
+                    request.getParameter("account"),
+                    request.getParameter("email"),
+                    request.getParameter("password"),
                     request.getParameter("phone"),
-                    request.getParameter("email")
+                    request.getParameter("centreId")
             );
             if (error == null) {
-                response.sendRedirect(request.getContextPath() + "/admin/managers?success=updated");
+                response.sendRedirect(request.getContextPath() + "/admin/managers?success=created");
             } else {
-                response.sendRedirect(request.getContextPath() + "/admin/managers?action=edit&userId=" + userId + "&error=" + error);
+                response.sendRedirect(request.getContextPath() + "/admin/managers?action=create&error=" + error);
             }
-        } catch (Exception e) {
-            response.sendRedirect(request.getContextPath() + "/admin/managers?error=invalid_data");
         }
     }
 

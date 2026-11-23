@@ -210,7 +210,7 @@
                                         </td>
                                         <td>
                                             <form method="post" action="${pageContext.request.contextPath}/admin/managers" class="form-inline-action" style="margin: 0;">
-                                                <input type="hidden" name="action" value="toggle_status">
+                                                <input type="hidden" name="action" value="status">
                                                 <input type="hidden" name="userId" value="<%= m.getUserId() %>">
                                                 <div class="status-select-wrap">
                                                     <select name="status" class="cf-status-select val-<%= st.toLowerCase() %>"

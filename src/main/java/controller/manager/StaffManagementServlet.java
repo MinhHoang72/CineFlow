@@ -164,10 +164,18 @@ public class StaffManagementServlet extends HttpServlet {
         String action = request.getParameter("action");
 
         switch (action == null ? "" : action.toLowerCase()) {
-            case "create" -> createStaff(request, response, manager);
-            case "update" -> updateStaff(request, response, manager);
+            case "save" -> handleSaveStaff(request, response, manager);
             case "status" -> updateStaffStatus(request, response, manager);
             default -> response.sendRedirect(request.getContextPath() + "/staffList");
+        }
+    }
+
+    private void handleSaveStaff(HttpServletRequest request, HttpServletResponse response, User manager) throws IOException {
+        String userIdParam = request.getParameter("userId");
+        if (userIdParam != null && !userIdParam.isBlank()) {
+            updateStaff(request, response, manager);
+        } else {
+            createStaff(request, response, manager);
         }
     }
 

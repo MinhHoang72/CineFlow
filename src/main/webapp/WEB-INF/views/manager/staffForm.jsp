@@ -174,7 +174,7 @@
 
             <div class="cf-form-card">
                 <form method="POST" action="${pageContext.request.contextPath}/staffList">
-                    <input type="hidden" name="action" value="${staff != null ? 'update' : 'create'}">
+                    <input type="hidden" name="action" value="save">
                     <c:if test="${staff != null}">
                         <input type="hidden" name="userId" value="${staff.userId}">
                     </c:if>
