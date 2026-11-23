@@ -326,11 +326,11 @@
                                         String roleClass = isSales ? "role-sales" : "";
 
                                         String searchVal = (employeeCode + " "
+                                                + item.getUserId() + " bv"
                                                 + item.getUserId() + " nv"
                                                 + item.getUserId() + " "
                                                 + staffName + " " + staffEmail + " "
-                                                + staffAccount + " " + staffPhone + " "
-                                                + staffRole).toLowerCase();
+                                                + staffAccount + " " + staffPhone + " bán vé").toLowerCase();
 
                                         String stClass = "ACTIVE".equalsIgnoreCase(st)
                                                 ? "st-active"

@@ -124,10 +124,10 @@ public class StaffService {
         }
 
         if (role == null || !ValidationUtil.isStaffRole(role.trim())) {
-            return "forbidden";
+            role = User.ROLE_TICKET_SALES;
+        } else {
+            role = role.trim().toUpperCase();
         }
-
-        role = role.trim().toUpperCase();
 
         User newStaff = new User();
         newStaff.setFullName(fullName);
@@ -191,10 +191,10 @@ public class StaffService {
         }
 
         if (role == null || !ValidationUtil.isStaffRole(role.trim())) {
-            return "forbidden";
+            role = User.ROLE_TICKET_SALES;
+        } else {
+            role = role.trim().toUpperCase();
         }
-
-        role = role.trim().toUpperCase();
 
         boolean updated = userDAO.updateStaffBasicInfo(
                 staffId, fullName, phone, email, role

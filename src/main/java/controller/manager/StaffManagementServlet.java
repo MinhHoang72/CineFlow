@@ -103,7 +103,7 @@ public class StaffManagementServlet extends HttpServlet {
             }
         }
 
-        request.setAttribute("staff", staffService.getStaffDirectory(manager, request.getParameter("search"), request.getParameter("role")));
+        request.setAttribute("staff", staffService.getStaffDirectory(manager, request.getParameter("search"), null));
         request.setAttribute("assignedCentre", staffService.getManagerCentre(manager));
         request.setAttribute("selectedCentreId", manager.getCentreId());
         request.getRequestDispatcher("/WEB-INF/views/manager/staffList.jsp").forward(request, response);

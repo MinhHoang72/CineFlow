@@ -5,7 +5,6 @@ var staffPagination = null;
 
 document.addEventListener("DOMContentLoaded", function() {
     var countLabel = document.getElementById("staffCountLabel");
-    var roleFilter = document.getElementById("staffRoleFilter");
     var searchInput = document.getElementById("staffFilterInput");
     var searchForm = document.getElementById("staffSearchForm");
 
@@ -25,25 +24,12 @@ document.addEventListener("DOMContentLoaded", function() {
         statusFilterSelectId: "staffStatusFilter",
         itemLabel: "nhân viên",
         defaultPageSize: 10,
-        customFilter: function(row) {
-            var roleValue = roleFilter ? roleFilter.value : "";
-            if (roleValue && !row.classList.contains(roleValue)) {
-                return false;
-            }
-            return true;
-        },
         onPageChange: function(state) {
             if (countLabel) {
                 countLabel.textContent = state.totalFiltered + " tài khoản đang hiển thị.";
             }
         }
     });
-
-    if (roleFilter) {
-        roleFilter.addEventListener("change", function() {
-            staffPagination.setPage(1);
-        });
-    }
 
     if (searchForm) {
         searchForm.addEventListener("submit", function(event) {

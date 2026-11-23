@@ -47,10 +47,8 @@ public class User {
     public String getEmployeeCode() {
         if ("MANAGER".equalsIgnoreCase(role)) {
             return String.format("QL%05d", userId);
-        } else if ("TICKET_SALES_STAFF".equalsIgnoreCase(role) || "TICKET_SALES".equalsIgnoreCase(role)) {
+        } else if (isStaff()) {
             return String.format("BV%05d", userId);
-        } else if ("STAFF".equalsIgnoreCase(role)) {
-            return String.format("NV%05d", userId);
         } else if ("ADMIN".equalsIgnoreCase(role)) {
             return String.format("AD%05d", userId);
         }
@@ -64,7 +62,7 @@ public class User {
     }
 
     public boolean isTicketSalesStaff() {
-        return "TICKET_SALES_STAFF".equalsIgnoreCase(role) || "TICKET_SALES".equalsIgnoreCase(role);
+        return isStaff();
     }
 
 
@@ -85,11 +83,8 @@ public class User {
     }
 
     public String getRoleDisplayName() {
-        if (isTicketSalesStaff()) {
+        if (isStaff()) {
             return "Nhân viên bán vé";
-        }
-        if ("STAFF".equalsIgnoreCase(role)) {
-            return "Nhân viên rạp";
         }
         if ("MANAGER".equalsIgnoreCase(role)) {
             return "Quản lý trung tâm";
@@ -100,7 +95,7 @@ public class User {
         if ("CUSTOMER".equalsIgnoreCase(role)) {
             return "Khách hàng";
         }
-        return role != null ? role : "";
+        return "Người dùng";
     }
 
     public String getFullName() {
