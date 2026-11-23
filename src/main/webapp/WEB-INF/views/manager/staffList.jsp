@@ -198,13 +198,6 @@
                         <div class="staff-toolbar">
 
                             <div class="staff-select-wrap">
-                                <select id="staffRoleFilter">
-                                    <option value="">Tất cả vị trí</option>
-                                    <option value="role-sales">🎫 Bán vé</option>
-                                </select>
-                            </div>
-
-                            <div class="staff-select-wrap">
                                 <select id="staffStatusFilter">
                                     <option value="ALL">Tất cả trạng thái</option>
                                     <option value="ACTIVE">Hoạt động</option>
@@ -370,19 +363,13 @@
                                         </td>
 
                                         <td class="col-role">
-                                            <% if (isSales) { %>
-                                                <span class="cf-badge"
-                                                      style="background:rgba(56,189,248,.15);
-                                                             color:#38bdf8;
-                                                             border:1px solid rgba(56,189,248,.35);
-                                                             white-space:nowrap;">
-                                                    🎫 Bán vé
-                                                </span>
-                                            <% } else { %>
-                                                <span class="cf-badge cf-badge-info" style="white-space:nowrap;">
-                                                    Nhân viên
-                                                </span>
-                                            <% } %>
+                                            <span class="cf-badge"
+                                                  style="background:rgba(56,189,248,.15);
+                                                         color:#38bdf8;
+                                                         border:1px solid rgba(56,189,248,.35);
+                                                         white-space:nowrap;">
+                                                🎫 Bán vé
+                                            </span>
                                         </td>
 
                                         <td class="col-phone">

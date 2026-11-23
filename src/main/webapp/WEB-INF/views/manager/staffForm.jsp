@@ -220,13 +220,7 @@
                                     </div>
                                 </div>
 
-                                <div class="cf-form-group">
-                                    <label>Vị trí / Vai trò *</label>
-                                    <select name="role" required>
-                                        <option value="STAFF" ${staff.role == 'STAFF' ? 'selected' : ''}>Nhân viên thông thường</option>
-                                        <option value="TICKET_SALES_STAFF" ${staff.role == 'TICKET_SALES_STAFF' ? 'selected' : ''}>Nhân viên bán vé</option>
-                                    </select>
-                                </div>
+                                <input type="hidden" name="role" value="TICKET_SALES_STAFF">
                             </c:when>
 
                             <%-- CHẾ ĐỘ TẠO MỚI --%>
@@ -258,13 +252,7 @@
                                     <span class="cf-form-hint">Mặc định: Staff@123 (tối thiểu 8 ký tự, có chữ hoa và ký tự đặc biệt)</span>
                                 </div>
 
-                                <div class="cf-form-group">
-                                    <label>Vị trí / Vai trò *</label>
-                                    <select name="role" required>
-                                        <option value="STAFF">Nhân viên thông thường</option>
-                                        <option value="TICKET_SALES_STAFF">Nhân viên bán vé</option>
-                                    </select>
-                                </div>
+                                <input type="hidden" name="role" value="TICKET_SALES_STAFF">
                             </c:otherwise>
                         </c:choose>
 

@@ -58,15 +58,9 @@
                         </div>
                     </div>
                     <div>
-                        <% if (isSales) { %>
-                            <span class="staff-role-badge-sales">
-                                🎫 Nhân viên Bán vé &amp; F&amp;B (Ticket Sales Staff)
-                            </span>
-                        <% } else { %>
-                            <span class="staff-role-badge-sales" style="background: rgba(99, 102, 241, 0.18); color: #a5b4fc; border-color: rgba(99, 102, 241, 0.4);">
-                                👥 Nhân viên CineFlow (Staff)
-                            </span>
-                        <% } %>
+                        <span class="staff-role-badge-sales">
+                            🎫 Nhân viên Bán vé &amp; F&amp;B (Ticket Sales Staff)
+                        </span>
                     </div>
                 </div>
 
