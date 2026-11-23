@@ -242,6 +242,10 @@ public class MovieDAO {
                 + "WHERE MovieID = ? AND Status = 'SCHEDULED' AND StartTime > SYSDATETIME())";
 
         String[] sqls = {
+            // Hoàn lại lượt dùng voucher và giải phóng bản ghi sử dụng để khách hàng có thể dùng lại mã
+            "UPDATE v SET v.UsedCount = CASE WHEN v.UsedCount > sub.cnt THEN v.UsedCount - sub.cnt ELSE 0 END FROM Vouchers v JOIN (SELECT b.VoucherID, COUNT(*) AS cnt FROM Bookings b WHERE b.VoucherID IS NOT NULL AND b.BookingStatus IN ('PENDING', 'CONFIRMED') AND b.ShowtimeID " + condition + " GROUP BY b.VoucherID) sub ON v.VoucherID = sub.VoucherID",
+            "DELETE FROM VoucherUsages WHERE BookingID IN (SELECT BookingID FROM Bookings WHERE ShowtimeID " + condition + ")",
+
             "UPDATE Tickets SET TicketStatus = 'CANCELLED' WHERE TicketStatus = 'VALID' AND BookingSeatID IN (SELECT BookingSeatID FROM BookingSeats WHERE ShowtimeID " + condition + ")",
             "UPDATE BookingSeats SET SeatStatus = 'CANCELLED' WHERE SeatStatus IN ('HELD', 'CONFIRMED') AND ShowtimeID " + condition,
             "UPDATE Payments SET PaymentStatus = 'CANCELLED' WHERE PaymentStatus = 'PENDING' AND BookingID IN (SELECT BookingID FROM Bookings WHERE ShowtimeID " + condition + ")",
