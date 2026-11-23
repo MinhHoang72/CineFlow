@@ -1,5 +1,6 @@
 <%@ page import="jakarta.servlet.http.HttpServletResponse" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ page import="model.entity.User,model.entity.Centre,java.util.List" %>
 
 <%
@@ -16,28 +17,7 @@
             ? assignedCentre.getCentreName()
             : "Chưa được bổ nhiệm trung tâm";
 
-    String successParam = request.getParameter("success");
-    String errorParam = request.getParameter("error");
     String searchParam = request.getParameter("search");
-
-    java.util.Map<String, String> successMsgs = java.util.Map.of(
-        "created", "Đã tạo tài khoản nhân viên thành công.",
-        "updated", "Đã cập nhật thông tin nhân viên thành công.",
-        "status_updated", "Đã cập nhật trạng thái nhân viên."
-    );
-    java.util.Map<String, String> errorMsgs = java.util.Map.ofEntries(
-        java.util.Map.entry("account_exists", "Tên tài khoản đã tồn tại."),
-        java.util.Map.entry("email_exists", "Email đã được sử dụng."),
-        java.util.Map.entry("missing_fields", "Vui lòng điền đầy đủ thông tin bắt buộc."),
-        java.util.Map.entry("invalid_name", "Họ và tên phải từ 2 đến 100 ký tự."),
-        java.util.Map.entry("invalid_account", "Tên tài khoản không hợp lệ."),
-        java.util.Map.entry("invalid_email", "Email không đúng định dạng."),
-        java.util.Map.entry("disposable_email", "Không được sử dụng email tạm thời."),
-        java.util.Map.entry("weak_password", "Mật khẩu tối thiểu 8 ký tự, có kí tự viết hoa, có kí tự đặc biệt."),
-        java.util.Map.entry("invalid_phone", "Số điện thoại không hợp lệ (tối đa 20 ký tự)."),
-        java.util.Map.entry("unassigned_manager", "Bạn chưa được bổ nhiệm trung tâm."),
-        java.util.Map.entry("create_failed", "Không thể tạo tài khoản nhân viên.")
-    );
 
     request.setAttribute("activeNav", "staff");
     request.setAttribute("pageTitle", "Quản lý nhân sự");
@@ -127,15 +107,26 @@
             </div>
 
             <!-- THÔNG BÁO -->
-            <% if (successParam != null && successMsgs.containsKey(successParam)) { %>
+            <c:if test="${param.success == 'created'}">
                 <div class="cf-alert cf-alert-success">
-                    ✓ <strong>Thành công!</strong> <%= successMsgs.get(successParam) %>
+                    ✓ <strong>Thành công!</strong> Đã tạo tài khoản nhân viên thành công.
                 </div>
-            <% } else if (errorParam != null) { %>
+            </c:if>
+            <c:if test="${param.success == 'updated'}">
+                <div class="cf-alert cf-alert-success">
+                    ✓ <strong>Thành công!</strong> Đã cập nhật thông tin nhân viên thành công.
+                </div>
+            </c:if>
+            <c:if test="${param.success == 'status_updated'}">
+                <div class="cf-alert cf-alert-success">
+                    ✓ <strong>Thành công!</strong> Đã cập nhật trạng thái nhân viên thành công.
+                </div>
+            </c:if>
+            <c:if test="${not empty param.error}">
                 <div class="cf-alert cf-alert-danger">
-                    ⚠ <strong>Lỗi:</strong> <%= errorMsgs.getOrDefault(errorParam, "Thao tác không thành công. Vui lòng kiểm tra lại.") %>
+                    ⚠ <strong>Lỗi:</strong> Thao tác không thành công hoặc dữ liệu không hợp lệ. Vui lòng kiểm tra lại.
                 </div>
-            <% } %>
+            </c:if>
 
             <!-- MANAGER CHƯA ĐƯỢC BỔ NHIỆM -->
             <% if (selectedCentreId == null) { %>

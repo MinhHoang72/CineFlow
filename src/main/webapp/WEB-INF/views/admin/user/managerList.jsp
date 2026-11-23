@@ -8,6 +8,7 @@
     - Modal 2: Cập nhật thông tin cá nhân của Manager (action="update").
 --%>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ page import="model.entity.User, java.util.List, model.entity.Centre" %>
 <%
     List<User> managers = (List<User>) request.getAttribute("managers");
@@ -34,32 +35,6 @@
             }
         }
     }
-
-    // 4. Ánh xạ mã thông báo thành công / mã lỗi từ URL sang nội dung tiếng Việt
-    String successParam = request.getParameter("success");
-    String errorParam = request.getParameter("error");
-
-    java.util.Map<String, String> successMsgs = java.util.Map.of(
-        "created", "Đã tạo mới tài khoản Quản lý và phân công phụ trách cụm rạp thành công.",
-        "updated", "Đã cập nhật thông tin Quản lý (Manager) thành công.",
-        "status_updated", "Đã cập nhật trạng thái hoạt động của tài khoản Manager."
-    );
-    java.util.Map<String, String> errorMsgs = java.util.Map.ofEntries(
-        java.util.Map.entry("account_exists", "Tên tài khoản (Account) đã tồn tại trong hệ thống."),
-        java.util.Map.entry("email_exists", "Địa chỉ Email đã được sử dụng bởi người dùng khác."),
-        java.util.Map.entry("missing_fields", "Vui lòng điền đầy đủ các thông tin bắt buộc."),
-        java.util.Map.entry("invalid_name", "Họ và tên phải từ 2 đến 100 ký tự."),
-        java.util.Map.entry("invalid_account", "Tên tài khoản từ 3-30 ký tự, chỉ gồm chữ cái, số, gạch dưới, gạch ngang hoặc dấu chấm."),
-        java.util.Map.entry("invalid_email", "Địa chỉ email không đúng định dạng chuẩn."),
-        java.util.Map.entry("disposable_email", "Vui lòng không sử dụng địa chỉ email rác / email tạm thời."),
-        java.util.Map.entry("weak_password", "Mật khẩu yếu: Yêu cầu tối thiểu 8 ký tự, gồm ít nhất 1 chữ hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt."),
-        java.util.Map.entry("invalid_phone", "Số điện thoại không hợp lệ (yêu cầu số điện thoại di động Việt Nam 10 số)."),
-        java.util.Map.entry("missing_centre", "Theo quy định bắt buộc của hệ thống, tài khoản Quản lý phải được phân công một cụm rạp phụ trách."),
-        java.util.Map.entry("centre_has_manager", "Cụm rạp được chọn hiện đã có Quản lý đang phụ trách (mỗi rạp chỉ có 1 Quản lý)."),
-        java.util.Map.entry("centre_already_has_manager", "Cụm rạp được chọn hiện đã có Quản lý đang phụ trách."),
-        java.util.Map.entry("status_failed", "Cập nhật trạng thái Quản lý thất bại. Vui lòng thử lại."),
-        java.util.Map.entry("not_manager", "Tài khoản không tồn tại hoặc không phải là Quản lý.")
-    );
 %>
 <!DOCTYPE html>
 <html lang="vi">
@@ -90,19 +65,30 @@
                     <h1>Quản lý Tài khoản Manager</h1>
                 </div>
                 <a href="${pageContext.request.contextPath}/admin/managers?action=create" class="cf-btn cf-btn-primary btn-create-manager">
-                    <span style="font-weight: 700; font-size: 15px;"></span>Tạo tài khoản quản lý mới
+                    <span style="font-weight: 700; font-size: 15px; margin-right: 4px;">+</span>Tạo tài khoản quản lý mới
                 </a>
             </div>
 
-            <% if (successParam != null && successMsgs.containsKey(successParam)) { %>
+            <c:if test="${param.success == 'created'}">
                 <div class="cf-alert cf-alert-success">
-                    <span>✓</span> <strong>Thành công!</strong> <%= successMsgs.get(successParam) %>
+                    <span>✓</span> <strong>Thành công!</strong> Đã tạo mới tài khoản Quản lý và phân công cụm rạp thành công.
                 </div>
-            <% } else if (errorParam != null) { %>
+            </c:if>
+            <c:if test="${param.success == 'updated'}">
+                <div class="cf-alert cf-alert-success">
+                    <span>✓</span> <strong>Thành công!</strong> Đã cập nhật thông tin Quản lý thành công.
+                </div>
+            </c:if>
+            <c:if test="${param.success == 'status_updated'}">
+                <div class="cf-alert cf-alert-success">
+                    <span>✓</span> <strong>Thành công!</strong> Đã cập nhật trạng thái hoạt động của tài khoản Manager.
+                </div>
+            </c:if>
+            <c:if test="${not empty param.error}">
                 <div class="cf-alert cf-alert-danger">
-                    <span>⚠</span> <strong>Lỗi:</strong> <%= errorMsgs.getOrDefault(errorParam, "Thao tác thất bại. Vui lòng kiểm tra lại thông tin.") %>
+                    <span>⚠</span> <strong>Lỗi:</strong> Thao tác thất bại hoặc cập nhật trạng thái không thành công. Vui lòng kiểm tra lại.
                 </div>
-            <% } %>
+            </c:if>
 
             <!-- KPI METRICS: TỔNG SỐ, ĐANG HOẠT ĐỘNG, TẠM NGƯNG, ĐÃ KHÓA -->
             <div class="cf-kpi-grid-4">
