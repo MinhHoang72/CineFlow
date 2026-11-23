@@ -6,7 +6,6 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import model.entity.Centre;
 import model.entity.User;
 import service.StaffService;
 import service.UserService;
@@ -14,7 +13,6 @@ import service.UserService;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 
 /**
  * Controller: Quản lý Nhân sự (Staff) của Quản lý chi nhánh (/staffList).
@@ -22,9 +20,8 @@ import java.util.List;
  * <p>Chức năng chính:</p>
  * <ul>
  *   <li>Xem danh sách nhân viên thuộc cụm rạp do Manager phụ trách.</li>
- *   <li>Tạo mới tài khoản nhân viên qua staffForm.jsp.</li>
- *   <li>Chỉnh sửa thông tin nhân viên qua staffForm.jsp.</li>
- *   <li>Cập nhật trạng thái nhân viên (ACTIVE, INACTIVE, LOCKED).</li>
+ *   <li>Tạo mới / Chỉnh sửa tài khoản nhân viên qua staffForm.jsp (action="save").</li>
+ *   <li>Cập nhật trạng thái nhân viên (action="status").</li>
  * </ul>
  *
  * @author CineFlow Team
@@ -35,65 +32,34 @@ public class StaffManagementServlet extends HttpServlet {
     private final StaffService staffService = new StaffService();
     private final UserService userService = new UserService();
 
-    private User getCurrentManager(HttpSession session) {
-        if (session == null || session.getAttribute("userId") == null) {
-            return null;
+    /**
+     * Lấy tài khoản Manager từ Session (nếu chưa có mới tải từ DB).
+     */
+    private User getManager(HttpSession session) {
+        if (session == null) return null;
+        if (session.getAttribute("user") instanceof User u && "MANAGER".equalsIgnoreCase(u.getRole())) {
+            return u;
         }
-        Object idObject = session.getAttribute("userId");
-        if (!(idObject instanceof Number)) {
-            return null;
+        Object idObj = session.getAttribute("userId");
+        if (idObj instanceof Number num) {
+            User u = userService.getUserById(num.intValue());
+            if (u != null && "MANAGER".equalsIgnoreCase(u.getRole())) {
+                session.setAttribute("user", u);
+                return u;
+            }
         }
-        int userId = ((Number) idObject).intValue();
-        User manager = userService.getUserById(userId);
-        if (manager == null || !"MANAGER".equalsIgnoreCase(manager.getRole())) {
-            return null;
-        }
-        session.setAttribute("user", manager);
-        session.setAttribute("role", manager.getRole());
-        return manager;
-    }
-
-    private boolean isAjax(HttpServletRequest request) {
-        return "XMLHttpRequest".equalsIgnoreCase(request.getHeader("X-Requested-With"))
-                || "1".equals(request.getParameter("ajax"));
-    }
-
-    private void writeJson(HttpServletResponse response, int statusCode, String json) throws IOException {
-        response.setStatus(statusCode);
-        response.setContentType("application/json;charset=UTF-8");
-        response.getWriter().write(json);
-    }
-
-    private String escapeJson(String value) {
-        if (value == null) return "";
-        return value.replace("\\", "\\\\")
-                .replace("\"", "\\\"")
-                .replace("\n", "\\n")
-                .replace("\r", "\\r");
-    }
-
-    private boolean requireLogin(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        HttpSession session = request.getSession(false);
-        if (session == null || session.getAttribute("userId") == null) {
-            String redirect = URLEncoder.encode("/staffList", StandardCharsets.UTF_8);
-            response.sendRedirect(request.getContextPath() + "/login?redirect=" + redirect);
-            return false;
-        }
-        return true;
+        return null;
     }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        if (!requireLogin(request, response)) {
-            return;
-        }
-
         HttpSession session = request.getSession(false);
-        User manager = getCurrentManager(session);
+        User manager = getManager(session);
 
         if (manager == null) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Chỉ Manager mới được truy cập trang quản lý nhân sự.");
+            response.sendRedirect(request.getContextPath() + "/login?redirect="
+                    + URLEncoder.encode("/staffList", StandardCharsets.UTF_8));
             return;
         }
 
@@ -129,121 +95,78 @@ public class StaffManagementServlet extends HttpServlet {
             }
         }
 
-        String search = request.getParameter("search");
-        String role = request.getParameter("role");
-
-        List<User> staffList = staffService.getStaffDirectory(manager, search, role);
-        Centre assignedCentre = staffService.getManagerCentre(manager);
-        request.setAttribute("staff", staffList);
-        request.setAttribute("assignedCentre", assignedCentre);
+        request.setAttribute("staff", staffService.getStaffDirectory(manager, request.getParameter("search"), request.getParameter("role")));
+        request.setAttribute("assignedCentre", staffService.getManagerCentre(manager));
         request.setAttribute("selectedCentreId", manager.getCentreId());
-
         request.getRequestDispatcher("/WEB-INF/views/manager/staffList.jsp").forward(request, response);
     }
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
         request.setCharacterEncoding("UTF-8");
-
-        if (!requireLogin(request, response)) {
-            return;
-        }
-
-        HttpSession session = request.getSession(false);
-        User manager = getCurrentManager(session);
+        User manager = getManager(request.getSession(false));
 
         if (manager == null || !staffService.isManagerAssigned(manager)) {
-            if (isAjax(request)) {
-                writeJson(response, HttpServletResponse.SC_FORBIDDEN, "{\"success\":false,\"message\":\"Bạn không có quyền thao tác.\"}");
-            } else {
-                response.sendError(HttpServletResponse.SC_FORBIDDEN, "Bạn không có quyền quản lý nhân sự.");
-            }
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Bạn không có quyền quản lý nhân sự.");
             return;
         }
 
         String action = request.getParameter("action");
-
         switch (action == null ? "" : action.toLowerCase()) {
             case "save" -> handleSaveStaff(request, response, manager);
-            case "status" -> updateStaffStatus(request, response, manager);
+            case "status" -> handleToggleStatus(request, response, manager);
             default -> response.sendRedirect(request.getContextPath() + "/staffList");
         }
     }
 
     private void handleSaveStaff(HttpServletRequest request, HttpServletResponse response, User manager) throws IOException {
         String userIdParam = request.getParameter("userId");
-        if (userIdParam != null && !userIdParam.isBlank()) {
-            updateStaff(request, response, manager);
+        boolean isUpdate = userIdParam != null && !userIdParam.isBlank();
+
+        if (isUpdate) {
+            try {
+                int userId = Integer.parseInt(userIdParam.trim());
+                String error = staffService.updateStaff(
+                        manager,
+                        userId,
+                        request.getParameter("fullName"),
+                        request.getParameter("phone"),
+                        request.getParameter("email"),
+                        request.getParameter("role")
+                );
+                if (error == null) {
+                    response.sendRedirect(request.getContextPath() + "/staffList?success=updated");
+                } else {
+                    response.sendRedirect(request.getContextPath() + "/staffList?action=edit&userId=" + userId + "&error=" + error);
+                }
+            } catch (NumberFormatException e) {
+                response.sendRedirect(request.getContextPath() + "/staffList?error=invalid_data");
+            }
         } else {
-            createStaff(request, response, manager);
-        }
-    }
-
-    private void createStaff(HttpServletRequest request, HttpServletResponse response, User manager) throws IOException {
-        String error = staffService.createStaff(
-                manager,
-                request.getParameter("fullName"),
-                request.getParameter("account"),
-                request.getParameter("email"),
-                request.getParameter("password"),
-                request.getParameter("phone"),
-                request.getParameter("role")
-        );
-
-        if (error == null) {
-            response.sendRedirect(request.getContextPath() + "/staffList?success=created");
-        } else {
-            response.sendRedirect(request.getContextPath() + "/staffList?action=create&error=" + error);
-        }
-    }
-
-    private void updateStaff(HttpServletRequest request, HttpServletResponse response, User manager) throws IOException {
-        try {
-            int userId = Integer.parseInt(request.getParameter("userId"));
-            String error = staffService.updateStaff(
+            String error = staffService.createStaff(
                     manager,
-                    userId,
                     request.getParameter("fullName"),
-                    request.getParameter("phone"),
+                    request.getParameter("account"),
                     request.getParameter("email"),
+                    request.getParameter("password"),
+                    request.getParameter("phone"),
                     request.getParameter("role")
             );
-
             if (error == null) {
-                response.sendRedirect(request.getContextPath() + "/staffList?success=updated");
+                response.sendRedirect(request.getContextPath() + "/staffList?success=created");
             } else {
-                response.sendRedirect(request.getContextPath() + "/staffList?action=edit&userId=" + userId + "&error=" + error);
+                response.sendRedirect(request.getContextPath() + "/staffList?action=create&error=" + error);
             }
-        } catch (NumberFormatException e) {
-            response.sendRedirect(request.getContextPath() + "/staffList?error=invalid_data");
         }
     }
 
-    private void updateStaffStatus(HttpServletRequest request, HttpServletResponse response, User manager) throws IOException {
+    private void handleToggleStatus(HttpServletRequest request, HttpServletResponse response, User manager) throws IOException {
         try {
             int userId = Integer.parseInt(request.getParameter("userId"));
             String status = request.getParameter("status");
-
             boolean ok = staffService.updateStaffStatus(manager, userId, status);
-
-            if (isAjax(request)) {
-                if (ok) {
-                    writeJson(response, HttpServletResponse.SC_OK,
-                            "{\"success\":true,\"userId\":" + userId + ",\"status\":\"" + escapeJson(status) + "\",\"message\":\"Cập nhật thành công.\"}");
-                } else {
-                    writeJson(response, HttpServletResponse.SC_BAD_REQUEST,
-                            "{\"success\":false,\"message\":\"Cập nhật thất bại.\"}");
-                }
-                return;
-            }
-
             response.sendRedirect(request.getContextPath() + "/staffList?" + (ok ? "success=status_updated" : "error=status_failed"));
-
-        } catch (NumberFormatException e) {
-            if (isAjax(request)) {
-                writeJson(response, HttpServletResponse.SC_BAD_REQUEST, "{\"success\":false,\"message\":\"Dữ liệu không hợp lệ.\"}");
-                return;
-            }
+        } catch (Exception e) {
             response.sendRedirect(request.getContextPath() + "/staffList?error=status_failed");
         }
     }

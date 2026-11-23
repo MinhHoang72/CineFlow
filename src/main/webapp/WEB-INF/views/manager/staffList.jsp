@@ -428,32 +428,34 @@
                                                     Sửa
                                                 </a>
 
-                                                <div class="status-select-wrap">
+                                                <form method="post" action="${pageContext.request.contextPath}/staffList" class="form-inline-action" style="margin: 0; display: inline-flex;">
+                                                    <input type="hidden" name="action" value="status">
+                                                    <input type="hidden" name="userId" value="<%= item.getUserId() %>">
+                                                    <div class="status-select-wrap">
+                                                        <select name="status" class="cf-status-select val-<%= st.toLowerCase() %>"
+                                                                data-name="<%= staffName.replace("\"", "&quot;") %>"
+                                                                data-current-status="<%= st %>"
+                                                                onchange="handleStaffStatusChange(this)"
+                                                                title="Bấm để thay đổi trạng thái nhân viên">
 
-                                                    <select class="cf-status-select val-<%= st.toLowerCase() %>"
-                                                            data-userid="<%= item.getUserId() %>"
-                                                            data-name="<%= staffName.replace("\"", "&quot;") %>"
-                                                            data-previous-status="<%= st %>"
-                                                            onchange="handleStaffStatusChange(this)">
+                                                            <option value="ACTIVE"
+                                                                <%= "ACTIVE".equalsIgnoreCase(st) ? "selected" : "" %>>
+                                                                Hoạt động
+                                                            </option>
 
-                                                        <option value="ACTIVE"
-                                                            <%= "ACTIVE".equalsIgnoreCase(st) ? "selected" : "" %>>
-                                                            Hoạt động
-                                                        </option>
+                                                            <option value="INACTIVE"
+                                                                <%= "INACTIVE".equalsIgnoreCase(st) ? "selected" : "" %>>
+                                                                Tạm ngưng
+                                                            </option>
 
-                                                        <option value="INACTIVE"
-                                                            <%= "INACTIVE".equalsIgnoreCase(st) ? "selected" : "" %>>
-                                                            Tạm ngưng
-                                                        </option>
+                                                            <option value="LOCKED"
+                                                                <%= "LOCKED".equalsIgnoreCase(st) ? "selected" : "" %>>
+                                                                Khóa
+                                                            </option>
 
-                                                        <option value="LOCKED"
-                                                            <%= "LOCKED".equalsIgnoreCase(st) ? "selected" : "" %>>
-                                                            Khóa
-                                                        </option>
-
-                                                    </select>
-
-                                                </div>
+                                                        </select>
+                                                    </div>
+                                                </form>
                                             </div>
                                         </td>
 

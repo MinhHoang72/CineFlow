@@ -56,110 +56,28 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 function handleStaffStatusChange(selectEl) {
-    var userId = selectEl.getAttribute("data-userid");
-    var staffName = selectEl.getAttribute("data-name") || "nhân viên";
     var newStatus = selectEl.value;
-    var previousStatus = selectEl.getAttribute("data-previous-status");
+    var currentStatus = selectEl.getAttribute("data-current-status") || "ACTIVE";
+    var staffName = selectEl.getAttribute("data-name") || "nhân viên";
 
-    var badge = document.getElementById("badge-status-" + userId);
-    var row = selectEl.closest(".staff-row");
+    if (newStatus === currentStatus) {
+        return;
+    }
 
-    selectEl.disabled = true;
+    var message = "";
+    if (newStatus === "ACTIVE") {
+        message = 'Kích hoạt lại tài khoản cho nhân viên "' + staffName + '" sang HOẠT ĐỘNG?';
+    } else if (newStatus === "INACTIVE") {
+        message = 'Chuyển tài khoản nhân viên "' + staffName + '" sang TẠM NGƯNG?';
+    } else if (newStatus === "LOCKED") {
+        message = 'CẢNH BÁO: Bạn có chắc chắn muốn KHÓA tài khoản nhân viên "' + staffName + '"?';
+    }
 
-    var formData = new URLSearchParams();
-    formData.append("action", "status");
-    formData.append("ajax", "1");
-    formData.append("userId", userId);
-    formData.append("status", newStatus);
-
-    fetch(window.location.pathname, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-            "X-Requested-With": "XMLHttpRequest"
-        },
-        body: formData.toString()
-    })
-    .then(function(response) {
-        return response.json().then(function(data) {
-            if (!response.ok || !data.success) {
-                throw new Error(data.message || "Cập nhật thất bại.");
-            }
-            return data;
-        });
-    })
-    .then(function() {
-        selectEl.setAttribute("data-previous-status", newStatus);
-        selectEl.className = "cf-status-select val-" + newStatus.toLowerCase();
-
-        if (badge) {
-            if (newStatus === "ACTIVE") {
-                badge.className = "cf-badge cf-badge-success";
-                badge.textContent = "Hoạt động";
-            } else if (newStatus === "INACTIVE") {
-                badge.className = "cf-badge cf-badge-warning";
-                badge.textContent = "Tạm ngưng";
-            } else {
-                badge.className = "cf-badge cf-badge-danger";
-                badge.textContent = "Đã khóa";
-            }
+    if (confirm(message)) {
+        if (selectEl.form) {
+            selectEl.form.submit();
         }
-
-        if (row) {
-            row.classList.remove("st-active", "st-inactive", "st-locked");
-            row.classList.add("st-" + newStatus.toLowerCase());
-            row.setAttribute("data-status", newStatus);
-        }
-
-        if (staffPagination) {
-            staffPagination.refreshRows();
-        }
-
-        updateStaffKPI();
-        showToast("Đã cập nhật trạng thái của " + staffName + ".", "success");
-    })
-    .catch(function(error) {
-        selectEl.value = previousStatus;
-        showToast(error.message || "Cập nhật trạng thái thất bại.", "error");
-    })
-    .finally(function() {
-        selectEl.disabled = false;
-    });
-}
-
-function updateStaffKPI() {
-    var rows = document.querySelectorAll(".staff-row");
-    var active = 0;
-    var inactive = 0;
-
-    rows.forEach(function(row) {
-        var status = row.getAttribute("data-status");
-        if (status === "ACTIVE") {
-            active++;
-        } else {
-            inactive++;
-        }
-    });
-
-    var elActive = document.getElementById("kpiActiveStaff");
-    var elInactive = document.getElementById("kpiInactiveStaff");
-    if (elActive) elActive.textContent = active;
-    if (elInactive) elInactive.textContent = inactive;
-}
-
-function showToast(message, type) {
-    var container = document.getElementById("cf-toast-container");
-    if (!container) return;
-
-    var toast = document.createElement("div");
-    toast.className = "cf-toast" + (type === "error" ? " cf-toast-error" : "");
-    toast.textContent = message;
-    container.appendChild(toast);
-
-    setTimeout(function() {
-        toast.classList.add("cf-toast-fadeout");
-        setTimeout(function() {
-            toast.remove();
-        }, 400);
-    }, 2500);
+    } else {
+        selectEl.value = currentStatus;
+    }
 }
