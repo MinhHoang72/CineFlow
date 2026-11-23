@@ -36,15 +36,23 @@ public class StaffManagementServlet extends HttpServlet {
      * Lấy tài khoản Manager từ Session (nếu chưa có mới tải từ DB).
      */
     private User getManager(HttpSession session) {
-        if (session == null) return null;
-        if (session.getAttribute("user") instanceof User u && "MANAGER".equalsIgnoreCase(u.getRole())) {
-            return u;
+        if (session == null) {
+            return null;
+        }
+        Object userObj = session.getAttribute("user");
+        if (userObj instanceof User) {
+            User u = (User) userObj;
+            if ("MANAGER".equalsIgnoreCase(u.getRole())) {
+                return u;
+            }
         }
         Object idObj = session.getAttribute("userId");
-        if (idObj instanceof Number num) {
-            User u = userService.getUserById(num.intValue());
+        if (idObj instanceof Number) {
+            int userId = ((Number) idObj).intValue();
+            User u = userService.getUserById(userId);
             if (u != null && "MANAGER".equalsIgnoreCase(u.getRole())) {
                 session.setAttribute("user", u);
+                session.setAttribute("role", u.getRole());
                 return u;
             }
         }
@@ -112,10 +120,20 @@ public class StaffManagementServlet extends HttpServlet {
         }
 
         String action = request.getParameter("action");
-        switch (action == null ? "" : action.toLowerCase()) {
-            case "save" -> handleSaveStaff(request, response, manager);
-            case "status" -> handleToggleStatus(request, response, manager);
-            default -> response.sendRedirect(request.getContextPath() + "/staffList");
+        if (action == null) {
+            action = "";
+        }
+
+        switch (action.toLowerCase()) {
+            case "save":
+                handleSaveStaff(request, response, manager);
+                break;
+            case "status":
+                handleToggleStatus(request, response, manager);
+                break;
+            default:
+                response.sendRedirect(request.getContextPath() + "/staffList");
+                break;
         }
     }
 

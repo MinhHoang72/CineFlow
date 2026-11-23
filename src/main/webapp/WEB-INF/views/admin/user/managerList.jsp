@@ -65,7 +65,7 @@
                     <h1>Quản lý Tài khoản Manager</h1>
                 </div>
                 <a href="${pageContext.request.contextPath}/admin/managers?action=create" class="cf-btn cf-btn-primary btn-create-manager">
-                    <span style="font-weight: 700; font-size: 15px; margin-right: 4px;">+</span>Tạo tài khoản quản lý mới
+                    Tạo tài khoản quản lý mới
                 </a>
             </div>
 

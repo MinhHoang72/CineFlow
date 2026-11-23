@@ -53,15 +53,15 @@
             flex-wrap: wrap;
             align-items: center;
             gap: 16px 28px;
-            background: #F1F5F9;
-            border: 1px solid #CBD5E1;
+            background: #F1F5F9 !important;
+            border: 1px solid #CBD5E1 !important;
             border-radius: 10px;
             padding: 14px 18px;
             margin-bottom: 24px;
         }
         html[data-theme="dark"] .info-banner {
-            background: rgba(255, 255, 255, 0.05);
-            border-color: rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.05) !important;
+            border-color: rgba(255, 255, 255, 0.12) !important;
         }
         .info-item {
             display: flex;
@@ -77,7 +77,9 @@
             color: #CBD5E1 !important;
         }
         .info-code {
-            background: #E2E8F0;
+            display: inline-flex;
+            align-items: center;
+            background: #E2E8F0 !important;
             color: #0F172A !important;
             -webkit-text-fill-color: #0F172A !important;
             padding: 4px 10px;
@@ -85,30 +87,32 @@
             font-family: monospace;
             font-size: 13.5px;
             font-weight: 700;
-            border: 1px solid #94A3B8;
+            border: 1px solid #94A3B8 !important;
         }
         html[data-theme="dark"] .info-code {
-            background: #1E293B;
+            background: #1E293B !important;
             color: #F8FAFC !important;
             -webkit-text-fill-color: #F8FAFC !important;
-            border-color: #475569;
+            border-color: #475569 !important;
         }
         .centre-tag {
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            background: #E0E7FF;
+            background: #E0E7FF !important;
             color: #1E1B4B !important;
-            border: 1px solid #818CF8;
+            -webkit-text-fill-color: #1E1B4B !important;
+            border: 1px solid #818CF8 !important;
             padding: 4px 12px;
             border-radius: 6px;
             font-weight: 700;
             font-size: 13px;
         }
         html[data-theme="dark"] .centre-tag {
-            background: rgba(99, 102, 241, 0.2);
+            background: rgba(99, 102, 241, 0.25) !important;
             color: #E0E7FF !important;
-            border-color: rgba(99, 102, 241, 0.4);
+            -webkit-text-fill-color: #E0E7FF !important;
+            border-color: rgba(99, 102, 241, 0.4) !important;
         }
     </style>
 </head>
@@ -185,18 +189,18 @@
                         <c:choose>
                             <%-- CHẾ ĐỘ SỬA --%>
                             <c:when test="${staff != null}">
-                                <div class="info-banner">
-                                    <div class="info-item">
-                                        <span class="info-label">Mã nhân viên:</span>
-                                        <code class="cf-badge cf-badge-primary">${staff.employeeCode}</code>
+                                <div class="info-banner" style="display: flex; flex-wrap: wrap; align-items: center; gap: 16px 24px; background: #F8FAFC; border: 1px solid #CBD5E1; border-radius: 10px; padding: 14px 20px; margin-bottom: 24px;">
+                                    <div class="info-item" style="display: flex; align-items: center; gap: 8px;">
+                                        <span class="info-label" style="color: #0F172A; font-weight: 700; font-size: 13.5px;">Mã nhân viên:</span>
+                                        <code class="cf-badge cf-badge-primary" style="font-weight: 700;">${staff.employeeCode}</code>
                                     </div>
-                                    <div class="info-item">
-                                        <span class="info-label">Tên đăng nhập:</span>
-                                        <span class="info-code">${staff.account}</span>
+                                    <div class="info-item" style="display: flex; align-items: center; gap: 8px;">
+                                        <span class="info-label" style="color: #0F172A; font-weight: 700; font-size: 13.5px;">Tên đăng nhập:</span>
+                                        <code class="info-code" style="font-family: monospace; font-size: 13px; font-weight: 700; color: #0F172A !important; -webkit-text-fill-color: #0F172A !important; background: #E2E8F0 !important; border: 1px solid #94A3B8 !important; padding: 4px 10px; border-radius: 6px;">${staff.account}</code>
                                     </div>
-                                    <div class="info-item">
-                                        <span class="info-label">Cụm rạp:</span>
-                                        <span class="centre-tag">🏛 ${assignedCentre != null ? assignedCentre.centreName : 'Chưa phân công'}</span>
+                                    <div class="info-item" style="display: flex; align-items: center; gap: 8px;">
+                                        <span class="info-label" style="color: #0F172A; font-weight: 700; font-size: 13.5px;">Cụm rạp:</span>
+                                        <span class="centre-tag" style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: #1E1B4B !important; -webkit-text-fill-color: #1E1B4B !important; background: #E0E7FF !important; border: 1px solid #818CF8 !important; padding: 4px 12px; border-radius: 6px;">🏛 ${assignedCentre != null ? assignedCentre.centreName : 'Chưa phân công'}</span>
                                     </div>
                                 </div>
 

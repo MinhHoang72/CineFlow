@@ -809,16 +809,20 @@ public class UserDAO {
      */
     public boolean updateUserStatus(int userId, String status) {
         String sql = "UPDATE Users SET Status = ?, UpdatedAt = GETDATE() WHERE UserID = ?";
-        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
+
+        try (Connection con = DBContext.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, status);
             ps.setInt(2, userId);
-            boolean ok = ps.executeUpdate() > 0;
-            if (ok && !"ACTIVE".equalsIgnoreCase(status)) {
+            if (ps.executeUpdate() == 0) {
+                return false;
+            }
+            if (!"ACTIVE".equalsIgnoreCase(status)) {
                 unassignManagerByUserId(userId, 0, "Tài khoản Quản lý bị khóa/tạm ngưng");
             }
-            return ok;
+            return true;
         } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Không thể cập nhật trạng thái người dùng", e);
+            LOGGER.log(Level.SEVERE, "Không thể cập nhật trạng thái người dùng (userId=" + userId + ")", e);
             return false;
         }
     }
