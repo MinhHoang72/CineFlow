@@ -47,9 +47,7 @@ public class MovieDAO {
      * @return danh sách các phim thỏa mãn
      */
     private List<Movie> getMoviesByStatus(String status) {
-        String sql = "SELECT MovieID, Title, Description, Duration, Genre, Director, Cast, Language, "
-                + "ReleaseDate, EndDate, PosterURL, TrailerURL, AgeRating, Status, CreatedAt, UpdatedAt FROM Movies WHERE Status = ? "
-                + "ORDER BY MovieID DESC, ReleaseDate DESC";
+        String sql = "SELECT * FROM Movies WHERE Status = ? ORDER BY MovieID DESC, ReleaseDate DESC";
         List<Movie> movies = new ArrayList<>();
 
         try (Connection connection = DBContext.getConnection();
@@ -74,9 +72,7 @@ public class MovieDAO {
      * @return đối tượng Movie nếu tìm thấy, ngược lại null
      */
     public Movie getMovieById(int movieId) {
-        String sql = "SELECT MovieID, Title, Description, Duration, Genre, Director, Cast, Language, "
-                + "ReleaseDate, EndDate, PosterURL, TrailerURL, AgeRating, Status, CreatedAt, UpdatedAt "
-                + "FROM Movies WHERE MovieID = ?";
+        String sql = "SELECT * FROM Movies WHERE MovieID = ?";
 
         try (Connection connection = DBContext.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -101,12 +97,17 @@ public class MovieDAO {
     }
 
     /**
-     * Lấy toàn bộ danh sách phim trong hệ thống, sắp xếp phim mới nhất lên đầu.
+     * Lấy toàn bộ danh sách phim kèm số lượng rạp phân phối và tổng số rạp.
      *
-     * @return danh sách tất cả các phim
+     * @return danh sách tất cả các phim sắp xếp mới nhất lên đầu
      */
     public List<Movie> getAllMovies() {
-        String sql = "SELECT * FROM Movies ORDER BY MovieID DESC";
+        String sql = "SELECT m.*, "
+                + "(SELECT COUNT(*) FROM Centres WHERE Status = 'ACTIVE') AS TotalCentres, "
+                + "(SELECT COUNT(*) FROM CentreMovies cm "
+                + " JOIN Centres c ON c.CentreID = cm.CentreID "
+                + " WHERE cm.MovieID = m.MovieID AND cm.Status = 'ACTIVE' AND c.Status = 'ACTIVE') AS DistributedCentres "
+                + "FROM Movies m ORDER BY m.MovieID DESC";
         List<Movie> movies = new ArrayList<>();
         try (Connection connection = DBContext.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql);
@@ -161,19 +162,18 @@ public class MovieDAO {
             try (PreparedStatement ps = connection.prepareStatement(sql)) {
                 setMovieParams(ps, movie, true);
                 int rows = ps.executeUpdate();
-                if (rows > 0) {
-                    String st = movie.getStatus() != null ? movie.getStatus().trim().toUpperCase() : "";
-                    // Nhánh phim bị cấm hoặc dừng chiếu khẩn cấp (ENDED hoặc ARCHIVED):
-                    // Hệ thống tự động hủy các suất chiếu tương lai và gửi email thông báo hủy vé cho khách hàng
-                    if ("ARCHIVED".equals(st) || "ENDED".equals(st)) {
-                        cancelUpcomingShowtimesForMovie(connection, movie.getMovieId());
-                    }
-                    connection.commit();
-                    return true;
-                } else {
+                if (rows == 0) {
                     connection.rollback();
                     return false;
                 }
+
+                String status = movie.getStatus();
+                if ("ENDED".equalsIgnoreCase(status) || "ARCHIVED".equalsIgnoreCase(status)) {
+                    cancelUpcomingShowtimesForMovie(connection, movie.getMovieId());
+                }
+
+                connection.commit();
+                return true;
             } catch (Exception e) {
                 connection.rollback();
                 throw e;
@@ -186,111 +186,40 @@ public class MovieDAO {
 
     /**
      * Cập nhật trạng thái của phim (COMING_SOON, NOW_SHOWING, ENDED, ARCHIVED).
-     * Quy tắc nghiệp vụ:
-     * - ENDED: Chốt ngày kết thúc là hôm nay và hủy phân phối tại tất cả rạp.
-     * - ARCHIVED: Chốt ngày kết thúc ngay lập tức là hôm nay và hủy phân phối tại tất cả rạp.
-     * - Chuyển từ ARCHIVED hoặc ENDED sang COMING_SOON: Phải có ngày khởi chiếu và kết thúc mới trong tương lai.
-     *
-     * @param movieId mã định danh phim
-     * @param status trạng thái mới
-     * @return true nếu cập nhật thành công, ngược lại false
      */
     public boolean updateMovieStatus(int movieId, String status) {
-        if (movieId <= 0 || status == null || status.isBlank()) {
-            return false;
+        if (movieId <= 0 || status == null || status.isBlank()) return false;
+        Movie movie = getMovieById(movieId);
+        if (movie == null) return false;
+        movie.setStatus(status.trim().toUpperCase());
+        if ("ENDED".equalsIgnoreCase(status) || "ARCHIVED".equalsIgnoreCase(status)) {
+            movie.setEndDate(java.sql.Date.valueOf(java.time.LocalDate.now()));
         }
-        String st = status.trim().toUpperCase();
-        if ("ENDED".equals(st) || "ARCHIVED".equals(st)) {
-            return closeMovie(movieId, st);
-        }
-        if ("COMING_SOON".equals(st)) {
-            Movie curr = getMovieById(movieId);
-            if (curr != null) {
-                String oldStatus = curr.getStatus() != null ? curr.getStatus().toUpperCase() : "";
-                if ("ARCHIVED".equals(oldStatus) || "ENDED".equals(oldStatus)) {
-                    // Không được chuyển đổi sang COMING_SOON nếu chưa set lại ngày tháng mới trong tương lai
-                    if (curr.getReleaseDate() == null || curr.getEndDate() == null
-                            || curr.getReleaseDate().toLocalDate().isBefore(java.time.LocalDate.now())
-                            || !curr.getEndDate().toLocalDate().isAfter(java.time.LocalDate.now())) {
-                        return false;
-                    }
-                }
-            }
-        }
-
-        String sql = "UPDATE Movies SET Status = ?, UpdatedAt = GETDATE() WHERE MovieID = ?";
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setString(1, st);
-            ps.setInt(2, movieId);
-            return ps.executeUpdate() > 0;
-        } catch (Exception exception) {
-            exception.printStackTrace();
-            return false;
-        }
-    }
-
-    /**
-     * Đóng đợt chiếu phim (chuyển sang ENDED hoặc ARCHIVED):
-     * - Cập nhật Status sang trạng thái yêu cầu.
-     * - Chốt EndDate = hôm nay nếu phim đã khởi chiếu; nếu phim chưa tới ngày khởi chiếu (COMING_SOON bị cấm/hủy sớm)
-     *   thì chốt EndDate = ReleaseDate để luôn đảm bảo EndDate >= ReleaseDate.
-     * - Giữ nguyên phân phối tại các rạp (CentreMovies) để lưu vết lịch sử và hỗ trợ tái chiếu.
-     * - Huỷ toàn bộ suất chiếu tương lai chưa bắt đầu của phim (nếu có) và gửi email thông báo tới khách hàng.
-     */
-    private boolean closeMovie(int movieId, String status) {
-        String updateMovieSql = "UPDATE Movies SET Status = ?, "
-                + "EndDate = CASE "
-                + "    WHEN ReleaseDate IS NOT NULL AND ReleaseDate > CAST(GETDATE() AS DATE) "
-                + "        THEN CASE WHEN EndDate IS NULL OR EndDate > ReleaseDate THEN ReleaseDate ELSE EndDate END "
-                + "    WHEN EndDate IS NULL OR EndDate > CAST(GETDATE() AS DATE) "
-                + "        THEN CAST(GETDATE() AS DATE) "
-                + "    ELSE EndDate END, "
-                + "UpdatedAt = GETDATE() WHERE MovieID = ?";
-        try (Connection connection = DBContext.getConnection()) {
-            connection.setAutoCommit(false);
-            try {
-                int rows;
-                try (PreparedStatement psMovie = connection.prepareStatement(updateMovieSql)) {
-                    psMovie.setString(1, status);
-                    psMovie.setInt(2, movieId);
-                    rows = psMovie.executeUpdate();
-                }
-                if (rows > 0) {
-                    // Huỷ các suất chiếu tương lai chưa bắt đầu của bộ phim này trên toàn hệ thống
-                    cancelUpcomingShowtimesForMovie(connection, movieId);
-                    connection.commit();
-                    return true;
-                } else {
-                    connection.rollback();
-                    return false;
-                }
-            } catch (Exception e) {
-                connection.rollback();
-                throw e;
-            }
-        } catch (Exception exception) {
-            exception.printStackTrace();
-            return false;
-        }
+        return updateMovie(movie);
     }
 
     /** Bản ghi tạm lưu thông tin để gửi email thông báo hủy vé cho khách hàng. */
-    private record NoticeInfo(String email, String fullName, String bookingCode, String movieTitle, String showtimeInfo, String reason) {}
+    private record NoticeInfo(
+            String email, String fullName, String bookingCode,
+            String movieTitle, String showtimeInfo, String reason
+    ) {}
 
     /** Huỷ các suất chiếu chưa bắt đầu của phim khi kết thúc chiếu (ENDED hoặc ARCHIVED) và gửi email thông báo. */
     private void cancelUpcomingShowtimesForMovie(Connection connection, int movieId) throws SQLException {
+        // 1. Lấy thông tin khách hàng có vé bị ảnh hưởng để chuẩn bị gửi mail
         List<NoticeInfo> notices = new ArrayList<>();
-        String noticeSql = "SELECT b.BookingCode, u.Email, u.FullName, m.Title, s.StartTime, c.CentreName, h.HallName "
+        String sql = "SELECT u.Email, u.FullName, b.BookingCode, m.Title, "
+                + "c.CentreName, h.HallName, s.StartTime "
                 + "FROM Bookings b "
-                + "JOIN Users u ON u.UserID = b.UserID "
-                + "JOIN Showtimes s ON s.ShowtimeID = b.ShowtimeID "
-                + "JOIN Movies m ON m.MovieID = s.MovieID "
-                + "JOIN Halls h ON h.HallID = s.HallID "
-                + "JOIN Centres c ON c.CentreID = h.CentreID "
-                + "WHERE b.BookingStatus IN ('CONFIRMED', 'PENDING') "
+                + "JOIN Users u ON b.UserID = u.UserID "
+                + "JOIN Showtimes s ON b.ShowtimeID = s.ShowtimeID "
+                + "JOIN Movies m ON s.MovieID = m.MovieID "
+                + "JOIN Halls h ON s.HallID = h.HallID "
+                + "JOIN Centres c ON h.CentreID = c.CentreID "
+                + "WHERE b.BookingStatus IN ('CONFIRMED') "
                 + "AND s.MovieID = ? AND s.Status = 'SCHEDULED' AND s.StartTime > SYSDATETIME()";
-        try (PreparedStatement ps = connection.prepareStatement(noticeSql)) {
+
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, movieId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
@@ -308,26 +237,32 @@ public class MovieDAO {
             e.printStackTrace();
         }
 
-        String target = "IN (SELECT s.ShowtimeID FROM Showtimes s "
-                + "WHERE s.MovieID=? AND s.Status='SCHEDULED' AND s.StartTime>SYSDATETIME())";
-        String bookings = "IN (SELECT BookingID FROM Bookings WHERE ShowtimeID " + target + ")";
-        String[] statements = {
-            "UPDATE t SET t.TicketStatus='CANCELLED' FROM Tickets t JOIN BookingSeats bs ON bs.BookingSeatID=t.BookingSeatID WHERE t.TicketStatus='VALID' AND bs.ShowtimeID " + target,
-            "UPDATE BookingSeats SET SeatStatus='CANCELLED' WHERE SeatStatus IN ('HELD','CONFIRMED') AND ShowtimeID " + target,
-            "UPDATE Payments SET PaymentStatus='CANCELLED' WHERE PaymentStatus='PENDING' AND BookingID " + bookings,
-            "UPDATE FnbOrders SET OrderStatus='CANCELLED',UpdatedAt=SYSDATETIME() WHERE OrderStatus<>'CANCELLED' AND BookingID " + bookings,
-            "UPDATE Bookings SET BookingStatus='CANCELLED',UpdatedAt=SYSDATETIME() WHERE BookingStatus IN ('PENDING','CONFIRMED') AND ShowtimeID " + target,
-            "UPDATE Showtimes SET Status='CANCELLED',UpdatedAt=SYSDATETIME() WHERE ShowtimeID " + target
+        // 2. Hủy toàn bộ dữ liệu liên quan đến các suất chiếu tương lai
+        String condition = " IN (SELECT ShowtimeID FROM Showtimes "
+                + "WHERE MovieID = ? AND Status = 'SCHEDULED' AND StartTime > SYSDATETIME())";
+
+        String[] sqls = {
+            "UPDATE Tickets SET TicketStatus = 'CANCELLED' WHERE TicketStatus = 'VALID' AND BookingSeatID IN (SELECT BookingSeatID FROM BookingSeats WHERE ShowtimeID " + condition + ")",
+            "UPDATE BookingSeats SET SeatStatus = 'CANCELLED' WHERE SeatStatus IN ('HELD', 'CONFIRMED') AND ShowtimeID " + condition,
+            "UPDATE Payments SET PaymentStatus = 'CANCELLED' WHERE PaymentStatus = 'PENDING' AND BookingID IN (SELECT BookingID FROM Bookings WHERE ShowtimeID " + condition + ")",
+            "UPDATE FnbOrders SET OrderStatus = 'CANCELLED', UpdatedAt = SYSDATETIME() WHERE OrderStatus <> 'CANCELLED' AND BookingID IN (SELECT BookingID FROM Bookings WHERE ShowtimeID " + condition + ")",
+            "UPDATE Bookings SET BookingStatus = 'CANCELLED', UpdatedAt = SYSDATETIME() WHERE BookingStatus IN ('PENDING', 'CONFIRMED') AND ShowtimeID " + condition,
+            "UPDATE Showtimes SET Status = 'CANCELLED', UpdatedAt = SYSDATETIME() WHERE ShowtimeID " + condition
         };
-        for (String sql : statements) {
-            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+
+        for (String statement : sqls) {
+            try (PreparedStatement ps = connection.prepareStatement(statement)) {
                 ps.setInt(1, movieId);
                 ps.executeUpdate();
             }
         }
 
-        for (NoticeInfo n : notices) {
-            EmailUtil.sendTicketCancellationEmail(n.email(), n.fullName(), n.bookingCode(), n.movieTitle(), n.showtimeInfo(), n.reason());
+        // 3. Gửi email thông báo hủy vé cho khách hàng
+        for (NoticeInfo notice : notices) {
+            EmailUtil.sendTicketCancellationEmail(
+                    notice.email(), notice.fullName(), notice.bookingCode(),
+                    notice.movieTitle(), notice.showtimeInfo(), notice.reason()
+            );
         }
     }
 

@@ -198,8 +198,18 @@
                                         <code class="info-code" style="font-family: monospace; font-size: 13px; font-weight: 700; color: #0F172A !important; -webkit-text-fill-color: #0F172A !important; background: #E2E8F0 !important; border: 1px solid #94A3B8 !important; padding: 4px 10px; border-radius: 6px;">${manager.account}</code>
                                     </div>
                                     <div class="info-item" style="display: flex; align-items: center; gap: 8px;">
-                                        <span class="info-label" style="color: #0F172A; font-weight: 700; font-size: 13.5px;">Cụm rạp:</span>
-                                        <span class="info-centre" style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: #1E1B4B !important; -webkit-text-fill-color: #1E1B4B !important; background: #E0E7FF !important; border: 1px solid #818CF8 !important; padding: 4px 12px; border-radius: 6px;">🏛 ${manager.centreName != null ? manager.centreName : 'Chưa phân công'}</span>
+                                        <span class="info-label" style="color: #0F172A; font-weight: 700; font-size: 13.5px;">Trạng thái:</span>
+                                        <c:choose>
+                                            <c:when test="${manager.status == 'ACTIVE'}">
+                                                <span class="cf-badge cf-badge-success" style="font-weight: 700;">Hoạt động</span>
+                                            </c:when>
+                                            <c:when test="${manager.status == 'INACTIVE'}">
+                                                <span class="cf-badge cf-badge-warning" style="font-weight: 700;">Tạm ngưng</span>
+                                            </c:when>
+                                            <c:otherwise>
+                                                <span class="cf-badge cf-badge-danger" style="font-weight: 700;">Đã khóa</span>
+                                            </c:otherwise>
+                                        </c:choose>
                                     </div>
                                 </div>
 
@@ -217,6 +227,29 @@
                                         <label>Email liên hệ *</label>
                                         <input type="email" name="email" value="${manager.email}" required>
                                     </div>
+                                </div>
+
+                                <div class="cf-form-group">
+                                    <label>Cụm rạp phụ trách</label>
+                                    <select name="centreId" class="modal-select-field">
+                                        <c:choose>
+                                            <c:when test="${manager.centreId != null}">
+                                                <option value="${manager.centreId}" selected>🏛 ${manager.centreName} (Rạp hiện tại)</option>
+                                                <option value="">-- Chưa phân công cụm rạp --</option>
+                                            </c:when>
+                                            <c:otherwise>
+                                                <option value="" selected>-- Chưa phân công cụm rạp --</option>
+                                            </c:otherwise>
+                                        </c:choose>
+                                        <c:forEach var="c" items="${centres}">
+                                            <c:if test="${manager.centreId == null || c.centreId != manager.centreId}">
+                                                <option value="${c.centreId}">${c.centreName} (${c.city}) - [Rạp trống]</option>
+                                            </c:if>
+                                        </c:forEach>
+                                    </select>
+                                    <span class="cf-form-hint">
+                                        Hệ thống chỉ hiển thị rạp hiện tại của Quản lý và các cụm rạp đang TRỐNG (chưa có Quản lý). Không thể chọn rạp đã có Quản lý khác phụ trách.
+                                    </span>
                                 </div>
                             </c:when>
 

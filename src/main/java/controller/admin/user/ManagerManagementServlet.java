@@ -75,6 +75,7 @@ public class ManagerManagementServlet extends HttpServlet {
                     return;
                 }
                 request.setAttribute("manager", manager);
+                request.setAttribute("centres", userService.getCentresWithoutActiveManager());
                 request.setAttribute("activeNav", "managers");
                 request.getRequestDispatcher("/WEB-INF/views/admin/user/managerForm.jsp").forward(request, response);
                 return;
@@ -93,13 +94,13 @@ public class ManagerManagementServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
         request.setCharacterEncoding("UTF-8");
-
+        // 1. Kiểm tra có phải admin không?
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("userId") == null || !isAdmin(session)) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN, "Bạn không có quyền thực hiện thao tác này.");
             return;
         }
-
+        // 2. Lấy tham số action từ form
         int sessionUserId = (int) session.getAttribute("userId");
         String action = request.getParameter("action");
 
@@ -126,10 +127,12 @@ public class ManagerManagementServlet extends HttpServlet {
             try {
                 int userId = Integer.parseInt(userIdParam.trim());
                 String error = userService.updateManager(
+                        sessionUserId,
                         userId,
                         request.getParameter("fullName"),
                         request.getParameter("phone"),
-                        request.getParameter("email")
+                        request.getParameter("email"),
+                        request.getParameter("centreId")
                 );
                 if (error == null) {
                     response.sendRedirect(request.getContextPath() + "/admin/managers?success=updated");

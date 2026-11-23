@@ -856,6 +856,133 @@ public class UserDAO {
     }
 
     /**
+     * Cập nhật thông tin Quản lý kèm theo điều chuyển hoặc bổ nhiệm cụm rạp trong 1 Transaction.
+     *
+     * @param userId      mã Quản lý
+     * @param fullName    họ tên
+     * @param phone       số điện thoại
+     * @param email       email
+     * @param newCentreId mã cụm rạp mới (hoặc null nếu gỡ rạp)
+     * @param adminId     mã Admin thực hiện
+     * @return true nếu thành công; ngược lại false
+     */
+    public boolean updateManagerWithCentreTx(int userId, String fullName, String phone, String email, Integer newCentreId, int adminId) {
+        String updateUserSql = "UPDATE Users SET FullName = ?, Phone = ?, Email = ?, CentreID = ?, "
+                + "Status = CASE WHEN ? IS NOT NULL AND Status <> 'ACTIVE' THEN 'ACTIVE' ELSE Status END, "
+                + "UpdatedAt = GETDATE() WHERE UserID = ? AND Role = 'MANAGER'";
+        String endOldManagerAssignmentSql = "UPDATE CentreManagerAssignments SET EndDate = GETDATE(), Status = 'TRANSFERRED', "
+                + "Notes = LEFT(ISNULL(Notes, '') + N' [Kết thúc khi cập nhật thông tin/điều chuyển bởi Admin #' + CAST(? AS NVARCHAR) + N']', 500) "
+                + "WHERE ManagerID = ? AND Status = 'ACTIVE' AND EndDate IS NULL";
+        String endNewCentreOldAssignmentsSql = "UPDATE CentreManagerAssignments SET EndDate = GETDATE(), Status = 'REPLACED', "
+                + "Notes = LEFT(ISNULL(Notes, '') + N' [Thay thế khi bổ nhiệm Quản lý mới]', 500) "
+                + "WHERE CentreID = ? AND Status = 'ACTIVE' AND EndDate IS NULL";
+        String clearNewCentreOldUsersSql = "UPDATE Users SET CentreID = NULL, UpdatedAt = GETDATE() "
+                + "WHERE CentreID = ? AND Role = 'MANAGER' AND UserID <> ?";
+        String insertNewAssignmentSql = "INSERT INTO CentreManagerAssignments (CentreID, ManagerID, StartDate, Status, AssignedBy, Notes) "
+                + "VALUES (?, ?, GETDATE(), 'ACTIVE', ?, N'Bổ nhiệm/Điều chuyển khi cập nhật thông tin')";
+
+        Connection connection = null;
+        try {
+            connection = DBContext.getConnection();
+            connection.setAutoCommit(false);
+
+            // Lấy thông tin cụm rạp hiện tại của Quản lý trước khi cập nhật
+            Integer currentCentreId = null;
+            String checkSql = "SELECT CentreID FROM Users WHERE UserID = ? AND Role = 'MANAGER'";
+            try (PreparedStatement psCheck = connection.prepareStatement(checkSql)) {
+                psCheck.setInt(1, userId);
+                try (ResultSet rs = psCheck.executeQuery()) {
+                    if (rs.next()) {
+                        int cid = rs.getInt("CentreID");
+                        if (!rs.wasNull()) {
+                            currentCentreId = cid;
+                        }
+                    } else {
+                        connection.rollback();
+                        return false;
+                    }
+                }
+            }
+
+            // 1. Cập nhật bảng Users
+            try (PreparedStatement psUser = connection.prepareStatement(updateUserSql)) {
+                psUser.setString(1, fullName);
+                psUser.setString(2, phone);
+                psUser.setString(3, email);
+                if (newCentreId != null) {
+                    psUser.setInt(4, newCentreId);
+                    psUser.setInt(5, newCentreId);
+                } else {
+                    psUser.setNull(4, Types.INTEGER);
+                    psUser.setNull(5, Types.INTEGER);
+                }
+                psUser.setInt(6, userId);
+                int affected = psUser.executeUpdate();
+                if (affected == 0) {
+                    connection.rollback();
+                    return false;
+                }
+            }
+
+            // 2. Xử lý phân công nếu có sự thay đổi về rạp (newCentreId khác currentCentreId)
+            boolean centreChanged = (currentCentreId == null && newCentreId != null)
+                    || (currentCentreId != null && !currentCentreId.equals(newCentreId));
+
+            if (centreChanged) {
+                // 2.1. Chấm dứt phân công cũ của Quản lý này (nếu có)
+                try (PreparedStatement psEndOld = connection.prepareStatement(endOldManagerAssignmentSql)) {
+                    psEndOld.setInt(1, adminId);
+                    psEndOld.setInt(2, userId);
+                    psEndOld.executeUpdate();
+                }
+
+                // 2.2. Nếu có gán rạp mới:
+                if (newCentreId != null) {
+                    // Dọn dẹp phân công cũ tại rạp mới (nếu có ai từng giữ)
+                    try (PreparedStatement psEndNewCentre = connection.prepareStatement(endNewCentreOldAssignmentsSql)) {
+                        psEndNewCentre.setInt(1, newCentreId);
+                        psEndNewCentre.executeUpdate();
+                    }
+                    try (PreparedStatement psClr = connection.prepareStatement(clearNewCentreOldUsersSql)) {
+                        psClr.setInt(1, newCentreId);
+                        psClr.setInt(2, userId);
+                        psClr.executeUpdate();
+                    }
+                    // Tạo bản ghi phân công mới
+                    try (PreparedStatement psIns = connection.prepareStatement(insertNewAssignmentSql)) {
+                        psIns.setInt(1, newCentreId);
+                        psIns.setInt(2, userId);
+                        psIns.setInt(3, adminId);
+                        psIns.executeUpdate();
+                    }
+                }
+            }
+
+            connection.commit();
+            return true;
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Lỗi khi cập nhật thông tin Quản lý kèm phân công rạp", e);
+            if (connection != null) {
+                try {
+                    connection.rollback();
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+            }
+            return false;
+        } finally {
+            if (connection != null) {
+                try {
+                    connection.setAutoCommit(true);
+                    connection.close();
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        }
+    }
+
+    /**
      * Cập nhật thông tin nhân viên (họ tên, số điện thoại, email, vai trò:
      * Ticket Sales hoặc Ticket Checker).
      */

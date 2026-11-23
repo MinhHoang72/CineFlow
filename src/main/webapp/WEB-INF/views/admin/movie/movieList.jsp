@@ -222,8 +222,24 @@
                                         <td><strong><%= m.getDuration() %></strong> phút</td>
                                         <td><%= !releaseDateStr.isBlank() ? releaseDateStr : "—" %></td>
                                         <td><span class="cf-badge <%= badgeClass %>"><%= stText %></span></td>
-                                        <td style="text-align: center; font-weight: 600; color: #edf2f9; font-size: 13px;">
-                                            <%= m.getDistributionRatio() %>
+                                        <td style="text-align: center;">
+                                            <% if (m.getTotalCentres() > 0 && m.getDistributedCentres() > 0) { %>
+                                                <a href="${pageContext.request.contextPath}/admin/distribution?movieId=<%= m.getMovieId() %>"
+                                                   class="cf-badge cf-badge-info"
+                                                   style="text-decoration: none; font-weight: 700; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;"
+                                                   title="Đã phân phối tới <%= m.getDistributedCentres() %>/<%= m.getTotalCentres() %> cụm rạp. Bấm để điều chỉnh phân phối">
+                                                    🏛 <%= m.getDistributionRatio() %>
+                                                </a>
+                                            <% } else if (m.getTotalCentres() > 0) { %>
+                                                <a href="${pageContext.request.contextPath}/admin/distribution?movieId=<%= m.getMovieId() %>"
+                                                   class="cf-badge cf-badge-muted"
+                                                   style="text-decoration: none; font-size: 11.5px; display: inline-flex; align-items: center; gap: 4px;"
+                                                   title="Chưa phân phối tới cụm rạp nào. Bấm để cấu hình phân phối">
+                                                    0/<%= m.getTotalCentres() %>
+                                                </a>
+                                            <% } else { %>
+                                                <span class="cf-badge cf-badge-muted">—</span>
+                                            <% } %>
                                         </td>
                                         <td style="text-align: right;">
                                             <div class="cf-table-actions">

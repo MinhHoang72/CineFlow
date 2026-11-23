@@ -131,18 +131,56 @@ public class MovieService {
 
     /**
      * Lưu thông tin phim: Tự động phân nhánh Tạo mới (INSERT) hoặc Cập nhật (UPDATE).
-     * Kiểm tra toàn bộ quy tắc nghiệp vụ về ngày phát hành, tính nhất quán trạng thái và chuyển đổi trạng thái.
      *
      * @param movie đối tượng thông tin phim
      * @return mã movieId của phim nếu thành công (> 0), ngược lại 0
      * @throws IllegalArgumentException nếu dữ liệu hoặc quy tắc chuyển trạng thái không hợp lệ
      */
     public int saveMovie(Movie movie) {
-        if (movie == null) {
-            return 0;
-        }
+        if (movie == null) return 0;
+
         Date today = Date.valueOf(LocalDate.now());
         String status = movie.getStatus() != null ? movie.getStatus().trim().toUpperCase() : "";
+        Movie existing = movie.getMovieId() > 0 ? movieDAO.getMovieById(movie.getMovieId()) : null;
+
+        // 1. Tự động chốt ngày kết thúc nếu phim dừng chiếu (ENDED hoặc ARCHIVED)
+        adjustEndDateIfClosed(movie, existing, status, today);
+
+        // 2. Kiểm tra tính hợp lệ dữ liệu và quy tắc vòng đời phim
+        validateMovie(movie, existing, status, today);
+
+        // 3. Phân nhánh: Tạo mới (INSERT) hoặc Cập nhật (UPDATE)
+        if (movie.getMovieId() == 0) {
+            return movieDAO.insertMovie(movie);
+        }
+        return movieDAO.updateMovie(movie) ? movie.getMovieId() : 0;
+    }
+
+    /**
+     * Tự động điều chỉnh ngày kết thúc về hôm nay nếu phim chuyển sang trạng thái kết thúc (ENDED/ARCHIVED).
+     */
+    private void adjustEndDateIfClosed(Movie movie, Movie existing, String status, Date today) {
+        if (!"ARCHIVED".equals(status) && !"ENDED".equals(status)) {
+            return;
+        }
+        if (movie.getReleaseDate() == null && existing != null) {
+            movie.setReleaseDate(existing.getReleaseDate());
+        }
+        if (movie.getEndDate() == null && existing != null) {
+            movie.setEndDate(existing.getEndDate());
+        }
+        Date minEndDate = (movie.getReleaseDate() != null && movie.getReleaseDate().after(today))
+                ? movie.getReleaseDate()
+                : today;
+        if (movie.getEndDate() == null || movie.getEndDate().after(minEndDate)) {
+            movie.setEndDate(minEndDate);
+        }
+    }
+
+    /**
+     * Kiểm tra toàn bộ tính hợp lệ của thông tin phim và quy tắc chuyển trạng thái.
+     */
+    private void validateMovie(Movie movie, Movie existing, String status, Date today) {
         movie.setGenre(ValidationUtil.normalizeGenres(movie.getGenre()));
 
         if (movie.getTitle() == null || movie.getTitle().trim().length() > 200) {
@@ -164,37 +202,13 @@ public class MovieService {
             throw new IllegalArgumentException("duplicate_title");
         }
 
-        Movie existing = movie.getMovieId() > 0 ? movieDAO.getMovieById(movie.getMovieId()) : null;
-
-        // ENDED/ARCHIVED: giữ lại ngày đã có làm hồ sơ lịch sử.
-        // - Nếu phim đã khởi chiếu (ReleaseDate <= hôm nay): chốt EndDate = hôm nay khi còn ở tương lai.
-        // - Nếu phim chưa tới ngày khởi chiếu (COMING_SOON bị cấm/hủy sớm): chốt EndDate = ReleaseDate để luôn đảm bảo EndDate >= ReleaseDate.
-        if ("ARCHIVED".equals(status) || "ENDED".equals(status)) {
-            if (movie.getReleaseDate() == null && existing != null) {
-                movie.setReleaseDate(existing.getReleaseDate());
-            }
-            if (movie.getEndDate() == null && existing != null) {
-                movie.setEndDate(existing.getEndDate());
-            }
-            Date minEndDate = (movie.getReleaseDate() != null && movie.getReleaseDate().after(today))
-                    ? movie.getReleaseDate()
-                    : today;
-            if (movie.getEndDate() == null || movie.getEndDate().after(minEndDate)) {
-                movie.setEndDate(minEndDate);
-            }
-        }
-
-        // Kiểm tra chuyển trạng thái đối với phim đã có
         if (existing != null) {
             checkTransition(existing, status, movie.getReleaseDate(), movie.getEndDate());
         }
 
-        // Bắt buộc có đủ ngày khởi chiếu và ngày kết thúc
         if (movie.getReleaseDate() == null || movie.getEndDate() == null) {
             throw new IllegalArgumentException("missing_dates");
         }
-
-        // Kiểm tra khoảng thời gian chiếu (Ngày kết thúc phải lớn hơn hoặc bằng ngày khởi chiếu)
         if (!ValidationUtil.isValidDateRange(movie.getReleaseDate(), movie.getEndDate())) {
             throw new IllegalArgumentException("invalid_date_range");
         }
@@ -206,17 +220,9 @@ public class MovieService {
             throw new IllegalArgumentException("end_date_not_future");
         }
 
-        // Kiểm tra tính nhất quán giữa trạng thái và ngày phát hành
         String dateConsistencyError = ValidationUtil.validateMovieStatusDateConsistency(status, movie.getReleaseDate(), today);
         if (dateConsistencyError != null) {
             throw new IllegalArgumentException(dateConsistencyError);
-        }
-
-        if (movie.getMovieId() == 0) {
-            return movieDAO.insertMovie(movie);
-        } else {
-            boolean updated = movieDAO.updateMovie(movie);
-            return updated ? movie.getMovieId() : 0;
         }
     }
 
@@ -225,54 +231,31 @@ public class MovieService {
      * Dùng chung cho cả saveMovie và updateMovieStatus.
      */
     private void checkTransition(Movie existing, String targetStatus, Date releaseDate, Date endDate) {
-        if (existing == null) {
-            return;
-        }
+        if (existing == null) return;
         String oldStatus = existing.getStatus() != null ? existing.getStatus().toUpperCase() : "";
         LocalDate today = LocalDate.now();
 
-        // 1. Phim ARCHIVED (đã lưu trữ/hết bản quyền): Không thể chuyển trực tiếp sang NOW_SHOWING
-        if ("ARCHIVED".equals(oldStatus)) {
-            if ("NOW_SHOWING".equals(targetStatus)) {
-                throw new IllegalArgumentException("cannot_reopen_to_now_showing");
-            }
-            if ("COMING_SOON".equals(targetStatus)) {
-                if (releaseDate == null || endDate == null) {
-                    throw new IllegalArgumentException("reissue_dates_required");
-                }
-                if (existing.getEndDate() != null && !existing.getEndDate().toLocalDate().isAfter(today)) {
-                    if (endDate.equals(existing.getEndDate())) {
-                        throw new IllegalArgumentException("reissue_dates_required");
-                    }
-                }
-                String dateErr = ValidationUtil.validateTransitionToComingSoon(oldStatus, targetStatus, releaseDate, endDate);
-                if (dateErr != null) {
-                    throw new IllegalArgumentException(dateErr);
-                }
+        // 1. Phim ARCHIVED (lưu trữ/hết bản quyền): Không được mở thẳng sang NOW_SHOWING
+        if ("ARCHIVED".equals(oldStatus) && "NOW_SHOWING".equals(targetStatus)) {
+            throw new IllegalArgumentException("cannot_reopen_to_now_showing");
+        }
+
+        // 2. Phim ENDED (đã dừng chiếu): Chuyển sang NOW_SHOWING phải có ngày kết thúc mới từ hôm nay
+        if ("ENDED".equals(oldStatus) && "NOW_SHOWING".equals(targetStatus)) {
+            if (endDate == null || endDate.toLocalDate().isBefore(today)) {
+                throw new IllegalArgumentException("extend_end_date_required");
             }
         }
 
-        // 2. Phim ENDED (đã kết thúc đợt chiếu):
-        if ("ENDED".equals(oldStatus)) {
-            // Chuyển sang NOW_SHOWING bắt buộc phải có ngày kết thúc mới từ hôm nay trở đi
-            if ("NOW_SHOWING".equals(targetStatus)) {
-                if (endDate == null || endDate.toLocalDate().isBefore(today)) {
-                    throw new IllegalArgumentException("extend_end_date_required");
-                }
+        // 3. Tái chiếu (ARCHIVED hoặc ENDED sang COMING_SOON): Phải có ngày chiếu mới
+        if (("ARCHIVED".equals(oldStatus) || "ENDED".equals(oldStatus)) && "COMING_SOON".equals(targetStatus)) {
+            boolean isExpired = existing.getEndDate() != null && !existing.getEndDate().toLocalDate().isAfter(today);
+            if (releaseDate == null || endDate == null || (isExpired && endDate.equals(existing.getEndDate()))) {
+                throw new IllegalArgumentException("reissue_dates_required");
             }
-            if ("COMING_SOON".equals(targetStatus)) {
-                if (releaseDate == null || endDate == null) {
-                    throw new IllegalArgumentException("reissue_dates_required");
-                }
-                if (existing.getEndDate() != null && !existing.getEndDate().toLocalDate().isAfter(today)) {
-                    if (endDate.equals(existing.getEndDate())) {
-                        throw new IllegalArgumentException("reissue_dates_required");
-                    }
-                }
-                String dateErr = ValidationUtil.validateTransitionToComingSoon(oldStatus, targetStatus, releaseDate, endDate);
-                if (dateErr != null) {
-                    throw new IllegalArgumentException(dateErr);
-                }
+            String dateErr = ValidationUtil.validateTransitionToComingSoon(oldStatus, targetStatus, releaseDate, endDate);
+            if (dateErr != null) {
+                throw new IllegalArgumentException(dateErr);
             }
         }
     }

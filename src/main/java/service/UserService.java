@@ -278,11 +278,17 @@ public class UserService {
     }
 
     /**
-     * Cập nhật thông tin cơ bản của tài khoản Quản lý (họ tên, số điện thoại, email).
+     * Cập nhật thông tin Quản lý (họ tên, số điện thoại, email, phân công rạp).
      *
+     * @param adminId        mã Admin thực hiện
+     * @param userId         mã Quản lý cần cập nhật
+     * @param fullName       họ và tên mới
+     * @param phone          số điện thoại
+     * @param email          email liên hệ
+     * @param centreIdParam  mã cụm rạp phân công mới (hoặc rỗng/null nếu gỡ rạp)
      * @return null nếu thành công; ngược lại chuỗi mã lỗi
      */
-    public String updateManager(int userId, String fullName, String phone, String email) {
+    public String updateManager(int adminId, int userId, String fullName, String phone, String email, String centreIdParam) {
         if (ValidationUtil.isBlank(fullName) || ValidationUtil.isBlank(email)) {
             return "missing_fields";
         }
@@ -305,8 +311,38 @@ public class UserService {
             return "email_exists";
         }
 
-        boolean updated = userDAO.updateUserBasicInfo(userId, fullName, phone, email);
+        Integer newCentreId = null;
+        if (centreIdParam != null && !centreIdParam.isBlank()) {
+            try {
+                newCentreId = Integer.parseInt(centreIdParam.trim());
+            } catch (NumberFormatException e) {
+                return "invalid_centre";
+            }
+        }
+
+        // Kiểm tra điều kiện phân công rạp:
+        if (newCentreId != null) {
+            // Nếu chọn rạp KHÁC với rạp hiện tại mà quản lý này đang giữ:
+            boolean isSameCentre = target.getCentreId() != null && target.getCentreId().intValue() == newCentreId.intValue();
+            if (!isSameCentre) {
+                // Kiểm tra xem rạp mới đã có ai phụ trách chưa:
+                if (cinemaDAO.hasActiveManager(newCentreId)) {
+                    return "centre_has_manager";
+                }
+            }
+        }
+
+        boolean updated = userDAO.updateManagerWithCentreTx(userId, fullName, phone, email, newCentreId, adminId);
         return updated ? null : "update_failed";
+    }
+
+    /**
+     * Cập nhật thông tin cơ bản của tài khoản Quản lý (họ tên, số điện thoại, email).
+     *
+     * @return null nếu thành công; ngược lại chuỗi mã lỗi
+     */
+    public String updateManager(int userId, String fullName, String phone, String email) {
+        return updateManager(0, userId, fullName, phone, email, null);
     }
 
     /**
