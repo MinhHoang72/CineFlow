@@ -775,80 +775,26 @@ public class UserDAO {
     }
 
     /**
-     * Tạo tài khoản Quản lý với mã Admin mặc định.
-     *
-     * @param user thông tin Quản lý cần tạo
-     * @return mã UserID mới được tạo, hoặc -1 nếu thất bại
-     */
-    public int createManager(User user) {
-        return createManager(user, 4);
-    }
-
-    /**
-     * Lấy toàn bộ danh sách Quản lý trong hệ thống.
+     * Lấy toàn bộ danh sách Quản lý trong hệ thống kèm thông tin cụm rạp phụ trách.
      *
      * @return danh sách các tài khoản có vai trò MANAGER
      */
     public List<User> getManagers() {
-        return getManagers(null);
-    }
-
-    /**
-     * Tìm kiếm và lấy danh sách Quản lý theo từ khóa.
-     *
-     * @param search từ khóa tìm kiếm (họ tên, tài khoản, email, số điện thoại,
-     * tên trung tâm hoặc mã ID)
-     * @return danh sách các Quản lý
-     */
-    public List<User> getManagers(String search) {
-        StringBuilder sql = new StringBuilder("SELECT u.UserID, u.FullName, u.Account, u.Email, u.Password, u.Phone, u.Avatar, u.Role, u.Status, "
-                + "cma.CentreID, b.CentreName, "
-                + "u.EmailVerified, u.PhoneVerified, u.CreatedAt, u.UpdatedAt, u.LastLoginAt, u.ResetToken, u.ResetTokenExpiry "
+        String sql = "SELECT u.*, b.CentreName "
                 + "FROM Users u "
                 + "LEFT JOIN CentreManagerAssignments cma ON cma.ManagerID = u.UserID AND cma.Status = 'ACTIVE' AND cma.EndDate IS NULL "
                 + "LEFT JOIN Centres b ON b.CentreID = cma.CentreID "
-                + "WHERE u.Role = 'MANAGER' ");
-
-        Integer searchId = null;
-        String keyword = null;
-        if (search != null && !search.trim().isEmpty()) {
-            keyword = search.trim();
-            String cleanDigits = keyword.replaceAll("(?i)^[#A-Z]+", "");
-            if (!cleanDigits.isEmpty() && cleanDigits.matches("^\\d+$")) {
-                try {
-                    searchId = Integer.parseInt(cleanDigits);
-                } catch (NumberFormatException ignored) {
-                }
-            }
-            if (searchId != null) {
-                sql.append("AND (u.UserID = ? OR u.Account LIKE ? OR u.FullName LIKE ? OR u.Email LIKE ? OR u.Phone LIKE ? OR b.CentreName LIKE ?) ");
-            } else {
-                sql.append("AND (u.Account LIKE ? OR u.FullName LIKE ? OR u.Email LIKE ? OR u.Phone LIKE ? OR b.CentreName LIKE ?) ");
-            }
-        }
-        sql.append("ORDER BY u.FullName");
-
+                + "WHERE u.Role = 'MANAGER' "
+                + "ORDER BY u.UserID DESC";
         List<User> list = new ArrayList<>();
-        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql.toString())) {
-            if (keyword != null) {
-                int pIdx = 1;
-                String likePattern = "%" + keyword + "%";
-                if (searchId != null) {
-                    ps.setInt(pIdx++, searchId);
-                }
-                ps.setString(pIdx++, likePattern);
-                ps.setString(pIdx++, likePattern);
-                ps.setString(pIdx++, likePattern);
-                ps.setString(pIdx++, likePattern);
-                ps.setString(pIdx++, likePattern);
-            }
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    list.add(mapUser(rs));
-                }
+        try (Connection connection = DBContext.getConnection();
+             PreparedStatement ps = connection.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                list.add(mapUser(rs));
             }
         } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Không thể tải danh sách Quản lý theo tìm kiếm", e);
+            LOGGER.log(Level.SEVERE, "Không thể tải danh sách Quản lý", e);
         }
         return list;
     }
@@ -1041,8 +987,7 @@ public class UserDAO {
     }
 
     /**
-     * Cập nhật trạng thái Quản lý, giải phóng phân công rạp (nếu khóa/ngưng),
-     * và đồng bộ phân công trong 1 transaction.
+     * Cập nhật trạng thái Quản lý và giải phóng phân công rạp (nếu khóa/tạm ngưng) trong 1 transaction.
      */
     public boolean toggleManagerStatusTx(int managerId, String newStatus, int adminId) {
         String updateStatusSql = "UPDATE Users SET Status = ?, UpdatedAt = GETDATE() WHERE UserID = ? AND Role = 'MANAGER'";
@@ -1050,20 +995,6 @@ public class UserDAO {
                 + "Notes = LEFT(ISNULL(Notes, '') + N' [Tài khoản Quản lý bị khóa/tạm ngưng' + CASE WHEN ? > 0 THEN N' bởi Admin #' + CAST(? AS NVARCHAR) ELSE N'' END + N']', 500) "
                 + "WHERE ManagerID = ? AND Status = 'ACTIVE' AND EndDate IS NULL";
         String clearCentreSql = "UPDATE Users SET CentreID = NULL, UpdatedAt = GETDATE() WHERE UserID = ? AND Role = 'MANAGER'";
-
-        String endAssignmentsSql = "UPDATE cma "
-                + "SET cma.EndDate = GETDATE(), cma.Status = 'ENDED', "
-                + "cma.Notes = ISNULL(cma.Notes, '') + N' [Chấm dứt phân công do tài khoản Quản lý bị khóa/tạm ngưng]' "
-                + "FROM CentreManagerAssignments cma "
-                + "JOIN Users u ON u.UserID = cma.ManagerID "
-                + "WHERE cma.Status = 'ACTIVE' AND cma.EndDate IS NULL AND UPPER(u.Status) <> 'ACTIVE'";
-        String clearUnassignedManagersSql = "UPDATE Users SET CentreID = NULL, UpdatedAt = GETDATE() "
-                + "WHERE Role = 'MANAGER' AND CentreID IS NOT NULL "
-                + "AND UserID NOT IN (SELECT ManagerID FROM CentreManagerAssignments WHERE Status = 'ACTIVE' AND EndDate IS NULL)";
-        String syncActiveManagersSql = "UPDATE u SET u.CentreID = cma.CentreID, u.UpdatedAt = GETDATE() "
-                + "FROM Users u "
-                + "JOIN CentreManagerAssignments cma ON cma.ManagerID = u.UserID AND cma.Status = 'ACTIVE' AND cma.EndDate IS NULL "
-                + "WHERE u.Role = 'MANAGER' AND (u.CentreID IS NULL OR u.CentreID <> cma.CentreID)";
 
         Connection conn = null;
         try {
@@ -1095,13 +1026,6 @@ public class UserDAO {
                 }
             }
 
-            // 3. Đồng bộ phân công quản lý
-            try (PreparedStatement ps3a = conn.prepareStatement(endAssignmentsSql); PreparedStatement ps3b = conn.prepareStatement(clearUnassignedManagersSql); PreparedStatement ps3c = conn.prepareStatement(syncActiveManagersSql)) {
-                ps3a.executeUpdate();
-                ps3b.executeUpdate();
-                ps3c.executeUpdate();
-            }
-
             conn.commit();
             return true;
         } catch (SQLException e) {
@@ -1127,55 +1051,18 @@ public class UserDAO {
     }
 
     /**
-     * Lấy danh sách khách hàng phục vụ trang quản trị kèm số đơn đặt vé và tổng chi tiêu.
+     * Lấy danh sách toàn bộ khách hàng phục vụ trang quản trị.
      *
-     * @param search từ khóa tìm kiếm (họ tên, tài khoản, email, SĐT hoặc ID)
-     * @param status bộ lọc trạng thái (ACTIVE, INACTIVE, LOCKED hoặc ALL)
-     * @return danh sách khách hàng phù hợp
+     * @return danh sách tất cả người dùng có vai trò CUSTOMER
      */
-    public List<User> getCustomers(String search, String status) {
-        StringBuilder sql = new StringBuilder();
-        sql.append("SELECT u.*, ")
-                .append("  (SELECT COUNT(*) FROM Bookings b WHERE b.UserID = u.UserID) AS BookingCount, ")
-                .append("  (SELECT ISNULL(SUM(b.TotalAmount), 0) FROM Bookings b WHERE b.UserID = u.UserID AND b.BookingStatus <> 'CANCELLED') AS TotalSpent ")
-                .append("FROM Users u ")
-                .append("WHERE u.Role = 'CUSTOMER' ");
-
-        List<Object> params = new ArrayList<>();
-
-        if (status != null && !status.isBlank() && !"ALL".equalsIgnoreCase(status)) {
-            String filterStatus = status.trim();
-            sql.append("AND u.Status = ? ");
-            params.add(filterStatus);
-        }
-
-        if (search != null && !search.isBlank()) {
-            sql.append("AND (u.FullName LIKE ? OR u.Account LIKE ? OR u.Email LIKE ? OR u.Phone LIKE ? ")
-                    .append("OR ('KH' + RIGHT('00000' + CAST(u.UserID AS VARCHAR(10)), 5)) LIKE ? ")
-                    .append("OR CAST(u.UserID AS VARCHAR(10)) LIKE ?) ");
-            String keyword = "%" + search.trim() + "%";
-            params.add(keyword);
-            params.add(keyword);
-            params.add(keyword);
-            params.add(keyword);
-            params.add(keyword);
-            params.add(keyword);
-        }
-
-        sql.append("ORDER BY u.CreatedAt DESC, u.UserID DESC");
-
+    public List<User> getCustomers() {
+        String sql = "SELECT * FROM Users WHERE Role = 'CUSTOMER' ORDER BY UserID DESC";
         List<User> list = new ArrayList<>();
-        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql.toString())) {
-            for (int i = 0; i < params.size(); i++) {
-                ps.setObject(i + 1, params.get(i));
-            }
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    User u = mapUser(rs);
-                    u.setBookingCount(rs.getInt("BookingCount"));
-                    u.setTotalSpent(rs.getBigDecimal("TotalSpent"));
-                    list.add(u);
-                }
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                list.add(mapUser(rs));
             }
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Không thể tải danh sách khách hàng", e);
@@ -1183,34 +1070,6 @@ public class UserDAO {
         return list;
     }
 
-    /**
-     * Đếm tổng số lượng khách hàng theo trạng thái tài khoản.
-     *
-     * @param status trạng thái tài khoản hoặc ALL
-     * @return số lượng khách hàng tương ứng
-     */
-    public int countCustomersByStatus(String status) {
-        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM Users WHERE Role = 'CUSTOMER' ");
-        List<Object> params = new ArrayList<>();
-        if (status != null && !status.isBlank() && !"ALL".equalsIgnoreCase(status)) {
-            String filterStatus = status.trim();
-            sql.append("AND Status = ? ");
-            params.add(filterStatus);
-        }
-        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql.toString())) {
-            for (int i = 0; i < params.size(); i++) {
-                ps.setObject(i + 1, params.get(i));
-            }
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt(1);
-                }
-            }
-        } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Không thể đếm số lượng khách hàng", e);
-        }
-        return 0;
-    }
 
     /**
      * Lay vai tro va ID rap chieu duoc phan cong cua nguoi dung.

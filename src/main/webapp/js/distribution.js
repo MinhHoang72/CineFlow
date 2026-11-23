@@ -109,6 +109,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const statusFilter = document.getElementById('statusFilterSelect');
     const selectedCountNum = document.getElementById('selectedCountNum');
     const distributionForm = document.getElementById('distributionForm');
+    const btnToggleAll = document.getElementById('btnToggleAllCentres');
+    const btnToggleAllText = document.getElementById('btnToggleAllText');
 
     /** Đếm lại số checkbox rạp đang được tích chọn và gắn class is-selected cho dòng tương ứng. */
     function updateCounter() {
@@ -120,6 +122,35 @@ document.addEventListener('DOMContentLoaded', function () {
             if (checked) count++;
         });
         if (selectedCountNum) selectedCountNum.textContent = count;
+
+        // Cập nhật trạng thái và màu sắc của nút "Phân phối tất cả"
+        if (btnToggleAll && btnToggleAllText) {
+            const isAllSelected = (rows.length > 0 && count === rows.length);
+            if (isAllSelected) {
+                btnToggleAll.classList.add('is-deselect');
+                btnToggleAllText.textContent = 'Bỏ chọn tất cả';
+                btnToggleAll.title = 'Bỏ chọn toàn bộ rạp';
+            } else {
+                btnToggleAll.classList.remove('is-deselect');
+                btnToggleAllText.textContent = 'Phân phối tất cả';
+                btnToggleAll.title = 'Bấm để phân phối tới toàn bộ cụm rạp';
+            }
+        }
+    }
+
+    // Sự kiện khi bấm trực tiếp vào nút "Phân phối tất cả"
+    if (btnToggleAll) {
+        btnToggleAll.addEventListener('click', function () {
+            const checkboxes = rows.map(r => r.querySelector('.cf-centre-checkbox')).filter(Boolean);
+            const isAllChecked = checkboxes.length > 0 && checkboxes.every(cb => cb.checked);
+            const targetState = !isAllChecked;
+
+            checkboxes.forEach(cb => {
+                cb.checked = targetState;
+            });
+
+            updateCounter();
+        });
     }
 
     rows.forEach(row => {

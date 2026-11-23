@@ -1,48 +1,6 @@
 /**
  * Script quản lý Nhân viên (Staff) - CineFlow
  */
-function openCreateStaffModal() {
-    var modal = document.getElementById("createStaffModal");
-    if (modal) modal.classList.add("active");
-}
-
-function closeCreateStaffModal() {
-    var modal = document.getElementById("createStaffModal");
-    if (modal) modal.classList.remove("active");
-}
-
-function openEditStaffModal(id, code, fullName, phone, email, role) {
-    document.getElementById("editStaffUserId").value = id;
-    document.getElementById("editStaffCode").textContent = code;
-    document.getElementById("editStaffFullName").value = fullName;
-    document.getElementById("editStaffPhone").value = phone;
-    document.getElementById("editStaffEmail").value = email;
-    document.getElementById("editStaffRole").value = role;
-
-    var modal = document.getElementById("editStaffModal");
-    if (modal) modal.classList.add("active");
-}
-
-function closeEditStaffModal() {
-    var modal = document.getElementById("editStaffModal");
-    if (modal) modal.classList.remove("active");
-}
-
-document.querySelectorAll(".cf-modal-backdrop").forEach(function(modal) {
-    modal.addEventListener("click", function(event) {
-        if (event.target === modal) {
-            modal.classList.remove("active");
-        }
-    });
-});
-
-document.addEventListener("keydown", function(event) {
-    if (event.key === "Escape") {
-        closeCreateStaffModal();
-        closeEditStaffModal();
-    }
-});
-
 var staffPagination = null;
 
 document.addEventListener("DOMContentLoaded", function() {

@@ -455,6 +455,59 @@
 }
 
 
+.cf-btn-toggle-all {
+    height: 38px;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 0 16px;
+    color: #0f172a !important;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    user-select: none;
+    flex-shrink: 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.cf-btn-toggle-all svg {
+    stroke: #0f172a;
+}
+
+.cf-btn-toggle-all:hover {
+    background: #f1f5f9;
+    border-color: #94a3b8;
+    color: #000000 !important;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+}
+
+.cf-btn-toggle-all.is-deselect {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    color: #475569 !important;
+    box-shadow: none;
+}
+
+.cf-btn-toggle-all.is-deselect svg {
+    stroke: #475569;
+}
+
+.cf-btn-toggle-all.is-deselect:hover {
+    background: #f1f5f9;
+    border-color: #94a3b8;
+    color: #0f172a !important;
+}
+
+.cf-btn-toggle-all.is-deselect:hover svg {
+    stroke: #0f172a;
+}
+
 .cf-dist-select-all-btn {
     height: 38px;
     background: #0f1623;

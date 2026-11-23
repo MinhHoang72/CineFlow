@@ -10,17 +10,6 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ page import="model.entity.User, java.util.List, model.entity.Centre" %>
 <%
-    // 1. Bảo vệ trang: chỉ Quản trị viên (ADMIN) mới có quyền truy cập
-    String authRole = (String) session.getAttribute("role");
-    if (authRole == null && session.getAttribute("user") instanceof model.entity.User) {
-        authRole = ((model.entity.User) session.getAttribute("user")).getRole();
-    }
-    if (!"ADMIN".equalsIgnoreCase(authRole)) {
-        response.sendError(HttpServletResponse.SC_FORBIDDEN, "Chỉ Quản trị viên (ADMIN) mới có quyền truy cập trang này.");
-        return;
-    }
-
-    // 2. Lấy danh sách Manager & danh sách cụm rạp chưa có Quản lý từ ManagerManagementServlet
     List<User> managers = (List<User>) request.getAttribute("managers");
     List<Centre> centres = (List<Centre>) request.getAttribute("centres");
 
@@ -100,9 +89,9 @@
                 <div>
                     <h1>Quản lý Tài khoản Manager</h1>
                 </div>
-                <button type="button" class="cf-btn cf-btn-primary btn-create-manager" onclick="openCreateManagerModal()">
-                    <span></span> Tạo tài khoản quản lý mới
-                </button>
+                <a href="${pageContext.request.contextPath}/admin/managers?action=create" class="cf-btn cf-btn-primary btn-create-manager">
+                    <span style="font-weight: 700; font-size: 15px;"></span>Tạo tài khoản quản lý mới
+                </a>
             </div>
 
             <% if (successParam != null && successMsgs.containsKey(successParam)) { %>
@@ -126,11 +115,11 @@
                     <div class="cf-kpi-value kpi-active"><%= activeCount %></div>
                 </div>
                 <div class="cf-kpi-card">
-                    <span class="cf-kpi-label">Tạm ngưng (nghỉ phép/ốm)</span>
+                    <span class="cf-kpi-label">Tạm ngưng</span>
                     <div class="cf-kpi-value kpi-suspended" style="color: #fbbf24;"><%= suspendedCount %></div>
                 </div>
                 <div class="cf-kpi-card">
-                    <span class="cf-kpi-label">Đã khóa (nghỉ việc)</span>
+                    <span class="cf-kpi-label">Đã khóa</span>
                     <div class="cf-kpi-value kpi-locked" style="color: #ef4444;"><%= lockedCount %></div>
                 </div>
             </div>
@@ -151,7 +140,6 @@
                             <input type="text"
                                    id="managerFilterInput" 
                                    placeholder="Tìm mã nhân sự, username, họ tên, rạp..." 
-                                   value="<%= request.getAttribute("searchParam") != null ? request.getAttribute("searchParam") : "" %>"
                                    autocomplete="off"
                                    spellcheck="false">
                             <button type="button" id="managerSearchClearBtn" class="cf-search-clear-btn" style="display: none;" title="Xóa tìm kiếm">✕</button>
@@ -240,11 +228,11 @@
                                         <td class="cell-nowrap">
                                             <div class="manager-actions-row">
                                                 <!-- Nút Sửa thông tin tài khoản -->
-                                                <button type="button" class="cf-btn cf-btn-secondary cf-btn-sm btn-edit-manager" 
-                                                        onclick="openEditManagerModal(<%= m.getUserId() %>, '<%= m.getEmployeeCode() %>', '<%= m.getFullName().replace("'", "\\'") %>', '<%= m.getPhone() != null ? m.getPhone().replace("'", "\\'") : "" %>', '<%= m.getEmail().replace("'", "\\'") %>')"
-                                                        title="Chỉnh sửa thông tin cá nhân">
+                                                <a href="${pageContext.request.contextPath}/admin/managers?action=edit&userId=<%= m.getUserId() %>"
+                                                   class="cf-btn cf-btn-secondary cf-btn-sm btn-edit-manager"
+                                                   title="Chỉnh sửa thông tin cá nhân">
                                                     Sửa
-                                                </button>
+                                                </a>
                                             </div>
                                         </td>
                                     </tr>
@@ -268,102 +256,7 @@
     </div>
 </div>
 
-<%-- MODAL 1: Biểu mẫu POST (action="create") tạo tài khoản Manager mới kèm phân công cụm rạp trống --%>
-<div class="cf-modal-backdrop" id="createManagerModal">
-    <div class="cf-modal">
-        <div class="cf-modal-header">
-            <h3>Tạo tài khoản Manager mới</h3>
-            <button type="button" class="cf-modal-close" onclick="closeCreateManagerModal()">&times;</button>
-        </div>
-        <form method="post" action="${pageContext.request.contextPath}/admin/managers">
-            <input type="hidden" name="action" value="create">
-            <div class="cf-modal-body">
-                <div class="cf-form-group">
-                    <label>Cụm rạp phụ trách *</label>
-                    <select name="centreId" required class="modal-select-field">
-                        <% if (centres == null || centres.isEmpty()) { %>
-                            <option value="">-- Hiện không có cụm rạp nào trống Quản lý --</option>
-                        <% } else { %>
-                            <option value="">-- Chọn cụm rạp phân công (chưa có Quản lý) --</option>
-                            <% for (Centre c : centres) { %>
-                                <option value="<%= c.getCentreId() %>"><%= c.getCentreName() %> (<%= c.getCity() %>)</option>
-                            <% } %>
-                        <% } %>
-                    </select>
-                    <% if (centres == null || centres.isEmpty()) { %>
-                        <small class="modal-warning-danger">⚠ Tất cả các cụm rạp hiện đã có Quản lý phụ trách. Mỗi rạp chỉ được phân công 1 Quản lý.</small>
-                    <% } else { %>
-                        <small class="modal-helper-text">Hệ thống chỉ liệt kê các cụm rạp đang TRỐNG (chưa có Quản lý) để bảo đảm quy tắc 1 rạp - 1 Quản lý.</small>
-                    <% } %>
-                </div>
-                <div class="cf-form-group">
-                    <label>Họ và tên Quản lý *</label>
-                    <input type="text" name="fullName" placeholder="Ví dụ: Hoàng Tuấn Anh" required>
-                </div>
-                <div class="modal-form-grid-2">
-                    <div class="cf-form-group">
-                        <label>Tên đăng nhập (Account) *</label>
-                        <input type="text" name="account" placeholder="mgr_tuananh" required>
-                    </div>
-                    <div class="cf-form-group">
-                        <label>Số điện thoại</label>
-                        <input type="tel" name="phone" placeholder="09xxxxxxxx">
-                    </div>
-                </div>
-                <div class="cf-form-group">
-                    <label>Email *</label>
-                    <input type="email" name="email" placeholder="manager.ta@cineflow.com" required>
-                </div>
-                <div class="cf-form-group">
-                    <label>Mật khẩu khởi tạo *</label>
-                    <input type="password" name="password" value="Manager@123" required>
-                    <small class="modal-helper-text">Mặc định: Manager@123 (tối thiểu 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt)</small>
-                </div>
-            </div>
-            <div class="cf-modal-footer">
-                <button type="button" class="cf-btn cf-btn-secondary" onclick="closeCreateManagerModal()">Hủy</button>
-                <button type="submit" class="cf-btn cf-btn-primary" <%= (centres == null || centres.isEmpty()) ? "disabled class=\"btn-disabled-action\"" : "" %>>Tạo tài khoản Manager</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<%-- MODAL 2: Biểu mẫu POST (action="update") chỉnh sửa họ tên, SĐT, email của Manager --%>
-<div class="cf-modal-backdrop" id="editManagerModal">
-    <div class="cf-modal">
-        <div class="cf-modal-header">
-            <h3>Chỉnh sửa thông tin Manager</h3>
-            <button type="button" class="cf-modal-close" onclick="closeEditManagerModal()">&times;</button>
-        </div>
-        <form method="post" action="${pageContext.request.contextPath}/admin/managers">
-            <input type="hidden" name="action" value="update">
-            <input type="hidden" name="userId" id="editUserId">
-            <div class="cf-modal-body">
-                <div class="modal-code-banner">
-                    <span class="modal-code-label">Mã Quản lý (ID):</span>
-                    <code class="cf-badge cf-badge-primary modal-code-badge" id="editManagerCode">QL00000</code>
-                </div>
-                <div class="cf-form-group">
-                    <label>Họ và tên Quản lý *</label>
-                    <input type="text" name="fullName" id="editFullName" required>
-                </div>
-                <div class="cf-form-group">
-                    <label>Số điện thoại</label>
-                    <input type="tel" name="phone" id="editPhone">
-                </div>
-                <div class="cf-form-group">
-                    <label>Email liên hệ *</label>
-                    <input type="email" name="email" id="editEmail" required>
-                </div>
-            </div>
-            <div class="cf-modal-footer">
-                <button type="button" class="cf-btn cf-btn-secondary" onclick="closeEditManagerModal()">Hủy</button>
-                <button type="submit" class="cf-btn cf-btn-primary">Lưu thay đổi</button>
-            </div>
-        </form>
-    </div>
-</div>
-<%-- Nạp JS phân trang dùng chung, xử lý modal Manager và tự ẩn thông báo sau 1.5s --%>
+<%-- Nạp JS phân trang dùng chung, xác nhận đổi trạng thái và tự ẩn thông báo sau 1.5s --%>
 <script src="${pageContext.request.contextPath}/js/admin-pagination.js?v=<%= System.currentTimeMillis() %>"></script>
 <script src="${pageContext.request.contextPath}/js/manager-management.js?v=<%= System.currentTimeMillis() %>"></script>
 <script>

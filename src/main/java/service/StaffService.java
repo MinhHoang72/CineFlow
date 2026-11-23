@@ -24,57 +24,6 @@ public class StaffService {
         this.cinemaDAO = cinemaDAO;
     }
 
-    public enum Status {
-        SUCCESS,
-        MISSING_FIELDS,
-        INVALID_NAME,
-        INVALID_ACCOUNT,
-        INVALID_EMAIL,
-        WEAK_PASSWORD,
-        INVALID_PHONE,
-        ACCOUNT_EXISTS,
-        EMAIL_EXISTS,
-        INVALID_CENTRE,
-        UNASSIGNED_MANAGER,
-        NOT_FOUND,
-        FORBIDDEN,
-        INVALID_STATUS,
-        FAILED
-    }
-
-    public static class OperationResult {
-
-        private final Status status;
-        private final String message;
-        private final User user;
-
-        public OperationResult(Status status, String message) {
-            this(status, message, null);
-        }
-
-        public OperationResult(Status status, String message, User user) {
-            this.status = status;
-            this.message = message;
-            this.user = user;
-        }
-
-        public boolean isSuccess() {
-            return status == Status.SUCCESS;
-        }
-
-        public Status getStatus() {
-            return status;
-        }
-
-        public String getMessage() {
-            return message;
-        }
-
-        public User getUser() {
-            return user;
-        }
-    }
-
     // Kiểm tra người thao tác có phải Manager được bổ nhiệm hay không.
     private boolean isValidManager(User manager) {
         return manager != null
@@ -120,7 +69,7 @@ public class StaffService {
     }
 
     // Tạo nhân viên mới.
-    public OperationResult createStaff(
+    public String createStaff(
             User actor,
             String fullName,
             String account,
@@ -129,24 +78,15 @@ public class StaffService {
             String phone,
             String role) {
 
-        // 1. Kiểm tra quyền Manager và trung tâm được phân công.
         if (!isValidManager(actor)) {
-            return new OperationResult(
-                    Status.UNASSIGNED_MANAGER,
-                    "Manager chưa được phân công trung tâm hợp lệ."
-            );
+            return "unassigned_manager";
         }
 
-        // 2. Kiểm tra dữ liệu bắt buộc.
         if (ValidationUtil.isBlank(fullName)
                 || ValidationUtil.isBlank(account)
                 || ValidationUtil.isBlank(email)
                 || ValidationUtil.isBlank(password)) {
-
-            return new OperationResult(
-                    Status.MISSING_FIELDS,
-                    "Vui lòng điền đầy đủ thông tin bắt buộc."
-            );
+            return "missing_fields";
         }
 
         fullName = fullName.trim();
@@ -155,86 +95,40 @@ public class StaffService {
         password = password.trim();
         phone = phone == null ? "" : phone.trim();
 
-        // 3. Kiểm tra họ tên.
         if (!ValidationUtil.isValidFullName(fullName)) {
-            return new OperationResult(
-                    Status.INVALID_NAME,
-                    "Họ và tên không hợp lệ."
-            );
+            return "invalid_name";
         }
 
-        // 4. Kiểm tra tài khoản.
         if (account.length() > 50) {
-            return new OperationResult(
-                    Status.INVALID_ACCOUNT,
-                    "Tên tài khoản không được vượt quá 50 ký tự."
-            );
+            return "invalid_account";
         }
 
-        // 5. Kiểm tra email.
         if (!email.contains("@") || email.length() > 100) {
-            return new OperationResult(
-                    Status.INVALID_EMAIL,
-                    "Email không hợp lệ."
-            );
+            return "invalid_email";
         }
 
-// 6. Kiểm tra mật khẩu.
-        if (password.length() < 8) {
-            return new OperationResult(
-                    Status.WEAK_PASSWORD,
-                    "Mật khẩu phải có ít nhất 8 ký tự."
-            );
+        if (password.length() < 8 || !password.matches(".*[A-Z].*") || !password.matches(".*[^a-zA-Z0-9].*")) {
+            return "weak_password";
         }
 
-        if (!password.matches(".*[A-Z].*")) {
-            return new OperationResult(
-                    Status.WEAK_PASSWORD,
-                    "Mật khẩu phải có ít nhất 1 chữ cái viết hoa."
-            );
-        }
-
-        if (!password.matches(".*[^a-zA-Z0-9].*")) {
-            return new OperationResult(
-                    Status.WEAK_PASSWORD,
-                    "Mật khẩu phải có ít nhất 1 ký tự đặc biệt."
-            );
-        }
-
-        // 7. Kiểm tra số điện thoại.
         if (phone.length() > 20) {
-            return new OperationResult(
-                    Status.INVALID_PHONE,
-                    "Số điện thoại không được vượt quá 20 ký tự."
-            );
+            return "invalid_phone";
         }
 
-        // 8. Kiểm tra trùng tài khoản và email.
         if (userDAO.isAccountExists(account)) {
-            return new OperationResult(
-                    Status.ACCOUNT_EXISTS,
-                    "Tên tài khoản đã tồn tại."
-            );
+            return "account_exists";
         }
 
         if (userDAO.isEmailExists(email)) {
-            return new OperationResult(
-                    Status.EMAIL_EXISTS,
-                    "Email đã được sử dụng."
-            );
+            return "email_exists";
         }
 
-        // 9. Chỉ cho phép hai vai trò nhân viên.
         if (role == null || !ValidationUtil.isStaffRole(role.trim())) {
-            return new OperationResult(
-                    Status.FORBIDDEN,
-                    "Vị trí nhân viên không hợp lệ."
-            );
+            return "forbidden";
         }
 
         role = role.trim().toUpperCase();
 
-        // 10. Tạo tài khoản.
         User newStaff = new User();
         newStaff.setFullName(fullName);
         newStaff.setAccount(account);
@@ -242,28 +136,14 @@ public class StaffService {
         newStaff.setPassword(PasswordUtil.hashPassword(password));
         newStaff.setPhone(phone);
         newStaff.setRole(role);
-
-        // Quan trọng: lấy trung tâm từ Manager, không lấy từ request.
         newStaff.setCentreId(actor.getCentreId());
 
         boolean created = userDAO.createStaff(newStaff);
-
-        if (created) {
-            return new OperationResult(
-                    Status.SUCCESS,
-                    "Tạo nhân viên thành công.",
-                    newStaff
-            );
-        }
-
-        return new OperationResult(
-                Status.FAILED,
-                "Không thể tạo tài khoản nhân viên."
-        );
+        return created ? null : "create_failed";
     }
 
     // Cập nhật thông tin nhân viên.
-    public OperationResult updateStaff(
+    public String updateStaff(
             User actor,
             int staffId,
             String fullName,
@@ -271,22 +151,12 @@ public class StaffService {
             String email,
             String role) {
 
-        // 1. Kiểm tra Manager.
         if (!isValidManager(actor)) {
-            return new OperationResult(
-                    Status.FORBIDDEN,
-                    "Bạn không có quyền quản lý nhân viên."
-            );
+            return "forbidden";
         }
 
-        // 2. Kiểm tra dữ liệu.
-        if (ValidationUtil.isBlank(fullName)
-                || ValidationUtil.isBlank(email)) {
-
-            return new OperationResult(
-                    Status.MISSING_FIELDS,
-                    "Họ tên và email không được để trống."
-            );
+        if (ValidationUtil.isBlank(fullName) || ValidationUtil.isBlank(email)) {
+            return "missing_fields";
         }
 
         fullName = fullName.trim();
@@ -294,158 +164,67 @@ public class StaffService {
         phone = phone == null ? "" : phone.trim();
 
         if (!ValidationUtil.isValidFullName(fullName)) {
-            return new OperationResult(
-                    Status.INVALID_NAME,
-                    "Họ và tên không hợp lệ."
-            );
+            return "invalid_name";
         }
 
         if (!email.contains("@") || email.length() > 100) {
-            return new OperationResult(
-                    Status.INVALID_EMAIL,
-                    "Email không hợp lệ."
-            );
+            return "invalid_email";
         }
 
         if (phone.length() > 20) {
-            return new OperationResult(
-                    Status.INVALID_PHONE,
-                    "Số điện thoại không được vượt quá 20 ký tự."
-            );
+            return "invalid_phone";
         }
 
-        // 3. Lấy nhân viên cần sửa.
         User targetUser = userDAO.getUserById(staffId);
-
         if (targetUser == null) {
-            return new OperationResult(
-                    Status.NOT_FOUND,
-                    "Không tìm thấy nhân viên."
-            );
+            return "not_found";
         }
 
-        // 4. Chỉ được sửa nhân viên thuộc trung tâm của Manager.
         if (!targetUser.isStaff()
                 || targetUser.getCentreId() == null
                 || !actor.getCentreId().equals(targetUser.getCentreId())) {
-
-            return new OperationResult(
-                    Status.FORBIDDEN,
-                    "Bạn không có quyền sửa nhân viên này."
-            );
+            return "forbidden";
         }
 
-        // 5. Kiểm tra email trùng.
         if (userDAO.isEmailExistsForOtherUser(email, staffId)) {
-            return new OperationResult(
-                    Status.EMAIL_EXISTS,
-                    "Email đã được tài khoản khác sử dụng."
-            );
+            return "email_exists";
         }
 
-        // 6. Kiểm tra vai trò.
         if (role == null || !ValidationUtil.isStaffRole(role.trim())) {
-            return new OperationResult(
-                    Status.FORBIDDEN,
-                    "Vị trí nhân viên không hợp lệ."
-            );
+            return "forbidden";
         }
 
         role = role.trim().toUpperCase();
 
-        // 7. Cập nhật.
         boolean updated = userDAO.updateStaffBasicInfo(
                 staffId, fullName, phone, email, role
         );
 
-        if (!updated) {
-            return new OperationResult(
-                    Status.FAILED,
-                    "Cập nhật thông tin thất bại."
-            );
-        }
-
-        targetUser.setFullName(fullName);
-        targetUser.setPhone(phone);
-        targetUser.setEmail(email);
-        targetUser.setRole(role);
-
-        return new OperationResult(
-                Status.SUCCESS,
-                "Cập nhật nhân viên thành công.",
-                targetUser
-        );
+        return updated ? null : "update_failed";
     }
 
     // Cập nhật trạng thái nhân viên.
-    public OperationResult updateStaffStatus(
-            User actor, int staffId, String status) {
-
-        // 1. Kiểm tra Manager.
-        if (!isValidManager(actor)) {
-            return new OperationResult(
-                    Status.FORBIDDEN,
-                    "Bạn không có quyền quản lý nhân viên."
-            );
-        }
-
-        // 2. Kiểm tra trạng thái.
-        if (status == null) {
-            return new OperationResult(
-                    Status.INVALID_STATUS,
-                    "Trạng thái không hợp lệ."
-            );
+    public boolean updateStaffStatus(User actor, int staffId, String status) {
+        if (!isValidManager(actor) || status == null) {
+            return false;
         }
 
         status = status.trim().toUpperCase();
-
-        if (!"ACTIVE".equals(status)
-                && !"INACTIVE".equals(status)
-                && !"LOCKED".equals(status)) {
-
-            return new OperationResult(
-                    Status.INVALID_STATUS,
-                    "Trạng thái không hợp lệ."
-            );
+        if (!"ACTIVE".equals(status) && !"INACTIVE".equals(status) && !"LOCKED".equals(status)) {
+            return false;
         }
 
-        // 3. Lấy nhân viên.
         User targetUser = userDAO.getUserById(staffId);
-
         if (targetUser == null) {
-            return new OperationResult(
-                    Status.NOT_FOUND,
-                    "Không tìm thấy nhân viên."
-            );
+            return false;
         }
 
-        // 4. Chỉ được thay đổi nhân viên thuộc trung tâm của Manager.
         if (!targetUser.isStaff()
                 || targetUser.getCentreId() == null
                 || !actor.getCentreId().equals(targetUser.getCentreId())) {
-
-            return new OperationResult(
-                    Status.FORBIDDEN,
-                    "Bạn không có quyền thay đổi nhân viên này."
-            );
+            return false;
         }
 
-        // 5. Cập nhật trạng thái.
-        boolean updated = userDAO.updateUserStatus(staffId, status);
-
-        if (!updated) {
-            return new OperationResult(
-                    Status.FAILED,
-                    "Không thể cập nhật trạng thái."
-            );
-        }
-
-        targetUser.setStatus(status);
-
-        return new OperationResult(
-                Status.SUCCESS,
-                "Cập nhật trạng thái thành công.",
-                targetUser
-        );
+        return userDAO.updateUserStatus(staffId, status);
     }
 }

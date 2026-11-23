@@ -8,7 +8,8 @@
     - Form dùng enctype="multipart/form-data" để hỗ trợ tải lên tệp Poster và Trailer.
 --%>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ page import="model.entity.Movie, java.util.Map, java.util.HashMap" %>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ page import="model.entity.Movie" %>
 <%
     // 1. Bảo vệ trang: chỉ Quản trị viên (ADMIN) mới được phép truy cập
     String authRole = (String) session.getAttribute("role");
@@ -20,36 +21,8 @@
         return;
     }
 %>
-<%-- Khai báo bảng thông báo lỗi validate từ Server và hàm esc() chống tấn công XSS --%>
+<%-- Hàm esc() mã hóa ký tự đặc biệt chống tấn công XSS --%>
 <%!
-    private static final Map<String, String> ERROR_MESSAGES = new HashMap<>();
-    static {
-        ERROR_MESSAGES.put("missing_title", "Vui lòng nhập tên phim (không được để trống).");
-        ERROR_MESSAGES.put("invalid_duration", "Thời lượng phim không hợp lệ (phải là số nguyên từ 1 đến 600 phút).");
-        ERROR_MESSAGES.put("invalid_age_rating", "Độ tuổi khuyến nghị không thuộc danh mục hợp lệ (P, K, T13, T16, T18, C).");
-        ERROR_MESSAGES.put("invalid_status", "Trạng thái phát hành không hợp lệ.");
-        ERROR_MESSAGES.put("missing_dates", "Vui lòng nhập đầy đủ Ngày khởi chiếu và Ngày kết thúc.");
-        ERROR_MESSAGES.put("title_too_long", "Tên phim không được vượt quá 200 ký tự.");
-        ERROR_MESSAGES.put("invalid_title", "Tên phim không hợp lệ hoặc vượt quá độ dài.");
-        ERROR_MESSAGES.put("genre_too_long", "Thể loại phim không được vượt quá 200 ký tự.");
-        ERROR_MESSAGES.put("duplicate_title", "Tên phim đã tồn tại trong hệ thống.");
-        ERROR_MESSAGES.put("text_too_long", "Một trường thông tin vượt quá độ dài cho phép.");
-        ERROR_MESSAGES.put("invalid_date_format", "Định dạng ngày không hợp lệ.");
-        ERROR_MESSAGES.put("end_date_in_past", "Ngày kết thúc của phim đang chiếu không được ở trong quá khứ.");
-        ERROR_MESSAGES.put("end_date_not_future", "Ngày kết thúc của phim sắp chiếu phải nằm trong tương lai.");
-        ERROR_MESSAGES.put("invalid_date_range", "Khoảng thời gian phát hành không hợp lệ: Ngày kết thúc phải sau hoặc bằng ngày khởi chiếu.");
-        ERROR_MESSAGES.put("coming_soon_in_past", "Không thể đặt trạng thái \"Sắp khởi chiếu\" khi ngày khởi chiếu ở trong quá khứ. Vui lòng chọn ngày tương lai hoặc đổi sang \"Đang chiếu\".");
-        ERROR_MESSAGES.put("now_showing_in_future", "Phim có ngày khởi chiếu ở tương lai chưa thể đặt trạng thái \"Đang chiếu\". Vui lòng chọn trạng thái \"Sắp khởi chiếu\".");
-        ERROR_MESSAGES.put("invalid_poster_file", "Áp phích (poster) phải là tệp hình ảnh (.jpg, .jpeg, .png, .webp).");
-        ERROR_MESSAGES.put("invalid_trailer_file", "Trailer phải là tệp video (.mp4, .webm, .ogg).");
-        ERROR_MESSAGES.put("poster_too_large", "Poster không được vượt quá 5 MB.");
-        ERROR_MESSAGES.put("trailer_too_large", "Trailer không được vượt quá 50 MB.");
-        ERROR_MESSAGES.put("reissue_dates_required", "Phim đang ở trạng thái Lưu trữ hoặc Đã kết thúc. Khi chuyển sang \"Sắp khởi chiếu\", bạn bắt buộc phải thiết lập lại Ngày khởi chiếu (tương lai) và Ngày kết thúc mới.");
-        ERROR_MESSAGES.put("extend_end_date_required", "Phim đã kết thúc đợt chiếu. Khi chuyển sang \"Đang chiếu\", bạn bắt buộc phải thiết lập lại Ngày kết thúc mới từ hôm nay trở đi.");
-        ERROR_MESSAGES.put("cannot_reopen_to_now_showing", "Phim đã lưu trữ (ARCHIVED) không thể chuyển trực tiếp sang \"Đang chiếu\". Vui lòng chọn \"Sắp khởi chiếu\" và thiết lập lại ngày chiếu mới.");
-        ERROR_MESSAGES.put("save_failed", "Thao tác lưu phim thất bại. Vui lòng thử lại.");
-    }
-
     private String esc(String v) {
         if (v == null) return "";
         return v.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;");
@@ -62,6 +35,10 @@
     String status = editing && movie.getStatus() != null ? movie.getStatus() : "COMING_SOON";
     String posterUrl = editing && movie.getPosterUrl() != null ? movie.getPosterUrl() : "";
     String trailerUrl = editing && movie.getTrailerUrl() != null ? movie.getTrailerUrl() : "";
+    Integer upcomingCount = (Integer) request.getAttribute("upcomingShowtimesCount");
+    Integer soldCount = (Integer) request.getAttribute("soldTicketsCount");
+    int uCount = (upcomingCount != null) ? upcomingCount : 0;
+    int sCount = (soldCount != null) ? soldCount : 0;
     String errorParam = request.getParameter("error");
     if ("extend_end_date_required".equals(errorParam)) {
         status = "NOW_SHOWING";
@@ -109,17 +86,68 @@
                 </div>
             </div>
 
-            <!-- THÔNG BÁO LỖI NẾU CÓ -->
-            <% if (errorParam != null && !errorParam.isBlank()) {
-                String errMsg = ERROR_MESSAGES.getOrDefault(errorParam, "Thao tác lưu phim thất bại. Vui lòng kiểm tra lại thông tin.");
-            %>
+            <!-- THÔNG BÁO LỖI NẾU CÓ (DÙNG JSTL CHOOSE / WHEN) -->
+            <c:if test="${not empty param.error}">
                 <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
-                    <span>⚠</span> <strong>Lỗi:</strong> <%= errMsg %>
+                    <span>⚠</span> <strong>Lỗi:</strong>
+                    <c:choose>
+                        <c:when test="${param.error == 'missing_title'}">Vui lòng nhập tên phim (không được để trống).</c:when>
+                        <c:when test="${param.error == 'invalid_duration'}">Thời lượng phim không hợp lệ (phải là số nguyên từ 1 đến 600 phút).</c:when>
+                        <c:when test="${param.error == 'invalid_age_rating'}">Độ tuổi khuyến nghị không thuộc danh mục hợp lệ (P, K, T13, T16, T18, C).</c:when>
+                        <c:when test="${param.error == 'invalid_status'}">Trạng thái phát hành không hợp lệ.</c:when>
+                        <c:when test="${param.error == 'missing_dates'}">Vui lòng nhập đầy đủ Ngày khởi chiếu và Ngày kết thúc.</c:when>
+                        <c:when test="${param.error == 'title_too_long'}">Tên phim không được vượt quá 200 ký tự.</c:when>
+                        <c:when test="${param.error == 'invalid_title'}">Tên phim không hợp lệ hoặc vượt quá độ dài.</c:when>
+                        <c:when test="${param.error == 'genre_too_long'}">Thể loại phim không được vượt quá 200 ký tự.</c:when>
+                        <c:when test="${param.error == 'duplicate_title'}">Tên phim đã tồn tại trong hệ thống.</c:when>
+                        <c:when test="${param.error == 'text_too_long'}">Một trường thông tin vượt quá độ dài cho phép.</c:when>
+                        <c:when test="${param.error == 'invalid_date_format'}">Định dạng ngày không hợp lệ.</c:when>
+                        <c:when test="${param.error == 'end_date_in_past'}">Ngày kết thúc của phim đang chiếu không được ở trong quá khứ.</c:when>
+                        <c:when test="${param.error == 'end_date_not_future'}">Ngày kết thúc của phim sắp chiếu phải nằm trong tương lai.</c:when>
+                        <c:when test="${param.error == 'invalid_date_range'}">Khoảng thời gian phát hành không hợp lệ: Ngày kết thúc phải sau hoặc bằng ngày khởi chiếu.</c:when>
+                        <c:when test="${param.error == 'coming_soon_in_past'}">Không thể đặt trạng thái "Sắp khởi chiếu" khi ngày khởi chiếu ở trong quá khứ. Vui lòng chọn ngày tương lai hoặc đổi sang "Đang chiếu".</c:when>
+                        <c:when test="${param.error == 'now_showing_in_future'}">Phim có ngày khởi chiếu ở tương lai chưa thể đặt trạng thái "Đang chiếu". Vui lòng chọn trạng thái "Sắp khởi chiếu".</c:when>
+                        <c:when test="${param.error == 'invalid_poster_file'}">Áp phích (poster) phải là tệp hình ảnh (.jpg, .jpeg, .png, .webp).</c:when>
+                        <c:when test="${param.error == 'invalid_trailer_file'}">Trailer phải là tệp video (.mp4, .webm, .ogg).</c:when>
+                        <c:when test="${param.error == 'poster_too_large'}">Poster không được vượt quá 5 MB.</c:when>
+                        <c:when test="${param.error == 'trailer_too_large'}">Trailer không được vượt quá 50 MB.</c:when>
+                        <c:when test="${param.error == 'reissue_dates_required'}">Phim đang ở trạng thái Lưu trữ hoặc Đã kết thúc. Khi chuyển sang "Sắp khởi chiếu", bạn bắt buộc phải thiết lập lại Ngày khởi chiếu (tương lai) và Ngày kết thúc mới.</c:when>
+                        <c:when test="${param.error == 'extend_end_date_required'}">Phim đã kết thúc đợt chiếu. Khi chuyển sang "Đang chiếu", bạn bắt buộc phải thiết lập lại Ngày kết thúc mới từ hôm nay trở đi.</c:when>
+                        <c:when test="${param.error == 'cannot_reopen_to_now_showing'}">Phim đã lưu trữ (ARCHIVED) không thể chuyển trực tiếp sang "Đang chiếu". Vui lòng chọn "Sắp khởi chiếu" và thiết lập lại ngày chiếu mới.</c:when>
+                        <c:otherwise>Thao tác lưu phim thất bại. Vui lòng kiểm tra lại thông tin.</c:otherwise>
+                    </c:choose>
                 </div>
+            </c:if>
+
+            <!-- CẢNH BÁO SUẤT CHIẾU VÀ VÉ ĐÃ ĐẶT TRƯỚC -->
+            <% if (editing && uCount > 0) { %>
+                <% if (sCount > 0) { %>
+                    <div class="cf-alert" style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 20px; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 8px; padding: 14px 18px; color: #f87171;">
+                        <span style="font-size: 22px; line-height: 1;">⛔</span>
+                        <div>
+                            <strong style="color: #ffffff; font-size: 14px;">CẢNH BÁO: ĐÃ CÓ VÉ BÁN CHO KHÁCH HÀNG</strong>
+                            <p style="margin: 4px 0 0; color: #fca5a5; font-size: 13px; line-height: 1.5;">
+                                Phim đang có <strong><%= uCount %></strong> suất chiếu sắp tới và đã bán được 
+                                <strong style="color: #ffffff; text-decoration: underline; font-size: 14px;"><%= sCount %> vé</strong> cho khách hàng.
+                                <br>
+                                Cân nhắc kỹ trước khi chỉnh sửa ngày chiếu. Việc kết thúc hoặc lưu trữ phim sẽ tự động hủy toàn bộ các vé đã bán này!
+                            </p>
+                        </div>
+                    </div>
+                <% } else { %>
+                    <div class="cf-alert" style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 8px; padding: 12px 18px; color: #fbbf24;">
+                        <span style="font-size: 20px;">⚠️</span>
+                        <div>
+                            <strong style="color: #ffffff;">Thông tin lịch chiếu:</strong> Phim đang có 
+                            <strong style="color: #ffffff;"><%= uCount %></strong> suất chiếu sắp tới 
+                            <span style="color: #cbd5e1;">(chưa có khách nào đặt vé)</span>. Bạn có thể chỉnh sửa ngày chiếu hoặc trạng thái phim an toàn.
+                        </div>
+                    </div>
+                <% } %>
             <% } %>
 
             <%--
-                Form gửi POST lên /admin/movie với action="save".
+                Form gửi POST lên /admin/movie để lưu thông tin phim.
                 - enctype="multipart/form-data": bắt buộc để upload file ảnh Poster & video Trailer.
                 - data-original-status: trạng thái cũ của phim trước khi sửa.
                 - data-has-upcoming-showtimes: true nếu phim đang còn suất chiếu tương lai (JS dùng để bật confirm khi chọn ENDED/ARCHIVED).
@@ -127,8 +155,9 @@
             <form id="movieForm" method="post" action="${pageContext.request.contextPath}/admin/movie"
                   enctype="multipart/form-data"
                   data-original-status="<%= editing && movie.getStatus() != null ? movie.getStatus() : "" %>"
-                  data-has-upcoming-showtimes="<%= Boolean.TRUE.equals(request.getAttribute("hasUpcomingShowtimes")) ? "true" : "false" %>">
-                <input type="hidden" name="action" value="save">
+                  data-has-upcoming-showtimes="<%= (uCount > 0) ? "true" : "false" %>"
+                  data-upcoming-count="<%= uCount %>"
+                  data-sold-count="<%= sCount %>">
                 <%-- Nếu đang sửa phim (editing = true), gửi kèm movieId để Server biết cần UPDATE thay vì INSERT --%>
                 <% if (editing) { %>
                     <input type="hidden" name="movieId" value="<%= movie.getMovieId() %>">

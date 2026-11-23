@@ -39,52 +39,6 @@ function handleManagerStatusChange(selectEl) {
     }
 }
 
-/** Mở modal Tạo mới tài khoản Manager. */
-function openCreateManagerModal() {
-    var modal = document.getElementById('createManagerModal');
-    if (modal) modal.classList.add('active');
-}
-
-/** Đóng modal Tạo mới tài khoản Manager. */
-function closeCreateManagerModal() {
-    var modal = document.getElementById('createManagerModal');
-    if (modal) modal.classList.remove('active');
-}
-
-/**
- * Mở modal Chỉnh sửa và điền sẵn thông tin hiện tại của Manager vào các ô nhập liệu.
- *
- * @param {number} id       mã UserID của Manager
- * @param {string} code     mã nhân viên hiển thị (ví dụ: QL00005)
- * @param {string} fullName họ và tên hiện tại
- * @param {string} phone    số điện thoại hiện tại
- * @param {string} email    email liên hệ hiện tại
- */
-function openEditManagerModal(id, code, fullName, phone, email) {
-    document.getElementById('editUserId').value = id;
-    document.getElementById('editManagerCode').textContent = code;
-    document.getElementById('editFullName').value = fullName;
-    document.getElementById('editPhone').value = phone;
-    document.getElementById('editEmail').value = email;
-    var modal = document.getElementById('editManagerModal');
-    if (modal) modal.classList.add('active');
-}
-
-/** Đóng modal Chỉnh sửa thông tin Manager. */
-function closeEditManagerModal() {
-    var modal = document.getElementById('editManagerModal');
-    if (modal) modal.classList.remove('active');
-}
-
-// Đóng modal khi người dùng bấm ra vùng nền tối bên ngoài hộp thoại
-document.querySelectorAll('.cf-modal-backdrop').forEach(function (modal) {
-    modal.addEventListener('click', function (e) {
-        if (e.target === this) {
-            this.classList.remove('active');
-        }
-    });
-});
-
 // Khởi tạo bộ lọc, tìm kiếm và phân trang cho bảng Manager khi DOM tải xong
 document.addEventListener('DOMContentLoaded', function () {
     var countLabel = document.getElementById('managerCountLabel');

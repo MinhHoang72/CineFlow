@@ -4,7 +4,7 @@
     Luồng hoạt động:
     - Bước 1: Chọn bộ phim cần cấu hình phân phối (chuyển trang ?movieId=...).
     - Bước 2: Tích chọn hoặc bỏ tích các cụm rạp trong bảng -> gửi mảng checkbox "centreIds" về Server.
-    - Phim đã ENDED hoặc ARCHIVED sẽ khóa thao tác lưu phân phối để bảo toàn dữ liệu lịch sử.
+    - Chỉ hiển thị và phân phối các phim Đang chiếu (NOW_SHOWING) và Sắp chiếu (COMING_SOON).
 --%>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ page import="model.entity.Movie, model.entity.Centre, java.util.List, java.util.Set, java.util.LinkedHashSet" %>
@@ -22,9 +22,18 @@
     // 2. Lấy dữ liệu do DistributionServlet nạp sẵn từ MovieService
     Movie movie = (Movie) request.getAttribute("movie");
     List<Movie> allMovies = (List<Movie>) request.getAttribute("allMovies");
-    List<Centre> centres = (List<Centre>) request.getAttribute("centres");
-    if (centres == null) centres = java.util.Collections.emptyList();
+    List<Centre> rawCentres = (List<Centre>) request.getAttribute("centres");
     if (allMovies == null) allMovies = java.util.Collections.emptyList();
+
+    // Chỉ lấy các rạp Đang hoạt động (ACTIVE) hoặc Tạm ngưng (SUSPENDED), loại bỏ hoàn toàn rạp Ngừng hoạt động (INACTIVE)
+    List<Centre> centres = new java.util.ArrayList<>();
+    if (rawCentres != null) {
+        for (Centre c : rawCentres) {
+            if (c.getStatus() != null && !"INACTIVE".equalsIgnoreCase(c.getStatus().trim())) {
+                centres.add(c);
+            }
+        }
+    }
 
     // 3. Đếm số rạp đã phân phối và gom danh sách thành phố phục vụ bộ lọc
     int totalCentres = centres.size();
@@ -39,8 +48,6 @@
             totalDistributed++;
         }
     }
-
-    request.setAttribute("activeNav", "distribution");
 %>
 <!DOCTYPE html>
 <html lang="vi">
@@ -87,13 +94,9 @@
                 <div id="saveSuccessAlert" class="cf-alert cf-alert-success" style="margin-bottom: 20px;">
                     ✓ Cập nhật cấu hình phân phối rạp chiếu thành công.
                 </div>
-            <% } else if ("movie_ended_or_archived".equals(request.getParameter("error"))) { %>
+            <% } else if (request.getParameter("error") != null) { %>
                 <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
-                    ⚠ Phim ở trạng thái Lưu trữ (ARCHIVED) hoặc Đã kết thúc (ENDED) không thể phân phối tại các rạp chiếu.
-                </div>
-            <% } else if ("invalid_centres".equals(request.getParameter("error"))) { %>
-                <div class="cf-alert cf-alert-danger" style="margin-bottom: 20px;">
-                    ⚠ Cụm rạp được chọn không tồn tại hoặc không ở trạng thái hợp lệ.
+                    ⚠ Không thể lưu phân phối phim. Vui lòng kiểm tra lại trạng thái phim hoặc thử lại sau.
                 </div>
             <% } %>
 
@@ -137,15 +140,11 @@
                                 <div class="cf-movie-empty-opt">Chưa có phim nào trong hệ thống</div>
                             <% } else {
                                 for (Movie m : allMovies) {
+                                    String st = m.getStatus();
                                     boolean isSelected = (movie != null && m.getMovieId() == movie.getMovieId());
                                     String mCode = "Mã phim: " + m.getMovieId();
-                                    String st = m.getStatus();
-                                    String stText = "NOW_SHOWING".equals(st) ? "Đang chiếu" :
-                                                    "COMING_SOON".equals(st) ? "Sắp khởi chiếu" :
-                                                    "ENDED".equals(st) ? "Đã kết thúc" : "Lưu trữ";
-                                    String badgeClass = "NOW_SHOWING".equals(st) ? "cf-badge-success" :
-                                                        "COMING_SOON".equals(st) ? "cf-badge-info" :
-                                                        "ENDED".equals(st) ? "cf-badge-warning" : "cf-badge-muted";
+                                    String stText = "NOW_SHOWING".equals(st) ? "Đang chiếu" : "Sắp khởi chiếu";
+                                    String badgeClass = "NOW_SHOWING".equals(st) ? "cf-badge-success" : "cf-badge-info";
                             %>
                             <div class="cf-movie-option <%= isSelected ? "is-selected" : "" %>"
                                  data-movie-id="<%= m.getMovieId() %>"
@@ -170,7 +169,7 @@
                                     </div>
                                 </div>
                                 <% if (isSelected) { %>
-                                    <span class="cf-movie-opt-check" title="Đang chọn">✓</span>
+                                    <span class="cf-movie-opt-check" title="Đang chọn"></span>
                                 <% } %>
                             </div>
                             <% }} %>
@@ -184,13 +183,8 @@
                 <!-- THẺ THÔNG TIN PHIM ĐƯỢC CHỌN -->
                 <% if (movie != null) {
                     String st = movie.getStatus();
-                    String stText = "NOW_SHOWING".equals(st) ? "Đang chiếu" :
-                                    "COMING_SOON".equals(st) ? "Sắp khởi chiếu" :
-                                    "ENDED".equals(st) ? "Đã kết thúc" : "Lưu trữ";
-                    String badgeClass = "NOW_SHOWING".equals(st) ? "cf-badge-success" :
-                                        "COMING_SOON".equals(st) ? "cf-badge-info" :
-                                        "ENDED".equals(st) ? "cf-badge-warning" : "cf-badge-muted";
-                    boolean isEndedOrArchived = ("ARCHIVED".equalsIgnoreCase(st) || "ENDED".equalsIgnoreCase(st));
+                    String stText = "NOW_SHOWING".equals(st) ? "Đang chiếu" : "Sắp khởi chiếu";
+                    String badgeClass = "NOW_SHOWING".equals(st) ? "cf-badge-success" : "cf-badge-info";
                 %>
                 <div class="cf-selected-movie-card">
                     <div class="cf-movie-card-poster">
@@ -223,15 +217,6 @@
                         </a>
                     </div>
                 </div>
-
-                <% if (isEndedOrArchived) { %>
-                <div class="cf-alert" style="margin-top: 14px; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.35); color: #f87171; display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-radius: 8px;">
-                    <span style="font-size: 18px;">⛔</span>
-                    <div>
-                        <strong>Phim không còn được phân phối:</strong> Phim đang ở trạng thái <strong><%= "ARCHIVED".equalsIgnoreCase(movie.getStatus()) ? "Lưu trữ (ARCHIVED)" : "Đã kết thúc (ENDED)" %></strong>. Toàn bộ phân phối tại các rạp đã ngừng hoạt động.
-                    </div>
-                </div>
-                <% } %>
                 <% } %>
             </section>
 
@@ -240,9 +225,7 @@
                 - Gửi movieId (ẩn) và danh sách mảng checkbox "centreIds" của các rạp được tích chọn.
                 - Khi bỏ tích rạp, CentreID đó sẽ không có trong mảng gửi lên -> Server cập nhật bản ghi phân phối sang CANCELLED.
             --%>
-            <% if (movie != null) {
-                boolean isMovieLocked = ("ARCHIVED".equalsIgnoreCase(movie.getStatus()) || "ENDED".equalsIgnoreCase(movie.getStatus()));
-            %>
+            <% if (movie != null) { %>
             <form id="distributionForm" action="${pageContext.request.contextPath}/admin/distribution" method="POST">
                 <input type="hidden" name="movieId" value="<%= movie.getMovieId() %>">
                 <section class="cf-dist-section">
@@ -277,8 +260,11 @@
                             <option value="ALL">Tất cả trạng thái</option>
                             <option value="ACTIVE">Đang hoạt động</option>
                             <option value="SUSPENDED">Tạm ngưng</option>
-                            <option value="INACTIVE">Ngừng hoạt động</option>
                         </select>
+
+                        <button type="button" id="btnToggleAllCentres" class="cf-btn-toggle-all" title="Bấm để phân phối tới toàn bộ cụm rạp">                        
+                            <span id="btnToggleAllText">Phân phối tất cả</span>
+                        </button>
                     </div>
                     <!-- BẢNG DANH SÁCH CỤM RẠP -->
                     <div class="cf-dist-table-wrap">
@@ -295,33 +281,21 @@
                                 <% for (Centre c : centres) {
                                     String rawStatus = c.getStatus() != null ? c.getStatus().trim().toUpperCase() : "ACTIVE";
                                     boolean isActive = "ACTIVE".equals(rawStatus);
-                                    boolean isSuspended = "SUSPENDED".equals(rawStatus);
-                                    boolean isInactive = !isActive && !isSuspended;
                                     boolean isDistributed = c.isDistributed();
-                                    int futureCount = c.getFutureShowtimeCount();
-                                    int soldCount = c.getSoldTicketCount();
                                     String cCity = c.getCity() != null ? c.getCity() : "";
-                                    boolean canToggle = (isActive || isSuspended) && !isMovieLocked;
                                 %>
-                                <tr class="cf-centre-row <%= isInactive ? "is-disabled" : "" %>"
+                                <tr class="cf-centre-row"
                                     data-id="<%= c.getCentreId() %>"
-                                    data-active="<%= (isActive || isSuspended) ? "1" : "0" %>"
+                                    data-active="1"
                                     data-name="<%= c.getCentreName().toLowerCase() %>"
                                     data-centre-name="<%= c.getCentreName() %>"
                                     data-city="<%= cCity.toLowerCase() %>"
                                     data-city-raw="<%= cCity %>"
                                     data-status="<%= rawStatus %>"
-                                    data-future="<%= futureCount %>"
-                                    data-sold="<%= soldCount %>"
                                     data-originally-distributed="<%= isDistributed ? "1" : "0" %>">
                                     <td>
                                         <div class="cf-centre-name-cell">
-                                            <span><%= c.getCentreName() %></span>
-                                            <% if (futureCount > 0 || soldCount > 0) { %>
-                                                <span class="cf-stat-tag" title="Suất chiếu sắp tới / vé đã bán">
-                                                    <%= futureCount %> suất · <%= soldCount %> vé
-                                                </span>
-                                            <% } %>
+                                             <span><%= c.getCentreName() %></span>
                                         </div>
                                     </td>
                                     <td style="color: #94a3b8;">
@@ -330,21 +304,18 @@
                                     <td>
                                         <% if (isActive) { %>
                                             <span class="cf-badge-active">Hoạt động</span>
-                                        <% } else if (isSuspended) { %>
-                                            <span class="cf-badge-maintenance" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3);">Tạm ngưng</span>
                                         <% } else { %>
-                                            <span class="cf-badge-maintenance" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3);">Ngừng HĐ</span>
+                                            <span class="cf-badge-maintenance" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3);">Tạm ngưng</span>
                                         <% } %>
                                     </td>
                                     <td style="text-align: center;">
                                         <div class="cf-switch-cell-wrap">
-                                            <label class="cf-checkbox-custom" title="<%= isMovieLocked ? "Phim đã kết thúc/lưu trữ, không thể phân phối" : (isInactive ? "Rạp ngừng hoạt động" : "Tích chọn để phân phối") %>">
+                                            <label class="cf-checkbox-custom" title="Tích chọn để phân phối">
                                                 <input type="checkbox"
                                                        name="centreIds"
                                                        value="<%= c.getCentreId() %>"
                                                        class="cf-centre-checkbox"
-                                                       <%= (canToggle && isDistributed) ? "checked" : "" %>
-                                                       <%= !canToggle ? "disabled" : "" %>>
+                                                       <%= isDistributed ? "checked" : "" %>>
                                             </label>
                                         </div>
                                     </td>
@@ -359,7 +330,7 @@
                         <button type="button" class="cf-btn-cancel" onclick="location.reload();">
                             Hủy thay đổi
                         </button>
-                        <button type="submit" class="cf-btn-save" <%= isMovieLocked ? "disabled style='opacity: 0.4; cursor: not-allowed;'" : "" %>>
+                        <button type="submit" class="cf-btn-save">
                             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
                                 <polyline points="17 21 17 13 7 13 7 21"></polyline>

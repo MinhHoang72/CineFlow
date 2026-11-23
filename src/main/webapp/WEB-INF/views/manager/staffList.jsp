@@ -3,20 +3,6 @@
 <%@ page import="model.entity.User,model.entity.Centre,java.util.List" %>
 
 <%
-    String authRole = (String) session.getAttribute("role");
-
-    if (authRole == null && session.getAttribute("user") instanceof User) {
-        authRole = ((User) session.getAttribute("user")).getRole();
-    }
-
-    if (!"MANAGER".equalsIgnoreCase(authRole)) {
-        response.sendError(
-            HttpServletResponse.SC_FORBIDDEN,
-            "Chỉ Manager mới được truy cập trang quản lý nhân sự."
-        );
-        return;
-    }
-
     if (request.getAttribute("staff") == null) {
         response.sendRedirect(request.getContextPath() + "/staffList");
         return;
@@ -131,12 +117,11 @@
                 </div>
 
                 <% if (selectedCentreId != null) { %>
-                    <button type="button"
-                            class="cf-btn cf-btn-primary"
-                            onclick="openCreateStaffModal()">
+                    <a href="${pageContext.request.contextPath}/staffList?action=create"
+                       class="cf-btn cf-btn-primary">
                         <span style="font-weight:700;font-size:15px;margin-right:4px;">+</span>
                         Thêm nhân viên mới
-                    </button>
+                    </a>
                 <% } %>
 
             </div>
@@ -447,18 +432,10 @@
 
                                             <div class="staff-actions">
 
-                                                <button type="button"
-                                                        class="staff-edit-btn"
-                                                        onclick="openEditStaffModal(
-                                                            <%= item.getUserId() %>,
-                                                            '<%= employeeCode.replace("'", "\\'") %>',
-                                                            '<%= staffName.replace("'", "\\'") %>',
-                                                            '<%= staffPhone.replace("'", "\\'") %>',
-                                                            '<%= staffEmail.replace("'", "\\'") %>',
-                                                            '<%= staffRole.replace("'", "\\'") %>'
-                                                        )">
+                                                <a href="${pageContext.request.contextPath}/staffList?action=edit&userId=<%= item.getUserId() %>"
+                                                   class="staff-edit-btn">
                                                     Sửa
-                                                </button>
+                                                </a>
 
                                                 <div class="status-select-wrap">
 
@@ -518,202 +495,6 @@
             <% } %>
 
         </main>
-    </div>
-</div>
-
-<!-- MODAL TẠO NHÂN VIÊN -->
-<div class="cf-modal-backdrop" id="createStaffModal">
-
-    <div class="cf-modal" role="dialog" aria-modal="true">
-
-        <div class="cf-modal-header">
-            <h3>Thêm nhân viên mới tại <%= currentCentreName %></h3>
-
-            <button type="button"
-                    class="cf-modal-close"
-                    onclick="closeCreateStaffModal()">
-                &times;
-            </button>
-        </div>
-
-        <form method="post"
-              action="${pageContext.request.contextPath}/staffList">
-
-            <input type="hidden" name="action" value="create">
-
-            <div class="cf-modal-body">
-
-                <p style="font-size:13px;color:#94a3b8;margin-bottom:12px;">
-                    Nhân viên mới sẽ trực thuộc trung tâm:
-                    <strong style="color:#f8fafc;">
-                        <%= currentCentreName %>
-                    </strong>
-                </p>
-
-                <div class="cf-form-group">
-                    <label for="createStaffRole">Vị trí công việc *</label>
-
-                    <select id="createStaffRole" name="role" required>
-                        <option value="TICKET_SALES_STAFF">
-                            🎫 Nhân viên bán vé & F&B
-                        </option>
-                    </select>
-                </div>
-
-                <div class="cf-form-group">
-                    <label for="createStaffFullName">Họ và tên *</label>
-
-                    <input type="text"
-                           id="createStaffFullName"
-                           name="fullName"
-                           placeholder="Ví dụ: Nguyễn Văn B"
-                           required>
-                </div>
-
-                <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;">
-
-                    <div class="cf-form-group">
-                        <label for="createStaffAccount">Tên đăng nhập *</label>
-
-                        <input type="text"
-                               id="createStaffAccount"
-                               name="account"
-                               maxlength="50"
-                               required>
-                    </div>
-
-                    <div class="cf-form-group">
-                        <label for="createStaffPhone">Số điện thoại</label>
-
-                        <input type="tel"
-                               id="createStaffPhone"
-                               name="phone">
-                    </div>
-
-                </div>
-
-                <div class="cf-form-group">
-                    <label for="createStaffEmail">Email *</label>
-
-                    <input type="email"
-                           id="createStaffEmail"
-                           name="email"
-                           required>
-                </div>
-
-                <div class="cf-form-group">
-                    <label for="createStaffPassword">Mật khẩu ban đầu *</label>
-
-                    <input type="text"
-                           id="createStaffPassword"
-                           name="password"
-                           value="Staff@123"
-                           required>
-
-                    <small style="color:#94a3b8;font-size:12px;">
-                        Mật khẩu tối thiểu 8 ký tự, có kí tự viết hoa, có kí tự đặc biệt.
-                    </small>
-                </div>
-
-            </div>
-
-            <div class="cf-modal-footer">
-                <button type="button"
-                        class="cf-btn cf-btn-secondary"
-                        onclick="closeCreateStaffModal()">
-                    Hủy
-                </button>
-
-                <button type="submit" class="cf-btn cf-btn-primary">
-                    Tạo tài khoản
-                </button>
-            </div>
-
-        </form>
-    </div>
-</div>
-
-<!-- MODAL SỬA NHÂN VIÊN -->
-<div class="cf-modal-backdrop" id="editStaffModal">
-
-    <div class="cf-modal" role="dialog" aria-modal="true">
-
-        <div class="cf-modal-header">
-            <h3>Chỉnh sửa thông tin nhân viên</h3>
-
-            <button type="button"
-                    class="cf-modal-close"
-                    onclick="closeEditStaffModal()">
-                &times;
-            </button>
-        </div>
-
-        <form method="post"
-              action="${pageContext.request.contextPath}/staffList">
-
-            <input type="hidden" name="action" value="update">
-            <input type="hidden" name="userId" id="editStaffUserId">
-
-            <div class="cf-modal-body">
-
-                <div class="cf-form-group">
-                    <label>Mã nhân viên</label>
-                    <code class="cf-badge cf-badge-info" id="editStaffCode">
-                        NV00000
-                    </code>
-                </div>
-
-                <div class="cf-form-group">
-                    <label for="editStaffRole">Vị trí công việc *</label>
-
-                    <select name="role" id="editStaffRole" required>
-                        <option value="TICKET_SALES_STAFF">🎫 Nhân viên bán vé</option>
-                    </select>
-                </div>
-
-                <div class="cf-form-group">
-                    <label for="editStaffFullName">Họ và tên *</label>
-
-                    <input type="text"
-                           name="fullName"
-                           id="editStaffFullName"
-                           required>
-                </div>
-
-                <div class="cf-form-group">
-                    <label for="editStaffPhone">Số điện thoại</label>
-
-                    <input type="tel"
-                           name="phone"
-                           id="editStaffPhone">
-                </div>
-
-                <div class="cf-form-group">
-                    <label for="editStaffEmail">Email *</label>
-
-                    <input type="email"
-                           name="email"
-                           id="editStaffEmail"
-                           required>
-                </div>
-
-            </div>
-
-            <div class="cf-modal-footer">
-
-                <button type="button"
-                        class="cf-btn cf-btn-secondary"
-                        onclick="closeEditStaffModal()">
-                    Hủy
-                </button>
-
-                <button type="submit" class="cf-btn cf-btn-primary">
-                    Lưu thay đổi
-                </button>
-
-            </div>
-
-        </form>
     </div>
 </div>
 

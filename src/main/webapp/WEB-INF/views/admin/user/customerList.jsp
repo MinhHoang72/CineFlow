@@ -10,17 +10,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ page import="model.entity.User, java.util.List" %>
 <%
-    // 1. Bảo vệ trang: chỉ Quản trị viên (ADMIN) mới được truy cập
-    String authRole = (String) session.getAttribute("role");
-    if (authRole == null && session.getAttribute("user") instanceof model.entity.User) {
-        authRole = ((model.entity.User) session.getAttribute("user")).getRole();
-    }
-    if (!"ADMIN".equalsIgnoreCase(authRole)) {
-        response.sendError(HttpServletResponse.SC_FORBIDDEN, "Chỉ Quản trị viên (ADMIN) mới có quyền truy cập trang này.");
-        return;
-    }
-
-    // 2. Thiết lập Sidebar/Topbar & nhận dữ liệu từ CustomerManagementServlet
+    // Thiết lập Sidebar/Topbar & nhận dữ liệu từ CustomerManagementServlet
     request.setAttribute("activeNav", "customers");
     request.setAttribute("pageTitle", "Tài khoản Khách hàng");
 
@@ -28,8 +18,6 @@
     Integer totalCustomers = (Integer) request.getAttribute("totalCustomers");
     Integer activeCustomers = (Integer) request.getAttribute("activeCustomers");
     Integer lockedCustomers = (Integer) request.getAttribute("lockedCustomers");
-    String currentSearch = (String) request.getAttribute("currentSearch");
-    String currentStatus = (String) request.getAttribute("currentStatus");
 
     String successParam = request.getParameter("success");
     String errorParam = request.getParameter("error");
@@ -175,16 +163,15 @@
                                     <input type="text"
                                            id="customerSearchInput"
                                            placeholder="Tìm tên, username, email, SĐT..."
-                                           value="<%= esc(currentSearch) %>"
                                            autocomplete="off"
                                            spellcheck="false">
                                     <button type="button" id="customerSearchClearBtn" class="cf-search-clear-btn" style="display: none;" title="Xóa tìm kiếm">✕</button>
                                 </div>
 
                                 <select id="statusFilterSelect" class="customer-status-select cf-select-sm" title="Lọc theo trạng thái tài khoản">
-                                    <option value="ALL" <%= "ALL".equalsIgnoreCase(currentStatus) ? "selected" : "" %>>Tất cả trạng thái</option>
-                                    <option value="ACTIVE" <%= "ACTIVE".equalsIgnoreCase(currentStatus) ? "selected" : "" %>>Đang hoạt động</option>
-                                    <option value="LOCKED" <%= "LOCKED".equalsIgnoreCase(currentStatus) ? "selected" : "" %>>Bị tạm khóa</option>
+                                    <option value="ALL" selected>Tất cả trạng thái</option>
+                                    <option value="ACTIVE">Đang hoạt động</option>
+                                    <option value="LOCKED">Bị tạm khóa</option>
                                 </select>
 
                                 <div class="cf-page-size-wrap">
@@ -331,27 +318,8 @@
                                         <td>
                                             <div>
                                                 <form method="post" action="${pageContext.request.contextPath}/admin/customers">
-                                                    <%--Gửi hành động toggleStatus để backend biết yêu cầu là thay đổi trạng thái tài khoản.--%>
-                                                    <input type="hidden"
-                                                           name="action"
-                                                           value="toggleStatus">
-                                                    <%--Gửi ID của khách hàng cần thay đổi trạng thái.--%>
-
-                                                    <input type="hidden"
-                                                           name="userId"
-                                                           value="<%= c.getUserId() %>">
-                                                    <%--Xác định trạng thái mới--%>
-                                                    <input type="hidden"
-                                                           name="newStatus"
-                                                           value="<%= isActive ? "LOCKED" : "ACTIVE" %>">
-                                                    <%--Giúp backend biết trạng thái lọc và từ khóa tìm kiếm hiện tại khi xử lý yêu cầu.--%>
-                                                    <input type="hidden"
-                                                           name="status"
-                                                           value="<%= esc(currentStatus) %>">
-
-                                                    <input type="hidden"
-                                                           name="search"
-                                                           value="<%= esc(currentSearch) %>">
+                                                    <input type="hidden" name="userId" value="<%= c.getUserId() %>">
+                                                    <input type="hidden" name="newStatus" value="<%= isActive ? "LOCKED" : "ACTIVE" %>">
 
                                                     <% if (isActive) { %>
                                                     <button type="submit" class="cf-btn cf-btn-sm btn-modal-lock-confirm" title="Khóa tài khoản này">

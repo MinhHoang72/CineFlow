@@ -46,7 +46,7 @@ public class MovieDAO {
      * @param status trạng thái phim (NOW_SHOWING, COMING_SOON, ENDED, ARCHIVED)
      * @return danh sách các phim thỏa mãn
      */
-    public List<Movie> getMoviesByStatus(String status) {
+    private List<Movie> getMoviesByStatus(String status) {
         String sql = "SELECT MovieID, Title, Description, Duration, Genre, Director, Cast, Language, "
                 + "ReleaseDate, EndDate, PosterURL, TrailerURL, AgeRating, Status, CreatedAt, UpdatedAt FROM Movies WHERE Status = ? "
                 + "ORDER BY MovieID DESC, ReleaseDate DESC";
@@ -101,19 +101,12 @@ public class MovieDAO {
     }
 
     /**
-     * Lấy toàn bộ danh sách phim để phục vụ trang quản trị,
-     * bao gồm số lượng trung tâm đang phân phối phim và tổng số trung tâm hoạt động.
+     * Lấy toàn bộ danh sách phim trong hệ thống, sắp xếp phim mới nhất lên đầu.
      *
-     * @return danh sách tất cả các phim sắp xếp mới nhất lên đầu
+     * @return danh sách tất cả các phim
      */
     public List<Movie> getAllMovies() {
-        String sql = "SELECT m.MovieID, m.Title, m.Description, m.Duration, m.Genre, m.Director, m.Cast, m.Language, "
-                + "m.ReleaseDate, m.EndDate, m.PosterURL, m.TrailerURL, m.AgeRating, m.Status, m.CreatedAt, m.UpdatedAt, "
-                + "(SELECT COUNT(*) FROM Centres WHERE UPPER(Status) IN ('ACTIVE', 'SUSPENDED')) AS TotalCentres, "
-                + "COALESCE((SELECT COUNT(DISTINCT cm.CentreID) FROM CentreMovies cm "
-                + "          JOIN Centres c ON c.CentreID = cm.CentreID "
-                + "          WHERE cm.MovieID = m.MovieID AND cm.IsActive = 1 AND UPPER(c.Status) IN ('ACTIVE', 'SUSPENDED')), 0) AS DistributedCentres "
-                + "FROM Movies m ORDER BY m.MovieID DESC";
+        String sql = "SELECT * FROM Movies ORDER BY MovieID DESC";
         List<Movie> movies = new ArrayList<>();
         try (Connection connection = DBContext.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql);
@@ -207,11 +200,8 @@ public class MovieDAO {
             return false;
         }
         String st = status.trim().toUpperCase();
-        if ("ENDED".equals(st)) {
-            return endMovie(movieId);
-        }
-        if ("ARCHIVED".equals(st)) {
-            return archiveMovie(movieId);
+        if ("ENDED".equals(st) || "ARCHIVED".equals(st)) {
+            return closeMovie(movieId, st);
         }
         if ("COMING_SOON".equals(st)) {
             Movie curr = getMovieById(movieId);
@@ -238,20 +228,6 @@ public class MovieDAO {
             exception.printStackTrace();
             return false;
         }
-    }
-
-    /**
-     * Kết thúc chiếu phim ngay thời điểm hiện tại (ENDED).
-     */
-    public boolean endMovie(int movieId) {
-        return closeMovie(movieId, "ENDED");
-    }
-
-    /**
-     * Lưu trữ (lưu kho) phim (ARCHIVED).
-     */
-    public boolean archiveMovie(int movieId) {
-        return closeMovie(movieId, "ARCHIVED");
     }
 
     /**
@@ -356,27 +332,47 @@ public class MovieDAO {
     }
 
     /**
-     * Kiểm tra xem phim có suất chiếu nào chưa bắt đầu (sắp chiếu) hay không.
-     * Được sử dụng để hiển thị cảnh báo cho Admin khi muốn kết thúc hoặc lưu trữ phim trước thời hạn.
+     * Lấy thống kê số suất chiếu tương lai và số vé đã bán của phim.
      *
      * @param movieId mã định danh phim
-     * @return true nếu phim còn ít nhất 1 suất chiếu SCHEDULED trong tương lai; ngược lại false
+     * @return mảng int[] với [0] = số suất chiếu tương lai, [1] = số vé đã bán
      */
-    public boolean hasUpcomingShowtimes(int movieId) {
+    public int[] getUpcomingStats(int movieId) {
         if (movieId <= 0) {
-            return false;
+            return new int[]{0, 0};
         }
-        String sql = "SELECT TOP 1 1 FROM Showtimes WHERE MovieID = ? AND UPPER(Status) = 'SCHEDULED' AND StartTime > SYSDATETIME()";
-        try (Connection connection = DBContext.getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
+
+        String sql = """
+            SELECT
+                (SELECT COUNT(*)
+                 FROM Showtimes
+                 WHERE MovieID = ?
+                   AND Status = 'SCHEDULED'
+                   AND StartTime > SYSDATETIME()) AS UpcomingShowtimes,
+
+                (SELECT COUNT(t.TicketID)
+                 FROM Tickets t
+                 JOIN BookingSeats bs ON t.BookingSeatID = bs.BookingSeatID
+                 JOIN Showtimes s ON bs.ShowtimeID = s.ShowtimeID
+                 WHERE s.MovieID = ?
+                   AND s.Status = 'SCHEDULED'
+                   AND s.StartTime > SYSDATETIME()
+                   AND t.TicketStatus <> 'CANCELLED') AS SoldTickets
+            """;
+
+        try (Connection con = DBContext.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setInt(1, movieId);
+            ps.setInt(2, movieId);
             try (ResultSet rs = ps.executeQuery()) {
-                return rs.next();
+                if (rs.next()) {
+                    return new int[]{rs.getInt(1), rs.getInt(2)};
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();
-            return false;
         }
+        return new int[]{0, 0};
     }
 
     /**
@@ -459,40 +455,22 @@ public class MovieDAO {
     // =========================================================================
 
     /**
-     * Lấy danh sách các trung tâm kèm trạng thái đã được phân phối một bộ phim cụ thể hay chưa,
-     * đồng thời đếm số lượng suất chiếu sắp tới của phim tại từng trung tâm.
+     * Lấy danh sách các trung tâm kèm trạng thái đã được phân phối một bộ phim cụ thể hay chưa.
      *
      * @param movieId mã định danh phim
-     * @return danh sách trung tâm kèm cờ distributed và số suất chiếu tương lai
+     * @return danh sách trung tâm kèm cờ isDistributed (true nếu rạp được quyền chiếu phim)
      */
     public List<Centre> getDistributionCentres(int movieId) {
         String sql = "SELECT b.CentreID, b.CentreName, b.Address, b.City, b.Phone, b.Status, "
-                + "CAST(CASE WHEN UPPER(m.Status) NOT IN ('ARCHIVED', 'ENDED') AND (UPPER(bm.Status) IN ('ACTIVE', 'SUSPENDED') OR (bm.Status IS NULL AND bm.IsActive = 1)) THEN 1 ELSE 0 END AS bit) AS [Distributed], "
-                + "COALESCE(CASE WHEN UPPER(m.Status) IN ('ARCHIVED', 'ENDED') THEN 'CANCELLED' ELSE bm.Status END, CASE WHEN bm.IsActive = 1 AND UPPER(m.Status) NOT IN ('ARCHIVED', 'ENDED') THEN 'ACTIVE' ELSE 'CANCELLED' END) AS [DistributionStatus], "
-                + "COALESCE((SELECT COUNT(*) FROM Showtimes s JOIN Halls h ON s.HallID = h.HallID "
-                + "          WHERE s.MovieID = ? AND h.CentreID = b.CentreID AND s.StartTime > GETDATE() "
-                + "          AND UPPER(s.Status) = 'SCHEDULED' "
-                + "          AND UPPER(COALESCE(bm.Status, CASE WHEN bm.IsActive = 1 THEN 'ACTIVE' ELSE 'CANCELLED' END)) IN ('ACTIVE', 'SUSPENDED') "
-                + "          AND (UPPER(COALESCE(bm.Status, CASE WHEN bm.IsActive = 1 THEN 'ACTIVE' ELSE 'CANCELLED' END)) = 'SUSPENDED' OR bm.IsActive = 1)), 0) AS [FutureShowtimeCount], "
-                + "COALESCE((SELECT COUNT(t.TicketID) FROM Tickets t "
-                + "          JOIN BookingSeats bs ON t.BookingSeatID = bs.BookingSeatID "
-                + "          JOIN Bookings bk ON bs.BookingID = bk.BookingID "
-                + "          JOIN Showtimes s ON bk.ShowtimeID = s.ShowtimeID "
-                + "          JOIN Halls h ON s.HallID = h.HallID "
-                + "          WHERE s.MovieID = ? AND h.CentreID = b.CentreID AND s.StartTime > GETDATE() "
-                + "          AND UPPER(s.Status) = 'SCHEDULED' AND UPPER(t.TicketStatus) <> 'CANCELLED' "
-                + "          AND UPPER(COALESCE(bm.Status, CASE WHEN bm.IsActive = 1 THEN 'ACTIVE' ELSE 'CANCELLED' END)) IN ('ACTIVE', 'SUSPENDED') "
-                + "          AND (UPPER(COALESCE(bm.Status, CASE WHEN bm.IsActive = 1 THEN 'ACTIVE' ELSE 'CANCELLED' END)) = 'SUSPENDED' OR bm.IsActive = 1)), 0) AS [SoldTicketCount] "
-                + "FROM Centres b LEFT JOIN CentreMovies bm ON bm.CentreID = b.CentreID AND bm.MovieID = ? "
-                + "LEFT JOIN Movies m ON m.MovieID = ? "
+                + "CAST(CASE WHEN UPPER(bm.Status) IN ('ACTIVE', 'SUSPENDED') OR (bm.Status IS NULL AND bm.IsActive = 1) "
+                + "          THEN 1 ELSE 0 END AS bit) AS [Distributed] "
+                + "FROM Centres b "
+                + "LEFT JOIN CentreMovies bm ON bm.CentreID = b.CentreID AND bm.MovieID = ? "
                 + "ORDER BY b.City, b.CentreName";
         List<Centre> centres = new ArrayList<>();
         try (Connection connection = DBContext.getConnection();
              PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, movieId);
-            ps.setInt(2, movieId);
-            ps.setInt(3, movieId);
-            ps.setInt(4, movieId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Centre centre = new Centre();
@@ -503,9 +481,6 @@ public class MovieDAO {
                     centre.setPhone(rs.getString("Phone"));
                     centre.setStatus(rs.getString("Status"));
                     centre.setDistributed(rs.getBoolean("Distributed"));
-                    centre.setDistributionStatus(rs.getString("DistributionStatus"));
-                    centre.setFutureShowtimeCount(rs.getInt("FutureShowtimeCount"));
-                    centre.setSoldTicketCount(rs.getInt("SoldTicketCount"));
                     centres.add(centre);
                 }
             }
@@ -516,53 +491,42 @@ public class MovieDAO {
     }
 
     /**
-     * Cập nhật danh sách trung tâm được phân phối phim trong một Transaction an toàn.
-     * Tích chọn rạp: Cấp quyền phân phối (Status = 'ACTIVE', IsActive = 1).
-     * Bỏ tích rạp: Hủy quyền phân phối (Status = 'CANCELLED', IsActive = 0).
-     * Thao tác bỏ tích thuần túy chuyển trạng thái phân phối, không cần cảnh báo hay hủy suất chiếu.
+     * Cập nhật danh sách cụm rạp được phân phối phim.
      */
     public boolean saveMovieDistribution(int movieId, Set<Integer> selectedCentreIDs) {
-        String disableAllSql = "UPDATE CentreMovies SET Status = 'CANCELLED', IsActive = 0, UpdatedAt = GETDATE() "
-                + "WHERE MovieID = ? AND Status IN ('ACTIVE', 'SUSPENDED')";
-        String mergeSql = "MERGE CentreMovies AS target "
-                + "USING (SELECT ? AS CentreID, ? AS MovieID) AS source "
-                + "ON target.CentreID = source.CentreID AND target.MovieID = source.MovieID "
+        String disableSql = "UPDATE CentreMovies SET Status = 'CANCELLED', IsActive = 0, UpdatedAt = GETDATE() WHERE MovieID = ?";
+        String mergeSql = "MERGE CentreMovies t USING (SELECT ? AS c, ? AS m) s ON t.CentreID = s.c AND t.MovieID = s.m "
                 + "WHEN MATCHED THEN UPDATE SET Status = 'ACTIVE', IsActive = 1, UpdatedAt = GETDATE() "
-                + "WHEN NOT MATCHED THEN INSERT (CentreID, MovieID, Status, IsActive, CreatedAt) VALUES (source.CentreID, source.MovieID, 'ACTIVE', 1, GETDATE());";
+                + "WHEN NOT MATCHED THEN INSERT (CentreID, MovieID, Status, IsActive, CreatedAt) VALUES (s.c, s.m, 'ACTIVE', 1, GETDATE());";
 
-        try (Connection connection = DBContext.getConnection()) {
-            connection.setAutoCommit(false);
-            try {
-                // Nhánh bỏ tích: Cập nhật tất cả các bản ghi phân phối hiện tại của phim sang CANCELLED
-                try (PreparedStatement disable = connection.prepareStatement(disableAllSql)) {
-                    disable.setInt(1, movieId);
-                    disable.executeUpdate();
-                }
+        try (Connection conn = DBContext.getConnection()) {
+            conn.setAutoCommit(false);
 
-                // Nhánh tích chọn: Kích hoạt quyền phân phối ACTIVE cho các rạp được chọn
-                if (selectedCentreIDs != null && !selectedCentreIDs.isEmpty()) {
-                    try (PreparedStatement merge = connection.prepareStatement(mergeSql)) {
-                        for (Integer centreId : selectedCentreIDs) {
-                            merge.setInt(1, centreId);
-                            merge.setInt(2, movieId);
-                            merge.addBatch();
-                        }
-                        merge.executeBatch();
-                    }
-                }
-
-                connection.commit();
-                return true;
-            } catch (Exception exception) {
-                connection.rollback();
-                throw exception;
+            // 1. Tắt phân phối tất cả các rạp cũ của phim
+            try (PreparedStatement ps = conn.prepareStatement(disableSql)) {
+                ps.setInt(1, movieId);
+                ps.executeUpdate();
             }
-        } catch (Exception exception) {
-            exception.printStackTrace();
+
+            // 2. Kích hoạt phân phối cho các rạp được tích chọn
+            if (selectedCentreIDs != null && !selectedCentreIDs.isEmpty()) {
+                try (PreparedStatement ps = conn.prepareStatement(mergeSql)) {
+                    for (int centreId : selectedCentreIDs) {
+                        ps.setInt(1, centreId);
+                        ps.setInt(2, movieId);
+                        ps.addBatch();
+                    }
+                    ps.executeBatch();
+                }
+            }
+
+            conn.commit();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
             return false;
         }
     }
-
     // =========================================================================
     // HELPER METHODS
     // =========================================================================

@@ -68,53 +68,66 @@ public class MovieService {
     }
 
     /**
-     * Kiểm tra xem phim có suất chiếu nào chưa bắt đầu trong tương lai hay không.
+     * Lấy thống kê số suất chiếu sắp tới và số vé đã bán của phim.
      *
      * @param movieId mã định danh phim
-     * @return true nếu còn suất chiếu tương lai
+     * @return mảng int[] với [0] = số suất chiếu, [1] = số vé đã bán
      */
-    public boolean hasUpcomingShowtimes(int movieId) {
+    public int[] getUpcomingStats(int movieId) {
         if (movieId <= 0) {
-            return false;
+            return new int[]{0, 0};
         }
-        return movieDAO.hasUpcomingShowtimes(movieId);
+        return movieDAO.getUpcomingStats(movieId);
     }
 
     /**
-     * Tự động xác định phim được chọn cho màn hình phân phối/chi tiết:
-     * - Nếu có movieId hợp lệ từ client -> tìm và trả về phim đó.
-     * - Nếu không truyền movieId -> ưu tiên chọn phim đầu tiên đang chiếu (NOW_SHOWING) hoặc sắp chiếu (COMING_SOON).
+     * Lấy danh sách phim có thể phân phối tới các rạp.
+     * Logic nghiệp vụ:
+     * 1. Bắt đầu bằng việc lấy toàn bộ danh sách phim từ DAO (getAllMovies).
+     * 2. Lọc chỉ giữ lại các phim đang chiếu (NOW_SHOWING) hoặc sắp khởi chiếu (COMING_SOON).
      *
-     * @param allMovies danh sách tất cả phim hiện có
+     * @return danh sách các bộ phim thỏa mãn điều kiện phân phối
+     */
+    public List<Movie> getDistributableMovies() {
+        List<Movie> allMovies = getAllMovies();
+        List<Movie> distributable = new java.util.ArrayList<>();
+        if (allMovies != null) {
+            for (Movie m : allMovies) {
+                if ("NOW_SHOWING".equalsIgnoreCase(m.getStatus()) || "COMING_SOON".equalsIgnoreCase(m.getStatus())) {
+                    distributable.add(m);
+                }
+            }
+        }
+        return distributable;
+    }
+
+    /**
+     * Tự động xác định phim được chọn cho màn hình phân phối:
+     * - Nếu có movieId hợp lệ từ request -> tìm và trả về phim đó trong danh sách.
+     * - Nếu không truyền movieId -> lấy phim đầu tiên trong danh sách làm mặc định.
+     *
+     * @param movies danh sách phim phân phối
      * @param movieIdParam chuỗi tham số movieId từ request
      * @return đối tượng Movie được chọn, hoặc null nếu danh sách rỗng
      */
-    public Movie resolveSelectedMovie(List<Movie> allMovies, String movieIdParam) {
+    public Movie resolveSelectedMovie(List<Movie> movies, String movieIdParam) {
+        if (movies == null || movies.isEmpty()) {
+            return null;
+        }
         if (movieIdParam != null && !movieIdParam.isBlank()) {
             try {
                 int id = Integer.parseInt(movieIdParam.trim());
-                if (allMovies != null) {
-                    for (Movie m : allMovies) {
-                        if (m.getMovieId() == id) {
-                            return m;
-                        }
+                for (Movie m : movies) {
+                    if (m.getMovieId() == id) {
+                        return m;
                     }
                 }
-                return getMovieById(id);
             } catch (NumberFormatException ignored) {
             }
         }
-
-        if (allMovies != null && !allMovies.isEmpty()) {
-            for (Movie m : allMovies) {
-                if ("NOW_SHOWING".equalsIgnoreCase(m.getStatus()) || "COMING_SOON".equalsIgnoreCase(m.getStatus())) {
-                    return m;
-                }
-            }
-                return allMovies.get(0);
-        }
-        return null;
+        return movies.get(0);
     }
+
 
     /**
      * Lưu thông tin phim: Tự động phân nhánh Tạo mới (INSERT) hoặc Cập nhật (UPDATE).
@@ -293,23 +306,15 @@ public class MovieService {
         // Kiểm tra quy tắc chuyển trạng thái
         checkTransition(current, targetStatus, current.getReleaseDate(), current.getEndDate());
 
-        if ("ENDED".equals(targetStatus)) {
-            return movieDAO.endMovie(movieId);
-        } else if ("ARCHIVED".equals(targetStatus)) {
-            return movieDAO.archiveMovie(movieId);
-        } else {
-            return movieDAO.updateMovieStatus(movieId, targetStatus);
-        }
+        return movieDAO.updateMovieStatus(movieId, targetStatus);
     }
+
 
     /**
      * Lấy danh sách toàn bộ cụm rạp và trạng thái đã phân phối (Distributed) thực tế của một bộ phim từ CSDL.
-     * Quy tắc nghiệp vụ chuẩn:
-     * - Khi tạo phim mới hoặc chưa có cấu hình: trả về đúng trạng thái thực tế trong database (mặc định chưa phân phối = false).
-     * - Tuyệt đối không tự động đánh dấu tất cả cụm rạp là đã phân phối.
      *
      * @param movieId mã định danh phim
-     * @return danh sách các cụm rạp kèm số lượng suất chiếu trong tương lai
+     * @return danh sách các cụm rạp kèm cờ isDistributed
      */
     public List<Centre> getDistributionCentres(int movieId) {
         if (movieId <= 0) {
@@ -319,66 +324,34 @@ public class MovieService {
     }
 
     /**
-     * Kết quả xử lý nghiệp vụ phân phối phim tới các cụm rạp.
-     */
-    public enum DistributionResult {
-        SUCCESS,
-        MOVIE_NOT_FOUND,
-        MOVIE_ENDED_OR_ARCHIVED,
-        INVALID_CENTRES,
-        FAILED
-    }
-
-    /**
-     * Cập nhật danh sách các cụm rạp được phép chiếu bộ phim này trong một Transaction CSDL an toàn.
-     * Toàn bộ quy tắc nghiệp vụ được thẩm định tập trung tại Service:
-     * - Phim không tồn tại -> MOVIE_NOT_FOUND
-     * - Phim ở trạng thái ARCHIVED hoặc ENDED không được phân phối -> MOVIE_ENDED_OR_ARCHIVED
-     * - Lưu thành công -> SUCCESS
-     * - Lỗi cơ sở dữ liệu -> FAILED
+     * Cập nhật danh sách các cụm rạp được phép chiếu bộ phim này.
+     * Logic nghiệp vụ:
+     * - Chỉ phim đang chiếu (NOW_SHOWING) hoặc sắp chiếu (COMING_SOON) mới được phân phối.
+     * - Phim không tồn tại, đã kết thúc (ENDED) hoặc lưu trữ (ARCHIVED) sẽ bị từ chối.
      *
      * @param movieId mã định danh phim
      * @param selectedCentreIds tập hợp mã ID các cụm rạp được chọn
-     * @return DistributionResult chứa mã kết quả nghiệp vụ
+     * @return true nếu lưu thành công, ngược lại false
      */
-    public DistributionResult saveDistribution(int movieId, Set<Integer> selectedCentreIds) {
+    public boolean saveDistribution(int movieId, Set<Integer> selectedCentreIds) {
         if (movieId <= 0) {
-            return DistributionResult.MOVIE_NOT_FOUND;
+            return false;
         }
-        Movie targetMovie = movieDAO.getMovieById(movieId);
-        if (targetMovie == null) {
-            return DistributionResult.MOVIE_NOT_FOUND;
+        Movie movie = movieDAO.getMovieById(movieId);
+        if (movie == null) {
+            return false;
         }
-        String st = targetMovie.getStatus() != null ? targetMovie.getStatus().toUpperCase() : "";
-        if ("ARCHIVED".equals(st) || "ENDED".equals(st)) {
-            if (selectedCentreIds != null && !selectedCentreIds.isEmpty()) {
-                return DistributionResult.MOVIE_ENDED_OR_ARCHIVED;
-            }
+        String status = movie.getStatus() != null ? movie.getStatus().toUpperCase() : "";
+        if (!"NOW_SHOWING".equals(status) && !"COMING_SOON".equals(status)) {
+            return false;
         }
-        // Admin tự do phân phối phim tới bất kỳ cụm rạp nào có trong hệ thống đúng như giao diện hiển thị
-        if (selectedCentreIds != null && !selectedCentreIds.isEmpty()) {
-            Set<Integer> validCentreIds = new java.util.HashSet<>();
-            for (Centre centre : getDistributionCentres(movieId)) {
-                validCentreIds.add(centre.getCentreId());
-            }
-            for (Integer centreId : selectedCentreIds) {
-                if (centreId == null || !validCentreIds.contains(centreId)) {
-                    return DistributionResult.INVALID_CENTRES;
-                }
-            }
-        }
-        boolean ok = movieDAO.saveMovieDistribution(movieId, selectedCentreIds);
-        return ok ? DistributionResult.SUCCESS : DistributionResult.FAILED;
+        return movieDAO.saveMovieDistribution(movieId, selectedCentreIds);
     }
 
     /**
-     * Cập nhật danh sách các cụm rạp được phép chiếu bộ phim này (hỗ trợ tương thích ngược boolean).
-     *
-     * @param movieId mã định danh phim
-     * @param selectedCentreIds tập hợp mã ID các cụm rạp được chọn
-     * @return true nếu lưu thành công toàn bộ, ngược lại false
+     * Tương thích ngược: Ủy quyền cho saveDistribution.
      */
     public boolean saveMovieDistribution(int movieId, Set<Integer> selectedCentreIds) {
-        return saveDistribution(movieId, selectedCentreIds) == DistributionResult.SUCCESS;
+        return saveDistribution(movieId, selectedCentreIds);
     }
 }

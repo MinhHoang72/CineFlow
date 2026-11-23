@@ -90,7 +90,7 @@
 
                     <!-- THÔNG BÁO ALERT KHI LƯU PHIM THÀNH CÔNG -->
                     <% if ("saved".equals(successParam)) { %>
-                        <div class="cf-alert cf-alert-success" style="margin-bottom: 20px;">✓ Đã lưu thông tin phim thành công vào hệ thống.</div>
+                        <div class="cf-alert cf-alert-success" style="margin-bottom: 20px;">Đã lưu thông tin phim thành công vào hệ thống.</div>
                     <% } %>
 
                     <!-- CÁC THẺ CHỈ SỐ KPI THỐNG KÊ PHIM -->
@@ -145,8 +145,8 @@
                                 <div class="cf-page-size-wrap">
                                     <span>Hiển thị:</span>
                                     <select id="moviePageSizeSelect" class="cf-select-sm">
-                                        <option value="8">8 phim</option>
-                                        <option value="12" selected>12 phim</option>
+                                        <option value="8"selected>8 phim</option>
+                                        <option value="12">12 phim</option>
                                         <option value="24">24 phim</option>
                                         <option value="50">50 phim</option>
                                         <option value="ALL">Tất cả</option>

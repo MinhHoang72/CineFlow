@@ -26,6 +26,8 @@ document.addEventListener('DOMContentLoaded', function () {
     // Đọc dữ liệu ngữ cảnh do movieForm.jsp gắn lên thẻ <form>
     const originalStatus = movieForm ? (movieForm.dataset.originalStatus || '') : '';
     const hasUpcomingShowtimes = movieForm ? (movieForm.dataset.hasUpcomingShowtimes === 'true') : false;
+    const upcomingCount = movieForm ? parseInt(movieForm.dataset.upcomingCount || '0', 10) : 0;
+    const soldCount = movieForm ? parseInt(movieForm.dataset.soldCount || '0', 10) : 0;
 
     /**
      * Lấy ngày hiện tại theo múi giờ cục bộ dưới định dạng chuẩn input[type=date] (yyyy-MM-dd).
@@ -182,9 +184,20 @@ document.addEventListener('DOMContentLoaded', function () {
                 return fail(e, 'Phim có ngày khởi chiếu ở tương lai chưa thể đặt trạng thái "Đang chiếu".', releaseInput);
             }
 
-            // Rẽ nhánh xác nhận khi Admin kết thúc/lưu trữ phim đang còn suất chiếu tương lai (hoặc vé đã bán)
+            // Rẽ nhánh xác nhận khi Admin kết thúc/lưu trữ phim đang còn suất chiếu tương lai
             if ((status === 'ENDED' || status === 'ARCHIVED') && originalStatus !== 'ENDED' && originalStatus !== 'ARCHIVED' && hasUpcomingShowtimes) {
-                if (!window.confirm('Kết thúc phim trước thời hạn sẽ hủy các suất chiếu và các vé đã bán. Bạn có chắc chắn muốn tiếp tục?')) {
+                let confirmMsg = '';
+                if (soldCount > 0) {
+                    confirmMsg = '⛔ CẢNH BÁO NGUY HIỂM:\n\n'
+                               + 'Phim này đang có ' + upcomingCount + ' suất chiếu sắp tới và ĐÃ BÁN ' + soldCount + ' VÉ cho khách hàng!\n\n'
+                               + 'Kết thúc phim trước thời hạn sẽ tự động HỦY toàn bộ suất chiếu và vé đã bán của khách.\n'
+                               + 'Bạn có chắc chắn 100% muốn tiếp tục không?';
+                } else {
+                    confirmMsg = '⚠️ LƯU Ý:\n\n'
+                               + 'Phim này đang có ' + upcomingCount + ' suất chiếu sắp tới (chưa có khách nào đặt vé).\n\n'
+                               + 'Bạn có chắc chắn muốn kết thúc phim không?';
+                }
+                if (!window.confirm(confirmMsg)) {
                     e.preventDefault();
                     return;
                 }
