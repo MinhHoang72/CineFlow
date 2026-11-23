@@ -12,14 +12,11 @@
     }
 
     boolean isSales = currentUser != null && currentUser.isTicketSalesStaff();
-    boolean isGenericStaff = currentUser != null && "STAFF".equalsIgnoreCase(currentUser.getRole());
     boolean isAdminOrManager = "ADMIN".equalsIgnoreCase(authRole) || "MANAGER".equalsIgnoreCase(authRole);
-
-    // Admin/Manager hoặc Staff chung cũng xem được phân hệ bán vé
-    boolean showSales = isSales || isGenericStaff || isAdminOrManager;
+    boolean showSales = isSales || isAdminOrManager;
 
     String fullName = currentUser != null && currentUser.getFullName() != null ? currentUser.getFullName() : "Nhân viên";
-    String employeeCode = currentUser != null ? currentUser.getEmployeeCode() : "NV00000";
+    String employeeCode = currentUser != null ? currentUser.getEmployeeCode() : "BV00000";
     String centreName = currentUser != null && currentUser.getCentreName() != null ? currentUser.getCentreName() : "Toàn hệ thống CineFlow";
     request.setAttribute("pageTitle", "Không gian nhân viên");
     request.setAttribute("activeNav", "dashboard");

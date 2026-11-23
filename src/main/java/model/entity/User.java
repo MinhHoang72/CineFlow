@@ -41,8 +41,8 @@ public class User {
     public static final String ROLE_ADMIN = "ADMIN";
     public static final String ROLE_MANAGER = "MANAGER";
     public static final String ROLE_CUSTOMER = "CUSTOMER";
-    public static final String ROLE_STAFF = "STAFF";
     public static final String ROLE_TICKET_SALES = "TICKET_SALES_STAFF";
+    public static final String ROLE_STAFF = "TICKET_SALES_STAFF";
 
     public String getEmployeeCode() {
         if ("MANAGER".equalsIgnoreCase(role)) {

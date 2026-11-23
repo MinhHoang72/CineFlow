@@ -59,9 +59,8 @@ public final class ValidationUtil {
 
     // Bộ vai trò người dùng trong hệ thống
     private static final Set<String> VALID_ROLES = new HashSet<>(Arrays.asList(
-            "ADMIN", "MANAGER", "STAFF", "CUSTOMER",
-            "TICKET_SALES_STAFF",
-            "TICKET_SALES"
+            "ADMIN", "MANAGER", "CUSTOMER",
+            "TICKET_SALES_STAFF", "TICKET_SALES"
     ));
 
     private ValidationUtil() {

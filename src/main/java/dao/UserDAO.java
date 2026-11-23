@@ -677,7 +677,7 @@ public class UserDAO {
      */
     public boolean createStaff(User user) {
         String staffRole = user.getRole();
-        if (staffRole == null || staffRole.trim().isEmpty()) {
+        if (staffRole == null || staffRole.trim().isEmpty() || "STAFF".equalsIgnoreCase(staffRole)) {
             staffRole = User.ROLE_TICKET_SALES;
         }
         String sql = "INSERT INTO Users (FullName, Account, Email, Password, Phone, Role, Status, CentreID, EmailVerified, CreatedAt) "
@@ -860,6 +860,9 @@ public class UserDAO {
      * Ticket Sales hoặc Ticket Checker).
      */
     public boolean updateStaffBasicInfo(int userId, String fullName, String phone, String email, String role) {
+        if (role == null || role.trim().isEmpty() || "STAFF".equalsIgnoreCase(role)) {
+            role = User.ROLE_TICKET_SALES;
+        }
         String sql = "UPDATE Users SET FullName = ?, Phone = ?, Email = ?, Role = ?, UpdatedAt = GETDATE() WHERE UserID = ?";
         try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, fullName);
