@@ -41,7 +41,12 @@ public final class DbUtil {
     /** Loi vi pham UNIQUE / PRIMARY KEY cua SQL Server (2601, 2627). */
     public static boolean isDuplicateKey(SQLException e) {
         for (Throwable t = e; t != null; t = t.getCause()) {
-            if (t instanceof SQLException sql && (sql.getErrorCode() == 2601 || sql.getErrorCode() == 2627)) return true;
+            if (t instanceof SQLException) {
+                SQLException sql = (SQLException) t;
+                if (sql.getErrorCode() == 2601 || sql.getErrorCode() == 2627) {
+                    return true;
+                }
+            }
         }
         return false;
     }

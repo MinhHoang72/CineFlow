@@ -30,10 +30,15 @@ public class ManagerManagementServlet extends HttpServlet {
     private final UserService userService = new UserService();
 
     private boolean isAdmin(HttpSession session) {
-        if (session == null) return false;
+        if (session == null) {
+            return false;
+        }
         Object role = session.getAttribute("role");
-        if (role == null && session.getAttribute("user") instanceof User u) {
-            role = u.getRole();
+        if (role == null) {
+            Object userObj = session.getAttribute("user");
+            if (userObj instanceof User) {
+                role = ((User) userObj).getRole();
+            }
         }
         return "ADMIN".equalsIgnoreCase((String) role);
     }

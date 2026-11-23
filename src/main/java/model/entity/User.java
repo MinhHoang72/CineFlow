@@ -55,8 +55,9 @@ public class User {
     }
 
     public boolean isStaff() {
-        return "STAFF".equalsIgnoreCase(role)
-                || "TICKET_SALES_STAFF".equalsIgnoreCase(role);
+        return "TICKET_SALES_STAFF".equalsIgnoreCase(role)
+                || "TICKET_SALES".equalsIgnoreCase(role)
+                || "STAFF".equalsIgnoreCase(role);
     }
 
     public boolean isTicketSalesStaff() {
