@@ -69,26 +69,20 @@
                 </a>
             </div>
 
-            <c:if test="${param.success == 'created'}">
-                <div class="cf-alert cf-alert-success">
-                    <span>✓</span> <strong>Thành công!</strong> Đã tạo mới tài khoản Quản lý và phân công cụm rạp thành công.
-                </div>
-            </c:if>
-            <c:if test="${param.success == 'updated'}">
-                <div class="cf-alert cf-alert-success">
-                    <span>✓</span> <strong>Thành công!</strong> Đã cập nhật thông tin Quản lý thành công.
-                </div>
-            </c:if>
-            <c:if test="${param.success == 'status_updated'}">
-                <div class="cf-alert cf-alert-success">
-                    <span>✓</span> <strong>Thành công!</strong> Đã cập nhật trạng thái hoạt động của tài khoản Manager.
-                </div>
-            </c:if>
-            <c:if test="${not empty param.error}">
-                <div class="cf-alert cf-alert-danger">
-                    <span>⚠</span> <strong>Lỗi:</strong> Thao tác thất bại hoặc cập nhật trạng thái không thành công. Vui lòng kiểm tra lại.
-                </div>
-            </c:if>
+            <c:choose>
+                <c:when test="${param.success == 'created'}">
+                    <div class="cf-alert cf-alert-success"><span>✓</span> <strong>Thành công!</strong> Đã tạo mới tài khoản Quản lý và phân công cụm rạp thành công.</div>
+                </c:when>
+                <c:when test="${param.success == 'updated'}">
+                    <div class="cf-alert cf-alert-success"><span>✓</span> <strong>Thành công!</strong> Đã cập nhật thông tin Quản lý thành công.</div>
+                </c:when>
+                <c:when test="${param.success == 'status_updated'}">
+                    <div class="cf-alert cf-alert-success"><span>✓</span> <strong>Thành công!</strong> Đã cập nhật trạng thái hoạt động của tài khoản Manager.</div>
+                </c:when>
+                <c:when test="${not empty param.error}">
+                    <div class="cf-alert cf-alert-danger"><span>⚠</span> <strong>Lỗi:</strong> Thao tác thất bại hoặc cập nhật trạng thái không thành công. Vui lòng kiểm tra lại.</div>
+                </c:when>
+            </c:choose>
 
             <!-- KPI METRICS: TỔNG SỐ, ĐANG HOẠT ĐỘNG, TẠM NGƯNG, ĐÃ KHÓA -->
             <div class="cf-kpi-grid-4">

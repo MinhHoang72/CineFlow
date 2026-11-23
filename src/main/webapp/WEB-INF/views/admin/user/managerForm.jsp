@@ -131,45 +131,47 @@
             </div>
 
             <!-- Thông báo lỗi nếu có -->
-            <c:if test="${param.error == 'missing_fields'}">
-                <div class="cf-alert cf-alert-danger"><span>⚠</span> <strong>Lỗi:</strong> Vui lòng điền đầy đủ các thông tin bắt buộc.</div>
-            </c:if>
-            <c:if test="${param.error == 'invalid_name'}">
-                <div class="cf-alert cf-alert-danger"><span>⚠</span> <strong>Lỗi:</strong> Họ và tên phải từ 2 đến 100 ký tự.</div>
-            </c:if>
-            <c:if test="${param.error == 'invalid_account'}">
-                <div class="cf-alert cf-alert-danger"><span>⚠</span> <strong>Lỗi:</strong> Tên tài khoản từ 3-30 ký tự, chỉ gồm chữ cái, số, gạch dưới, gạch ngang hoặc dấu chấm.</div>
-            </c:if>
-            <c:if test="${param.error == 'invalid_email'}">
-                <div class="cf-alert cf-alert-danger"><span>⚠</span> <strong>Lỗi:</strong> Địa chỉ email không đúng định dạng chuẩn.</div>
-            </c:if>
-            <c:if test="${param.error == 'disposable_email'}">
-                <div class="cf-alert cf-alert-danger"><span>⚠</span> <strong>Lỗi:</strong> Vui lòng không sử dụng địa chỉ email rác / email tạm thời.</div>
-            </c:if>
-            <c:if test="${param.error == 'weak_password'}">
-                <div class="cf-alert cf-alert-danger"><span>⚠</span> <strong>Lỗi:</strong> Mật khẩu yếu: Yêu cầu tối thiểu 8 ký tự, gồm ít nhất 1 chữ hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt.</div>
-            </c:if>
-            <c:if test="${param.error == 'invalid_phone'}">
-                <div class="cf-alert cf-alert-danger"><span>⚠</span> <strong>Lỗi:</strong> Số điện thoại không hợp lệ (yêu cầu số điện thoại di động Việt Nam 10 số).</div>
-            </c:if>
-            <c:if test="${param.error == 'invalid_centre'}">
-                <div class="cf-alert cf-alert-danger"><span>⚠</span> <strong>Lỗi:</strong> Cụm rạp được chọn không hợp lệ.</div>
-            </c:if>
-            <c:if test="${param.error == 'centre_has_manager'}">
-                <div class="cf-alert cf-alert-danger"><span>⚠</span> <strong>Lỗi:</strong> Cụm rạp được chọn hiện đã có Quản lý đang phụ trách (mỗi rạp chỉ có 1 Quản lý).</div>
-            </c:if>
-            <c:if test="${param.error == 'account_exists'}">
-                <div class="cf-alert cf-alert-danger"><span>⚠</span> <strong>Lỗi:</strong> Tên tài khoản (Account) đã tồn tại trong hệ thống.</div>
-            </c:if>
-            <c:if test="${param.error == 'email_exists'}">
-                <div class="cf-alert cf-alert-danger"><span>⚠</span> <strong>Lỗi:</strong> Địa chỉ Email đã được sử dụng bởi người dùng khác.</div>
-            </c:if>
-            <c:if test="${param.error == 'not_manager'}">
-                <div class="cf-alert cf-alert-danger"><span>⚠</span> <strong>Lỗi:</strong> Tài khoản không tồn tại hoặc không phải là Quản lý.</div>
-            </c:if>
-            <c:if test="${param.error == 'invalid_data' || param.error == 'create_failed' || param.error == 'update_failed'}">
-                <div class="cf-alert cf-alert-danger"><span>⚠</span> <strong>Lỗi:</strong> Thao tác thất bại. Vui lòng kiểm tra lại thông tin.</div>
-            </c:if>
+            <c:choose>
+                <c:when test="${param.error == 'missing_fields'}">
+                    <div class="cf-alert cf-alert-danger"><span>⚠</span> <strong>Lỗi:</strong> Vui lòng điền đầy đủ các thông tin bắt buộc.</div>
+                </c:when>
+                <c:when test="${param.error == 'invalid_name'}">
+                    <div class="cf-alert cf-alert-danger"><span>⚠</span> <strong>Lỗi:</strong> Họ và tên phải từ 2 đến 100 ký tự.</div>
+                </c:when>
+                <c:when test="${param.error == 'invalid_account'}">
+                    <div class="cf-alert cf-alert-danger"><span>⚠</span> <strong>Lỗi:</strong> Tên tài khoản từ 3-30 ký tự, chỉ gồm chữ cái, số, gạch dưới, gạch ngang hoặc dấu chấm.</div>
+                </c:when>
+                <c:when test="${param.error == 'invalid_email'}">
+                    <div class="cf-alert cf-alert-danger"><span>⚠</span> <strong>Lỗi:</strong> Địa chỉ email không đúng định dạng chuẩn.</div>
+                </c:when>
+                <c:when test="${param.error == 'disposable_email'}">
+                    <div class="cf-alert cf-alert-danger"><span>⚠</span> <strong>Lỗi:</strong> Vui lòng không sử dụng địa chỉ email rác / email tạm thời.</div>
+                </c:when>
+                <c:when test="${param.error == 'weak_password'}">
+                    <div class="cf-alert cf-alert-danger"><span>⚠</span> <strong>Lỗi:</strong> Mật khẩu yếu: Yêu cầu tối thiểu 8 ký tự, gồm ít nhất 1 chữ hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt.</div>
+                </c:when>
+                <c:when test="${param.error == 'invalid_phone'}">
+                    <div class="cf-alert cf-alert-danger"><span>⚠</span> <strong>Lỗi:</strong> Số điện thoại không hợp lệ (yêu cầu số điện thoại di động Việt Nam 10 số).</div>
+                </c:when>
+                <c:when test="${param.error == 'invalid_centre'}">
+                    <div class="cf-alert cf-alert-danger"><span>⚠</span> <strong>Lỗi:</strong> Cụm rạp được chọn không hợp lệ.</div>
+                </c:when>
+                <c:when test="${param.error == 'centre_has_manager'}">
+                    <div class="cf-alert cf-alert-danger"><span>⚠</span> <strong>Lỗi:</strong> Cụm rạp được chọn hiện đã có Quản lý đang phụ trách (mỗi rạp chỉ có 1 Quản lý).</div>
+                </c:when>
+                <c:when test="${param.error == 'account_exists'}">
+                    <div class="cf-alert cf-alert-danger"><span>⚠</span> <strong>Lỗi:</strong> Tên tài khoản (Account) đã tồn tại trong hệ thống.</div>
+                </c:when>
+                <c:when test="${param.error == 'email_exists'}">
+                    <div class="cf-alert cf-alert-danger"><span>⚠</span> <strong>Lỗi:</strong> Địa chỉ Email đã được sử dụng bởi người dùng khác.</div>
+                </c:when>
+                <c:when test="${param.error == 'not_manager'}">
+                    <div class="cf-alert cf-alert-danger"><span>⚠</span> <strong>Lỗi:</strong> Tài khoản không tồn tại hoặc không phải là Quản lý.</div>
+                </c:when>
+                <c:when test="${param.error == 'invalid_data' || param.error == 'create_failed' || param.error == 'update_failed'}">
+                    <div class="cf-alert cf-alert-danger"><span>⚠</span> <strong>Lỗi:</strong> Thao tác thất bại. Vui lòng kiểm tra lại thông tin.</div>
+                </c:when>
+            </c:choose>
 
             <div class="cf-form-card">
                 <form method="POST" action="${pageContext.request.contextPath}/admin/managers">

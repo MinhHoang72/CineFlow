@@ -107,26 +107,20 @@
             </div>
 
             <!-- THÔNG BÁO -->
-            <c:if test="${param.success == 'created'}">
-                <div class="cf-alert cf-alert-success">
-                    ✓ <strong>Thành công!</strong> Đã tạo tài khoản nhân viên thành công.
-                </div>
-            </c:if>
-            <c:if test="${param.success == 'updated'}">
-                <div class="cf-alert cf-alert-success">
-                    ✓ <strong>Thành công!</strong> Đã cập nhật thông tin nhân viên thành công.
-                </div>
-            </c:if>
-            <c:if test="${param.success == 'status_updated'}">
-                <div class="cf-alert cf-alert-success">
-                    ✓ <strong>Thành công!</strong> Đã cập nhật trạng thái nhân viên thành công.
-                </div>
-            </c:if>
-            <c:if test="${not empty param.error}">
-                <div class="cf-alert cf-alert-danger">
-                    ⚠ <strong>Lỗi:</strong> Thao tác không thành công hoặc dữ liệu không hợp lệ. Vui lòng kiểm tra lại.
-                </div>
-            </c:if>
+            <c:choose>
+                <c:when test="${param.success == 'created'}">
+                    <div class="cf-alert cf-alert-success">✓ <strong>Thành công!</strong> Đã tạo tài khoản nhân viên thành công.</div>
+                </c:when>
+                <c:when test="${param.success == 'updated'}">
+                    <div class="cf-alert cf-alert-success">✓ <strong>Thành công!</strong> Đã cập nhật thông tin nhân viên thành công.</div>
+                </c:when>
+                <c:when test="${param.success == 'status_updated'}">
+                    <div class="cf-alert cf-alert-success">✓ <strong>Thành công!</strong> Đã cập nhật trạng thái nhân viên thành công.</div>
+                </c:when>
+                <c:when test="${not empty param.error}">
+                    <div class="cf-alert cf-alert-danger">⚠ <strong>Lỗi:</strong> Thao tác không thành công hoặc dữ liệu không hợp lệ. Vui lòng kiểm tra lại.</div>
+                </c:when>
+            </c:choose>
 
             <!-- MANAGER CHƯA ĐƯỢC BỔ NHIỆM -->
             <% if (selectedCentreId == null) { %>
