@@ -3,7 +3,7 @@
  * Chức năng chính:
  * 1. Xem trước ảnh Poster ngay khi người dùng chọn tệp từ máy tính.
  * 2. Xem trước video Trailer từ tệp video tải lên từ máy tính.
- * 3. Kiểm tra hợp lệ dữ liệu phía client và hiện hộp thoại xác nhận khi kết thúc phim có suất chiếu.
+ * 3. Hộp thoại xác nhận khi kết thúc phim có suất chiếu và khóa nút khi gửi biểu mẫu.
  */
 document.addEventListener('DOMContentLoaded', function () {
     // Lấy tham chiếu các phần tử DOM trên biểu mẫu
@@ -19,24 +19,12 @@ document.addEventListener('DOMContentLoaded', function () {
     const movieForm = document.getElementById('movieForm');
     const btnSubmit = document.getElementById('btnSubmitMovie');
     const statusSelect = document.querySelector('select[name="status"]');
-    const releaseInput = document.querySelector('input[name="releaseDate"]');
-    const endInput = document.querySelector('input[name="endDate"]');
 
     // Đọc dữ liệu ngữ cảnh do movieForm.jsp gắn lên thẻ <form>
     const originalStatus = movieForm ? (movieForm.dataset.originalStatus || '') : '';
     const hasUpcomingShowtimes = movieForm ? (movieForm.dataset.hasUpcomingShowtimes === 'true') : false;
     const upcomingCount = movieForm ? parseInt(movieForm.dataset.upcomingCount || '0', 10) : 0;
     const soldCount = movieForm ? parseInt(movieForm.dataset.soldCount || '0', 10) : 0;
-
-    /**
-     * Lấy ngày hiện tại theo múi giờ cục bộ dưới định dạng chuẩn input[type=date] (yyyy-MM-dd).
-     *
-     * @returns {string} chuỗi ngày hôm nay (ví dụ: "2026-11-19")
-     */
-    function getLocalToday() {
-        const now = new Date();
-        return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split('T')[0];
-    }
 
     // ==============================================================
     // 1. XEM TRƯỚC ẢNH POSTER (Đọc tệp bằng FileReader)
@@ -114,48 +102,11 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // ==============================================================
-    // 3. KIỂM TRA HỢP LỆ DỮ LIỆU & HỘP THOẠI XÁC NHẬN KHI SUBMIT
+    // 3. HỘP THOẠI XÁC NHẬN KHI KẾT THÚC PHIM CÓ SUẤT CHIẾU & KHÓA NÚT SUBMIT
     // ==============================================================
-
-    /** Báo lỗi, đưa con trỏ về ô nhập sai và chặn gửi biểu mẫu lên Server. */
-    function fail(e, msg, el) {
-        alert(msg);
-        if (el) el.focus();
-        e.preventDefault();
-    }
-
     if (movieForm && btnSubmit) {
         movieForm.addEventListener('submit', function (e) {
             const status = statusSelect ? statusSelect.value : '';
-            const relVal = releaseInput ? releaseInput.value : '';
-            const endVal = endInput ? endInput.value : '';
-            const today = getLocalToday();
-
-            // Kiểm tra quy tắc vòng đời chuyển trạng thái (khớp với MovieService.java ở Backend)
-            if (originalStatus === 'ARCHIVED' && status === 'NOW_SHOWING') {
-                return fail(e, 'Phim đã lưu trữ không thể chuyển trực tiếp sang "Đang chiếu". Vui lòng chọn "Sắp khởi chiếu" và thiết lập lại ngày chiếu mới.', statusSelect);
-            }
-            if (originalStatus === 'ENDED' && status === 'NOW_SHOWING' && (!endVal || endVal < today)) {
-                return fail(e, 'Khi chuyển phim đã kết thúc sang "Đang chiếu", bắt buộc phải thiết lập Ngày kết thúc mới từ hôm nay trở đi.', endInput);
-            }
-            if ((originalStatus === 'ARCHIVED' || originalStatus === 'ENDED') && status === 'COMING_SOON'
-                    && (!relVal || !endVal || relVal < today || endVal < relVal || endVal <= today)) {
-                return fail(e, 'Khi tái phát hành sang "Sắp khởi chiếu", bắt buộc nhập lại Ngày khởi chiếu (tương lai) và Ngày kết thúc mới.', releaseInput);
-            }
-
-            // Kiểm tra ngày khởi chiếu / kết thúc cơ bản
-            if (!relVal || !endVal) {
-                return fail(e, 'Vui lòng nhập đầy đủ Ngày khởi chiếu và Ngày kết thúc.', !relVal ? releaseInput : endInput);
-            }
-            if (endVal < relVal) {
-                return fail(e, 'Ngày kết thúc phải lớn hơn hoặc bằng ngày khởi chiếu.', endInput);
-            }
-            if (status === 'COMING_SOON' && relVal < today) {
-                return fail(e, 'Phim có ngày khởi chiếu trong quá khứ không thể đặt trạng thái "Sắp khởi chiếu".', releaseInput);
-            }
-            if (status === 'NOW_SHOWING' && relVal > today) {
-                return fail(e, 'Phim có ngày khởi chiếu ở tương lai chưa thể đặt trạng thái "Đang chiếu".', releaseInput);
-            }
 
             // Rẽ nhánh xác nhận khi Admin kết thúc/lưu trữ phim đang còn suất chiếu tương lai
             if ((status === 'ENDED' || status === 'ARCHIVED') && originalStatus !== 'ENDED' && originalStatus !== 'ARCHIVED' && hasUpcomingShowtimes) {
