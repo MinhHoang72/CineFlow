@@ -119,32 +119,7 @@
                 </div>
             </c:if>
 
-            <!-- CẢNH BÁO SUẤT CHIẾU VÀ VÉ ĐÃ ĐẶT TRƯỚC -->
-            <% if (editing && uCount > 0) { %>
-                <% if (sCount > 0) { %>
-                    <div class="cf-alert" style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 20px; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 8px; padding: 14px 18px; color: #f87171;">
-                        <span style="font-size: 22px; line-height: 1;">⛔</span>
-                        <div>
-                            <strong style="color: #ffffff; font-size: 14px;">CẢNH BÁO: ĐÃ CÓ VÉ BÁN CHO KHÁCH HÀNG</strong>
-                            <p style="margin: 4px 0 0; color: #fca5a5; font-size: 13px; line-height: 1.5;">
-                                Phim đang có <strong><%= uCount %></strong> suất chiếu sắp tới và đã bán được 
-                                <strong style="color: #ffffff; text-decoration: underline; font-size: 14px;"><%= sCount %> vé</strong> cho khách hàng.
-                                <br>
-                                Cân nhắc kỹ trước khi chỉnh sửa ngày chiếu. Việc kết thúc hoặc lưu trữ phim sẽ tự động hủy toàn bộ các vé đã bán này!
-                            </p>
-                        </div>
-                    </div>
-                <% } else { %>
-                    <div class="cf-alert" style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 8px; padding: 12px 18px; color: #fbbf24;">
-                        <span style="font-size: 20px;">⚠️</span>
-                        <div>
-                            <strong style="color: #ffffff;">Thông tin lịch chiếu:</strong> Phim đang có 
-                            <strong style="color: #ffffff;"><%= uCount %></strong> suất chiếu sắp tới 
-                            <span style="color: #cbd5e1;">(chưa có khách nào đặt vé)</span>. Bạn có thể chỉnh sửa ngày chiếu hoặc trạng thái phim an toàn.
-                        </div>
-                    </div>
-                <% } %>
-            <% } %>
+
 
             <%--
                 Form gửi POST lên /admin/movie để lưu thông tin phim.
@@ -359,7 +334,6 @@
                 <!-- THANH THAO TÁC CỐ ĐỊNH (FOOTER) -->
                 <div class="cf-form-sticky-bar">
                     <div class="cf-form-sticky-info">
-                        <%= editing ? ("Chỉnh sửa phim: <strong>" + esc(movie.getTitle()) + "</strong> (Mã: " + movie.getMovieId() + ")") : "Tạo phim mới vào danh mục hệ thống" %>
                     </div>
                     <div class="cf-form-actions">
                         <a href="${pageContext.request.contextPath}/admin/movies" class="cf-btn cf-btn-secondary">
