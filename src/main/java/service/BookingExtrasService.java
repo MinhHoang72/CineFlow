@@ -32,11 +32,13 @@ public class BookingExtrasService {
     private final FnbOrderService fnbOrderService;
     private final BookingService bookingService;
 
+    /** Khởi tạo với các DAO và service thật (dùng khi chạy ứng dụng). */
     public BookingExtrasService() {
         this(new FnbOrderDAO(), new BookingVoucherDAO(), new BookingDAO(), new VoucherService(), new FnbOrderService(),
                 new BookingService());
     }
 
+    /** Khởi tạo với DAO và service truyền vào từ ngoài (dùng khi viết test). */
     public BookingExtrasService(FnbOrderDAO fnbOrderDAO, BookingVoucherDAO voucherDAO, BookingDAO bookingDAO,
             VoucherService voucherService, FnbOrderService fnbOrderService, BookingService bookingService) {
         this.fnbOrderDAO = fnbOrderDAO;
@@ -47,14 +49,14 @@ public class BookingExtrasService {
         this.bookingService = bookingService;
     }
 
-    /** Menu bap nuoc dang ban tai rap cua suat chieu. */
+    /** Menu bắp nước (món lẻ và combo) đang bán tại rạp của suất chiếu trong đơn. */
     public List<FnbMenuItemDTO> getMenu(Booking booking) throws SQLException {
         return fnbOrderDAO.getMenu(booking.getShowtime().getCentreId());
     }
 
     /**
-     * Voucher khach chon duoc cho don nay (tru ma dang dung): ma dung duoc ngay truoc, giam nhieu truoc;
-     * sau do la ma chi con thieu gia tri don toi thieu (kem so tien ve con thieu).
+     * Danh sách voucher khách có thể chọn cho đơn này (trừ mã đang dùng), lấy qua BookingVoucherDAO.findAvailable.
+     * Sắp xếp: mã dùng được ngay đứng trước, giảm nhiều đứng trước; sau đó là mã chỉ còn thiếu giá trị đơn tối thiểu (kèm số tiền vé còn thiếu).
      */
     public List<VoucherOptionDTO> getVoucherOptions(Booking booking) throws SQLException {
         Showtime st = booking.getShowtime();
@@ -84,9 +86,12 @@ public class BookingExtrasService {
     }
 
     /**
-     * Doc so luong tu form (qty_I12, qty_C3...), kiem tra mon / so luong / ton kho, thay gio bap nuoc cua don
-     * (gia theo menu hien tai) va tinh lai tong tien.
-     * @throws IllegalArgumentException du lieu khong hop le / het hang, message hien cho nguoi dung
+     * Lưu giỏ bắp nước của đơn (khách đổi số lượng ở trang bắp nước). Chạy trong một transaction:
+     * 1. Đọc số lượng từ form (ô qty_I12 = món lẻ id 12, qty_C3 = combo id 3).
+     * 2. Kiểm tra món còn bán, số lượng hợp lệ, đủ tồn kho.
+     * 3. Xoá giỏ cũ chưa thanh toán, ghi đơn bắp nước PENDING mới (nếu có món).
+     * 4. Tính lại tổng tiền đơn và huỷ giao dịch đang chờ có số tiền cũ.
+     * @throws IllegalArgumentException món, số lượng hoặc tồn kho không hợp lệ (thông báo hiện cho người dùng)
      */
     public void saveFnb(Booking booking, Map<String, String[]> params) throws SQLException {
         Map<String, Integer> cart = FnbOrderService.readCart(params);
@@ -108,9 +113,14 @@ public class BookingExtrasService {
     }
 
     /**
-     * Kiem tra va ap voucher cho don.
-     * @return so tien duoc giam
-     * @throws IllegalArgumentException voucher khong ap dung duoc, message hien cho nguoi dung
+     * Kiểm tra và áp voucher cho đơn:
+     * 1. Phải nhập mã; mã phải tồn tại.
+     * 2. Trạng thái, hạn dùng, lượt dùng, giá trị tối thiểu (VoucherService.applyVoucher) và tính số tiền giảm.
+     * 3. Phạm vi rạp, phim, ngày chiếu (checkScope).
+     * 4. Giới hạn lượt mỗi khách (đơn tại quầy không có tài khoản thì bỏ qua bước này).
+     * 5. Số tiền giảm không vượt tiền vé; lưu vào đơn (setVoucher).
+     * @return số tiền được giảm
+     * @throws IllegalArgumentException voucher không áp dụng được (lý do hiện cho người dùng)
      */
     public BigDecimal applyVoucher(Booking booking, String code) throws SQLException {
         if (code == null || code.isBlank()) throw new IllegalArgumentException("Vui lòng nhập mã giảm giá.");
@@ -139,14 +149,15 @@ public class BookingExtrasService {
         return discount;
     }
 
-    /** Bo voucher khoi don. */
+    /** Bỏ voucher khỏi đơn và tính lại tổng tiền. */
     public void removeVoucher(Booking booking) throws SQLException {
         setVoucher(booking.getId(), null, BigDecimal.ZERO);
     }
 
     /**
-     * Voucher co ap dung cho rap / phim / ngay chieu nay khong (khong khai bao rap / phim / ngay = ap dung tat ca).
-     * @return null neu hop le, nguoc lai la ly do khong ap dung duoc
+     * Voucher có áp dụng cho rạp, phim và thứ trong tuần của suất chiếu này không.
+     * Voucher không khai báo rạp / phim / ngày nào thì áp dụng tất cả.
+     * @return lý do không áp dụng được, null nếu hợp lệ
      */
     private String checkScope(Voucher voucher, int centreId, int movieId, LocalDate showDate) throws SQLException {
         int id = voucher.getVoucherId();
@@ -164,7 +175,9 @@ public class BookingExtrasService {
         return null;
     }
 
-    /** Gan / bo voucher cua don dang giu ghe, tinh lai tong tien, huy giao dich dang cho. */
+    /**
+     * Gán hoặc bỏ voucher của đơn đang giữ ghế, tính lại tổng tiền và huỷ giao dịch đang chờ (vì số tiền đã đổi). Chạy trong transaction.
+     */
     private void setVoucher(int bookingId, Integer voucherId, BigDecimal discount) throws SQLException {
         DbUtil.inTransaction(conn -> {
             bookingDAO.updateVoucher(conn, bookingId, voucherId, voucherId == null ? BigDecimal.ZERO : discount);

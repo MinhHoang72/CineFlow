@@ -25,17 +25,19 @@ public class FnbOrderService {
 
     private final FnbOrderDAO fnbOrderDAO;
 
+    /** Khởi tạo với DAO thật (dùng khi chạy ứng dụng). */
     public FnbOrderService() {
         this(new FnbOrderDAO());
     }
 
+    /** Khởi tạo với DAO truyền vào từ ngoài (dùng khi viết test). */
     public FnbOrderService(FnbOrderDAO fnbOrderDAO) {
         this.fnbOrderDAO = fnbOrderDAO;
     }
 
     /**
-     * Tham so form qty_I12 / qty_C3 -> gio hang (key menu -> so luong), o trong = 0.
-     * @throws IllegalArgumentException so luong khong phai so
+     * Đọc giỏ hàng từ form: ô qty_I12 = món lẻ id 12, qty_C3 = combo id 3 -> map key menu -> số lượng; ô trống = 0.
+     * @throws IllegalArgumentException số lượng không phải số
      */
     public static Map<String, Integer> readCart(Map<String, String[]> params) {
         Map<String, Integer> cart = new LinkedHashMap<>();
@@ -51,7 +53,7 @@ public class FnbOrderService {
         return cart;
     }
 
-    /** Menu dang ban tai rap theo key (I12 / C3). */
+    /** Menu đang bán tại rạp, đánh key "I12" (món lẻ) / "C3" (combo) để đối chiếu với giỏ hàng. */
     public Map<String, FnbMenuItemDTO> loadMenu(Connection conn, int centreId) throws SQLException {
         Map<String, FnbMenuItemDTO> menu = new HashMap<>();
         for (FnbMenuItemDTO m : fnbOrderDAO.getMenu(conn, centreId)) menu.put(m.getKey(), m);
@@ -59,8 +61,8 @@ public class FnbOrderService {
     }
 
     /**
-     * Gio hang hop le: bo mon so luong 0; mon phai con trong menu, so luong 1..MAX_PER_LINE.
-     * @throws IllegalArgumentException mon het hang / ngung ban hoac so luong sai
+     * Lọc giỏ hàng hợp lệ: bỏ món số lượng 0; món phải còn trong menu; số lượng từ 1 đến MAX_PER_LINE.
+     * @throws IllegalArgumentException món không còn bán hoặc số lượng vượt giới hạn
      */
     public Map<String, Integer> validLines(Map<String, Integer> cart, Map<String, FnbMenuItemDTO> menu) {
         Map<String, Integer> lines = new LinkedHashMap<>();
@@ -79,8 +81,8 @@ public class FnbOrderService {
     }
 
     /**
-     * Tong nhu cau theo mon le (mon le + thanh phan combo) khong duoc vuot ton kho dang ban cua rap.
-     * @throws IllegalArgumentException khong du hang
+     * Kiểm tra tồn kho: tách combo thành món lẻ, cộng nhu cầu từng món, không được vượt tồn kho đang bán của rạp.
+     * @throws IllegalArgumentException không đủ hàng (báo tên món và số còn lại)
      */
     public void checkStock(Connection conn, int centreId, Map<String, Integer> lines, Map<String, FnbMenuItemDTO> menu)
             throws SQLException {
@@ -104,7 +106,7 @@ public class FnbOrderService {
         }
     }
 
-    /** Tong tien gio hang theo gia menu hien tai. */
+    /** Tổng tiền giỏ hàng theo giá menu hiện tại. */
     public BigDecimal total(Map<String, Integer> lines, Map<String, FnbMenuItemDTO> menu) {
         BigDecimal total = BigDecimal.ZERO;
         for (Map.Entry<String, Integer> e : lines.entrySet()) {
@@ -114,8 +116,8 @@ public class FnbOrderService {
     }
 
     /**
-     * Ghi don bap nuoc PENDING kem cac dong mon (gia lay theo menu).
-     * @param bookingId null = don ban le khong kem ve
+     * Ghi đơn bắp nước PENDING kèm các dòng món (giá lấy theo menu lúc đặt). Chưa trừ kho.
+     * @param bookingId đơn vé đi kèm; null = đơn bắp nước lẻ bán tại quầy
      * @return FnbOrderID
      */
     public int createOrder(Connection conn, Integer bookingId, int centreId, Integer userId, String orderType,
@@ -133,8 +135,8 @@ public class FnbOrderService {
     }
 
     /**
-     * Don da thanh toan: tru ton kho theo nhu cau (mon le + thanh phan combo).
-     * Khong xuong duoi 0; het hang thi tat ban mon do (IsAvailable = 0).
+     * Trừ tồn kho khi đơn đã thanh toán (món lẻ và thành phần combo). Không để kho âm; hết hàng thì tắt bán món đó.
+     * Gọi từ: PaymentService.confirmPaid (bắp nước kèm vé) và FnbSaleService.confirmPaid (bắp nước lẻ).
      */
     public void deductStock(Connection conn, List<Demand> demand) throws SQLException {
         for (Demand d : demand) {

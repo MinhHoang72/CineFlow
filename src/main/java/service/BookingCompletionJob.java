@@ -14,6 +14,10 @@ public class BookingCompletionJob implements ServletContextListener {
     private final BookingService bookingService = new BookingService();
     private ScheduledExecutorService executor;
 
+    /**
+     * Chạy khi ứng dụng khởi động: tạo một luồng nền gọi BookingService.completeFinishedBookings mỗi phút
+     * (đơn đã thanh toán của suất đã chiếu xong -> COMPLETED). Lỗi CSDL tạm thời chỉ ghi log, không làm dừng các lần chạy sau.
+     */
     @Override
     public void contextInitialized(ServletContextEvent event) {
         executor = Executors.newSingleThreadScheduledExecutor(task -> {
@@ -31,6 +35,7 @@ public class BookingCompletionJob implements ServletContextListener {
         }, 0, 1, TimeUnit.MINUTES);
     }
 
+    /** Chạy khi ứng dụng tắt: dừng luồng nền. */
     @Override
     public void contextDestroyed(ServletContextEvent event) {
         if (executor != null) executor.shutdownNow();

@@ -46,17 +46,23 @@ public class PaymentService {
         PAID_AMOUNT_MISMATCH
     }
 
+    /**
+     * Kết quả xác nhận thanh toán: status (thành công, đã trả trước đó, mất ghế, lệch số tiền, không tìm thấy) và bookingId.
+     */
     public record Outcome(Status status, Integer bookingId) {}
 
     /** Kết quả xử lý dữ liệu VNPay gửi về. */
     public enum VnpayResult { SUCCESS, ALREADY_PAID, SEATS_LOST, AMOUNT_CHANGED, FAILED, NOT_FOUND, INVALID_AMOUNT, INVALID_SIGNATURE }
 
+    /**
+     * Kết quả xử lý dữ liệu VNPay trả về của đơn vé: kết quả kiểm tra và bookingId để servlet chuyển trang.
+     */
     public record VnpayProcessed(VnpayResult result, Integer bookingId) {}
 
-    /** Phản hồi IPN theo đặc tả VNPay (RspCode / Message). */
+    /** Phản hồi gửi lại cho VNPay khi nhận IPN: mã RspCode và Message theo đặc tả VNPay. */
     public record IpnResponse(String code, String message) {}
 
-    /** Danh sách giao dịch theo dõi kèm tổng tiền và số giao dịch đã thu. */
+    /** Dữ liệu trang theo dõi giao dịch: danh sách giao dịch, tổng tiền đã thu và số giao dịch đã thu. */
     public record TrackingSummary(List<Payment> payments, BigDecimal paidTotal, int paidCount) {}
 
     private final PaymentDAO paymentDAO;
@@ -67,11 +73,13 @@ public class PaymentService {
     private final BookingService bookingService;
     private final FnbSaleService fnbSaleService;
 
+    /** Khởi tạo với các DAO và service thật (dùng khi chạy ứng dụng). */
     public PaymentService() {
         this(new PaymentDAO(), new BookingDAO(), new FnbOrderDAO(), new BookingVoucherDAO(), new FnbOrderService(),
                 new BookingService(), new FnbSaleService());
     }
 
+    /** Khởi tạo với DAO và service truyền vào từ ngoài (dùng khi viết test). */
     public PaymentService(PaymentDAO paymentDAO, BookingDAO bookingDAO, FnbOrderDAO fnbOrderDAO,
             BookingVoucherDAO voucherDAO, FnbOrderService fnbOrderService, BookingService bookingService,
             FnbSaleService fnbSaleService) {
@@ -87,8 +95,11 @@ public class PaymentService {
     // ---------------------------------------------------------------- VNPay
 
     /**
-     * Tạo giao dịch VNPay mới cho đơn (giao dịch VNPay đang chờ trước đó bị huỷ khi khách bấm thanh toán lại).
-     * @return mã giao dịch, dùng làm vnp_TxnRef
+     * Tạo giao dịch VNPay mới cho đơn vé, trong một transaction:
+     * 1. Sinh mã giao dịch = mã đơn + thời gian hiện tại (mili giây), mỗi lần thanh toán một mã riêng.
+     * 2. Huỷ giao dịch VNPay đang chờ trước đó của đơn (khách bấm thanh toán lại).
+     * 3. Ghi giao dịch mới PENDING, PaymentMethod = QR, Amount = tổng đơn.
+     * @return mã giao dịch, gửi cho VNPay làm vnp_TxnRef
      */
     public String createVnpayPayment(Booking booking) throws SQLException {
         String txnRef = booking.getCode() + System.currentTimeMillis();
@@ -100,7 +111,16 @@ public class PaymentService {
         return txnRef;
     }
 
-    /** Kiểm tra chữ ký, số tiền rồi ghi nhận kết quả giao dịch VNPay của đơn đặt vé. */
+    /**
+     * Kiểm tra dữ liệu VNPay trả về rồi ghi nhận kết quả cho đơn vé. Không tin dữ liệu ngay vì nó đi qua trình duyệt của khách:
+     * 1. Chữ ký HMAC-SHA512 đúng (VNPayUtil.verify), sai thì INVALID_SIGNATURE.
+     * 2. Mã giao dịch (vnp_TxnRef) có trong CSDL, không có thì NOT_FOUND.
+     * 3. Số tiền khớp giao dịch đã tạo, lệch thì INVALID_AMOUNT.
+     * 4. Giao dịch đã PAID thì ALREADY_PAID (tránh xử lý hai lần khi cả return URL và IPN cùng về).
+     * 5. Mã kết quả khác 00 thì ghi FAILED.
+     * 6. Thành công thì gọi confirmPaid và đổi kết quả của nó sang VnpayResult.
+     * Gọi từ: PaymentServlet.vnpayReturn và handleIpn.
+     */
     public VnpayProcessed processVnpay(Map<String, String> params) throws SQLException {
         if (!VNPayUtil.verify(params)) return new VnpayProcessed(VnpayResult.INVALID_SIGNATURE, null);
         VnpayRef ref = paymentDAO.findVnpay(params.get("vnp_TxnRef"));
@@ -123,18 +143,26 @@ public class PaymentService {
         }, ref.bookingId());
     }
 
-    /** Mã đơn bắp nước lẻ của giao dịch VNPay (vnp_TxnRef), null nếu là giao dịch vé. */
+    /**
+     * Mã giao dịch VNPay này thuộc đơn bắp nước lẻ nào; null nếu là giao dịch của đơn vé (để servlet rẽ nhánh).
+     */
     public Integer findFnbOrderId(String txnRef) throws SQLException {
         FnbVnpayRef ref = paymentDAO.findFnbVnpay(txnRef);
         return ref == null ? null : ref.orderId();
     }
 
-    /** Kiểm tra chữ ký, số tiền rồi ghi nhận kết quả giao dịch VNPay của đơn bắp nước lẻ. */
+    /**
+     * Kiểm tra và ghi nhận kết quả VNPay cho đơn bắp nước lẻ (tìm giao dịch theo vnp_TxnRef rồi gọi bản bên dưới).
+     */
     public VnpayResult processFnbVnpay(Map<String, String> params) throws SQLException {
         FnbVnpayRef ref = paymentDAO.findFnbVnpay(params.get("vnp_TxnRef"));
         return ref == null ? VnpayResult.NOT_FOUND : processFnbVnpay(params, ref);
     }
 
+    /**
+     * Các bước giống processVnpay nhưng cho đơn bắp nước lẻ: chữ ký, số tiền, đã PAID chưa, mã 00;
+     * thành công thì FnbSaleService.confirmPaid (đơn PREPARING, trừ kho).
+     */
     private VnpayResult processFnbVnpay(Map<String, String> params, FnbVnpayRef ref) throws SQLException {
         if (!VNPayUtil.verify(params)) return VnpayResult.INVALID_SIGNATURE;
         if (!VNPayUtil.toVnpAmount(ref.amount()).equals(params.get("vnp_Amount"))) return VnpayResult.INVALID_AMOUNT;
@@ -150,7 +178,11 @@ public class PaymentService {
         };
     }
 
-    /** IPN (VNPay gọi server-to-server): xử lý giao dịch vé hoặc bắp nước lẻ và trả mã phản hồi theo đặc tả. */
+    /**
+     * Xử lý IPN (VNPay gọi thẳng server): rẽ sang đơn bắp nước lẻ hoặc đơn vé, rồi đổi kết quả thành mã phản hồi cho VNPay:
+     * 00 = đã nhận (kể cả thất bại hay mất ghế vì giao dịch đã được ghi nhận), 02 = đã xử lý trước đó,
+     * 01 = không tìm thấy, 04 = sai số tiền, 97 = sai chữ ký.
+     */
     public IpnResponse handleIpn(Map<String, String> params) throws SQLException {
         FnbVnpayRef fnb = paymentDAO.findFnbVnpay(params.get("vnp_TxnRef"));
         VnpayResult result = fnb != null ? processFnbVnpay(params, fnb) : processVnpay(params).result();
@@ -166,8 +198,9 @@ public class PaymentService {
     // ---------------------------------------------------------------- tiền mặt tại quầy
 
     /**
-     * Thu tiền mặt đơn tại quầy: tạo giao dịch CASH rồi xác nhận ngay.
-     * @throws IllegalArgumentException tiền khách đưa không hợp lệ / ít hơn tổng tiền
+     * Thu tiền mặt đơn tại quầy: tiền khách đưa phải lớn hơn hoặc bằng tổng đơn;
+     * ghi giao dịch CASH (lưu tiền khách đưa để in tiền thối) rồi xác nhận ngay bằng confirmPaid (chỉ đơn của rạp nhân viên).
+     * @throws IllegalArgumentException tiền khách đưa không hợp lệ hoặc ít hơn tổng tiền
      */
     public Outcome payCash(Booking booking, BigDecimal cashReceived, int centreId) throws SQLException {
         if (cashReceived == null || cashReceived.compareTo(booking.getTotalAmount()) < 0) {
@@ -181,8 +214,14 @@ public class PaymentService {
     // ---------------------------------------------------------------- xác nhận thanh toán
 
     /**
-     * Ghi nhận đã nhận tiền (tiền mặt, hoặc VNPay báo thành công) và xuất vé, trong một transaction.
-     * @param centreId rạp của nhân viên; null = mọi rạp (VNPay)
+     * Ghi nhận đã nhận tiền (tiền mặt, hoặc VNPay báo thành công) và xuất vé. Toàn bộ chạy trong một transaction:
+     * 1. Khoá dòng giao dịch (UPDLOCK); không có thì NOT_FOUND; đã PAID thì dừng (ALREADY_PAID), không xuất vé lần hai.
+     * 2. Giao dịch -> PAID.
+     * 3. Suất chiếu đã bị sửa hoặc không còn bán (rạp, phòng, phim, phân phối) -> huỷ đơn, cần hoàn tiền (PAID_BUT_SEATS_LOST).
+     * 4. Số tiền giao dịch lệch tổng đơn (khách đổi bắp nước hoặc voucher sau khi mở VNPay) -> chỉ ghi nhận tiền (PAID_AMOUNT_MISMATCH).
+     * 5. Ghế -> CONFIRMED; ghế đã thuộc người khác (unique index báo trùng) -> huỷ đơn, cần hoàn tiền (PAID_BUT_SEATS_LOST).
+     * 6. Đơn -> CONFIRMED; bắp nước -> PREPARING và trừ kho; ghi lượt dùng voucher; huỷ các giao dịch chờ khác; xuất vé.
+     * @param centreId rạp của nhân viên khi thu tại quầy; null = không giới hạn rạp (VNPay)
      */
     public Outcome confirmPaid(int paymentId, Integer centreId) throws SQLException {
         return DbUtil.inTransaction(conn -> {
@@ -228,8 +267,8 @@ public class PaymentService {
     }
 
     /**
-     * Đơn đã thanh toán có voucher: tăng UsedCount; đơn của khách có tài khoản ghi thêm VoucherUsages
-     * (để giới hạn lượt dùng mỗi khách). Khách vãng lai tại quầy không có UserID nên chỉ tăng UsedCount.
+     * Đơn đã thanh toán có voucher: tăng UsedCount của voucher; đơn của khách có tài khoản ghi thêm VoucherUsages
+     * (để giới hạn lượt dùng mỗi khách). Khách vãng lai tại quầy không có tài khoản nên chỉ tăng UsedCount.
      */
     private void recordVoucherUsage(Connection conn, int bookingId) throws SQLException {
         VoucherOwner owner = bookingDAO.getVoucherOwner(conn, bookingId);
@@ -238,7 +277,10 @@ public class PaymentService {
         voucherDAO.incrementUsedCount(conn, owner.voucherId());
     }
 
-    /** Mỗi ghế đã xác nhận một vé: mã TK + 10 ký tự, nội dung QR "CINEFLOW-TICKET:<mã>". */
+    /**
+     * Xuất vé: mỗi ghế đã CONFIRMED mà chưa có vé được tạo một vé, mã vé = "TK" + 10 ký tự ngẫu nhiên.
+     * Cột QRCode vẫn được lưu để giữ ràng buộc CSDL nhưng không hiện trên vé.
+     */
     private void issueTickets(Connection conn, int bookingId) throws SQLException {
         List<NewTicket> tickets = new ArrayList<>();
         for (int bookingSeatId : bookingDAO.findConfirmedSeatsWithoutTicket(conn, bookingId)) {
@@ -251,8 +293,9 @@ public class PaymentService {
     // ---------------------------------------------------------------- tra cứu
 
     /**
-     * Lý do hiển thị trang thanh toán thất bại: CONFIRMED (đã thanh toán), CANCELLED, EXPIRED (hết giờ giữ ghế),
-     * PAYMENT_FAILED (giao dịch VNPay gần nhất thất bại); null nếu đơn vẫn thanh toán được bình thường.
+     * Lý do hiện trên trang thanh toán thất bại:
+     * CONFIRMED (đơn đã thanh toán), CANCELLED (đã huỷ), EXPIRED (hết giờ giữ ghế), PAYMENT_FAILED (giao dịch VNPay gần nhất thất bại);
+     * null nếu đơn vẫn thanh toán được bình thường.
      */
     public String getFailureReason(Booking booking) throws SQLException {
         if (booking.isPaid()) return "CONFIRMED";
@@ -262,16 +305,17 @@ public class PaymentService {
         return null;
     }
 
+    /** Danh sách vé của đơn (mỗi ghế một vé) để hiện trên trang chi tiết đơn và trang in vé. */
     public List<Ticket> getTickets(int bookingId) throws SQLException {
         return paymentDAO.getTickets(bookingId);
     }
 
-    /** Tiền thối = tiền khách đưa - số tiền giao dịch; null nếu không phải tiền mặt. */
+    /** Tiền thối = tiền khách đưa - số tiền giao dịch; null nếu không phải giao dịch tiền mặt. */
     static BigDecimal calculateChange(BigDecimal amount, BigDecimal cashReceived) {
         return cashReceived == null ? null : cashReceived.subtract(amount);
     }
 
-    /** Điền tiền thối cho các giao dịch trước khi trả về cho servlet / JSP. */
+    /** Điền tiền thối cho từng giao dịch trước khi trả về cho servlet / JSP. */
     static List<PaymentTransaction> withChange(List<PaymentTransaction> transactions) {
         for (PaymentTransaction p : transactions) {
             p.setChange(calculateChange(p.getAmount(), p.getCashReceived()));
@@ -279,11 +323,12 @@ public class PaymentService {
         return transactions;
     }
 
+    /** Tất cả giao dịch của đơn (đã điền tiền thối), hiện ở trang chi tiết đơn. */
     public List<PaymentTransaction> getTransactions(int bookingId) throws SQLException {
         return withChange(paymentDAO.getTransactions(bookingId));
     }
 
-    /** Giao dịch đã thanh toán gần nhất của đơn (in hoá đơn), null nếu chưa có. */
+    /** Giao dịch đã thanh toán gần nhất của đơn (dùng khi in hoá đơn); chưa có thì null. */
     public PaymentTransaction getPaidTransaction(int bookingId) throws SQLException {
         PaymentTransaction paid = null;
         for (PaymentTransaction p : getTransactions(bookingId)) {
@@ -293,9 +338,9 @@ public class PaymentService {
     }
 
     /**
-     * Theo dõi giao dịch (vé + bắp nước lẻ), mới nhất trước, kèm tổng tiền / số giao dịch đã thu.
-     * Cập nhật trước các đơn quá hạn để trạng thái hiển thị đúng.
-     * @param centreId null = mọi rạp; status / method null = không lọc
+     * Dữ liệu trang theo dõi giao dịch (vé và bắp nước lẻ), mới nhất trước, kèm tổng tiền và số giao dịch đã thu.
+     * Trước khi đọc, dọn các đơn quá hạn giữ ghế để trạng thái giao dịch hiện đúng.
+     * @param centreId null = mọi rạp; status, method null = không lọc; days = số ngày gần nhất
      */
     public TrackingSummary getTransactionsForTracking(Integer centreId, String status, String method, int days)
             throws SQLException {

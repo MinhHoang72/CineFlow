@@ -27,25 +27,28 @@ public class FnbSaleService {
     private final PaymentDAO paymentDAO;
     private final FnbOrderService fnbOrderService;
 
+    /** Khởi tạo với các DAO và service thật (dùng khi chạy ứng dụng). */
     public FnbSaleService() {
         this(new FnbOrderDAO(), new PaymentDAO(), new FnbOrderService());
     }
 
+    /** Khởi tạo với DAO và service truyền vào từ ngoài (dùng khi viết test). */
     public FnbSaleService(FnbOrderDAO fnbOrderDAO, PaymentDAO paymentDAO, FnbOrderService fnbOrderService) {
         this.fnbOrderDAO = fnbOrderDAO;
         this.paymentDAO = paymentDAO;
         this.fnbOrderService = fnbOrderService;
     }
 
-    /** Combo + món lẻ đang bán tại rạp. */
+    /** Combo và món lẻ đang bán tại rạp (trang menu bán lẻ tại quầy). */
     public List<FnbMenuItemDTO> getMenu(int centreId) throws SQLException {
         return fnbOrderDAO.getMenu(centreId);
     }
 
     /**
-     * Tạo đơn chờ thanh toán từ form (qty_I12 / qty_C3).
+     * Tạo đơn bắp nước lẻ chờ thanh toán, trong một transaction:
+     * huỷ các đơn chờ quá hạn -> đọc giỏ -> lọc món hợp lệ (phải có ít nhất một món) -> kiểm tra kho -> ghi đơn PENDING (BookingID = NULL).
      * @return FnbOrderID
-     * @throws IllegalArgumentException chưa chọn món / món không còn bán / vượt tồn kho / số lượng sai
+     * @throws IllegalArgumentException chưa chọn món, món hoặc số lượng không hợp lệ, không đủ hàng
      */
     public int createOrder(int centreId, Map<String, String[]> params) throws SQLException {
         Map<String, Integer> cart = FnbOrderService.readCart(params);
@@ -59,7 +62,9 @@ public class FnbSaleService {
         });
     }
 
-    /** Đơn bắp nước lẻ thuộc rạp, null nếu không có / rạp khác. Huỷ trước các đơn chờ quá hạn. */
+    /**
+     * Lấy đơn bắp nước lẻ thuộc rạp của nhân viên (trước đó huỷ các đơn chờ quá hạn); không có hoặc rạp khác thì null.
+     */
     public FnbSaleDTO getOrder(int orderId, int centreId) throws SQLException {
         DbUtil.inTransaction(conn -> {
             expireStalePending(conn);
@@ -69,7 +74,10 @@ public class FnbSaleService {
         return sale == null || sale.getCentreId() != centreId ? null : sale;
     }
 
-    /** Huỷ đơn chưa thanh toán, giao dịch đang chờ -> CANCELLED. @return false nếu đơn không còn chờ thanh toán */
+    /**
+     * Huỷ đơn chưa thanh toán; giao dịch đang chờ -> CANCELLED.
+     * @return false nếu đơn không còn chờ thanh toán
+     */
     public boolean cancel(int orderId) throws SQLException {
         return DbUtil.inTransaction(conn -> {
             boolean cancelled = fnbOrderDAO.cancelPendingStandalone(conn, List.of(orderId)) > 0;
@@ -79,8 +87,8 @@ public class FnbSaleService {
     }
 
     /**
-     * Thu tiền mặt: tạo giao dịch CASH rồi xác nhận ngay.
-     * @throws IllegalArgumentException tiền khách đưa không hợp lệ / ít hơn tổng tiền
+     * Thu tiền mặt đơn bắp nước lẻ: tiền khách đưa phải đủ; ghi giao dịch CASH rồi xác nhận ngay (confirmPaid).
+     * @throws IllegalArgumentException tiền khách đưa không hợp lệ hoặc thiếu
      */
     public Status payCash(FnbSaleDTO sale, BigDecimal cashReceived, int centreId) throws SQLException {
         if (cashReceived == null || cashReceived.compareTo(sale.getTotalAmount()) < 0) {
@@ -91,7 +99,10 @@ public class FnbSaleService {
         return confirmPaid(paymentId, centreId);
     }
 
-    /** Giao dịch VNPay mới cho đơn (huỷ giao dịch VNPay đang chờ trước đó). @return vnp_TxnRef */
+    /**
+     * Tạo giao dịch VNPay mới cho đơn bắp nước lẻ (huỷ giao dịch VNPay đang chờ trước đó).
+     * @return mã giao dịch dùng làm vnp_TxnRef
+     */
     public String createVnpayPayment(FnbSaleDTO sale) throws SQLException {
         String txnRef = sale.getCode() + System.currentTimeMillis();
         DbUtil.inTransaction(conn -> {
@@ -103,10 +114,8 @@ public class FnbSaleService {
     }
 
     /**
-     * Ghi nhận đã thu tiền (tiền mặt, hoặc VNPay báo thành công): giao dịch PAID, đơn -> PREPARING, trừ kho.
-     * Gồm cả đơn CANCELLED (khách trả VNPay muộn sau khi đơn hết hạn chờ). Gọi lặp lại vẫn an toàn.
-     * @param centreId rạp của nhân viên; null = mọi rạp (VNPay)
-     * @return SUCCESS, ALREADY_PAID hoặc NOT_FOUND
+     * Ghi nhận đã thu tiền đơn bắp nước lẻ, trong một transaction:
+     * khoá giao dịch -> đã PAID thì dừng -> giao dịch PAID -> đơn PREPARING -> trừ kho -> huỷ các giao dịch chờ khác.
      */
     public Status confirmPaid(int paymentId, Integer centreId) throws SQLException {
         return DbUtil.inTransaction(conn -> {
@@ -122,7 +131,9 @@ public class FnbSaleService {
         });
     }
 
-    /** Giao dịch đã thanh toán gần nhất của đơn (in hoá đơn), null nếu chưa có. */
+    /**
+     * Giao dịch đã thanh toán gần nhất của đơn (in hoá đơn, tiền khách đưa và tiền thối); chưa có thì null.
+     */
     public PaymentTransaction getPaidTransaction(int orderId) throws SQLException {
         PaymentTransaction paid = null;
         for (PaymentTransaction p : PaymentService.withChange(paymentDAO.getFnbTransactions(orderId))) {
@@ -131,7 +142,7 @@ public class FnbSaleService {
         return paid;
     }
 
-    /** Huỷ các đơn chờ thanh toán quá PENDING_MINUTES phút, giao dịch đang chờ -> TIMEOUT. */
+    /** Huỷ các đơn bắp nước lẻ chờ thanh toán quá PENDING_MINUTES (15) phút; giao dịch đang chờ -> TIMEOUT. */
     void expireStalePending(Connection conn) throws SQLException {
         List<Integer> stale = fnbOrderDAO.findStalePendingStandalone(conn, PENDING_MINUTES);
         paymentDAO.updatePendingForOrders(conn, stale, "TIMEOUT");
