@@ -3,8 +3,7 @@
  * Chức năng chính:
  * 1. Xem trước ảnh Poster ngay khi người dùng chọn tệp từ máy tính.
  * 2. Xem trước video Trailer từ tệp video tải lên từ máy tính.
- * 3. Tự động điều chỉnh Ngày khởi chiếu / Ngày kết thúc khi đổi trạng thái phim.
- * 4. Kiểm tra hợp lệ dữ liệu phía client và hiện hộp thoại xác nhận khi kết thúc phim có suất chiếu.
+ * 3. Kiểm tra hợp lệ dữ liệu phía client và hiện hộp thoại xác nhận khi kết thúc phim có suất chiếu.
  */
 document.addEventListener('DOMContentLoaded', function () {
     // Lấy tham chiếu các phần tử DOM trên biểu mẫu
@@ -115,33 +114,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // ==============================================================
-    // 3. TỰ ĐỘNG ĐIỀU CHỈNH NGÀY KHI ĐỔI TRẠNG THÁI PHIM
-    // ==============================================================
-    if (statusSelect && endInput) {
-        statusSelect.addEventListener('change', function () {
-            const nextStatus = this.value;
-            const today = getLocalToday();
-            const relVal = releaseInput ? releaseInput.value : '';
-
-            if (nextStatus === 'ENDED' || nextStatus === 'ARCHIVED') {
-                // Nếu phim chưa tới ngày khởi chiếu (COMING_SOON bị cấm/hủy sớm):
-                // chốt EndDate = ReleaseDate để luôn đảm bảo EndDate >= ReleaseDate; ngược lại chốt = hôm nay.
-                const targetEnd = (relVal && relVal > today) ? relVal : today;
-                if (!endInput.value || endInput.value > targetEnd) endInput.value = targetEnd;
-            } else if ((originalStatus === 'ARCHIVED' || originalStatus === 'ENDED') && nextStatus === 'COMING_SOON') {
-                // Tái phát hành sang Sắp chiếu -> xóa các ngày cũ trong quá khứ để nhắc Admin nhập lịch mới
-                if (releaseInput && releaseInput.value <= today) releaseInput.value = '';
-                if (endInput.value <= today) endInput.value = '';
-            } else if (originalStatus === 'ENDED' && nextStatus === 'NOW_SHOWING') {
-                // Gia hạn phim đã kết thúc sang Đang chiếu -> yêu cầu nhập lại Ngày kết thúc mới
-                endInput.value = '';
-                endInput.focus();
-            }
-        });
-    }
-
-    // ==============================================================
-    // 4. KIỂM TRA HỢP LỆ DỮ LIỆU & HỘP THOẠI XÁC NHẬN KHI SUBMIT
+    // 3. KIỂM TRA HỢP LỆ DỮ LIỆU & HỘP THOẠI XÁC NHẬN KHI SUBMIT
     // ==============================================================
 
     /** Báo lỗi, đưa con trỏ về ô nhập sai và chặn gửi biểu mẫu lên Server. */
