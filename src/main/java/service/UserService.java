@@ -320,12 +320,14 @@ public class UserService {
             }
         }
 
-        // Kiểm tra điều kiện phân công rạp:
+        // Kiểm tra quy tắc nghiệp vụ phân công cụm rạp:
+        // - Mỗi cụm rạp tại một thời điểm chỉ có tối đa 1 Quản lý hoạt động (Quy tắc GBR-09).
+        // - Nếu chọn rạp mới (khác rạp hiện tại): rạp đó bắt buộc phải đang trống (chưa có Quản lý).
+        // - Nếu giữ nguyên rạp hiện tại hoặc chọn bỏ trống (gỡ rạp về trạng thái tự do): cho phép thực hiện.
         if (newCentreId != null) {
-            // Nếu chọn rạp KHÁC với rạp hiện tại mà quản lý này đang giữ:
             boolean isSameCentre = target.getCentreId() != null && target.getCentreId().intValue() == newCentreId.intValue();
             if (!isSameCentre) {
-                // Kiểm tra xem rạp mới đã có ai phụ trách chưa:
+                // Kiểm tra xem rạp mới đã có Quản lý nào đang hoạt động phụ trách hay chưa
                 if (cinemaDAO.hasActiveManager(newCentreId)) {
                     return "centre_has_manager";
                 }

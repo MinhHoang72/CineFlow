@@ -231,6 +231,12 @@
 
                                 <div class="cf-form-group">
                                     <label>Cụm rạp phụ trách</label>
+                                    <%--
+                                        Quy tắc nghiệp vụ phân công Quản lý (GBR-09):
+                                        - Mỗi cụm rạp chỉ có tối đa 1 Quản lý hoạt động.
+                                        - Khi chỉnh sửa: Quản lý có thể giữ nguyên rạp hiện tại, chuyển sang cụm rạp đang TRỐNG,
+                                          hoặc chọn "-- Chưa phân công cụm rạp --" để gỡ rạp về trạng thái tự do.
+                                    --%>
                                     <select name="centreId" class="modal-select-field">
                                         <c:choose>
                                             <c:when test="${manager.centreId != null}">

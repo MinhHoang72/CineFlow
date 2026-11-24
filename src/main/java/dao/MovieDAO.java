@@ -149,6 +149,10 @@ public class MovieDAO {
 
     /**
      * Cập nhật thông tin của một bộ phim.
+     * Sử dụng Transaction (ACID) để đảm bảo an toàn dữ liệu:
+     * - Nếu phim chuyển sang ENDED hoặc ARCHIVED (kết thúc đợt chiếu), tự động kích hoạt
+     *   quy trình huỷ suất chiếu, vé, bắp nước và hoàn trả lượt dùng voucher cho khách hàng.
+     * - Nếu bất kỳ thao tác nào lỗi, toàn bộ giao dịch sẽ rollback để không phát sinh dữ liệu rác.
      *
      * @param movie đối tượng phim đã thay đổi thông tin
      * @return true nếu cập nhật thành công, ngược lại false
@@ -158,6 +162,7 @@ public class MovieDAO {
                 + "Cast = ?, Language = ?, ReleaseDate = ?, EndDate = ?, PosterURL = ?, TrailerURL = ?, "
                 + "AgeRating = ?, Status = ?, UpdatedAt = GETDATE() WHERE MovieID = ?";
         try (Connection connection = DBContext.getConnection()) {
+            // Tắt auto-commit để bắt đầu Transaction thủ công
             connection.setAutoCommit(false);
             try (PreparedStatement ps = connection.prepareStatement(sql)) {
                 setMovieParams(ps, movie, true);
@@ -167,14 +172,17 @@ public class MovieDAO {
                     return false;
                 }
 
+                // Nếu phim chuyển sang ENDED hoặc ARCHIVED: tự động huỷ các suất chiếu tương lai
                 String status = movie.getStatus();
                 if ("ENDED".equalsIgnoreCase(status) || "ARCHIVED".equalsIgnoreCase(status)) {
                     cancelUpcomingShowtimesForMovie(connection, movie.getMovieId());
                 }
 
+                // Xác nhận giao dịch thành công
                 connection.commit();
                 return true;
             } catch (Exception e) {
+                // Có lỗi phát sinh -> Rollback toàn bộ dữ liệu về trạng thái trước đó
                 connection.rollback();
                 throw e;
             }
@@ -185,7 +193,14 @@ public class MovieDAO {
     }
 
     /**
-     * Cập nhật trạng thái của phim (COMING_SOON, NOW_SHOWING, ENDED, ARCHIVED).
+     * Cập nhật nhanh trạng thái của phim (COMING_SOON, NOW_SHOWING, ENDED, ARCHIVED).
+     * Tận dụng lại logic Transaction của updateMovie():
+     * - Tự động chốt ngày kết thúc (EndDate) là hôm nay nếu phim dừng chiếu.
+     * - Kích hoạt huỷ suất chiếu và hoàn trả voucher tự động.
+     *
+     * @param movieId mã định danh phim
+     * @param status trạng thái phát hành mới
+     * @return true nếu thành công, ngược lại false
      */
     public boolean updateMovieStatus(int movieId, String status) {
         if (movieId <= 0 || status == null || status.isBlank()) return false;
@@ -204,7 +219,21 @@ public class MovieDAO {
             String movieTitle, String showtimeInfo, String reason
     ) {}
 
-    /** Huỷ các suất chiếu chưa bắt đầu của phim khi kết thúc chiếu (ENDED hoặc ARCHIVED) và gửi email thông báo. */
+    /**
+     * Huỷ các suất chiếu chưa bắt đầu của phim khi kết thúc chiếu (ENDED hoặc ARCHIVED).
+     * Được thực thi bên trong Transaction của updateMovie():
+     * 1. Lấy danh sách khách hàng có vé CONFIRMED bị ảnh hưởng để chuẩn bị gửi mail.
+     * 2. Thực thi chuỗi lệnh UPDATE / DELETE đồng bộ theo đúng thứ tự ràng buộc khóa ngoại (FK):
+     *    - 2.1: Hoàn lại lượt dùng cho Voucher trong bảng Vouchers (giảm UsedCount).
+     *    - 2.2: Thu hồi bản ghi sử dụng voucher trong bảng VoucherUsages (trả lại quyền dùng mã cho khách).
+     *    - 2.3: Huỷ vé xem phim (Tickets -> CANCELLED).
+     *    - 2.4: Nhả ghế trên sơ đồ phòng chiếu (BookingSeats -> CANCELLED).
+     *    - 2.5: Huỷ giao dịch thanh toán chờ (Payments -> CANCELLED).
+     *    - 2.6: Huỷ đơn bắp nước đi kèm vé (FnbOrders -> CANCELLED).
+     *    - 2.7: Huỷ đơn đặt vé (Bookings -> CANCELLED).
+     *    - 2.8: Huỷ lịch chiếu (Showtimes -> CANCELLED).
+     * 3. Gửi email thông báo hủy vé đến từng khách hàng.
+     */
     private void cancelUpcomingShowtimesForMovie(Connection connection, int movieId) throws SQLException {
         // 1. Lấy thông tin khách hàng có vé bị ảnh hưởng để chuẩn bị gửi mail
         List<NoticeInfo> notices = new ArrayList<>();
@@ -242,18 +271,25 @@ public class MovieDAO {
                 + "WHERE MovieID = ? AND Status = 'SCHEDULED' AND StartTime > SYSDATETIME())";
 
         String[] sqls = {
-            // Hoàn lại lượt dùng voucher và giải phóng bản ghi sử dụng để khách hàng có thể dùng lại mã
+            // 2.1 Hoàn lại số lượt đã dùng cho Voucher (giảm UsedCount tương ứng số đơn bị huỷ)
             "UPDATE v SET v.UsedCount = CASE WHEN v.UsedCount > sub.cnt THEN v.UsedCount - sub.cnt ELSE 0 END FROM Vouchers v JOIN (SELECT b.VoucherID, COUNT(*) AS cnt FROM Bookings b WHERE b.VoucherID IS NOT NULL AND b.BookingStatus IN ('PENDING', 'CONFIRMED') AND b.ShowtimeID " + condition + " GROUP BY b.VoucherID) sub ON v.VoucherID = sub.VoucherID",
+            // 2.2 Thu hồi bản ghi sử dụng voucher để khách hàng có thể dùng lại mã cho lần đặt sau
             "DELETE FROM VoucherUsages WHERE BookingID IN (SELECT BookingID FROM Bookings WHERE ShowtimeID " + condition + ")",
-
+            // 2.3 Chuyển trạng thái vé thành CANCELLED
             "UPDATE Tickets SET TicketStatus = 'CANCELLED' WHERE TicketStatus = 'VALID' AND BookingSeatID IN (SELECT BookingSeatID FROM BookingSeats WHERE ShowtimeID " + condition + ")",
+            // 2.4 Nhả ghế phòng chiếu (CANCELLED) để không bị chiếm chỗ
             "UPDATE BookingSeats SET SeatStatus = 'CANCELLED' WHERE SeatStatus IN ('HELD', 'CONFIRMED') AND ShowtimeID " + condition,
+            // 2.5 Hủy giao dịch thanh toán đang ở trạng thái PENDING
             "UPDATE Payments SET PaymentStatus = 'CANCELLED' WHERE PaymentStatus = 'PENDING' AND BookingID IN (SELECT BookingID FROM Bookings WHERE ShowtimeID " + condition + ")",
+            // 2.6 Hủy đơn bắp nước đi kèm đơn đặt vé
             "UPDATE FnbOrders SET OrderStatus = 'CANCELLED', UpdatedAt = SYSDATETIME() WHERE OrderStatus <> 'CANCELLED' AND BookingID IN (SELECT BookingID FROM Bookings WHERE ShowtimeID " + condition + ")",
+            // 2.7 Hủy đơn đặt vé chính
             "UPDATE Bookings SET BookingStatus = 'CANCELLED', UpdatedAt = SYSDATETIME() WHERE BookingStatus IN ('PENDING', 'CONFIRMED') AND ShowtimeID " + condition,
+            // 2.8 Cuối cùng, hủy lịch chiếu của suất tương lai
             "UPDATE Showtimes SET Status = 'CANCELLED', UpdatedAt = SYSDATETIME() WHERE ShowtimeID " + condition
         };
 
+        // Thực thi lần lượt từng câu lệnh UPDATE/DELETE trong cùng kết nối Transaction
         for (String statement : sqls) {
             try (PreparedStatement ps = connection.prepareStatement(statement)) {
                 ps.setInt(1, movieId);

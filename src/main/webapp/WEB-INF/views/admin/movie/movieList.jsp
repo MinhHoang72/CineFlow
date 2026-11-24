@@ -222,6 +222,7 @@
                                         <td><strong><%= m.getDuration() %></strong> phút</td>
                                         <td><%= !releaseDateStr.isBlank() ? releaseDateStr : "—" %></td>
                                         <td><span class="cf-badge <%= badgeClass %>"><%= stText %></span></td>
+                                        <%-- CỘT TỶ LỆ PHÂN PHỐI: Hiển thị dạng badge có liên kết bấm sang cấu hình phân phối (/admin/distribution?movieId=...) --%>
                                         <td style="text-align: center;">
                                             <% if (m.getTotalCentres() > 0 && m.getDistributedCentres() > 0) { %>
                                                 <a href="${pageContext.request.contextPath}/admin/distribution?movieId=<%= m.getMovieId() %>"
