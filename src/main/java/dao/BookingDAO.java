@@ -22,15 +22,20 @@ import java.util.List;
  */
 public class BookingDAO {
 
-    /** Tien ve, giam gia va trang thai hien tai cua don. */
+    /**
+     * Tiền vé (SubTotal), số tiền giảm (DiscountAmount) và trạng thái hiện tại của đơn, dùng để tính lại tổng tiền.
+     */
     public record Amounts(BigDecimal subTotal, BigDecimal discountAmount, String status) {}
 
-    /** Voucher va khach cua don (null neu khong co). */
+    /** Voucher đang áp và khách (UserID) của đơn; null nếu không có. Dùng khi ghi lượt dùng voucher. */
     public record VoucherOwner(Integer voucherId, Integer userId) {}
 
     // ---------------------------------------------------------------- doc don
 
-    /** Don kem suat chieu va ghe (chua gom bap nuoc), null neu khong co. */
+    /**
+     * Lấy đơn kèm suất chiếu và danh sách ghế (chưa gồm bắp nước); không có thì null.
+     * Bảng: Bookings, Vouchers, BookingSeats, Showtimes, Movies, Halls, Centres, Seats.
+     */
     public Booking getBooking(int bookingId) throws SQLException {
         String sql = "SELECT BookingID, BookingCode, UserID, ShowtimeID, BookingType, BookingStatus, SubTotal, DiscountAmount, "
                    + "  TotalAmount, CreatedAt, v.VoucherCode, "
@@ -55,6 +60,7 @@ public class BookingDAO {
         }
     }
 
+    /** Đọc tiền vé, số tiền giảm và trạng thái của đơn (trong transaction có sẵn). */
     public Amounts getAmounts(Connection conn, int bookingId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
                 "SELECT SubTotal, DiscountAmount, BookingStatus FROM Bookings WHERE BookingID = ?")) {
@@ -65,6 +71,7 @@ public class BookingDAO {
         }
     }
 
+    /** Đọc voucher đang áp và khách của đơn (trong transaction có sẵn). */
     public VoucherOwner getVoucherOwner(Connection conn, int bookingId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement("SELECT VoucherID, UserID FROM Bookings WHERE BookingID = ?")) {
             ps.setInt(1, bookingId);
@@ -81,26 +88,26 @@ public class BookingDAO {
 
     // ---------------------------------------------------------------- tim don cho thanh toan
 
-    /** Don PENDING co ghe HELD da qua HoldUntil (theo gio SQL Server). */
+    /** Tìm các đơn PENDING có ghế HELD đã quá HoldUntil (so theo giờ SQL Server). */
     public List<Integer> findExpiredPendingIds(Connection conn) throws SQLException {
         return ids(conn, "SELECT BookingID FROM Bookings b WHERE b.BookingStatus = 'PENDING' AND EXISTS ("
                        + "SELECT 1 FROM BookingSeats bs WHERE bs.BookingID = b.BookingID "
                        + "AND bs.SeatStatus = 'HELD' AND bs.HoldUntil <= SYSDATETIME())");
     }
 
-    /** Don PENDING cua khach cho mot suat chieu. */
+    /** Tìm các đơn PENDING của một khách cho một suất chiếu (để huỷ trước khi khách giữ ghế mới). */
     public List<Integer> findPendingIdsOfUserForShowtime(Connection conn, int userId, int showtimeId) throws SQLException {
         return ids(conn, "SELECT BookingID FROM Bookings WHERE BookingStatus = 'PENDING' AND UserID = ? AND ShowtimeID = ?",
                 userId, showtimeId);
     }
 
-    /** Don PENDING co ma bookingId thuoc khach userId (0 hoac 1 phan tu). */
+    /** Tìm đơn PENDING có mã bookingId và thuộc khách userId (danh sách 0 hoặc 1 phần tử). */
     public List<Integer> findPendingIdOfUser(Connection conn, int bookingId, int userId) throws SQLException {
         return ids(conn, "SELECT BookingID FROM Bookings WHERE BookingStatus = 'PENDING' AND BookingID = ? AND UserID = ?",
                 bookingId, userId);
     }
 
-    /** Don tai quay PENDING co ma bookingId (0 hoac 1 phan tu). */
+    /** Tìm đơn tại quầy PENDING có mã bookingId (danh sách 0 hoặc 1 phần tử). */
     public List<Integer> findPendingCounterId(Connection conn, int bookingId) throws SQLException {
         return ids(conn, "SELECT BookingID FROM Bookings WHERE BookingStatus = 'PENDING' AND BookingID = ? "
                        + "AND BookingType = 'COUNTER'", bookingId);
@@ -108,7 +115,10 @@ public class BookingDAO {
 
     // ---------------------------------------------------------------- ghi don
 
-    /** @return BookingID vua tao */
+    /**
+     * Ghi đơn mới: mã đơn, khách (null nếu tại quầy), loại ONLINE / COUNTER, suất chiếu, tiền vé; trạng thái PENDING.
+     * @return BookingID vừa tạo
+     */
     public int insertBooking(Connection conn, String code, Integer userId, String bookingType, int showtimeId,
             BigDecimal subTotal) throws SQLException {
         String sql = "INSERT INTO Bookings (BookingCode, UserID, ShowtimeID, BookingType, BookingStatus, "
@@ -129,7 +139,10 @@ public class BookingDAO {
         }
     }
 
-    /** Doi trang thai cac don con PENDING. @return so don da doi */
+    /**
+     * Đổi trạng thái các đơn còn PENDING (ví dụ sang EXPIRED hoặc CANCELLED). Đơn đã đổi trạng thái khác thì không bị đụng.
+     * @return số đơn đã đổi
+     */
     public int updatePendingStatus(Connection conn, List<Integer> bookingIds, String newStatus) throws SQLException {
         if (bookingIds.isEmpty()) return 0;
         try (PreparedStatement ps = conn.prepareStatement(
@@ -141,6 +154,7 @@ public class BookingDAO {
         }
     }
 
+    /** Đổi trạng thái một đơn (CONFIRMED, CANCELLED...) và cập nhật UpdatedAt. */
     public void updateStatus(Connection conn, int bookingId, String newStatus) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
                 "UPDATE Bookings SET BookingStatus = ?, UpdatedAt = SYSDATETIME() WHERE BookingID = ?")) {
@@ -150,7 +164,10 @@ public class BookingDAO {
         }
     }
 
-    /** Don CONFIRMED cua suat da chieu xong (khong tinh suat bi huy) -> COMPLETED. @return so don da doi */
+    /**
+     * Đơn CONFIRMED của suất đã chiếu xong (không tính suất bị huỷ) -> COMPLETED.
+     * @return số đơn đã đổi
+     */
     public int completeFinishedBookings(Connection conn) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
                 "UPDATE b SET BookingStatus = 'COMPLETED', UpdatedAt = SYSDATETIME() "
@@ -160,7 +177,7 @@ public class BookingDAO {
         }
     }
 
-    /** Ghi tong tien moi cho don con PENDING. */
+    /** Ghi tổng tiền mới cho đơn còn PENDING. */
     public void updateTotal(Connection conn, int bookingId, BigDecimal total) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
                 "UPDATE Bookings SET TotalAmount = ?, UpdatedAt = SYSDATETIME() WHERE BookingID = ? AND BookingStatus = 'PENDING'")) {
@@ -170,7 +187,10 @@ public class BookingDAO {
         }
     }
 
-    /** Gan / bo voucher cua don con PENDING. @param voucherId null = bo voucher */
+    /**
+     * Gán hoặc bỏ voucher và số tiền giảm của đơn còn PENDING.
+     * @param voucherId null = bỏ voucher
+     */
     public void updateVoucher(Connection conn, int bookingId, Integer voucherId, BigDecimal discount) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
                 "UPDATE Bookings SET VoucherID = ?, DiscountAmount = ?, UpdatedAt = SYSDATETIME() "
@@ -185,7 +205,10 @@ public class BookingDAO {
 
     // ---------------------------------------------------------------- ghe cua don
 
-    /** Ghi cac ghe dang giu (HELD) cua don, gia lay theo tung ghe. */
+    /**
+     * Ghi các ghế đang giữ của đơn vào BookingSeats: trạng thái HELD, giá từng ghế, hạn giữ ghế (HoldUntil).
+     * Unique index UX_BookingSeats_ActiveSeat chặn hai đơn cùng giữ một ghế của một suất.
+     */
     public void insertHeldSeats(Connection conn, int bookingId, int showtimeId, List<Seat> seats, Timestamp holdUntil)
             throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
@@ -203,7 +226,7 @@ public class BookingDAO {
         }
     }
 
-    /** Ghe HELD da qua HoldUntil -> RELEASED (ra khoi unique index, nguoi khac giu duoc). */
+    /** Ghế HELD đã quá HoldUntil -> RELEASED. Khi đó ghế ra khỏi unique index nên người khác giữ được. */
     public void releaseOverdueSeats(Connection conn) throws SQLException {
         try (Statement st = conn.createStatement()) {
             st.executeUpdate("UPDATE BookingSeats SET SeatStatus = 'RELEASED' "
@@ -211,7 +234,7 @@ public class BookingDAO {
         }
     }
 
-    /** Ghe HELD cua cac don -> CANCELLED. */
+    /** Ghế HELD của các đơn -> CANCELLED (đơn bị huỷ). */
     public void cancelHeldSeats(Connection conn, List<Integer> bookingIds) throws SQLException {
         if (bookingIds.isEmpty()) return;
         try (PreparedStatement ps = conn.prepareStatement(
@@ -223,8 +246,8 @@ public class BookingDAO {
     }
 
     /**
-     * Ghe cua don -> CONFIRMED (gom ca RELEASED / CANCELLED khi tien ve sau khi het han giu ghe).
-     * @throws SQLException loi trung khoa neu ghe da thuoc don khac (unique index UX_BookingSeats_ActiveSeat)
+     * Ghế của đơn -> CONFIRMED khi đã nhận tiền. Gồm cả ghế RELEASED / CANCELLED khi tiền về sau lúc hết hạn giữ ghế.
+     * @throws SQLException lỗi trùng khoá nếu ghế đã thuộc đơn khác (confirmPaid bắt lỗi này để huỷ đơn)
      */
     public void confirmSeats(Connection conn, int bookingId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
@@ -235,14 +258,17 @@ public class BookingDAO {
         }
     }
 
-    /** BookingSeatID cua cac ghe CONFIRMED chua xuat ve. */
+    /** Các BookingSeatID đã CONFIRMED mà chưa có vé (để xuất vé, tránh xuất trùng). */
     public List<Integer> findConfirmedSeatsWithoutTicket(Connection conn, int bookingId) throws SQLException {
         return ids(conn, "SELECT bs.BookingSeatID FROM BookingSeats bs "
                        + "WHERE bs.BookingID = ? AND bs.SeatStatus = 'CONFIRMED' "
                        + "AND NOT EXISTS (SELECT 1 FROM Tickets t WHERE t.BookingSeatID = bs.BookingSeatID)", bookingId);
     }
 
-    /** Gio SQL Server cong them so phut (moc het han giu ghe dung chung mot dong ho voi cac cau lenh SQL). */
+    /**
+     * Giờ hiện tại của SQL Server cộng thêm số phút, dùng làm hạn giữ ghế.
+     * Dùng giờ SQL Server (không dùng giờ Java) để khớp với các câu lệnh so sánh HoldUntil với SYSDATETIME().
+     */
     public Timestamp getDbTimePlusMinutes(Connection conn, int minutes) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement("SELECT DATEADD(MINUTE, ?, SYSDATETIME())")) {
             ps.setInt(1, minutes);
@@ -255,6 +281,7 @@ public class BookingDAO {
 
     // ---------------------------------------------------------------- noi bo
 
+    /** Đọc thông tin suất chiếu của đơn (phim, rạp, phòng, giờ) để gắn vào đối tượng Booking. */
     private static Showtime loadShowtime(Connection conn, int showtimeId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(ShowtimeDAO.SELECT + "WHERE s.ShowtimeID = ?")) {
             ps.setInt(1, showtimeId);
@@ -264,6 +291,7 @@ public class BookingDAO {
         }
     }
 
+    /** Đọc danh sách ghế của đơn (nhãn ghế, loại, giá, trạng thái) để gắn vào đối tượng Booking. */
     private static List<Seat> loadSeats(Connection conn, int bookingId) throws SQLException {
         String sql = "SELECT se.SeatID, se.SeatRow, se.SeatNumber, se.SeatType, bs.Price "
                    + "FROM BookingSeats bs JOIN Seats se ON se.SeatID = bs.SeatID "
@@ -281,6 +309,7 @@ public class BookingDAO {
         return seats;
     }
 
+    /** Chạy câu SELECT trả về một cột số nguyên với các tham số truyền vào, gom thành danh sách id. */
     private static List<Integer> ids(Connection conn, String sql, int... params) throws SQLException {
         List<Integer> ids = new ArrayList<>();
         try (PreparedStatement ps = conn.prepareStatement(sql)) {

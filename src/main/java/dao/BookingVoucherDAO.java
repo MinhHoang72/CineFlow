@@ -22,7 +22,7 @@ public class BookingVoucherDAO {
             + "v.DiscountType, v.DiscountValue, v.MinimumOrderValue, v.MaximumDiscount, v.StartDate, v.EndDate, "
             + "v.UsageLimit, v.UsedCount, v.PerCustomerLimit, v.Status";
 
-    /** Voucher theo ma (khong phan biet hoa thuong), null neu khong co. */
+    /** Tìm voucher theo mã (không phân biệt hoa thường); không có thì null. */
     public Voucher findByCode(String code) throws SQLException {
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement("SELECT " + COLUMNS + " FROM Vouchers v WHERE v.VoucherCode = ?")) {
@@ -34,9 +34,8 @@ public class BookingVoucherDAO {
     }
 
     /**
-     * Voucher dang dung duoc cho suat chieu nay: dang hoat dong, trong han, con luot, dung rap / phim / ngay chieu,
-     * va khach chua dung het luot cua minh. Chua xet gia tri don toi thieu (VoucherService.applyVoucher xet).
-     * @param userId null = khach vang lai tai quay (bo qua gioi han luot moi khach)
+     * Các voucher đang dùng được cho suất chiếu: đang hoạt động, trong hạn, còn lượt, đúng rạp / phim / thứ trong tuần,
+     * và khách (nếu có tài khoản) chưa dùng hết lượt của mình. Dùng cho danh sách voucher gợi ý ở trang xem lại đơn.
      */
     public List<Voucher> findAvailable(int centreId, int movieId, LocalDate showDate, Integer userId) throws SQLException {
         String sql = "SELECT " + COLUMNS + " FROM Vouchers v "
@@ -73,6 +72,7 @@ public class BookingVoucherDAO {
         }
     }
 
+    /** Đọc một dòng kết quả SQL thành đối tượng Voucher. */
     private static Voucher map(ResultSet rs) throws SQLException {
         Voucher v = new Voucher();
         v.setVoucherId(rs.getInt("VoucherID"));
@@ -95,27 +95,27 @@ public class BookingVoucherDAO {
         return v;
     }
 
-    /** So luot moi khach duoc dung voucher (PerCustomerLimit). */
+    /** Số lượt mỗi khách được dùng voucher (cột PerCustomerLimit). */
     public int perCustomerLimit(int voucherId) throws SQLException {
         return queryInt("SELECT PerCustomerLimit FROM Vouchers WHERE VoucherID = ?", voucherId);
     }
 
-    /** So lan khach da dung voucher o cac don da thanh toan. */
+    /** Số lần khách đã dùng voucher ở các đơn đã thanh toán. */
     public int countUserUsages(int voucherId, int userId) throws SQLException {
         return queryInt("SELECT COUNT(*) FROM VoucherUsages WHERE VoucherID = ? AND UserID = ?", voucherId, userId);
     }
 
-    /** Cac rap duoc khai bao rieng cho voucher (rong = khong gioi han). */
+    /** Các rạp được khai báo riêng cho voucher (rỗng = áp dụng mọi rạp). */
     public List<Integer> getScopeCentreIds(int voucherId) throws SQLException {
         return intList("SELECT CentreID FROM VoucherCentres WHERE VoucherID = ?", voucherId);
     }
 
-    /** Cac phim duoc khai bao rieng cho voucher (rong = khong gioi han). */
+    /** Các phim được khai báo riêng cho voucher (rỗng = áp dụng mọi phim). */
     public List<Integer> getScopeMovieIds(int voucherId) throws SQLException {
         return intList("SELECT MovieID FROM VoucherMovies WHERE VoucherID = ?", voucherId);
     }
 
-    /** Cac thu trong tuan (MONDAY...) duoc khai bao rieng cho voucher (rong = khong gioi han). */
+    /** Các thứ trong tuần (MONDAY...) được khai báo riêng cho voucher (rỗng = áp dụng mọi ngày). */
     public List<String> getScopeDays(int voucherId) throws SQLException {
         List<String> days = new ArrayList<>();
         try (Connection conn = DBContext.getConnection();
@@ -128,7 +128,7 @@ public class BookingVoucherDAO {
         return days;
     }
 
-    /** Ghi luot dung voucher cua khach cho don (bo qua neu da ghi). */
+    /** Ghi lượt dùng voucher của khách cho đơn vào VoucherUsages; đã ghi rồi thì bỏ qua. */
     public void insertUsageIfAbsent(Connection conn, int voucherId, int userId, int bookingId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
                 "INSERT INTO VoucherUsages (VoucherID, UserID, BookingID) SELECT ?, ?, ? "
@@ -142,6 +142,7 @@ public class BookingVoucherDAO {
         }
     }
 
+    /** Tăng số lượt đã dùng (UsedCount) của voucher thêm 1. */
     public void incrementUsedCount(Connection conn, int voucherId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement("UPDATE Vouchers SET UsedCount = UsedCount + 1 WHERE VoucherID = ?")) {
             ps.setInt(1, voucherId);
@@ -149,6 +150,7 @@ public class BookingVoucherDAO {
         }
     }
 
+    /** Chạy câu SELECT một cột số nguyên với một tham số id, trả về danh sách. */
     private static List<Integer> intList(String sql, int param) throws SQLException {
         List<Integer> list = new ArrayList<>();
         try (Connection conn = DBContext.getConnection();
@@ -161,6 +163,7 @@ public class BookingVoucherDAO {
         return list;
     }
 
+    /** Chạy câu SELECT trả về một số nguyên (ví dụ COUNT); không có dòng thì 0. */
     private static int queryInt(String sql, int... params) throws SQLException {
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {

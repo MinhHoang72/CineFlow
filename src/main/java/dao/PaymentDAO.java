@@ -21,40 +21,48 @@ import java.util.List;
  */
 public class PaymentDAO {
 
-    /** Giao dich VNPay cua don dat ve (PaymentMethod = 'QR', TransactionCode = vnp_TxnRef). */
+    /**
+     * Giao dịch VNPay của đơn vé (PaymentMethod = 'QR', TransactionCode = vnp_TxnRef): id, đơn, số tiền, trạng thái.
+     */
     public record VnpayRef(int paymentId, int bookingId, BigDecimal amount, String status) {}
 
-    /** Giao dich VNPay cua don bap nuoc le (FnbOrderID co gia tri, BookingID = NULL). */
+    /** Giao dịch VNPay của đơn bắp nước lẻ (FnbOrderID có giá trị, BookingID = NULL). */
     public record FnbVnpayRef(int paymentId, int orderId, BigDecimal amount, String status) {}
 
-    /** Giao dich ve da khoa de xac nhan, kem tong tien hien tai cua don. */
+    /** Giao dịch vé đã khoá để xác nhận, kèm tổng tiền hiện tại của đơn (để so số tiền). */
     public record LockedPayment(int bookingId, String status, BigDecimal amount, BigDecimal bookingTotal) {}
 
-    /** Giao dich bap nuoc le da khoa de xac nhan. */
+    /** Giao dịch bắp nước lẻ đã khoá để xác nhận. */
     public record LockedFnbPayment(int orderId, String status) {}
 
-    /** Ve moi can ghi. */
+    /** Dữ liệu một vé sắp ghi: ghế (BookingSeatID), mã vé, chuỗi QR lưu trong CSDL. */
     public record NewTicket(int bookingSeatId, String ticketCode, String qrCode) {}
 
     // ---------------------------------------------------------------- giao dich ve
 
-    /** @return PaymentID */
+    /**
+     * Ghi giao dịch PENDING cho đơn vé (VNPay hoặc tiền mặt).
+     * @return PaymentID
+     */
     public int insertBookingPayment(Connection conn, int bookingId, String transactionCode, String method,
             BigDecimal amount, BigDecimal cashReceived) throws SQLException {
         return insert(conn, "BookingID", bookingId, transactionCode, method, amount, cashReceived);
     }
 
-    /** Giao dich VNPay dang cho cua don -> CANCELLED (khach tao giao dich moi). */
+    /** Giao dịch VNPay đang chờ của đơn -> CANCELLED (khách tạo giao dịch mới khi thanh toán lại). */
     public void cancelPendingQr(Connection conn, int bookingId) throws SQLException {
         update(conn, "UPDATE Payments SET PaymentStatus = 'CANCELLED' "
                    + "WHERE BookingID = ? AND PaymentMethod = 'QR' AND PaymentStatus = 'PENDING'", bookingId);
     }
 
-    /** Giao dich dang cho cua cac don -> trang thai moi (CANCELLED / TIMEOUT). */
+    /**
+     * Giao dịch đang chờ của các đơn vé -> trạng thái mới (CANCELLED khi huỷ đơn, TIMEOUT khi hết hạn giữ ghế).
+     */
     public void updatePendingForBookings(Connection conn, List<Integer> bookingIds, String newStatus) throws SQLException {
         updatePendingIn(conn, "BookingID", bookingIds, newStatus);
     }
 
+    /** Tìm giao dịch VNPay của đơn vé theo mã giao dịch (vnp_TxnRef); không có thì null. */
     public VnpayRef findVnpay(String txnRef) throws SQLException {
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(
@@ -68,7 +76,7 @@ public class PaymentDAO {
         }
     }
 
-    /** PENDING -> FAILED (VNPay bao giao dich khong thanh cong). */
+    /** Giao dịch PENDING -> FAILED (VNPay báo không thành công). */
     public void markFailed(int paymentId) throws SQLException {
         try (Connection conn = DBContext.getConnection()) {
             update(conn, "UPDATE Payments SET PaymentStatus = 'FAILED' WHERE PaymentID = ? AND PaymentStatus = 'PENDING'",
@@ -76,7 +84,7 @@ public class PaymentDAO {
         }
     }
 
-    /** Trang thai giao dich VNPay moi nhat cua don, null neu chua co. */
+    /** Trạng thái giao dịch VNPay mới nhất của đơn (để biết lý do thanh toán thất bại); chưa có thì null. */
     public String latestQrStatus(int bookingId) throws SQLException {
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(
@@ -90,8 +98,10 @@ public class PaymentDAO {
     }
 
     /**
-     * Khoa giao dich ve (UPDLOCK) de xac nhan, kem tong tien don. null neu khong co / khong thuoc rap.
-     * @param centreId null = moi rap
+     * Khoá dòng giao dịch vé (UPDLOCK) trong transaction để xác nhận, kèm tổng tiền đơn.
+     * Khoá giúp hai yêu cầu xác nhận cùng lúc (return URL và IPN) không chạy chồng nhau.
+     * @param centreId null = không giới hạn rạp; có giá trị thì giao dịch phải thuộc rạp đó
+     * @return null nếu không có hoặc không thuộc rạp
      */
     public LockedPayment lockBookingPayment(Connection conn, int paymentId, Integer centreId) throws SQLException {
         // Serialize payment confirmation with manager edits/cancellation and seat holds.
@@ -115,10 +125,16 @@ public class PaymentDAO {
         }
     }
 
+    /** Giao dịch -> PAID và ghi thời điểm thanh toán (PaidAt). */
     public void markPaid(Connection conn, int paymentId) throws SQLException {
         update(conn, "UPDATE Payments SET PaymentStatus = 'PAID', PaidAt = SYSDATETIME() WHERE PaymentID = ?", paymentId);
     }
 
+    /**
+     * Đơn còn hợp lệ để xác nhận không: đơn chưa huỷ; suất vẫn SCHEDULED, chưa chiếu, đang mở bán;
+     * phim đang chiếu; rạp ACTIVE; phòng AVAILABLE; phim còn được phân phối cho rạp.
+     * Sai một điều kiện thì confirmPaid huỷ đơn (tiền về muộn sau khi suất bị sửa hoặc ngừng bán).
+     */
     public boolean bookingStillMatchesShowtime(Connection conn, int bookingId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement("SELECT 1 FROM Bookings b JOIN Showtimes s ON s.ShowtimeID=b.ShowtimeID JOIN Halls h ON h.HallID=s.HallID JOIN Movies m ON m.MovieID=s.MovieID JOIN Centres c ON c.CentreID=h.CentreID WHERE b.BookingID=? AND b.BookingStatus<>'CANCELLED' AND s.Status='SCHEDULED' AND s.StartTime>SYSDATETIME() AND s.SaleState='OPEN' AND m.Status='NOW_SHOWING' AND c.Status='ACTIVE' AND h.Status='AVAILABLE' AND EXISTS (SELECT 1 FROM CentreMovies cm WHERE cm.MovieID=s.MovieID AND cm.CentreID=c.CentreID AND cm.IsActive=1 AND cm.Status='ACTIVE')")) {
             ps.setInt(1, bookingId);
@@ -126,24 +142,24 @@ public class PaymentDAO {
         }
     }
 
-    /** Cac giao dich con cho (PENDING / TIMEOUT) khac cua don -> CANCELLED. */
+    /** Các giao dịch còn chờ khác (PENDING / TIMEOUT) của đơn -> CANCELLED, sau khi một giao dịch đã PAID. */
     public void cancelOtherPending(Connection conn, int bookingId, int paidPaymentId) throws SQLException {
         cancelOthers(conn, "BookingID", bookingId, paidPaymentId);
     }
 
-    /** Tat ca giao dich cua don, cu nhat truoc. */
+    /** Tất cả giao dịch của đơn vé, cũ nhất trước. */
     public List<PaymentTransaction> getTransactions(int bookingId) throws SQLException {
         return transactions("BookingID", bookingId);
     }
 
-    /** Tat ca giao dich cua don bap nuoc le, cu nhat truoc. */
+    /** Tất cả giao dịch của đơn bắp nước lẻ, cũ nhất trước. */
     public List<PaymentTransaction> getFnbTransactions(int orderId) throws SQLException {
         return transactions("FnbOrderID", orderId);
     }
 
     /**
-     * Giao dich ve + bap nuoc le, moi nhat truoc.
-     * @param centreId null = moi rap; status / method null = khong loc
+     * Giao dịch vé và bắp nước lẻ cho trang theo dõi giao dịch, mới nhất trước.
+     * @param centreId null = mọi rạp; status, method null = không lọc; days = số ngày gần nhất
      */
     public List<Payment> getTransactionsForTracking(Integer centreId, String status, String method, int days)
             throws SQLException {
@@ -192,6 +208,7 @@ public class PaymentDAO {
 
     // ---------------------------------------------------------------- ve
 
+    /** Ghi các vé mới vào bảng Tickets (trạng thái VALID), mỗi vé gắn với một ghế đã CONFIRMED. */
     public void insertTickets(Connection conn, List<NewTicket> tickets) throws SQLException {
         if (tickets.isEmpty()) return;
         try (PreparedStatement ps = conn.prepareStatement(
@@ -206,6 +223,7 @@ public class PaymentDAO {
         }
     }
 
+    /** Danh sách vé của đơn kèm thông tin phim, rạp, phòng, ghế để hiện và in vé. */
     public List<Ticket> getTickets(int bookingId) throws SQLException {
         String sql = "SELECT t.TicketCode, t.QRCode, t.TicketStatus, se.SeatRow, se.SeatNumber, se.SeatType "
                    + "FROM Tickets t JOIN BookingSeats bs ON bs.BookingSeatID = t.BookingSeatID "
@@ -228,23 +246,27 @@ public class PaymentDAO {
 
     // ---------------------------------------------------------------- giao dich bap nuoc le
 
-    /** @return PaymentID */
+    /**
+     * Ghi giao dịch PENDING cho đơn bắp nước lẻ (cột FnbOrderID).
+     * @return PaymentID
+     */
     public int insertFnbPayment(Connection conn, int orderId, String transactionCode, String method,
             BigDecimal amount, BigDecimal cashReceived) throws SQLException {
         return insert(conn, "FnbOrderID", orderId, transactionCode, method, amount, cashReceived);
     }
 
-    /** Giao dich VNPay dang cho cua don bap nuoc le -> CANCELLED. */
+    /** Giao dịch VNPay đang chờ của đơn bắp nước lẻ -> CANCELLED. */
     public void cancelPendingQrForOrder(Connection conn, int orderId) throws SQLException {
         update(conn, "UPDATE Payments SET PaymentStatus = 'CANCELLED' "
                    + "WHERE FnbOrderID = ? AND PaymentMethod = 'QR' AND PaymentStatus = 'PENDING'", orderId);
     }
 
-    /** Giao dich dang cho cua cac don bap nuoc le -> trang thai moi (CANCELLED / TIMEOUT). */
+    /** Giao dịch đang chờ của các đơn bắp nước lẻ -> trạng thái mới (CANCELLED / TIMEOUT). */
     public void updatePendingForOrders(Connection conn, List<Integer> orderIds, String newStatus) throws SQLException {
         updatePendingIn(conn, "FnbOrderID", orderIds, newStatus);
     }
 
+    /** Tìm giao dịch VNPay của đơn bắp nước lẻ theo mã giao dịch; không có thì null. */
     public FnbVnpayRef findFnbVnpay(String txnRef) throws SQLException {
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(
@@ -258,7 +280,11 @@ public class PaymentDAO {
         }
     }
 
-    /** Khoa giao dich bap nuoc le (UPDLOCK). null neu khong co / khong thuoc rap. @param centreId null = moi rap */
+    /**
+     * Khoá dòng giao dịch bắp nước lẻ (UPDLOCK) để xác nhận.
+     * @param centreId null = không giới hạn rạp
+     * @return null nếu không có hoặc không thuộc rạp
+     */
     public LockedFnbPayment lockFnbPayment(Connection conn, int paymentId, Integer centreId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
                 "SELECT p.FnbOrderID, p.PaymentStatus FROM Payments p WITH (UPDLOCK, ROWLOCK) "
@@ -273,13 +299,18 @@ public class PaymentDAO {
         }
     }
 
-    /** Cac giao dich con cho khac cua don bap nuoc le -> CANCELLED. */
+    /** Các giao dịch còn chờ khác của đơn bắp nước lẻ -> CANCELLED, sau khi một giao dịch đã PAID. */
     public void cancelOtherPendingForOrder(Connection conn, int orderId, int paidPaymentId) throws SQLException {
         cancelOthers(conn, "FnbOrderID", orderId, paidPaymentId);
     }
 
     // ---------------------------------------------------------------- noi bo
 
+    /**
+     * Hàm ghi giao dịch dùng chung cho đơn vé (BookingID) và đơn bắp nước lẻ (FnbOrderID):
+     * trạng thái PENDING, mã giao dịch, phương thức, số tiền, tiền khách đưa (null nếu VNPay).
+     * @return PaymentID vừa tạo
+     */
     private static int insert(Connection conn, String ownerColumn, int ownerId, String transactionCode, String method,
             BigDecimal amount, BigDecimal cashReceived) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
@@ -298,6 +329,7 @@ public class PaymentDAO {
         }
     }
 
+    /** Đổi trạng thái các giao dịch PENDING của danh sách đơn (theo cột BookingID hoặc FnbOrderID). */
     private static void updatePendingIn(Connection conn, String ownerColumn, List<Integer> ids, String newStatus)
             throws SQLException {
         if (ids.isEmpty()) return;
@@ -310,6 +342,7 @@ public class PaymentDAO {
         }
     }
 
+    /** Huỷ các giao dịch còn chờ khác của một đơn, trừ giao dịch vừa PAID. */
     private static void cancelOthers(Connection conn, String ownerColumn, int ownerId, int paidPaymentId)
             throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
@@ -321,6 +354,7 @@ public class PaymentDAO {
         }
     }
 
+    /** Đọc danh sách giao dịch của một đơn theo cột BookingID hoặc FnbOrderID, cũ nhất trước. */
     private List<PaymentTransaction> transactions(String column, int id) throws SQLException {
         String sql = "SELECT PaymentID, TransactionCode, PaymentMethod, Amount, PaymentStatus, CreatedAt, PaidAt, CashReceived "
                    + "FROM Payments WHERE " + column + " = ? ORDER BY PaymentID";
@@ -339,11 +373,13 @@ public class PaymentDAO {
         return list;
     }
 
+    /** Gán tham số số nguyên có thể null vào PreparedStatement (null thì gán NULL của SQL). */
     private static void setNullableInt(PreparedStatement ps, int index, Integer value) throws SQLException {
         if (value == null) ps.setNull(index, Types.INTEGER);
         else ps.setInt(index, value);
     }
 
+    /** Chạy một câu UPDATE với một tham số id. */
     private static void update(Connection conn, String sql, int id) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);

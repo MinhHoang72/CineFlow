@@ -22,19 +22,21 @@ import java.util.List;
  */
 public class FnbOrderDAO {
 
-    /** Mot thanh phan cua combo. */
+    /** Một thành phần của combo: món lẻ và số lượng. */
     public record ComboPart(int itemId, int quantity) {}
 
-    /** Ton kho dang ban cua mot mon tai rap (0 neu tat ban / chua co trong kho). */
+    /**
+     * Tồn kho đang bán của một món tại rạp (0 nếu đã tắt bán hoặc chưa có trong kho), kèm tên món để báo lỗi.
+     */
     public record AvailableStock(String itemName, int quantity) {}
 
-    /** Ton kho cua mot mon tai rap. */
+    /** Tồn kho của một món tại rạp: số lượng và đang bán hay không. */
     public record Inventory(int quantity, boolean available) {}
 
-    /** So luong mon le can tru kho (da tach combo thanh mon le). */
+    /** Số lượng một món lẻ cần trừ kho tại rạp (combo đã được tách thành món lẻ). */
     public record Demand(int centreId, int itemId, int quantity) {}
 
-    /** Mot dong mon cua don: mon le (itemId) hoac combo (comboId). */
+    /** Một dòng món của đơn: món lẻ (itemId) hoặc combo (comboId), số lượng, đơn giá. */
     public record OrderLine(Integer itemId, Integer comboId, int quantity, BigDecimal unitPrice) {}
 
     /** Mon le dang ban tai rap: ACTIVE, con hang trong kho cua rap. */
@@ -59,13 +61,14 @@ public class FnbOrderDAO {
 
     // ---------------------------------------------------------------- menu, ton kho
 
-    /** Combo + mon le dang ban tai rap (combo truoc). */
+    /** Combo và món lẻ đang bán tại rạp, combo đứng trước (mở kết nối riêng). */
     public List<FnbMenuItemDTO> getMenu(int centreId) throws SQLException {
         try (Connection conn = DBContext.getConnection()) {
             return getMenu(conn, centreId);
         }
     }
 
+    /** Như getMenu nhưng chạy trong transaction có sẵn (dùng khi tạo đơn để đọc menu và kiểm kho cùng lúc). */
     public List<FnbMenuItemDTO> getMenu(Connection conn, int centreId) throws SQLException {
         List<FnbMenuItemDTO> menu = new ArrayList<>();
         try (PreparedStatement ps = conn.prepareStatement(MENU_COMBOS)) {
@@ -92,6 +95,7 @@ public class FnbOrderDAO {
         return menu;
     }
 
+    /** Các món lẻ và số lượng tạo nên một combo (để tách combo khi kiểm và trừ kho). */
     public List<ComboPart> getComboParts(Connection conn, int comboId) throws SQLException {
         List<ComboPart> parts = new ArrayList<>();
         try (PreparedStatement ps = conn.prepareStatement("SELECT FnbItemID, Quantity FROM ComboItems WHERE ComboID = ?")) {
@@ -103,7 +107,7 @@ public class FnbOrderDAO {
         return parts;
     }
 
-    /** null neu khong co mon nay. */
+    /** Tồn kho đang bán của một món tại rạp; null nếu món không tồn tại. */
     public AvailableStock getAvailableStock(Connection conn, int centreId, int itemId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
                 "SELECT i.ItemName, ISNULL(inv.StockQuantity, 0) FROM FnbItems i "
@@ -117,7 +121,7 @@ public class FnbOrderDAO {
         }
     }
 
-    /** Khoa dong ton kho (UPDLOCK) de tru, null neu rap chua co mon nay trong kho. */
+    /** Khoá dòng tồn kho (UPDLOCK) của món tại rạp trước khi trừ; null nếu rạp chưa có món này trong kho. */
     public Inventory lockInventory(Connection conn, int centreId, int itemId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
                 "SELECT StockQuantity, IsAvailable FROM CentreFnbInventory WITH (UPDLOCK, ROWLOCK) "
@@ -130,6 +134,7 @@ public class FnbOrderDAO {
         }
     }
 
+    /** Ghi số lượng tồn kho mới và trạng thái đang bán của món tại rạp. */
     public void updateInventory(Connection conn, int centreId, int itemId, int quantity, boolean available)
             throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
@@ -143,19 +148,21 @@ public class FnbOrderDAO {
         }
     }
 
-    /** Nhu cau mon le (gom thanh phan combo) cua cac don PREPARING cua booking. */
+    /** Nhu cầu trừ kho (đã tách combo thành món lẻ) của các đơn bắp nước PREPARING kèm đơn vé. */
     public List<Demand> getDemandForBooking(Connection conn, int bookingId) throws SQLException {
         return demand(conn, "o.BookingID = ?", bookingId);
     }
 
-    /** Nhu cau mon le (gom thanh phan combo) cua don bap nuoc le PREPARING. */
+    /** Nhu cầu trừ kho (đã tách combo thành món lẻ) của một đơn bắp nước lẻ PREPARING. */
     public List<Demand> getDemandForOrder(Connection conn, int orderId) throws SQLException {
         return demand(conn, "o.FnbOrderID = ?", orderId);
     }
 
     // ---------------------------------------------------------------- don bap nuoc kem ve
 
-    /** Cac dong bap nuoc cua don dat ve (bo don da huy). */
+    /**
+     * Các dòng bắp nước của đơn vé (bỏ đơn bắp nước đã huỷ), để hiện ở trang xem lại đơn, chi tiết đơn, vé.
+     */
     public List<FnbLineDTO> getLines(int bookingId) throws SQLException {
         try (Connection conn = DBContext.getConnection()) {
             return lines(conn, "FROM FnbOrders o JOIN FnbOrderItems oi ON oi.FnbOrderID = o.FnbOrderID ",
@@ -163,7 +170,7 @@ public class FnbOrderDAO {
         }
     }
 
-    /** Tong tien cac don bap nuoc chua huy cua booking. */
+    /** Tổng tiền các đơn bắp nước chưa huỷ của đơn vé (dùng khi tính lại tổng tiền đơn). */
     public BigDecimal sumActiveTotalForBooking(Connection conn, int bookingId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
                 "SELECT ISNULL(SUM(TotalAmount), 0) FROM FnbOrders WHERE BookingID = ? AND OrderStatus <> 'CANCELLED'")) {
@@ -175,7 +182,7 @@ public class FnbOrderDAO {
         }
     }
 
-    /** Xoa gio bap nuoc chua thanh toan cua booking (truoc khi ghi gio moi). */
+    /** Xoá giỏ bắp nước chưa thanh toán của đơn vé (trước khi ghi giỏ mới). */
     public void deletePendingForBooking(Connection conn, int bookingId) throws SQLException {
         String pending = "SELECT FnbOrderID FROM FnbOrders WHERE BookingID = ? AND OrderStatus = 'PENDING'";
         try (PreparedStatement items = conn.prepareStatement("DELETE FROM FnbOrderItems WHERE FnbOrderID IN (" + pending + ")");
@@ -187,7 +194,10 @@ public class FnbOrderDAO {
         }
     }
 
-    /** Don bap nuoc cua booking (PENDING / CANCELLED) -> PREPARING. @return so don da doi */
+    /**
+     * Đơn bắp nước kèm đơn vé (PENDING hoặc CANCELLED) -> PREPARING khi đã nhận tiền.
+     * @return số đơn đã đổi (0 = không có bắp nước)
+     */
     public int markBookingOrdersPreparing(Connection conn, int bookingId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
                 "UPDATE FnbOrders SET OrderStatus = 'PREPARING', UpdatedAt = SYSDATETIME() "
@@ -197,7 +207,7 @@ public class FnbOrderDAO {
         }
     }
 
-    /** Don bap nuoc PENDING cua cac booking -> CANCELLED. */
+    /** Đơn bắp nước PENDING của các đơn vé -> CANCELLED (đơn vé bị huỷ hoặc hết hạn). */
     public void cancelPendingForBookings(Connection conn, List<Integer> bookingIds) throws SQLException {
         if (bookingIds.isEmpty()) return;
         try (PreparedStatement ps = conn.prepareStatement(
@@ -210,7 +220,11 @@ public class FnbOrderDAO {
 
     // ---------------------------------------------------------------- tao don (kem ve hoac ban le)
 
-    /** @param bookingId null = don bap nuoc le khong kem ve. @return FnbOrderID */
+    /**
+     * Ghi đơn bắp nước mới, trạng thái PENDING.
+     * @param bookingId null = đơn bắp nước lẻ không kèm vé
+     * @return FnbOrderID
+     */
     public int insertOrder(Connection conn, Integer bookingId, int centreId, Integer userId, String orderCode,
             String orderType, BigDecimal total) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
@@ -232,6 +246,7 @@ public class FnbOrderDAO {
         }
     }
 
+    /** Ghi các dòng món của đơn bắp nước (món lẻ hoặc combo, số lượng, đơn giá). */
     public void insertOrderLines(Connection conn, int orderId, List<OrderLine> lines) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
                 "INSERT INTO FnbOrderItems (FnbOrderID, FnbItemID, ComboID, Quantity, UnitPrice) VALUES (?, ?, ?, ?, ?)")) {
@@ -252,8 +267,8 @@ public class FnbOrderDAO {
     // ---------------------------------------------------------------- don bap nuoc le
 
     /**
-     * Don bap nuoc le kem cac dong mon, null neu khong co.
-     * @param pendingMinutes thoi gian cho thanh toan, de tinh so giay con lai
+     * Lấy đơn bắp nước lẻ kèm các dòng món; không có thì null.
+     * @param pendingMinutes thời gian chờ thanh toán, để tính số giây còn lại hiện cho nhân viên
      */
     public FnbSaleDTO getStandaloneOrder(int orderId, int pendingMinutes) throws SQLException {
         try (Connection conn = DBContext.getConnection()) {
@@ -277,7 +292,7 @@ public class FnbOrderDAO {
         }
     }
 
-    /** Don bap nuoc le PENDING tao truoc thoi diem hien tai qua so phut. */
+    /** Tìm các đơn bắp nước lẻ PENDING đã tạo quá số phút cho phép. */
     public List<Integer> findStalePendingStandalone(Connection conn, int minutes) throws SQLException {
         List<Integer> ids = new ArrayList<>();
         try (PreparedStatement ps = conn.prepareStatement(
@@ -291,7 +306,10 @@ public class FnbOrderDAO {
         return ids;
     }
 
-    /** Don bap nuoc le con PENDING -> CANCELLED. @return so don da huy */
+    /**
+     * Đơn bắp nước lẻ còn PENDING -> CANCELLED.
+     * @return số đơn đã huỷ
+     */
     public int cancelPendingStandalone(Connection conn, List<Integer> orderIds) throws SQLException {
         if (orderIds.isEmpty()) return 0;
         try (PreparedStatement ps = conn.prepareStatement(
@@ -303,7 +321,10 @@ public class FnbOrderDAO {
         }
     }
 
-    /** Don bap nuoc le (PENDING / CANCELLED) -> PREPARING. @return so don da doi (0 = da xac nhan truoc do) */
+    /**
+     * Đơn bắp nước lẻ (PENDING hoặc CANCELLED) -> PREPARING khi đã nhận tiền.
+     * @return số đơn đã đổi (0 = đã xác nhận trước đó)
+     */
     public int markStandalonePreparing(Connection conn, int orderId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
                 "UPDATE FnbOrders SET OrderStatus = 'PREPARING', UpdatedAt = SYSDATETIME() "
@@ -315,6 +336,9 @@ public class FnbOrderDAO {
 
     // ---------------------------------------------------------------- noi bo
 
+    /**
+     * Đọc các dòng món (tên, số lượng, đơn giá) theo điều kiện truyền vào; dùng chung cho đơn kèm vé và đơn lẻ.
+     */
     private static List<FnbLineDTO> lines(Connection conn, String from, String where, int id) throws SQLException {
         String sql = "SELECT oi.FnbItemID, oi.ComboID, COALESCE(i.ItemName, c.ComboName) AS Name, oi.Quantity, oi.UnitPrice "
                    + from
@@ -335,6 +359,9 @@ public class FnbOrderDAO {
         return lines;
     }
 
+    /**
+     * Tính nhu cầu trừ kho theo món lẻ: món lẻ lấy trực tiếp, combo tách thành các món thành phần nhân số lượng.
+     */
     private static List<Demand> demand(Connection conn, String orderFilter, int id) throws SQLException {
         String sql = "SELECT o.CentreID, x.FnbItemID, SUM(x.Qty) AS Qty FROM FnbOrders o JOIN ("
                    + "  SELECT FnbOrderID, FnbItemID, Quantity AS Qty FROM FnbOrderItems WHERE FnbItemID IS NOT NULL "
