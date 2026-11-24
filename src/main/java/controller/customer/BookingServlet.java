@@ -52,6 +52,19 @@ public class BookingServlet extends HttpServlet {
     private final BookingExtrasService extrasService = new BookingExtrasService();
     private final PaymentService paymentService = new PaymentService();
 
+    /**
+     * Nhận mọi request GET tới /booking (xem trang, không đổi dữ liệu).
+     * Luồng:
+     * 1. Tài khoản nội bộ (ADMIN, MANAGER, nhân viên) bị chuyển về trang của họ; riêng action=detail vẫn cho xem.
+     * 2. Rẽ nhánh theo tham số action:
+     *    - rỗng / select-showtime -> selectShowtime (bước 1: chọn thành phố, rạp, phim, ngày, suất)
+     *    - select-seats -> selectSeats (bước 2: sơ đồ ghế)
+     *    - fnb -> selectFnb (bước 3: bắp nước)
+     *    - checkout -> checkout (bước 4: xem lại đơn, voucher, nút thanh toán)
+     *    - history -> history (lịch sử đặt vé)
+     *    - detail -> detail (chi tiết đơn và vé)
+     * 3. Lỗi CSDL được bọc thành ServletException để Tomcat hiện trang lỗi.
+     */
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String action = req.getParameter("action");
@@ -88,6 +101,14 @@ public class BookingServlet extends HttpServlet {
         }
     }
 
+    /**
+     * Nhận mọi request POST tới /booking (thao tác làm thay đổi dữ liệu).
+     * Rẽ nhánh theo action:
+     * - hold -> hold: giữ ghế, tạo đơn PENDING
+     * - cancel -> cancel: khách huỷ đơn chưa thanh toán
+     * - save-fnb / apply-voucher / remove-voucher -> updateExtras: lưu bắp nước, áp hoặc bỏ voucher
+     * Tài khoản nội bộ không được thao tác đặt vé online.
+     */
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String action = req.getParameter("action");
@@ -119,8 +140,9 @@ public class BookingServlet extends HttpServlet {
     }
 
     /**
-     * Buoc 3 (bap nuoc) va buoc 4 (voucher) cho don dang giu ghe.
-     * Luu bap nuoc thanh cong thi sang trang thanh toan, loi thi o lai trang bap nuoc.
+     * Xử lý form bắp nước và voucher của khách (POST save-fnb / apply-voucher / remove-voucher).
+     * Luồng: bắt đăng nhập -> lấy đúng đơn của khách -> đơn còn hạn giữ ghế thì gọi applyExtras.
+     * Sau đó chuyển trang: lưu bắp nước lỗi thì quay lại trang bắp nước, còn lại sang trang xem lại đơn (checkout).
      */
     private void updateExtras(HttpServletRequest req, HttpServletResponse resp, String action)
             throws SQLException, IOException {
@@ -142,8 +164,11 @@ public class BookingServlet extends HttpServlet {
     }
 
     /**
-     * Dung chung cho dat ve online va ban tai quay: goi service theo thao tac va dat thong bao.
-     * @return false neu du lieu khong hop le (da dat thong bao loi)
+     * Gọi service theo thao tác và đặt thông báo cho người dùng. Dùng chung cho đặt vé online và bán vé tại quầy.
+     * - save-fnb -> BookingExtrasService.saveFnb (lưu giỏ bắp nước, tính lại tổng)
+     * - apply-voucher -> BookingExtrasService.applyVoucher (kiểm tra và áp mã, báo số tiền được giảm)
+     * - còn lại (remove-voucher) -> BookingExtrasService.removeVoucher
+     * @return false nếu dữ liệu không hợp lệ (service ném IllegalArgumentException, đã hiện thông báo lỗi)
      */
     public static boolean applyExtras(HttpServletRequest req, Booking booking, String action, BookingExtrasService service)
             throws SQLException {
@@ -167,6 +192,12 @@ public class BookingServlet extends HttpServlet {
         }
     }
 
+    /**
+     * Bước 1 - trang chọn suất (GET /booking).
+     * Đọc 4 tham số city, centreId, movieId, date trên URL (chưa chọn thì null), gọi BookingService.selectShowtime
+     * để lọc lần lượt thành phố -> rạp -> phim -> ngày -> suất, rồi đặt các danh sách vào request và mở selectShowtime.jsp.
+     * Mỗi lần khách bấm một lựa chọn, trang tự gọi lại chính nó với thêm một tham số.
+     */
     private void selectShowtime(HttpServletRequest req, HttpServletResponse resp)
             throws SQLException, ServletException, IOException {
         ShowtimeSelection sel = bookingService.selectShowtime(req.getParameter("city"),
@@ -188,6 +219,11 @@ public class BookingServlet extends HttpServlet {
         req.getRequestDispatcher(VIEW_DIR + "booking/selectShowtime.jsp").forward(req, resp);
     }
 
+    /**
+     * Bước 2 - trang sơ đồ ghế (GET /booking?action=select-seats&showtimeId=...).
+     * Bắt đăng nhập; suất không còn bán thì báo lỗi và về trang chọn suất.
+     * Lấy ghế kèm giá (BookingService.getSeatLayout), số ghế tối đa, thời gian giữ ghế rồi mở selectSeats.jsp.
+     */
     private void selectSeats(HttpServletRequest req, HttpServletResponse resp)
             throws SQLException, ServletException, IOException {
         if (WebUtil.requireUser(req, resp) == null) return;
@@ -208,6 +244,12 @@ public class BookingServlet extends HttpServlet {
         req.getRequestDispatcher(VIEW_DIR + "booking/selectSeats.jsp").forward(req, resp);
     }
 
+    /**
+     * Giữ ghế khi khách bấm "Tiếp tục" ở trang sơ đồ ghế (POST action=hold).
+     * Gọi BookingService.holdSeatsForOnlineCustomer với các seatId đã chọn.
+     * - Thành công: tạo đơn PENDING, ghế HELD 5 phút -> chuyển sang trang bắp nước.
+     * - Lỗi (ghế vừa có người giữ, quá 8 ghế, Sweetbox đặt lẻ...): hiện lý do và quay lại sơ đồ ghế.
+     */
     private void hold(HttpServletRequest req, HttpServletResponse resp) throws SQLException, IOException {
         User user = WebUtil.requireUser(req, resp);
         if (user == null) return;
@@ -226,6 +268,11 @@ public class BookingServlet extends HttpServlet {
         }
     }
 
+    /**
+     * Bước 4 - trang xem lại đơn (GET action=checkout): bảng tiền, voucher, nút thanh toán VNPay, nút huỷ.
+     * Đơn đã thanh toán thì chuyển sang trang chi tiết đơn.
+     * Đơn còn hạn giữ ghế thì nạp thêm danh sách voucher khách chọn được (BookingExtrasService.getVoucherOptions).
+     */
     private void checkout(HttpServletRequest req, HttpServletResponse resp)
             throws SQLException, ServletException, IOException {
         User user = WebUtil.requireUser(req, resp);
@@ -249,7 +296,11 @@ public class BookingServlet extends HttpServlet {
         req.getRequestDispatcher(VIEW_DIR + "booking/bookingCheckout.jsp").forward(req, resp);
     }
 
-    /** Buoc 3: chon bap nuoc. Rap chua ban mon nao thi bo qua, sang thang trang thanh toan. */
+    /**
+     * Bước 3 - trang chọn bắp nước (GET action=fnb).
+     * Đơn hết hạn giữ ghế hoặc rạp không bán món nào thì bỏ qua, chuyển thẳng sang trang xem lại đơn.
+     * Còn lại: lấy menu của rạp (BookingExtrasService.getMenu) và mở selectFnb.jsp; form gửi về /booking (extrasAction).
+     */
     private void selectFnb(HttpServletRequest req, HttpServletResponse resp)
             throws SQLException, ServletException, IOException {
         User user = WebUtil.requireUser(req, resp);
@@ -276,6 +327,11 @@ public class BookingServlet extends HttpServlet {
         req.getRequestDispatcher(VIEW_DIR + "booking/selectFnb.jsp").forward(req, resp);
     }
 
+    /**
+     * Khách tự huỷ đơn chưa thanh toán (POST action=cancel).
+     * Gọi BookingService.cancelPendingBooking: đơn và ghế -> CANCELLED, ghế trống lại cho người khác.
+     * Sau đó quay về sơ đồ ghế của suất đó.
+     */
     private void cancel(HttpServletRequest req, HttpServletResponse resp) throws SQLException, IOException {
         User user = WebUtil.requireUser(req, resp);
         if (user == null) return;
@@ -292,7 +348,10 @@ public class BookingServlet extends HttpServlet {
                 + booking.getShowtime().getId());
     }
 
-    /** 5.5 Lich su dat ve: trang rieng, tach khoi trang ho so (/account). */
+    /**
+     * Trang Lịch sử đặt vé (GET action=history), tách riêng khỏi trang hồ sơ.
+     * Chỉ khách hàng (CUSTOMER) xem được; lấy danh sách đơn qua UserDAO.getBookingHistory rồi mở bookingHistory.jsp.
+     */
     private void history(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         User user = WebUtil.requireUser(req, resp);
         if (user == null) return;
@@ -304,7 +363,11 @@ public class BookingServlet extends HttpServlet {
         req.getRequestDispatcher(VIEW_DIR + "booking/bookingHistory.jsp").forward(req, resp);
     }
 
-    /** 5.4 Chi tiet don: ve, chi tiet gia, cac giao dich thanh toan. */
+    /**
+     * Trang chi tiết đơn (GET action=detail): vé từng ghế, bắp nước, các giao dịch thanh toán.
+     * Kiểm tra quyền xem bằng BookingService.canView (khách xem đơn của mình, nhân viên xem đơn của rạp mình);
+     * không có quyền thì trả 404. Lấy vé và giao dịch qua PaymentService rồi mở bookingDetail.jsp.
+     */
     private void detail(HttpServletRequest req, HttpServletResponse resp)
             throws SQLException, ServletException, IOException {
         User user = WebUtil.requireUser(req, resp);
@@ -322,12 +385,17 @@ public class BookingServlet extends HttpServlet {
         req.getRequestDispatcher(VIEW_DIR + "booking/bookingDetail.jsp").forward(req, resp);
     }
 
+    /**
+     * Đọc bookingId trên request và lấy đơn đó, chỉ khi đơn thuộc chính khách đang đăng nhập; ngược lại trả null.
+     */
     private Booking loadOwnBooking(HttpServletRequest req, User user) throws SQLException {
         Integer bookingId = WebUtil.parseInt(req.getParameter("bookingId"));
         return bookingId == null ? null : bookingService.getOwnBooking(bookingId, user.getUserId());
     }
 
-    /** Cac seatId hop le gui tu form chon ghe. */
+    /**
+     * Đọc các ô seatId khách tích trong form chọn ghế, bỏ giá trị không phải số. Dùng chung cho đặt vé online và tại quầy.
+     */
     public static List<Integer> readSeatIds(HttpServletRequest req) {
         List<Integer> seatIds = new ArrayList<>();
         String[] values = req.getParameterValues("seatId");
@@ -340,6 +408,9 @@ public class BookingServlet extends HttpServlet {
         return seatIds;
     }
 
+    /**
+     * Chuyển chuỗi "yyyy-MM-dd" trên URL thành LocalDate; rỗng hoặc sai định dạng thì trả null (coi như chưa chọn ngày).
+     */
     private static LocalDate parseDate(String value) {
         if (value == null || value.isEmpty()) return null;
         try {
@@ -349,7 +420,9 @@ public class BookingServlet extends HttpServlet {
         }
     }
 
-    /** yyyy-MM-dd -> "T3 13/10" */
+    /**
+     * Tạo nhãn cho các nút ngày: key "yyyy-MM-dd" (dùng trên link), nhãn "Hôm nay 24/11" hoặc "T3 25/11" (hiện cho khách).
+     */
     private static Map<String, String> toDateOptions(List<LocalDate> dates) {
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM");
         Map<String, String> options = new LinkedHashMap<>();

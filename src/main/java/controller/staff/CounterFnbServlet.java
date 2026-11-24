@@ -32,6 +32,10 @@ public class CounterFnbServlet extends HttpServlet {
 
     private final FnbSaleService fnbSaleService = new FnbSaleService();
 
+    /**
+     * Nhận các request GET của bán lẻ bắp nước tại quầy (/staff/fnb-sale). Chỉ nhân viên bán vé đã gán rạp.
+     * Rẽ nhánh theo action: rỗng -> menu; checkout -> trang thu tiền; receipt -> hoá đơn.
+     */
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         User staff = CounterShowtimeServlet.requireCounterStaff(req, resp);
@@ -52,6 +56,13 @@ public class CounterFnbServlet extends HttpServlet {
         }
     }
 
+    /**
+     * Nhận các thao tác POST của bán lẻ bắp nước:
+     * - create: tạo đơn chờ thanh toán
+     * - cash: thu tiền mặt
+     * - vnpay: chuyển sang VNPay
+     * - cancel: huỷ đơn
+     */
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         User staff = CounterShowtimeServlet.requireCounterStaff(req, resp);
@@ -70,12 +81,17 @@ public class CounterFnbServlet extends HttpServlet {
         }
     }
 
+    /** Trang menu bắp nước của rạp nhân viên (món lẻ và combo đang bán). */
     private void menu(HttpServletRequest req, HttpServletResponse resp, User staff)
             throws SQLException, ServletException, IOException {
         req.setAttribute("fnbMenu", fnbSaleService.getMenu(staff.getCentreId()));
         req.getRequestDispatcher(VIEW_BASE + "fnbSale.jsp").forward(req, resp);
     }
 
+    /**
+     * Tạo đơn bắp nước lẻ từ số lượng nhân viên nhập (POST action=create) qua FnbSaleService.createOrder.
+     * Thành công -> trang thu tiền; lỗi (chưa chọn món, hết hàng...) -> quay lại menu kèm thông báo.
+     */
     private void create(HttpServletRequest req, HttpServletResponse resp, User staff) throws SQLException, IOException {
         String ctx = req.getContextPath();
         try {
@@ -87,6 +103,7 @@ public class CounterFnbServlet extends HttpServlet {
         }
     }
 
+    /** Trang thu tiền của đơn bắp nước lẻ; đơn đã thanh toán thì chuyển sang hoá đơn. */
     private void checkout(HttpServletRequest req, HttpServletResponse resp, User staff)
             throws SQLException, ServletException, IOException {
         FnbSaleDTO sale = loadSale(req, staff);
@@ -102,6 +119,10 @@ public class CounterFnbServlet extends HttpServlet {
         req.getRequestDispatcher(VIEW_BASE + "fnbSaleCheckout.jsp").forward(req, resp);
     }
 
+    /**
+     * Thu tiền mặt cho đơn bắp nước lẻ: đơn phải còn chờ thanh toán; gọi FnbSaleService.payCash
+     * (tiền đưa phải đủ; tạo giao dịch CASH, xác nhận, trừ kho). Thành công -> trang hoá đơn.
+     */
     private void payCash(HttpServletRequest req, HttpServletResponse resp, User staff) throws SQLException, IOException {
         FnbSaleDTO sale = loadSale(req, staff);
         if (sale == null) {
@@ -133,7 +154,10 @@ public class CounterFnbServlet extends HttpServlet {
         resp.sendRedirect(ctx + "/staff/fnb-sale?action=receipt&orderId=" + sale.getId());
     }
 
-    /** Khách quét QR / nhập thẻ trên trang VNPay; VNPay chuyển về /payment/vnpay-return -> hoá đơn. */
+    /**
+     * Khách trả đơn bắp nước lẻ bằng VNPay: tạo giao dịch (FnbSaleService.createVnpayPayment) và link (VNPayUtil.buildPayUrl).
+     * VNPay trả về /payment/vnpay-return -> PaymentServlet.fnbReturn -> hoá đơn.
+     */
     private void payVnpay(HttpServletRequest req, HttpServletResponse resp, User staff) throws SQLException, IOException {
         FnbSaleDTO sale = loadSale(req, staff);
         if (sale == null) {
@@ -157,6 +181,7 @@ public class CounterFnbServlet extends HttpServlet {
                 "Thanh toan bap nuoc don " + sale.getCode(), sale.getSecondsLeft()));
     }
 
+    /** Huỷ đơn bắp nước lẻ chưa thanh toán rồi quay về menu. */
     private void cancel(HttpServletRequest req, HttpServletResponse resp, User staff) throws SQLException, IOException {
         FnbSaleDTO sale = loadSale(req, staff);
         if (sale == null) {
@@ -169,6 +194,9 @@ public class CounterFnbServlet extends HttpServlet {
         resp.sendRedirect(req.getContextPath() + "/staff/fnb-sale");
     }
 
+    /**
+     * Trang hoá đơn bắp nước lẻ: chỉ mở khi đơn đã thanh toán; kèm giao dịch đã thu để in tiền khách đưa và tiền thối.
+     */
     private void receipt(HttpServletRequest req, HttpServletResponse resp, User staff)
             throws SQLException, ServletException, IOException {
         FnbSaleDTO sale = loadSale(req, staff);
@@ -185,7 +213,9 @@ public class CounterFnbServlet extends HttpServlet {
         req.getRequestDispatcher(VIEW_BASE + "fnbSaleReceipt.jsp").forward(req, resp);
     }
 
-    /** Đơn bắp nước lẻ thuộc rạp của nhân viên, null nếu không hợp lệ. */
+    /**
+     * Đọc orderId và lấy đơn bắp nước lẻ thuộc rạp của nhân viên; không có hoặc thuộc rạp khác thì trả null.
+     */
     private FnbSaleDTO loadSale(HttpServletRequest req, User staff) throws SQLException {
         Integer orderId = WebUtil.parseInt(req.getParameter("orderId"));
         return orderId == null ? null : fnbSaleService.getOrder(orderId, staff.getCentreId());

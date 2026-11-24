@@ -36,6 +36,13 @@ public class PaymentServlet extends HttpServlet {
     private final BookingService bookingService = new BookingService();
     private final PaymentService paymentService = new PaymentService();
 
+    /**
+     * Nhận các request GET của thanh toán, rẽ nhánh theo đường dẫn:
+     * - /payment/vnpay-ipn -> ipn: VNPay gọi thẳng server báo kết quả
+     * - /payment/vnpay-return -> vnpayReturn: VNPay chuyển trình duyệt của khách quay về
+     * - /payment/failed, /payment/result -> trang thanh toán thất bại của đơn
+     * Lưu ý: return và IPN là GET nhưng có ghi dữ liệu (theo quy định của VNPay), nên phía service phải chống xử lý lặp.
+     */
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         try {
@@ -61,6 +68,11 @@ public class PaymentServlet extends HttpServlet {
         }
     }
 
+    /**
+     * Khách bấm "Thanh toán qua VNPay" (POST /payment/vnpay).
+     * Luồng: bắt đăng nhập -> lấy đúng đơn của khách -> đơn đã trả thì sang trang chi tiết ->
+     * đơn hết hạn giữ ghế thì sang trang thất bại -> startVnpay tạo giao dịch và link -> chuyển khách sang trang VNPay.
+     */
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         if (!"/payment/vnpay".equals(req.getServletPath())) {
@@ -95,8 +107,11 @@ public class PaymentServlet extends HttpServlet {
     }
 
     /**
-     * Tao giao dich VNPay cho don dang giu ghe va dung URL thanh toan (dung chung cho dat ve online va ban tai quay).
-     * @return URL trang thanh toan VNPay, null neu chua cau hinh VNPay (da flash loi)
+     * Tạo giao dịch VNPay cho đơn đang giữ ghế và dựng link thanh toán. Dùng chung cho đặt vé online và bán vé tại quầy.
+     * 1. Chưa cấu hình khoá VNPay thì báo lỗi, trả null.
+     * 2. PaymentService.createVnpayPayment: huỷ giao dịch chờ cũ, ghi giao dịch PENDING mới, trả mã giao dịch (vnp_TxnRef).
+     * 3. VNPayUtil.buildPayUrl: tạo link có chữ ký HMAC-SHA512, hết hạn cùng lúc với hạn giữ ghế.
+     * @return link trang VNPay, hoặc null nếu chưa cấu hình VNPay
      */
     public static String startVnpay(HttpServletRequest req, Booking booking) throws SQLException {
         if (!VNPayUtil.isConfigured()) {
@@ -109,7 +124,10 @@ public class PaymentServlet extends HttpServlet {
                 "Thanh toan ve xem phim don " + booking.getCode(), booking.getSecondsLeft());
     }
 
-    /** VNPay chuyen nhan vien ve sau khi khach tra tien don bap nuoc le: thanh cong -> hoa don, nguoc lai -> trang thu tien. */
+    /**
+     * VNPay trả kết quả cho đơn bắp nước lẻ (bán tại quầy).
+     * Gọi PaymentService.processFnbVnpay; thành công thì mở hoá đơn, sai dữ liệu hoặc thất bại thì quay lại trang thu tiền kèm thông báo.
+     */
     private void fnbReturn(HttpServletRequest req, HttpServletResponse resp, Map<String, String> params, int orderId)
             throws SQLException, IOException {
         String base = req.getContextPath() + "/staff/fnb-sale?orderId=" + orderId + "&action=";
@@ -129,7 +147,12 @@ public class PaymentServlet extends HttpServlet {
         }
     }
 
-    /** IPN: VNPay goi den, tra JSON theo dac ta (RspCode/Message). */
+    /**
+     * IPN: server VNPay gọi thẳng server CineFlow để báo kết quả (dự phòng khi khách tắt trình duyệt).
+     * Gọi PaymentService.handleIpn rồi trả JSON {"RspCode","Message"} theo đặc tả VNPay
+     * (00 đã nhận, 02 đã xử lý trước đó, 01 không tìm thấy, 04 sai số tiền, 97 sai chữ ký, 99 lỗi khác).
+     * Chạy ở localhost thì VNPay không gọi vào được.
+     */
     private void ipn(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         IpnResponse result;
         try {
@@ -142,7 +165,16 @@ public class PaymentServlet extends HttpServlet {
         resp.getWriter().write("{\"RspCode\":\"" + result.code() + "\",\"Message\":\"" + result.message() + "\"}");
     }
 
-    /** Khach (hoac nhan vien quay) duoc VNPay chuyen ve. */
+    /**
+     * VNPay chuyển trình duyệt của khách (hoặc nhân viên quầy) quay về sau khi thanh toán.
+     * Luồng:
+     * 1. Gom các tham số vnp_* trên URL.
+     * 2. Mã giao dịch là đơn bắp nước lẻ -> fnbReturn.
+     * 3. Đơn vé -> PaymentService.processVnpay (kiểm tra chữ ký, số tiền, trạng thái, mã 00; thành công thì confirmPaid).
+     * 4. Chuyển trang theo kết quả:
+     *    - đơn quầy: thành công -> trang in vé; còn lại -> trang thu tiền kèm thông báo
+     *    - đơn online: thành công -> chi tiết đơn; mất ghế / đơn đổi số tiền -> báo liên hệ hoàn tiền; thất bại -> trang thất bại
+     */
     private void vnpayReturn(HttpServletRequest req, HttpServletResponse resp) throws SQLException, IOException {
         Map<String, String> params = VNPayUtil.vnpParams(req);
         String ctx = req.getContextPath();
@@ -196,7 +228,11 @@ public class PaymentServlet extends HttpServlet {
         }
     }
 
-    /** 6.4: ly do that bai + cach xu ly. */
+    /**
+     * Trang thanh toán thất bại: lấy lý do qua PaymentService.getFailureReason.
+     * Đơn đã thanh toán thì sang chi tiết đơn; không có lý do (đơn vẫn trả tiền được) thì về trang xem lại đơn;
+     * còn lại mở paymentFailed.jsp (hết giờ giữ ghế, VNPay thất bại, đơn đã huỷ).
+     */
     private void showFailed(HttpServletRequest req, HttpServletResponse resp, Booking booking)
             throws SQLException, ServletException, IOException {
         String reason = paymentService.getFailureReason(booking);
@@ -213,15 +249,20 @@ public class PaymentServlet extends HttpServlet {
         req.getRequestDispatcher(VIEW_DIR + "payment/paymentFailed.jsp").forward(req, resp);
     }
 
+    /**
+     * Đọc bookingId trên request và lấy đơn đó, chỉ khi đơn thuộc chính khách đang đăng nhập; ngược lại trả null.
+     */
     private Booking loadOwnBooking(HttpServletRequest req, User user) throws SQLException {
         Integer bookingId = WebUtil.parseInt(req.getParameter("bookingId"));
         return bookingId == null ? null : bookingService.getOwnBooking(bookingId, user.getUserId());
     }
 
+    /** Đường dẫn trang chi tiết đơn: /booking?action=detail&bookingId=... */
     private static String detailUrl(HttpServletRequest req, Booking booking) {
         return req.getContextPath() + "/booking?action=detail&bookingId=" + booking.getId();
     }
 
+    /** Đường dẫn trang thanh toán thất bại của đơn: /payment/failed?bookingId=... */
     private static String failedUrl(HttpServletRequest req, Booking booking) {
         return req.getContextPath() + "/payment/failed?bookingId=" + booking.getId();
     }

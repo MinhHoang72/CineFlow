@@ -27,6 +27,11 @@ public class StaffPaymentServlet extends HttpServlet {
 
     private final PaymentService paymentService = new PaymentService();
 
+    /**
+     * Trang theo dõi giao dịch (vé và bắp nước lẻ); chỉ người có quyền xác nhận thanh toán (WebUtil.canConfirmPayments).
+     * Đọc bộ lọc trạng thái, phương thức, số ngày (giá trị lạ bị bỏ qua), giới hạn theo rạp của người xem (centreScope),
+     * gọi PaymentService.getTransactionsForTracking rồi mở paymentHistory.jsp kèm tổng tiền và số giao dịch đã thu.
+     */
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         User staff = WebUtil.requireUser(req, resp);
@@ -56,12 +61,17 @@ public class StaffPaymentServlet extends HttpServlet {
         req.getRequestDispatcher("/WEB-INF/views/staff/paymentHistory.jsp").forward(req, resp);
     }
 
-    /** Giá trị bộ lọc hợp lệ, null = không lọc (Set.of không nhận contains(null)). */
+    /**
+     * Chỉ nhận giá trị bộ lọc nằm trong danh sách cho phép; giá trị khác (hoặc rỗng) thành null = không lọc.
+     */
     private static String allowed(Set<String> values, String value) {
         return value != null && values.contains(value) ? value : null;
     }
 
-    /** null = mọi chi nhánh. Nhân viên bán vé chưa được gắn chi nhánh thì không thấy giao dịch nào (-1). */
+    /**
+     * Phạm vi rạp được xem: nhân viên bán vé chỉ xem rạp của mình (chưa gán rạp thì -1, không thấy giao dịch nào);
+     * các vai trò khác trả null = không giới hạn rạp ở hàm này.
+     */
     private static Integer centreScope(User staff) {
         if (!WebUtil.isSalesStaff(staff)) return null;
         return staff.getCentreId() != null ? staff.getCentreId() : -1;

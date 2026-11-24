@@ -52,6 +52,15 @@ public class CounterShowtimeServlet extends HttpServlet {
     private final BookingExtrasService extrasService = new BookingExtrasService();
     private final PaymentService paymentService = new PaymentService();
 
+    /**
+     * Nhận các request GET của bán vé tại quầy (/staff/counter). Chỉ nhân viên bán vé đã gán rạp (requireCounterStaff).
+     * Rẽ nhánh theo action:
+     * - rỗng -> showtimes: danh sách suất của rạp
+     * - seats -> seats: sơ đồ ghế
+     * - fnb -> selectFnb: bắp nước
+     * - checkout -> checkout: trang thu tiền
+     * - ticket -> ticket: trang in vé và hoá đơn
+     */
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         User staff = requireCounterStaff(req, resp);
@@ -76,6 +85,14 @@ public class CounterShowtimeServlet extends HttpServlet {
         }
     }
 
+    /**
+     * Nhận các thao tác POST của bán vé tại quầy:
+     * - hold: giữ ghế, tạo đơn COUNTER
+     * - cash: thu tiền mặt
+     * - vnpay: chuyển khách sang trang VNPay
+     * - cancel: huỷ đơn
+     * - save-fnb / apply-voucher / remove-voucher: bắp nước, voucher
+     */
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         User staff = requireCounterStaff(req, resp);
@@ -95,6 +112,10 @@ public class CounterShowtimeServlet extends HttpServlet {
         }
     }
 
+    /**
+     * Trang chọn suất tại quầy: chỉ lấy suất của rạp nhân viên.
+     * Lấy các ngày còn suất; ngày chọn không hợp lệ thì lấy ngày đầu tiên; suất trong ngày được nhóm theo phim.
+     */
     private void showtimes(HttpServletRequest req, HttpServletResponse resp, User staff)
             throws SQLException, ServletException, IOException {
         List<LocalDate> dates = bookingService.getShowDatesAtCentre(staff.getCentreId());
@@ -108,6 +129,10 @@ public class CounterShowtimeServlet extends HttpServlet {
         req.getRequestDispatcher(VIEW_BASE + "counterShowtime.jsp").forward(req, resp);
     }
 
+    /**
+     * Trang sơ đồ ghế tại quầy: dùng lại selectSeats.jsp của đặt vé online.
+     * Suất phải thuộc rạp của nhân viên; truyền seatFormAction để form gửi về /staff/counter thay vì /booking.
+     */
     private void seats(HttpServletRequest req, HttpServletResponse resp, User staff)
             throws SQLException, ServletException, IOException {
         Integer showtimeId = WebUtil.parseInt(req.getParameter("showtimeId"));
@@ -131,6 +156,11 @@ public class CounterShowtimeServlet extends HttpServlet {
         req.getRequestDispatcher("/WEB-INF/views/customer/booking/selectSeats.jsp").forward(req, resp);
     }
 
+    /**
+     * Giữ ghế tại quầy (POST action=hold): suất phải thuộc rạp của nhân viên.
+     * Gọi BookingService.holdSeatsForCounter (đơn COUNTER, không gắn tài khoản khách).
+     * Thành công -> trang bắp nước; lỗi -> quay lại sơ đồ ghế kèm lý do.
+     */
     private void hold(HttpServletRequest req, HttpServletResponse resp, User staff) throws SQLException, IOException {
         Integer showtimeId = WebUtil.parseInt(req.getParameter("showtimeId"));
         if (showtimeId == null || bookingService.getBookableShowtimeAtCentre(showtimeId, staff.getCentreId()) == null) {
@@ -147,6 +177,10 @@ public class CounterShowtimeServlet extends HttpServlet {
         }
     }
 
+    /**
+     * Trang thu tiền của đơn tại quầy: chọn tiền mặt hoặc VNPay, nhập tiền khách đưa, áp voucher.
+     * Đơn đã thanh toán thì sang trang in vé. Đơn còn hạn giữ ghế thì nạp danh sách voucher.
+     */
     private void checkout(HttpServletRequest req, HttpServletResponse resp, User staff)
             throws SQLException, ServletException, IOException {
         Booking booking = loadCounterBooking(req, staff);
@@ -168,7 +202,10 @@ public class CounterShowtimeServlet extends HttpServlet {
         req.getRequestDispatcher(VIEW_BASE + "counterCheckout.jsp").forward(req, resp);
     }
 
-    /** Chọn bắp nước cho đơn tại quầy; dùng chung trang với đặt vé online. */
+    /**
+     * Chọn bắp nước cho đơn tại quầy, dùng chung trang selectFnb.jsp với đặt vé online.
+     * Đơn hết hạn giữ ghế hoặc rạp không bán món nào thì chuyển thẳng sang trang thu tiền.
+     */
     private void selectFnb(HttpServletRequest req, HttpServletResponse resp, User staff)
             throws SQLException, ServletException, IOException {
         Booking booking = loadCounterBooking(req, staff);
@@ -194,6 +231,11 @@ public class CounterShowtimeServlet extends HttpServlet {
         req.getRequestDispatcher("/WEB-INF/views/customer/booking/selectFnb.jsp").forward(req, resp);
     }
 
+    /**
+     * Thu tiền mặt (POST action=cash).
+     * Đơn phải còn hạn giữ ghế; đọc tiền khách đưa (parseMoney) rồi gọi PaymentService.payCash
+     * (tiền đưa phải lớn hơn hoặc bằng tổng đơn; tạo giao dịch CASH và xác nhận ngay). Kết quả xử lý ở finishPayment.
+     */
     private void payCash(HttpServletRequest req, HttpServletResponse resp, User staff) throws SQLException, IOException {
         Booking booking = loadCounterBooking(req, staff);
         if (booking == null) {
@@ -217,7 +259,11 @@ public class CounterShowtimeServlet extends HttpServlet {
         finishPayment(req, resp, booking, outcome);
     }
 
-    /** Khách quét QR / nhập thẻ trên trang VNPay; VNPay chuyển về /payment/vnpay-return -> in vé. */
+    /**
+     * Khách tại quầy muốn trả bằng VNPay (POST action=vnpay).
+     * Đơn phải còn hạn giữ ghế; dùng chung PaymentServlet.startVnpay để tạo giao dịch và link,
+     * khách trả xong VNPay chuyển về /payment/vnpay-return rồi sang trang in vé.
+     */
     private void payVnpay(HttpServletRequest req, HttpServletResponse resp, User staff) throws SQLException, IOException {
         Booking booking = loadCounterBooking(req, staff);
         if (booking == null) {
@@ -234,6 +280,12 @@ public class CounterShowtimeServlet extends HttpServlet {
         resp.sendRedirect(payUrl == null ? checkoutUrl : payUrl);
     }
 
+    /**
+     * Chuyển trang sau khi thu tiền mặt theo kết quả của PaymentService:
+     * - thành công / đã trả trước đó -> trang in vé
+     * - tiền về nhưng ghế đã mất, hoặc đơn đã đổi số tiền -> báo cần hoàn tiền, quay lại trang thu tiền
+     * - không tìm thấy giao dịch -> báo lỗi
+     */
     private void finishPayment(HttpServletRequest req, HttpServletResponse resp, Booking booking, Outcome outcome)
             throws IOException {
         String ctx = req.getContextPath();
@@ -252,7 +304,10 @@ public class CounterShowtimeServlet extends HttpServlet {
         resp.sendRedirect(ctx + "/staff/counter?action=checkout&bookingId=" + booking.getId());
     }
 
-    /** Chọn bắp nước / áp voucher cho đơn tại quầy đang giữ ghế. */
+    /**
+     * Chọn bắp nước, áp hoặc bỏ voucher cho đơn tại quầy đang giữ ghế (dùng chung BookingServlet.applyExtras).
+     * Lưu bắp nước lỗi thì ở lại trang bắp nước, còn lại sang trang thu tiền.
+     */
     private void updateExtras(HttpServletRequest req, HttpServletResponse resp, User staff, String action)
             throws SQLException, IOException {
         Booking booking = loadCounterBooking(req, staff);
@@ -270,6 +325,7 @@ public class CounterShowtimeServlet extends HttpServlet {
         resp.sendRedirect(req.getContextPath() + "/staff/counter?action=" + next + "&bookingId=" + booking.getId());
     }
 
+    /** Nhân viên huỷ đơn tại quầy chưa thanh toán: đơn và ghế -> CANCELLED, rồi quay về sơ đồ ghế của suất. */
     private void cancel(HttpServletRequest req, HttpServletResponse resp, User staff) throws SQLException, IOException {
         Booking booking = loadCounterBooking(req, staff);
         if (booking == null) {
@@ -282,6 +338,7 @@ public class CounterShowtimeServlet extends HttpServlet {
         resp.sendRedirect(req.getContextPath() + "/staff/counter?action=seats&showtimeId=" + booking.getShowtime().getId());
     }
 
+    /** Trang in vé và hoá đơn của đơn tại quầy: vé từng ghế, bắp nước, tiền khách đưa và tiền thối. */
     private void ticket(HttpServletRequest req, HttpServletResponse resp, User staff)
             throws SQLException, ServletException, IOException {
         Booking booking = loadCounterBooking(req, staff);
@@ -295,13 +352,18 @@ public class CounterShowtimeServlet extends HttpServlet {
         req.getRequestDispatcher(VIEW_BASE + "counterTicketPrint.jsp").forward(req, resp);
     }
 
-    /** Đơn tại quầy thuộc chi nhánh của nhân viên, null nếu không hợp lệ. */
+    /**
+     * Đọc bookingId và lấy đơn tại quầy thuộc rạp của nhân viên; không có hoặc thuộc rạp khác thì trả null.
+     */
     private Booking loadCounterBooking(HttpServletRequest req, User staff) throws SQLException {
         Integer bookingId = WebUtil.parseInt(req.getParameter("bookingId"));
         return bookingId == null ? null : bookingService.getCounterBooking(bookingId, staff.getCentreId());
     }
 
-    /** Chỉ nhân viên bán vé (TICKET_SALES_STAFF) đã được gán chi nhánh mới bán vé tại quầy (dùng chung với bán bắp nước lẻ). */
+    /**
+     * Kiểm tra quyền bán vé tại quầy: phải đăng nhập, là nhân viên bán vé và đã được gán rạp.
+     * Không đủ điều kiện thì chuyển về trang mặc định của vai trò và trả null. Dùng chung với bán bắp nước lẻ.
+     */
     static User requireCounterStaff(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         User user = WebUtil.requireUser(req, resp);
         if (user == null) return null;
@@ -312,7 +374,9 @@ public class CounterShowtimeServlet extends HttpServlet {
         return user;
     }
 
-    /** "200.000", "200,000 đ", "200000" -> 200000; null nếu không hợp lệ. */
+    /**
+     * Đọc số tiền nhân viên nhập: "200.000", "200,000 đ", "200000" đều thành 200000; sai định dạng thì null.
+     */
     static BigDecimal parseMoney(String value) {
         if (value == null) return null;
         String digits = value.replaceAll("[^0-9]", "");
@@ -320,6 +384,7 @@ public class CounterShowtimeServlet extends HttpServlet {
         return new BigDecimal(digits);
     }
 
+    /** Chuyển chuỗi "yyyy-MM-dd" trên URL thành LocalDate; rỗng hoặc sai định dạng thì null. */
     private static LocalDate parseDate(String value) {
         if (value == null || value.isEmpty()) return null;
         try {
@@ -329,6 +394,7 @@ public class CounterShowtimeServlet extends HttpServlet {
         }
     }
 
+    /** Tạo nhãn cho các nút ngày ở trang chọn suất tại quầy (key "yyyy-MM-dd", nhãn dạng "T3 25/11"). */
     private static Map<String, String> toDateOptions(List<LocalDate> dates) {
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM");
         Map<String, String> options = new LinkedHashMap<>();
