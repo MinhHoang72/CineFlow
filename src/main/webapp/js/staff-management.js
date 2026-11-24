@@ -42,28 +42,7 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 function handleStaffStatusChange(selectEl) {
-    var newStatus = selectEl.value;
-    var currentStatus = selectEl.getAttribute("data-current-status") || "ACTIVE";
-    var staffName = selectEl.getAttribute("data-name") || "nhân viên";
-
-    if (newStatus === currentStatus) {
-        return;
-    }
-
-    var message = "";
-    if (newStatus === "ACTIVE") {
-        message = 'Kích hoạt lại tài khoản cho nhân viên "' + staffName + '" sang HOẠT ĐỘNG?';
-    } else if (newStatus === "INACTIVE") {
-        message = 'Chuyển tài khoản nhân viên "' + staffName + '" sang TẠM NGƯNG?';
-    } else if (newStatus === "LOCKED") {
-        message = 'CẢNH BÁO: Bạn có chắc chắn muốn KHÓA tài khoản nhân viên "' + staffName + '"?';
-    }
-
-    if (confirm(message)) {
-        if (selectEl.form) {
-            selectEl.form.submit();
-        }
-    } else {
-        selectEl.value = currentStatus;
+    if (selectEl && selectEl.form) {
+        selectEl.form.submit();
     }
 }
