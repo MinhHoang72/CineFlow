@@ -22,7 +22,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Đọc dữ liệu ngữ cảnh do movieForm.jsp gắn lên thẻ <form>
     const originalStatus = movieForm ? (movieForm.dataset.originalStatus || '') : '';
-    const hasUpcomingShowtimes = movieForm ? (movieForm.dataset.hasUpcomingShowtimes === 'true') : false;
     const upcomingCount = movieForm ? parseInt(movieForm.dataset.upcomingCount || '0', 10) : 0;
     const soldCount = movieForm ? parseInt(movieForm.dataset.soldCount || '0', 10) : 0;
 
@@ -109,7 +108,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const status = statusSelect ? statusSelect.value : '';
 
             // Rẽ nhánh xác nhận khi Admin kết thúc/lưu trữ phim đang còn suất chiếu tương lai
-            if ((status === 'ENDED' || status === 'ARCHIVED') && originalStatus !== 'ENDED' && originalStatus !== 'ARCHIVED' && hasUpcomingShowtimes) {
+            if ((status === 'ENDED' || status === 'ARCHIVED') && originalStatus !== 'ENDED' && originalStatus !== 'ARCHIVED' && upcomingCount > 0) {
                 let confirmMsg = '';
                 if (soldCount > 0) {
                     confirmMsg = '⛔ CẢNH BÁO NGUY HIỂM:\n\n'

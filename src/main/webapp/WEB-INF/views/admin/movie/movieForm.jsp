@@ -125,12 +125,10 @@
                 Form gửi POST lên /admin/movie để lưu thông tin phim.
                 - enctype="multipart/form-data": bắt buộc để upload file ảnh Poster & video Trailer.
                 - data-original-status: trạng thái cũ của phim trước khi sửa.
-                - data-has-upcoming-showtimes: true nếu phim đang còn suất chiếu tương lai (JS dùng để bật confirm khi chọn ENDED/ARCHIVED).
             --%>
             <form id="movieForm" method="post" action="${pageContext.request.contextPath}/admin/movie"
                   enctype="multipart/form-data"
                   data-original-status="<%= editing && movie.getStatus() != null ? movie.getStatus() : "" %>"
-                  data-has-upcoming-showtimes="<%= (uCount > 0) ? "true" : "false" %>"
                   data-upcoming-count="<%= uCount %>"
                   data-sold-count="<%= sCount %>">
                 <%-- Nếu đang sửa phim (editing = true), gửi kèm movieId để Server biết cần UPDATE thay vì INSERT --%>
