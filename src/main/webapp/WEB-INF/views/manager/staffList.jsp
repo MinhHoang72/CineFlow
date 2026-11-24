@@ -1,22 +1,9 @@
 <%@ page import="jakarta.servlet.http.HttpServletResponse" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ page import="model.entity.User,model.entity.Centre,java.util.List" %>
 
 <%
-    String authRole = (String) session.getAttribute("role");
-
-    if (authRole == null && session.getAttribute("user") instanceof User) {
-        authRole = ((User) session.getAttribute("user")).getRole();
-    }
-
-    if (!"MANAGER".equalsIgnoreCase(authRole)) {
-        response.sendError(
-            HttpServletResponse.SC_FORBIDDEN,
-            "Chỉ Manager mới được truy cập trang quản lý nhân sự."
-        );
-        return;
-    }
-
     if (request.getAttribute("staff") == null) {
         response.sendRedirect(request.getContextPath() + "/staffList");
         return;
@@ -30,8 +17,6 @@
             ? assignedCentre.getCentreName()
             : "Chưa được bổ nhiệm trung tâm";
 
-    String successParam = request.getParameter("success");
-    String errorParam = request.getParameter("error");
     String searchParam = request.getParameter("search");
 
     request.setAttribute("activeNav", "staff");
@@ -112,93 +97,30 @@
                 </div>
 
                 <% if (selectedCentreId != null) { %>
-                    <button type="button"
-                            class="cf-btn cf-btn-primary"
-                            onclick="openCreateStaffModal()">
+                    <a href="${pageContext.request.contextPath}/staffList?action=create"
+                       class="cf-btn cf-btn-primary">
                         <span style="font-weight:700;font-size:15px;margin-right:4px;">+</span>
                         Thêm nhân viên mới
-                    </button>
+                    </a>
                 <% } %>
 
             </div>
 
             <!-- THÔNG BÁO -->
-            <% if ("created".equals(successParam)) { %>
-                <div class="cf-alert cf-alert-success">
-                    ✓ <strong>Thành công!</strong>
-                    Đã tạo tài khoản nhân viên.
-                </div>
-
-            <% } else if ("updated".equals(successParam)) { %>
-                <div class="cf-alert cf-alert-success">
-                    ✓ Đã cập nhật thông tin nhân viên.
-                </div>
-
-            <% } else if ("status_updated".equals(successParam)) { %>
-                <div class="cf-alert cf-alert-success">
-                    ✓ Đã cập nhật trạng thái nhân viên.
-                </div>
-
-            <% } else if ("account_exists".equals(errorParam)) { %>
-                <div class="cf-alert cf-alert-danger">
-                    Tên tài khoản đã tồn tại.
-                </div>
-
-            <% } else if ("email_exists".equals(errorParam)) { %>
-                <div class="cf-alert cf-alert-danger">
-                    Email đã được sử dụng.
-                </div>
-
-            <% } else if ("missing_fields".equals(errorParam)) { %>
-                <div class="cf-alert cf-alert-danger">
-                    Vui lòng điền đầy đủ thông tin bắt buộc.
-                </div>
-
-            <% } else if ("invalid_name".equals(errorParam)) { %>
-                <div class="cf-alert cf-alert-danger">
-                    Họ và tên phải từ 2 đến 100 ký tự.
-                </div>
-
-            <% } else if ("invalid_account".equals(errorParam)) { %>
-                <div class="cf-alert cf-alert-danger">
-                    Tên tài khoản không hợp lệ.
-                </div>
-
-            <% } else if ("invalid_email".equals(errorParam)) { %>
-                <div class="cf-alert cf-alert-danger">
-                    Email không đúng định dạng.
-                </div>
-
-            <% } else if ("disposable_email".equals(errorParam)) { %>
-                <div class="cf-alert cf-alert-danger">
-                    Không được sử dụng email tạm thời.
-                </div>
-
-            <% } else if ("weak_password".equals(errorParam)) { %>
-                <div class="cf-alert cf-alert-danger">
-                        Mật khẩu tối thiểu 8 ký tự, có kí tự viết hoa, có kí tự đặc biệt.
-                </div>
-
-            <% } else if ("invalid_phone".equals(errorParam)) { %>
-                <div class="cf-alert cf-alert-danger">
-                    Số điện thoại không được quá 20 ký tự.
-                </div>
-
-            <% } else if ("unassigned_manager".equals(errorParam)) { %>
-                <div class="cf-alert cf-alert-danger">
-                    Bạn chưa được bổ nhiệm trung tâm.
-                </div>
-
-            <% } else if ("create_failed".equals(errorParam)) { %>
-                <div class="cf-alert cf-alert-danger">
-                    Không thể tạo tài khoản nhân viên.
-                </div>
-
-            <% } else if (errorParam != null) { %>
-                <div class="cf-alert cf-alert-danger">
-                    Thao tác không thành công. Vui lòng kiểm tra lại.
-                </div>
-            <% } %>
+            <c:choose>
+                <c:when test="${param.success == 'created'}">
+                    <div class="cf-alert cf-alert-success">✓ <strong>Thành công!</strong> Đã tạo tài khoản nhân viên thành công.</div>
+                </c:when>
+                <c:when test="${param.success == 'updated'}">
+                    <div class="cf-alert cf-alert-success">✓ <strong>Thành công!</strong> Đã cập nhật thông tin nhân viên thành công.</div>
+                </c:when>
+                <c:when test="${param.success == 'status_updated'}">
+                    <div class="cf-alert cf-alert-success">✓ <strong>Thành công!</strong> Đã cập nhật trạng thái nhân viên thành công.</div>
+                </c:when>
+                <c:when test="${not empty param.error}">
+                    <div class="cf-alert cf-alert-danger">⚠ <strong>Lỗi:</strong> Thao tác không thành công hoặc dữ liệu không hợp lệ. Vui lòng kiểm tra lại.</div>
+                </c:when>
+            </c:choose>
 
             <!-- MANAGER CHƯA ĐƯỢC BỔ NHIỆM -->
             <% if (selectedCentreId == null) { %>
@@ -274,13 +196,6 @@
                         </div>
 
                         <div class="staff-toolbar">
-
-                            <div class="staff-select-wrap">
-                                <select id="staffRoleFilter">
-                                    <option value="">Tất cả vị trí</option>
-                                    <option value="role-sales">🎫 Bán vé</option>
-                                </select>
-                            </div>
 
                             <div class="staff-select-wrap">
                                 <select id="staffStatusFilter">
@@ -411,11 +326,11 @@
                                         String roleClass = isSales ? "role-sales" : "";
 
                                         String searchVal = (employeeCode + " "
+                                                + item.getUserId() + " bv"
                                                 + item.getUserId() + " nv"
                                                 + item.getUserId() + " "
                                                 + staffName + " " + staffEmail + " "
-                                                + staffAccount + " " + staffPhone + " "
-                                                + staffRole).toLowerCase();
+                                                + staffAccount + " " + staffPhone + " bán vé").toLowerCase();
 
                                         String stClass = "ACTIVE".equalsIgnoreCase(st)
                                                 ? "st-active"
@@ -448,19 +363,13 @@
                                         </td>
 
                                         <td class="col-role">
-                                            <% if (isSales) { %>
-                                                <span class="cf-badge"
-                                                      style="background:rgba(56,189,248,.15);
-                                                             color:#38bdf8;
-                                                             border:1px solid rgba(56,189,248,.35);
-                                                             white-space:nowrap;">
-                                                    🎫 Bán vé
-                                                </span>
-                                            <% } else { %>
-                                                <span class="cf-badge cf-badge-info" style="white-space:nowrap;">
-                                                    Nhân viên
-                                                </span>
-                                            <% } %>
+                                            <span class="cf-badge"
+                                                  style="background:rgba(56,189,248,.15);
+                                                         color:#38bdf8;
+                                                         border:1px solid rgba(56,189,248,.35);
+                                                         white-space:nowrap;">
+                                                🎫 Bán vé
+                                            </span>
                                         </td>
 
                                         <td class="col-phone">
@@ -495,45 +404,39 @@
 
                                             <div class="staff-actions">
 
-                                                <button type="button"
-                                                        class="staff-edit-btn"
-                                                        onclick="openEditStaffModal(
-                                                            <%= item.getUserId() %>,
-                                                            '<%= employeeCode.replace("'", "\\'") %>',
-                                                            '<%= staffName.replace("'", "\\'") %>',
-                                                            '<%= staffPhone.replace("'", "\\'") %>',
-                                                            '<%= staffEmail.replace("'", "\\'") %>',
-                                                            '<%= staffRole.replace("'", "\\'") %>'
-                                                        )">
+                                                <a href="${pageContext.request.contextPath}/staffList?action=edit&userId=<%= item.getUserId() %>"
+                                                   class="staff-edit-btn">
                                                     Sửa
-                                                </button>
+                                                </a>
 
-                                                <div class="status-select-wrap">
+                                                <form method="post" action="${pageContext.request.contextPath}/staffList" class="form-inline-action" style="margin: 0; display: inline-flex;">
+                                                    <input type="hidden" name="action" value="status">
+                                                    <input type="hidden" name="userId" value="<%= item.getUserId() %>">
+                                                    <div class="status-select-wrap">
+                                                        <select name="status" class="cf-status-select val-<%= st.toLowerCase() %>"
+                                                                data-name="<%= staffName.replace("\"", "&quot;") %>"
+                                                                data-current-status="<%= st %>"
+                                                                onchange="handleStaffStatusChange(this)"
+                                                                title="Bấm để thay đổi trạng thái nhân viên">
 
-                                                    <select class="cf-status-select val-<%= st.toLowerCase() %>"
-                                                            data-userid="<%= item.getUserId() %>"
-                                                            data-name="<%= staffName.replace("\"", "&quot;") %>"
-                                                            data-previous-status="<%= st %>"
-                                                            onchange="handleStaffStatusChange(this)">
+                                                            <option value="ACTIVE"
+                                                                <%= "ACTIVE".equalsIgnoreCase(st) ? "selected" : "" %>>
+                                                                Hoạt động
+                                                            </option>
 
-                                                        <option value="ACTIVE"
-                                                            <%= "ACTIVE".equalsIgnoreCase(st) ? "selected" : "" %>>
-                                                            Hoạt động
-                                                        </option>
+                                                            <option value="INACTIVE"
+                                                                <%= "INACTIVE".equalsIgnoreCase(st) ? "selected" : "" %>>
+                                                                Tạm ngưng
+                                                            </option>
 
-                                                        <option value="INACTIVE"
-                                                            <%= "INACTIVE".equalsIgnoreCase(st) ? "selected" : "" %>>
-                                                            Tạm ngưng
-                                                        </option>
+                                                            <option value="LOCKED"
+                                                                <%= "LOCKED".equalsIgnoreCase(st) ? "selected" : "" %>>
+                                                                Khóa
+                                                            </option>
 
-                                                        <option value="LOCKED"
-                                                            <%= "LOCKED".equalsIgnoreCase(st) ? "selected" : "" %>>
-                                                            Khóa
-                                                        </option>
-
-                                                    </select>
-
-                                                </div>
+                                                        </select>
+                                                    </div>
+                                                </form>
                                             </div>
                                         </td>
 
@@ -569,444 +472,9 @@
     </div>
 </div>
 
-<!-- MODAL TẠO NHÂN VIÊN -->
-<div class="cf-modal-backdrop" id="createStaffModal">
-
-    <div class="cf-modal" role="dialog" aria-modal="true">
-
-        <div class="cf-modal-header">
-            <h3>Thêm nhân viên mới tại <%= currentCentreName %></h3>
-
-            <button type="button"
-                    class="cf-modal-close"
-                    onclick="closeCreateStaffModal()">
-                &times;
-            </button>
-        </div>
-
-        <form method="post"
-              action="${pageContext.request.contextPath}/staffList">
-
-            <input type="hidden" name="action" value="create">
-
-            <div class="cf-modal-body">
-
-                <p style="font-size:13px;color:#94a3b8;margin-bottom:12px;">
-                    Nhân viên mới sẽ trực thuộc trung tâm:
-                    <strong style="color:#f8fafc;">
-                        <%= currentCentreName %>
-                    </strong>
-                </p>
-
-                <div class="cf-form-group">
-                    <label for="createStaffRole">Vị trí công việc *</label>
-
-                    <select id="createStaffRole" name="role" required>
-                        <option value="TICKET_SALES_STAFF">
-                            🎫 Nhân viên bán vé & F&B
-                        </option>
-                    </select>
-                </div>
-
-                <div class="cf-form-group">
-                    <label for="createStaffFullName">Họ và tên *</label>
-
-                    <input type="text"
-                           id="createStaffFullName"
-                           name="fullName"
-                           placeholder="Ví dụ: Nguyễn Văn B"
-                           required>
-                </div>
-
-                <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;">
-
-                    <div class="cf-form-group">
-                        <label for="createStaffAccount">Tên đăng nhập *</label>
-
-                        <input type="text"
-                               id="createStaffAccount"
-                               name="account"
-                               maxlength="50"
-                               required>
-                    </div>
-
-                    <div class="cf-form-group">
-                        <label for="createStaffPhone">Số điện thoại</label>
-
-                        <input type="tel"
-                               id="createStaffPhone"
-                               name="phone">
-                    </div>
-
-                </div>
-
-                <div class="cf-form-group">
-                    <label for="createStaffEmail">Email *</label>
-
-                    <input type="email"
-                           id="createStaffEmail"
-                           name="email"
-                           required>
-                </div>
-
-                <div class="cf-form-group">
-                    <label for="createStaffPassword">Mật khẩu ban đầu *</label>
-
-                    <input type="text"
-                           id="createStaffPassword"
-                           name="password"
-                           value="Staff@123"
-                           required>
-
-                    <small style="color:#94a3b8;font-size:12px;">
-                        Mật khẩu tối thiểu 8 ký tự, có kí tự viết hoa, có kí tự đặc biệt.
-                    </small>
-                </div>
-
-            </div>
-
-            <div class="cf-modal-footer">
-                <button type="button"
-                        class="cf-btn cf-btn-secondary"
-                        onclick="closeCreateStaffModal()">
-                    Hủy
-                </button>
-
-                <button type="submit" class="cf-btn cf-btn-primary">
-                    Tạo tài khoản
-                </button>
-            </div>
-
-        </form>
-    </div>
-</div>
-
-<!-- MODAL SỬA NHÂN VIÊN -->
-<div class="cf-modal-backdrop" id="editStaffModal">
-
-    <div class="cf-modal" role="dialog" aria-modal="true">
-
-        <div class="cf-modal-header">
-            <h3>Chỉnh sửa thông tin nhân viên</h3>
-
-            <button type="button"
-                    class="cf-modal-close"
-                    onclick="closeEditStaffModal()">
-                &times;
-            </button>
-        </div>
-
-        <form method="post"
-              action="${pageContext.request.contextPath}/staffList">
-
-            <input type="hidden" name="action" value="update">
-            <input type="hidden" name="userId" id="editStaffUserId">
-
-            <div class="cf-modal-body">
-
-                <div class="cf-form-group">
-                    <label>Mã nhân viên</label>
-                    <code class="cf-badge cf-badge-info" id="editStaffCode">
-                        NV00000
-                    </code>
-                </div>
-
-                <div class="cf-form-group">
-                    <label for="editStaffRole">Vị trí công việc *</label>
-
-                    <select name="role" id="editStaffRole" required>
-                        <option value="TICKET_SALES_STAFF">🎫 Nhân viên bán vé</option>
-                    </select>
-                </div>
-
-                <div class="cf-form-group">
-                    <label for="editStaffFullName">Họ và tên *</label>
-
-                    <input type="text"
-                           name="fullName"
-                           id="editStaffFullName"
-                           required>
-                </div>
-
-                <div class="cf-form-group">
-                    <label for="editStaffPhone">Số điện thoại</label>
-
-                    <input type="tel"
-                           name="phone"
-                           id="editStaffPhone">
-                </div>
-
-                <div class="cf-form-group">
-                    <label for="editStaffEmail">Email *</label>
-
-                    <input type="email"
-                           name="email"
-                           id="editStaffEmail"
-                           required>
-                </div>
-
-            </div>
-
-            <div class="cf-modal-footer">
-
-                <button type="button"
-                        class="cf-btn cf-btn-secondary"
-                        onclick="closeEditStaffModal()">
-                    Hủy
-                </button>
-
-                <button type="submit" class="cf-btn cf-btn-primary">
-                    Lưu thay đổi
-                </button>
-
-            </div>
-
-        </form>
-    </div>
-</div>
-
 <div id="cf-toast-container" aria-live="polite"></div>
 
-<script src="${pageContext.request.contextPath}/js/admin-pagination.js"></script>
-
-<script>
-    function openCreateStaffModal() {
-        document.getElementById("createStaffModal").classList.add("active");
-    }
-
-    function closeCreateStaffModal() {
-        document.getElementById("createStaffModal").classList.remove("active");
-    }
-
-    function openEditStaffModal(id, code, fullName, phone, email, role) {
-        document.getElementById("editStaffUserId").value = id;
-        document.getElementById("editStaffCode").textContent = code;
-        document.getElementById("editStaffFullName").value = fullName;
-        document.getElementById("editStaffPhone").value = phone;
-        document.getElementById("editStaffEmail").value = email;
-        document.getElementById("editStaffRole").value = role;
-
-        document.getElementById("editStaffModal").classList.add("active");
-    }
-
-    function closeEditStaffModal() {
-        document.getElementById("editStaffModal").classList.remove("active");
-    }
-
-    document.querySelectorAll(".cf-modal-backdrop").forEach(function(modal) {
-        modal.addEventListener("click", function(event) {
-            if (event.target === modal) {
-                modal.classList.remove("active");
-            }
-        });
-    });
-
-    document.addEventListener("keydown", function(event) {
-        if (event.key === "Escape") {
-            closeCreateStaffModal();
-            closeEditStaffModal();
-        }
-    });
-
-    var staffPagination = null;
-
-    document.addEventListener("DOMContentLoaded", function() {
-
-        var countLabel = document.getElementById("staffCountLabel");
-        var roleFilter = document.getElementById("staffRoleFilter");
-        var searchInput = document.getElementById("staffFilterInput");
-        var searchForm = document.getElementById("staffSearchForm");
-
-        if (!document.getElementById("staffTableBody")) {
-            return;
-        }
-
-        staffPagination = initTablePagination({
-            tableBodyId: "staffTableBody",
-            rowSelector: "tr.staff-row",
-            emptyRowId: "staffTableEmptyRow",
-            paginationId: "staffPaginationControls",
-            infoDisplayId: "staffPaginationInfo",
-            pageSizeSelectId: "staffPageSizeSelect",
-            searchInputId: "staffFilterInput",
-            searchClearBtnId: "staffSearchClearBtn",
-            statusFilterSelectId: "staffStatusFilter",
-            itemLabel: "nhân viên",
-            defaultPageSize: 10,
-
-            customFilter: function(row) {
-                var roleValue = roleFilter ? roleFilter.value : "";
-
-                if (roleValue && !row.classList.contains(roleValue)) {
-                    return false;
-                }
-
-                return true;
-            },
-
-            onPageChange: function(state) {
-                if (countLabel) {
-                    countLabel.textContent =
-                        state.totalFiltered + " tài khoản đang hiển thị.";
-                }
-            }
-        });
-
-        if (roleFilter) {
-            roleFilter.addEventListener("change", function() {
-                staffPagination.setPage(1);
-            });
-        }
-
-        if (searchForm) {
-            searchForm.addEventListener("submit", function(event) {
-                event.preventDefault();
-
-                if (searchInput) {
-                    staffPagination.setSearch(searchInput.value);
-                }
-            });
-        }
-    });
-
-    function handleStaffStatusChange(selectEl) {
-
-        var userId = selectEl.getAttribute("data-userid");
-        var staffName = selectEl.getAttribute("data-name") || "nhân viên";
-        var newStatus = selectEl.value;
-        var previousStatus = selectEl.getAttribute("data-previous-status");
-
-        var badge = document.getElementById("badge-status-" + userId);
-        var row = selectEl.closest(".staff-row");
-
-        selectEl.disabled = true;
-
-        var formData = new URLSearchParams();
-
-        formData.append("action", "status");
-        formData.append("ajax", "1");
-        formData.append("userId", userId);
-        formData.append("status", newStatus);
-
-        fetch("${pageContext.request.contextPath}/staffList", {
-            method: "POST",
-
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-                "X-Requested-With": "XMLHttpRequest"
-            },
-
-            body: formData.toString()
-        })
-
-        .then(function(response) {
-            return response.json().then(function(data) {
-                if (!response.ok || !data.success) {
-                    throw new Error(data.message || "Cập nhật thất bại.");
-                }
-
-                return data;
-            });
-        })
-
-        .then(function() {
-
-            selectEl.setAttribute("data-previous-status", newStatus);
-            selectEl.className =
-                "cf-status-select val-" + newStatus.toLowerCase();
-
-            if (badge) {
-
-                if (newStatus === "ACTIVE") {
-                    badge.className = "cf-badge cf-badge-success";
-                    badge.textContent = "Hoạt động";
-
-                } else if (newStatus === "INACTIVE") {
-                    badge.className = "cf-badge cf-badge-warning";
-                    badge.textContent = "Tạm ngưng";
-
-                } else {
-                    badge.className = "cf-badge cf-badge-danger";
-                    badge.textContent = "Đã khóa";
-                }
-            }
-
-            if (row) {
-                row.classList.remove("st-active", "st-inactive", "st-locked");
-                row.classList.add("st-" + newStatus.toLowerCase());
-                row.setAttribute("data-status", newStatus);
-            }
-
-            if (staffPagination) {
-                staffPagination.refreshRows();
-            }
-
-            updateStaffKPI();
-
-            showToast("Đã cập nhật trạng thái của " + staffName + ".", "success");
-        })
-
-        .catch(function(error) {
-
-            selectEl.value = previousStatus;
-
-            showToast(
-                error.message || "Cập nhật trạng thái thất bại.",
-                "error"
-            );
-        })
-
-        .finally(function() {
-            selectEl.disabled = false;
-        });
-    }
-
-    function updateStaffKPI() {
-
-        var rows = document.querySelectorAll(".staff-row");
-
-        var active = 0;
-        var inactive = 0;
-
-        rows.forEach(function(row) {
-            var status = row.getAttribute("data-status");
-
-            if (status === "ACTIVE") {
-                active++;
-            } else {
-                inactive++;
-            }
-        });
-
-        document.getElementById("kpiActiveStaff").textContent = active;
-        document.getElementById("kpiInactiveStaff").textContent = inactive;
-    }
-
-    function showToast(message, type) {
-
-        var container = document.getElementById("cf-toast-container");
-
-        if (!container) {
-            return;
-        }
-
-        var toast = document.createElement("div");
-
-        toast.className =
-            "cf-toast" + (type === "error" ? " cf-toast-error" : "");
-
-        toast.textContent = message;
-        container.appendChild(toast);
-
-        setTimeout(function() {
-            toast.classList.add("cf-toast-fadeout");
-
-            setTimeout(function() {
-                toast.remove();
-            }, 400);
-        }, 2500);
-    }
-</script>
-
+<script src="${pageContext.request.contextPath}/js/admin-pagination.js?v=<%= System.currentTimeMillis() %>"></script>
+<script src="${pageContext.request.contextPath}/js/staff-management.js?v=<%= System.currentTimeMillis() %>"></script>
 </body>
 </html>

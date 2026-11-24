@@ -1,8 +1,6 @@
 package dao;
 
 import model.dto.booking.BookingHistoryDTO;
-import model.entity.ManagerAssignment;
-import model.entity.StaffTransfer;
 import model.entity.User;
 import utils.DBContext;
 
@@ -18,8 +16,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Xử lý truy vấn và quản lý dữ liệu người dùng, phân quyền, luân chuyển nhân sự
- * và quản lý tài khoản.
+ * DAO: Xử lý truy vấn và cập nhật dữ liệu người dùng (Khách hàng, Nhân viên, Quản lý, Admin),
+ * bao gồm đăng nhập, đăng ký, hồ sơ cá nhân và quản lý trạng thái tài khoản.
  */
 public class UserDAO {
 
@@ -679,7 +677,7 @@ public class UserDAO {
      */
     public boolean createStaff(User user) {
         String staffRole = user.getRole();
-        if (staffRole == null || staffRole.trim().isEmpty()) {
+        if (staffRole == null || staffRole.trim().isEmpty() || "STAFF".equalsIgnoreCase(staffRole)) {
             staffRole = User.ROLE_TICKET_SALES;
         }
         String sql = "INSERT INTO Users (FullName, Account, Email, Password, Phone, Role, Status, CentreID, EmailVerified, CreatedAt) "
@@ -776,338 +774,68 @@ public class UserDAO {
         return -1;
     }
 
-    public int createManager(User user) {
-        return createManager(user, 4);
-    }
-
     /**
-     * Gán trực tiếp một Quản lý vào trung tâm chiếu phim.
-     */
-    public boolean assignManagerToCentre(int managerUserId, int centreId) {
-        String sql = "UPDATE Users SET CentreID = ?, UpdatedAt = GETDATE() WHERE UserID = ? AND Role = 'MANAGER'";
-        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setInt(1, centreId);
-            ps.setInt(2, managerUserId);
-            return ps.executeUpdate() > 0;
-        } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Không thể gán Quản lý cho trung tâm", e);
-            return false;
-        }
-    }
-
-    /**
-     * Lấy toàn bộ danh sách Quản lý trong hệ thống.
+     * Lấy toàn bộ danh sách Quản lý trong hệ thống kèm thông tin cụm rạp phụ trách.
+     *
+     * @return danh sách các tài khoản có vai trò MANAGER
      */
     public List<User> getManagers() {
-        return getManagers(null);
-    }
-
-    /**
-     * Tìm kiếm và lấy danh sách Quản lý theo từ khóa.
-     *
-     * @param search từ khóa tìm kiếm (họ tên, tài khoản, email, số điện thoại,
-     * tên trung tâm hoặc mã ID)
-     * @return danh sách các Quản lý
-     */
-    public List<User> getManagers(String search) {
-        StringBuilder sql = new StringBuilder("SELECT u.UserID, u.FullName, u.Account, u.Email, u.Password, u.Phone, u.Avatar, u.Role, u.Status, "
-                + "cma.CentreID, b.CentreName, "
-                + "u.EmailVerified, u.PhoneVerified, u.CreatedAt, u.UpdatedAt, u.LastLoginAt, u.ResetToken, u.ResetTokenExpiry "
+        String sql = "SELECT u.*, b.CentreName "
                 + "FROM Users u "
                 + "LEFT JOIN CentreManagerAssignments cma ON cma.ManagerID = u.UserID AND cma.Status = 'ACTIVE' AND cma.EndDate IS NULL "
                 + "LEFT JOIN Centres b ON b.CentreID = cma.CentreID "
-                + "WHERE u.Role = 'MANAGER' ");
-
-        Integer searchId = null;
-        String keyword = null;
-        if (search != null && !search.trim().isEmpty()) {
-            keyword = search.trim();
-            String cleanDigits = keyword.replaceAll("(?i)^[#A-Z]+", "");
-            if (!cleanDigits.isEmpty() && cleanDigits.matches("^\\d+$")) {
-                try {
-                    searchId = Integer.parseInt(cleanDigits);
-                } catch (NumberFormatException ignored) {
-                }
-            }
-            if (searchId != null) {
-                sql.append("AND (u.UserID = ? OR u.Account LIKE ? OR u.FullName LIKE ? OR u.Email LIKE ? OR u.Phone LIKE ? OR b.CentreName LIKE ?) ");
-            } else {
-                sql.append("AND (u.Account LIKE ? OR u.FullName LIKE ? OR u.Email LIKE ? OR u.Phone LIKE ? OR b.CentreName LIKE ?) ");
-            }
-        }
-        sql.append("ORDER BY u.FullName");
-
+                + "WHERE u.Role = 'MANAGER' "
+                + "ORDER BY u.UserID DESC";
         List<User> list = new ArrayList<>();
-        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql.toString())) {
-            if (keyword != null) {
-                int pIdx = 1;
-                String likePattern = "%" + keyword + "%";
-                if (searchId != null) {
-                    ps.setInt(pIdx++, searchId);
-                }
-                ps.setString(pIdx++, likePattern);
-                ps.setString(pIdx++, likePattern);
-                ps.setString(pIdx++, likePattern);
-                ps.setString(pIdx++, likePattern);
-                ps.setString(pIdx++, likePattern);
-            }
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    list.add(mapUser(rs));
-                }
+        try (Connection connection = DBContext.getConnection();
+             PreparedStatement ps = connection.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                list.add(mapUser(rs));
             }
         } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Không thể tải danh sách Quản lý theo tìm kiếm", e);
+            LOGGER.log(Level.SEVERE, "Không thể tải danh sách Quản lý", e);
         }
         return list;
     }
 
     /**
-     * Lấy danh sách cả Nhân viên và Quản lý theo trung tâm (hoặc toàn bộ nếu
-     * centreId là null).
-     */
-    public List<User> getAllStaffAndManagers(Integer centreId) {
-        String sql = "SELECT u.*, b.CentreName FROM Users u "
-                + "LEFT JOIN Centres b ON b.CentreID = u.CentreID "
-                + "WHERE u.Role IN ('STAFF', 'TICKET_SALES_STAFF', 'TICKET_SALES', 'MANAGER') "
-                + (centreId != null ? "AND u.CentreID = ? " : "")
-                + "ORDER BY u.Role DESC, b.CentreName, u.FullName";
-        List<User> list = new ArrayList<>();
-        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
-            if (centreId != null) {
-                ps.setInt(1, centreId);
-            }
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    list.add(mapUser(rs));
-                }
-            }
-        } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Không thể tải danh sách Nhân viên và Quản lý", e);
-        }
-        return list;
-    }
-
-    /**
-     * Luân chuyển nhân viên sang trung tâm rạp khác và lưu lịch sử điều động
-     * trong giao dịch.
+     * Cập nhật trạng thái hoạt động của tài khoản người dùng (ACTIVE, INACTIVE, LOCKED).
+     * Nếu tài khoản không còn ở trạng thái ACTIVE, tự động kết thúc phân công quản lý hiện tại (nếu là Manager).
      *
-     * @param userId mã nhân viên
-     * @param fromCentreId mã trung tâm hiện tại (hoặc null nếu chưa gán)
-     * @param toCentreId mã trung tâm chuyển đến
-     * @param adminId mã Admin thực hiện lệnh luân chuyển /** Luân chuyển nhân
-     * sự (Nhân viên hoặc Quản lý) sang trung tâm rạp khác, hỗ trợ thay đổi vai
-     * trò/thăng chức và ngày hiệu lực, bảo toàn tính toàn vẹn trong giao dịch.
-     *
-     * @param userId mã nhân sự
-     * @param fromCentreId mã trung tâm hiện tại (hoặc null nếu chưa gán)
-     * @param toCentreId mã trung tâm chuyển đến
-     * @param adminId mã Admin thực hiện lệnh luân chuyển
-     * @param reason lý do điều động
-     * @param notes ghi chú bổ sung
-     * @param newRole vai trò mới (nếu có thay đổi hoặc thăng chức)
-     * @param effectiveDate ngày có hiệu lực
-     * @return true nếu luân chuyển thành công, ngược lại false
-     */
-    public boolean transferStaff(int userId, Integer fromCentreId, int toCentreId, int adminId,
-            String reason, String notes, String newRole, java.sql.Date effectiveDate) {
-        User u = getUserById(userId);
-        if (u == null) {
-            return false;
-        }
-        if ("MANAGER".equalsIgnoreCase(u.getRole()) || u.isManager()) {
-            // Nghiệp vụ: Vị trí Quản lý chỉ được phân công qua Bổ nhiệm & Miễn nhiệm, không áp dụng điều chuyển
-            return false;
-        } else {
-            return "SUCCESS".equals(transferRegularStaff(userId, toCentreId, adminId, reason, notes, effectiveDate));
-        }
-    }
-
-    /**
-     * Luân chuyển nhân viên với các tham số mặc định (tương thích ngược).
-     */
-    public boolean transferStaff(int userId, Integer fromCentreId, int toCentreId, int adminId, String reason, String notes) {
-        return transferStaff(userId, fromCentreId, toCentreId, adminId, reason, notes, null, null);
-    }
-
-    /**
-     * Lấy lịch sử điều động, luân chuyển nhân sự theo trung tâm hoặc nhân viên.
-     */
-    public List<StaffTransfer> getTransferHistory(Integer centreId, Integer userId) {
-        StringBuilder sql = new StringBuilder(
-                "SELECT t.TransferID, t.UserID, t.FromCentreID, t.ToCentreID, t.TransferredBy, "
-                + "t.TransferDate, t.EffectiveDate, t.OldRole, t.NewRole, t.Reason, t.Notes, "
-                + "u.FullName AS UserName, u.Account AS UserAccount, u.Email AS UserEmail, u.Role AS UserRole, "
-                + "fb.CentreName AS FromCentreName, tb.CentreName AS ToCentreName, "
-                + "adm.FullName AS TransferredByName "
-                + "FROM StaffTransferHistory t "
-                + "JOIN Users u ON u.UserID = t.UserID "
-                + "LEFT JOIN Centres fb ON fb.CentreID = t.FromCentreID "
-                + "JOIN Centres tb ON tb.CentreID = t.ToCentreID "
-                + "JOIN Users adm ON adm.UserID = t.TransferredBy "
-                // Lịch sử điều chuyển chỉ dành cho nhân viên.
-                // Các bản ghi Manager thuộc lịch sử bổ nhiệm/nhiệm kỳ, không hiển thị ở đây.
-                + "WHERE ISNULL(t.OldRole, '') <> 'MANAGER' "
-                + "AND ISNULL(t.NewRole, '') <> 'MANAGER' "
-        );
-
-        if (centreId != null) {
-            sql.append("AND (t.FromCentreID = ? OR t.ToCentreID = ?) ");
-        }
-        if (userId != null) {
-            sql.append("AND t.UserID = ? ");
-        }
-        sql.append("ORDER BY t.TransferDate DESC, t.TransferID DESC");
-
-        List<StaffTransfer> list = new ArrayList<>();
-        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql.toString())) {
-            int paramIndex = 1;
-            if (centreId != null) {
-                ps.setInt(paramIndex++, centreId);
-                ps.setInt(paramIndex++, centreId);
-            }
-            if (userId != null) {
-                ps.setInt(paramIndex++, userId);
-            }
-
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    StaffTransfer item = new StaffTransfer();
-                    item.setTransferId(rs.getInt("TransferID"));
-                    item.setUserId(rs.getInt("UserID"));
-                    item.setUserName(rs.getString("UserName"));
-                    item.setUserAccount(rs.getString("UserAccount"));
-                    item.setUserEmail(rs.getString("UserEmail"));
-                    item.setUserRole(rs.getString("UserRole"));
-
-                    int fromB = rs.getInt("FromCentreID");
-                    item.setFromCentreId(rs.wasNull() ? null : fromB);
-                    item.setFromCentreName(rs.getString("FromCentreName"));
-
-                    item.setToCentreId(rs.getInt("ToCentreID"));
-                    item.setToCentreName(rs.getString("ToCentreName"));
-
-                    item.setTransferredBy(rs.getInt("TransferredBy"));
-                    item.setTransferredByName(rs.getString("TransferredByName"));
-
-                    item.setTransferDate(rs.getTimestamp("TransferDate"));
-                    item.setEffectiveDate(rs.getDate("EffectiveDate"));
-                    item.setOldRole(rs.getString("OldRole"));
-                    item.setNewRole(rs.getString("NewRole"));
-                    item.setReason(rs.getString("Reason"));
-                    item.setNotes(rs.getString("Notes"));
-
-                    list.add(item);
-                }
-            }
-        } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Không thể tải lịch sử luân chuyển nhân sự", e);
-        }
-        return list;
-    }
-
-    /**
-     * Lấy danh sách toàn bộ nhân viên có thể điều chuyển (Staff / Ticket Sales
-     * / Ticket Checker), hỗ trợ lọc theo trung tâm, vai trò và tìm kiếm theo
-     * tên/mã nhân sự.
-     */
-    public List<User> getTransferableUsers(Integer centreId, String search, String roleFilter) {
-        StringBuilder sql = new StringBuilder("SELECT u.*, b.CentreName FROM Users u "
-                + "LEFT JOIN Centres b ON b.CentreID = u.CentreID "
-                + "WHERE u.Role IN ('STAFF', 'TICKET_SALES_STAFF', 'TICKET_SALES') ");
-        if (roleFilter != null && !roleFilter.trim().isEmpty() && !"ALL".equalsIgnoreCase(roleFilter.trim())) {
-            sql.append("AND u.Role = ? ");
-        }
-        if (centreId != null) {
-            sql.append("AND u.CentreID = ? ");
-        }
-
-        Integer searchId = null;
-        String keyword = null;
-        if (search != null && !search.trim().isEmpty()) {
-            keyword = search.trim();
-            String cleanDigits = keyword.replaceAll("(?i)^[#A-Z]+", "");
-            if (!cleanDigits.isEmpty() && cleanDigits.matches("^\\d+$")) {
-                try {
-                    searchId = Integer.parseInt(cleanDigits);
-                } catch (NumberFormatException ignored) {
-                }
-            }
-            if (searchId != null) {
-                sql.append("AND (u.UserID = ? OR u.Account LIKE ? OR u.FullName LIKE ? OR u.Email LIKE ? OR u.Phone LIKE ?) ");
-            } else {
-                sql.append("AND (u.Account LIKE ? OR u.FullName LIKE ? OR u.Email LIKE ? OR u.Phone LIKE ?) ");
-            }
-        }
-        sql.append("ORDER BY u.Role, u.FullName");
-
-        List<User> list = new ArrayList<>();
-        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql.toString())) {
-            int pIdx = 1;
-            if (roleFilter != null && !roleFilter.trim().isEmpty() && !"ALL".equalsIgnoreCase(roleFilter.trim())) {
-                ps.setString(pIdx++, roleFilter.trim().toUpperCase());
-            }
-            if (centreId != null) {
-                ps.setInt(pIdx++, centreId);
-            }
-            if (keyword != null) {
-                String likePattern = "%" + keyword + "%";
-                if (searchId != null) {
-                    ps.setInt(pIdx++, searchId);
-                }
-                ps.setString(pIdx++, likePattern);
-                ps.setString(pIdx++, likePattern);
-                ps.setString(pIdx++, likePattern);
-                ps.setString(pIdx++, likePattern);
-            }
-
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    list.add(mapUser(rs));
-                }
-            }
-        } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Không thể tải danh sách nhân sự điều chuyển", e);
-        }
-        return list;
-    }
-
-    /**
-     * Cập nhật trạng thái hoạt động của tài khoản người dùng (ACTIVE, INACTIVE,
-     * LOCKED...).
+     * @param userId mã định danh người dùng
+     * @param status trạng thái mới
+     * @return true nếu cập nhật thành công; ngược lại false
      */
     public boolean updateUserStatus(int userId, String status) {
         String sql = "UPDATE Users SET Status = ?, UpdatedAt = GETDATE() WHERE UserID = ?";
-        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
+
+        try (Connection con = DBContext.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, status);
             ps.setInt(2, userId);
-            boolean ok = ps.executeUpdate() > 0;
-            if (ok && !"ACTIVE".equalsIgnoreCase(status)) {
+            if (ps.executeUpdate() == 0) {
+                return false;
+            }
+            if (!"ACTIVE".equalsIgnoreCase(status)) {
                 unassignManagerByUserId(userId, 0, "Tài khoản Quản lý bị khóa/tạm ngưng");
             }
-            return ok;
+            return true;
         } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Không thể cập nhật trạng thái người dùng", e);
+            LOGGER.log(Level.SEVERE, "Không thể cập nhật trạng thái người dùng (userId=" + userId + ")", e);
             return false;
         }
     }
 
     /**
-     * Kiểm tra email đã được tài khoản khác sử dụng hay chưa (dùng cho form cập
-     * nhật thông tin).
+     * Kiểm tra email đã được tài khoản khác sử dụng hay chưa (ủy quyền sang {@link #isEmailUsedByOtherUser}).
+     *
+     * @param email  địa chỉ email cần kiểm tra
+     * @param userId mã người dùng hiện tại cần loại trừ
+     * @return true nếu email đã tồn tại ở tài khoản khác
      */
     public boolean isEmailExistsForOtherUser(String email, int userId) {
-        String sql = "SELECT 1 FROM Users WHERE Email = ? AND UserID <> ?";
-        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setString(1, email);
-            ps.setInt(2, userId);
-            try (ResultSet rs = ps.executeQuery()) {
-                return rs.next();
-            }
-        } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Lỗi kiểm tra email trùng lặp với người dùng khác", e);
-            return false;
-        }
+        return isEmailUsedByOtherUser(email, userId);
     }
 
     /**
@@ -1128,10 +856,140 @@ public class UserDAO {
     }
 
     /**
+     * Cập nhật thông tin Quản lý kèm theo điều chuyển hoặc bổ nhiệm cụm rạp trong 1 Transaction.
+     *
+     * @param userId      mã Quản lý
+     * @param fullName    họ tên
+     * @param phone       số điện thoại
+     * @param email       email
+     * @param newCentreId mã cụm rạp mới (hoặc null nếu gỡ rạp)
+     * @param adminId     mã Admin thực hiện
+     * @return true nếu thành công; ngược lại false
+     */
+    public boolean updateManagerWithCentreTx(int userId, String fullName, String phone, String email, Integer newCentreId, int adminId) {
+        String updateUserSql = "UPDATE Users SET FullName = ?, Phone = ?, Email = ?, CentreID = ?, "
+                + "Status = CASE WHEN ? IS NOT NULL AND Status <> 'ACTIVE' THEN 'ACTIVE' ELSE Status END, "
+                + "UpdatedAt = GETDATE() WHERE UserID = ? AND Role = 'MANAGER'";
+        String endOldManagerAssignmentSql = "UPDATE CentreManagerAssignments SET EndDate = GETDATE(), Status = 'TRANSFERRED', "
+                + "Notes = LEFT(ISNULL(Notes, '') + N' [Kết thúc khi cập nhật thông tin/điều chuyển bởi Admin #' + CAST(? AS NVARCHAR) + N']', 500) "
+                + "WHERE ManagerID = ? AND Status = 'ACTIVE' AND EndDate IS NULL";
+        String endNewCentreOldAssignmentsSql = "UPDATE CentreManagerAssignments SET EndDate = GETDATE(), Status = 'REPLACED', "
+                + "Notes = LEFT(ISNULL(Notes, '') + N' [Thay thế khi bổ nhiệm Quản lý mới]', 500) "
+                + "WHERE CentreID = ? AND Status = 'ACTIVE' AND EndDate IS NULL";
+        String clearNewCentreOldUsersSql = "UPDATE Users SET CentreID = NULL, UpdatedAt = GETDATE() "
+                + "WHERE CentreID = ? AND Role = 'MANAGER' AND UserID <> ?";
+        String insertNewAssignmentSql = "INSERT INTO CentreManagerAssignments (CentreID, ManagerID, StartDate, Status, AssignedBy, Notes) "
+                + "VALUES (?, ?, GETDATE(), 'ACTIVE', ?, N'Bổ nhiệm/Điều chuyển khi cập nhật thông tin')";
+
+        Connection connection = null;
+        try {
+            connection = DBContext.getConnection();
+            connection.setAutoCommit(false);
+
+            // Lấy thông tin cụm rạp hiện tại của Quản lý trước khi cập nhật
+            Integer currentCentreId = null;
+            String checkSql = "SELECT CentreID FROM Users WHERE UserID = ? AND Role = 'MANAGER'";
+            try (PreparedStatement psCheck = connection.prepareStatement(checkSql)) {
+                psCheck.setInt(1, userId);
+                try (ResultSet rs = psCheck.executeQuery()) {
+                    if (rs.next()) {
+                        int cid = rs.getInt("CentreID");
+                        if (!rs.wasNull()) {
+                            currentCentreId = cid;
+                        }
+                    } else {
+                        connection.rollback();
+                        return false;
+                    }
+                }
+            }
+
+            // 1. Cập nhật bảng Users
+            try (PreparedStatement psUser = connection.prepareStatement(updateUserSql)) {
+                psUser.setString(1, fullName);
+                psUser.setString(2, phone);
+                psUser.setString(3, email);
+                if (newCentreId != null) {
+                    psUser.setInt(4, newCentreId);
+                    psUser.setInt(5, newCentreId);
+                } else {
+                    psUser.setNull(4, Types.INTEGER);
+                    psUser.setNull(5, Types.INTEGER);
+                }
+                psUser.setInt(6, userId);
+                int affected = psUser.executeUpdate();
+                if (affected == 0) {
+                    connection.rollback();
+                    return false;
+                }
+            }
+
+            // 2. Xử lý phân công nếu có sự thay đổi về rạp (newCentreId khác currentCentreId)
+            boolean centreChanged = (currentCentreId == null && newCentreId != null)
+                    || (currentCentreId != null && !currentCentreId.equals(newCentreId));
+
+            if (centreChanged) {
+                // 2.1. Chấm dứt phân công cũ của Quản lý này (nếu có)
+                try (PreparedStatement psEndOld = connection.prepareStatement(endOldManagerAssignmentSql)) {
+                    psEndOld.setInt(1, adminId);
+                    psEndOld.setInt(2, userId);
+                    psEndOld.executeUpdate();
+                }
+
+                // 2.2. Nếu có gán rạp mới:
+                if (newCentreId != null) {
+                    // Dọn dẹp phân công cũ tại rạp mới (nếu có ai từng giữ)
+                    try (PreparedStatement psEndNewCentre = connection.prepareStatement(endNewCentreOldAssignmentsSql)) {
+                        psEndNewCentre.setInt(1, newCentreId);
+                        psEndNewCentre.executeUpdate();
+                    }
+                    try (PreparedStatement psClr = connection.prepareStatement(clearNewCentreOldUsersSql)) {
+                        psClr.setInt(1, newCentreId);
+                        psClr.setInt(2, userId);
+                        psClr.executeUpdate();
+                    }
+                    // Tạo bản ghi phân công mới
+                    try (PreparedStatement psIns = connection.prepareStatement(insertNewAssignmentSql)) {
+                        psIns.setInt(1, newCentreId);
+                        psIns.setInt(2, userId);
+                        psIns.setInt(3, adminId);
+                        psIns.executeUpdate();
+                    }
+                }
+            }
+
+            connection.commit();
+            return true;
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Lỗi khi cập nhật thông tin Quản lý kèm phân công rạp", e);
+            if (connection != null) {
+                try {
+                    connection.rollback();
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+            }
+            return false;
+        } finally {
+            if (connection != null) {
+                try {
+                    connection.setAutoCommit(true);
+                    connection.close();
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        }
+    }
+
+    /**
      * Cập nhật thông tin nhân viên (họ tên, số điện thoại, email, vai trò:
      * Ticket Sales hoặc Ticket Checker).
      */
     public boolean updateStaffBasicInfo(int userId, String fullName, String phone, String email, String role) {
+        if (role == null || role.trim().isEmpty() || "STAFF".equalsIgnoreCase(role)) {
+            role = User.ROLE_TICKET_SALES;
+        }
         String sql = "UPDATE Users SET FullName = ?, Phone = ?, Email = ?, Role = ?, UpdatedAt = GETDATE() WHERE UserID = ?";
         try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, fullName);
@@ -1147,772 +1005,12 @@ public class UserDAO {
     }
 
     /**
-     * Bổ nhiệm Quản lý phụ trách trung tâm chiếu phim và ghi nhận vào lịch sử
-     * bổ nhiệm.
+     * Giải phóng cụm rạp mà Quản lý đang phụ trách theo UserId (dùng khi tài khoản bị khóa/tạm ngưng).
      *
-     * @param centreId mã trung tâm chiếu phim
-     * @param managerId mã người dùng vai trò Quản lý
-     * @param adminId mã Admin ra quyết định bổ nhiệm
-     * @param notes ghi chú bổ nhiệm
-     * @return true nếu bổ nhiệm thành công, ngược lại false
-     */
-    /**
-     * Bổ nhiệm Quản lý mới cho trung tâm chiếu phim (chỉ dành cho Manager chưa
-     * có phân công hiện hành). Áp dụng Transaction và khóa UPDLOCK, HOLDLOCK
-     * chống tranh chấp đồng thời (concurrency safe).
-     *
-     * @param centreId mã trung tâm chiếu phim
-     * @param managerId mã người dùng vai trò Quản lý
-     * @param adminId mã Admin ra quyết định bổ nhiệm
-     * @param notes ghi chú bổ nhiệm
-     * @return mã kết quả (SUCCESS, MANAGER_ALREADY_ASSIGNED,
-     * CENTRE_ALREADY_HAS_MANAGER,...)
-     */
-    public String assignManager(int centreId, int managerId, int adminId, String notes) {
-        Connection connection = null;
-        try {
-            connection = DBContext.getConnection();
-            connection.setAutoCommit(false);
-
-            // 1. Kiểm tra trung tâm đích với khóa UPDLOCK, HOLDLOCK
-            String checkCentreSql = "SELECT CentreID, Status FROM Centres WITH (UPDLOCK, HOLDLOCK) WHERE CentreID = ?";
-            try (PreparedStatement ps = connection.prepareStatement(checkCentreSql)) {
-                ps.setInt(1, centreId);
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (!rs.next()) {
-                        connection.rollback();
-                        return "CENTRE_NOT_FOUND";
-                    }
-                    String cStatus = rs.getString("Status");
-                    if (!"ACTIVE".equalsIgnoreCase(cStatus)) {
-                        connection.rollback();
-                        return "CENTRE_INACTIVE";
-                    }
-                }
-            }
-
-            // 2. Kiểm tra vai trò và trạng thái của Quản lý với khóa UPDLOCK, HOLDLOCK
-            String checkUserSql = "SELECT UserID, Role, Status FROM Users WITH (UPDLOCK, HOLDLOCK) WHERE UserID = ?";
-            try (PreparedStatement ps = connection.prepareStatement(checkUserSql)) {
-                ps.setInt(1, managerId);
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (!rs.next()) {
-                        connection.rollback();
-                        return "MANAGER_NOT_FOUND";
-                    }
-                    String role = rs.getString("Role");
-                    String status = rs.getString("Status");
-
-                    if (!"MANAGER".equalsIgnoreCase(role)) {
-                        connection.rollback();
-                        return "NOT_A_MANAGER";
-                    }
-                    if (!"ACTIVE".equalsIgnoreCase(status)) {
-                        connection.rollback();
-                        return "MANAGER_NOT_ACTIVE";
-                    }
-                }
-            }
-
-            // 3. Kiểm tra xem Manager này đã có bản ghi ACTIVE nào trong CentreManagerAssignments chưa
-            String checkMgrAssignSql = "SELECT AssignmentID FROM CentreManagerAssignments WITH (UPDLOCK, HOLDLOCK) "
-                    + "WHERE ManagerID = ? AND Status = 'ACTIVE' AND EndDate IS NULL";
-            try (PreparedStatement ps = connection.prepareStatement(checkMgrAssignSql)) {
-                ps.setInt(1, managerId);
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) {
-                        connection.rollback();
-                        return "MANAGER_ALREADY_ASSIGNED";
-                    }
-                }
-            }
-
-            // 4. Kiểm tra xem Centre này đã có Quản lý nào phân công ACTIVE chưa
-            String checkCentreAssignSql = "SELECT cma.AssignmentID, cma.ManagerID, u.Status AS MgrStatus "
-                    + "FROM CentreManagerAssignments cma WITH (UPDLOCK, HOLDLOCK) "
-                    + "LEFT JOIN Users u WITH (UPDLOCK, HOLDLOCK) ON u.UserID = cma.ManagerID "
-                    + "WHERE cma.CentreID = ? AND cma.Status = 'ACTIVE' AND cma.EndDate IS NULL";
-            try (PreparedStatement ps = connection.prepareStatement(checkCentreAssignSql)) {
-                ps.setInt(1, centreId);
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) {
-                        String mgrStatus = rs.getString("MgrStatus");
-                        if ("ACTIVE".equalsIgnoreCase(mgrStatus)) {
-                            connection.rollback();
-                            return "CENTRE_ALREADY_HAS_MANAGER";
-                        } else {
-                            // Quản lý cũ đang bị khóa/ngưng hoạt động -> Tự động kết thúc phân công cũ để nhường chỗ cho Quản lý mới
-                            int oldAssignId = rs.getInt("AssignmentID");
-                            int oldMgrId = rs.getInt("ManagerID");
-                            String endOldAssignSql = "UPDATE CentreManagerAssignments SET EndDate = GETDATE(), Status = 'REPLACED', "
-                                    + "Notes = ISNULL(Notes, '') + N' [Bổ nhiệm Quản lý mới thay thế Quản lý bị khóa]' WHERE AssignmentID = ?";
-                            try (PreparedStatement psEnd = connection.prepareStatement(endOldAssignSql)) {
-                                psEnd.setInt(1, oldAssignId);
-                                psEnd.executeUpdate();
-                            }
-                            String clearOldUserCentreSql = "UPDATE Users SET CentreID = NULL, UpdatedAt = GETDATE() WHERE UserID = ?";
-                            try (PreparedStatement psClr = connection.prepareStatement(clearOldUserCentreSql)) {
-                                psClr.setInt(1, oldMgrId);
-                                psClr.executeUpdate();
-                            }
-                        }
-                    }
-                }
-            }
-
-            // 5. Tạo bản ghi bổ nhiệm trong CentreManagerAssignments
-            String insertAssignSql = "INSERT INTO CentreManagerAssignments (CentreID, ManagerID, AssignedBy, StartDate, EndDate, Status, Notes, CreatedAt) "
-                    + "VALUES (?, ?, ?, GETDATE(), NULL, 'ACTIVE', ?, GETDATE())";
-            try (PreparedStatement ps = connection.prepareStatement(insertAssignSql)) {
-                ps.setInt(1, centreId);
-                ps.setInt(2, managerId);
-                ps.setInt(3, adminId);
-                ps.setString(4, (notes != null && !notes.trim().isEmpty()) ? notes.trim() : "Bổ nhiệm Quản lý phụ trách trung tâm");
-                ps.executeUpdate();
-            }
-
-            // 6. Cập nhật Users.CentreID: Giải phóng rạp khỏi Quản lý cũ (nếu có) và gán cho Quản lý mới
-            String clearOtherManagersSql = "UPDATE Users SET CentreID = NULL, UpdatedAt = GETDATE() WHERE CentreID = ? AND Role = 'MANAGER' AND UserID <> ?";
-            try (PreparedStatement psClear = connection.prepareStatement(clearOtherManagersSql)) {
-                psClear.setInt(1, centreId);
-                psClear.setInt(2, managerId);
-                psClear.executeUpdate();
-            }
-
-            String updateCentreSql = "UPDATE Users SET CentreID = ?, UpdatedAt = GETDATE() WHERE UserID = ?";
-            try (PreparedStatement ps = connection.prepareStatement(updateCentreSql)) {
-                ps.setInt(1, centreId);
-                ps.setInt(2, managerId);
-                ps.executeUpdate();
-            }
-
-            // 7. Ghi nhận lịch sử luân chuyển trong StaffTransferHistory
-            String insertTransferLog = "INSERT INTO StaffTransferHistory (UserID, FromCentreID, ToCentreID, TransferredBy, TransferDate, EffectiveDate, OldRole, NewRole, Reason, Notes) "
-                    + "VALUES (?, NULL, ?, ?, GETDATE(), CAST(GETDATE() AS DATE), 'MANAGER', 'MANAGER', N'Bổ nhiệm Quản lý phụ trách trung tâm', ?)";
-            try (PreparedStatement ps = connection.prepareStatement(insertTransferLog)) {
-                ps.setInt(1, managerId);
-                ps.setInt(2, centreId);
-                ps.setInt(3, adminId);
-                ps.setString(4, (notes != null && !notes.trim().isEmpty()) ? notes.trim() : "");
-                ps.executeUpdate();
-            }
-
-            connection.commit();
-            return "SUCCESS";
-        } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Giao dịch bổ nhiệm Quản lý thất bại", e);
-            if (connection != null) {
-                try {
-                    connection.rollback();
-                } catch (SQLException ex) {
-                    ex.printStackTrace();
-                }
-            }
-            if (e.getErrorCode() == 2601 || e.getErrorCode() == 2627) {
-                return "CONCURRENCY_CONFLICT";
-            }
-            return "ERROR";
-        } finally {
-            if (connection != null) {
-                try {
-                    connection.setAutoCommit(true);
-                    connection.close();
-                } catch (SQLException ex) {
-                    ex.printStackTrace();
-                }
-            }
-        }
-    }
-
-    /**
-     * Điều chuyển Quản lý từ trung tâm hiện tại sang trung tâm đích. Quy tắc: -
-     * Manager phải ACTIVE và đang có phân công hiện hành. - Centre đích phải
-     * ACTIVE, khác Centre hiện tại và CHƯA CÓ Manager phụ trách. - Không tự
-     * động ghi đè hay kết thúc phân công của người ở Centre đích. - Thực hiện
-     * trong Transaction với khóa UPDLOCK, HOLDLOCK chống xung đột đồng thời.
-     */
-    public String transferManager(int managerId, int toCentreId, int adminId, String reason, String notes) {
-        // Quy tắc nghiệp vụ hệ thống: Vị trí Quản lý trung tâm không áp dụng điều chuyển,
-        // chỉ thao tác thông qua Bổ nhiệm & Miễn nhiệm Quản lý tại Tab 1.
-        return "MANAGER_TRANSFER_NOT_ALLOWED";
-    }
-
-    private String _deprecated_transferManager(int managerId, int toCentreId, int adminId, String reason, String notes) {
-        Connection connection = null;
-        try {
-            connection = DBContext.getConnection();
-            connection.setAutoCommit(false);
-
-            // 1. Kiểm tra Manager với khóa UPDLOCK, HOLDLOCK
-            int fromCentreId = -1;
-            String checkUserSql = "SELECT UserID, Role, Status, CentreID FROM Users WITH (UPDLOCK, HOLDLOCK) WHERE UserID = ?";
-            try (PreparedStatement ps = connection.prepareStatement(checkUserSql)) {
-                ps.setInt(1, managerId);
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (!rs.next()) {
-                        connection.rollback();
-                        return "MANAGER_NOT_FOUND";
-                    }
-                    String role = rs.getString("Role");
-                    String status = rs.getString("Status");
-                    int cid = rs.getInt("CentreID");
-                    boolean hasCentre = !rs.wasNull() && cid > 0;
-
-                    if (!"MANAGER".equalsIgnoreCase(role)) {
-                        connection.rollback();
-                        return "NOT_A_MANAGER";
-                    }
-                    if (!"ACTIVE".equalsIgnoreCase(status)) {
-                        connection.rollback();
-                        return "MANAGER_NOT_ACTIVE";
-                    }
-                    if (!hasCentre) {
-                        connection.rollback();
-                        return "MANAGER_NOT_ASSIGNED";
-                    }
-                    fromCentreId = cid;
-                }
-            }
-
-            // 2. Kiểm tra Centre đích khác Centre hiện tại
-            if (fromCentreId == toCentreId) {
-                connection.rollback();
-                return "SAME_CENTRE";
-            }
-
-            // 3. Kiểm tra Centre đích với khóa UPDLOCK, HOLDLOCK
-            String checkDestCentreSql = "SELECT CentreID, Status FROM Centres WITH (UPDLOCK, HOLDLOCK) WHERE CentreID = ?";
-            try (PreparedStatement ps = connection.prepareStatement(checkDestCentreSql)) {
-                ps.setInt(1, toCentreId);
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (!rs.next()) {
-                        connection.rollback();
-                        return "CENTRE_NOT_FOUND";
-                    }
-                    String cStatus = rs.getString("Status");
-                    if (!"ACTIVE".equalsIgnoreCase(cStatus)) {
-                        connection.rollback();
-                        return "CENTRE_INACTIVE";
-                    }
-                }
-            }
-
-            // 4. Kiểm tra Centre đích có Manager nào đang phân công ACTIVE không (kể cả ACTIVE hay LOCKED)
-            String checkDestAssignSql = "SELECT AssignmentID, ManagerID FROM CentreManagerAssignments WITH (UPDLOCK, HOLDLOCK) "
-                    + "WHERE CentreID = ? AND Status = 'ACTIVE' AND EndDate IS NULL";
-            try (PreparedStatement ps = connection.prepareStatement(checkDestAssignSql)) {
-                ps.setInt(1, toCentreId);
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) {
-                        // Trung tâm đích đã có Quản lý, tuyệt đối không tự động ghi đè
-                        connection.rollback();
-                        return "CENTRE_ALREADY_HAS_MANAGER";
-                    }
-                }
-            }
-
-            // 5. Kết thúc phân công hiện tại của Manager này ở trung tâm cũ
-            String endCurrentSql = "UPDATE CentreManagerAssignments SET EndDate = GETDATE(), Status = 'ENDED', Notes = ? "
-                    + "WHERE ManagerID = ? AND Status = 'ACTIVE' AND EndDate IS NULL";
-            try (PreparedStatement ps = connection.prepareStatement(endCurrentSql)) {
-                ps.setString(1, "Điều chuyển sang trung tâm mới (CentreID: " + toCentreId + ")");
-                ps.setInt(2, managerId);
-                ps.executeUpdate();
-            }
-
-            // 6. Tạo phân công mới tại trung tâm đích
-            String insertAssignSql = "INSERT INTO CentreManagerAssignments (CentreID, ManagerID, AssignedBy, StartDate, EndDate, Status, Notes, CreatedAt) "
-                    + "VALUES (?, ?, ?, GETDATE(), NULL, 'ACTIVE', ?, GETDATE())";
-            try (PreparedStatement ps = connection.prepareStatement(insertAssignSql)) {
-                ps.setInt(1, toCentreId);
-                ps.setInt(2, managerId);
-                ps.setInt(3, adminId);
-                ps.setString(4, (notes != null && !notes.trim().isEmpty()) ? notes.trim() : ("Điều chuyển: " + reason));
-                ps.executeUpdate();
-            }
-
-            // 7. Cập nhật Users.CentreID: Giải phóng rạp đích khỏi Quản lý cũ (nếu có) và gán cho Quản lý được điều chuyển
-            String clearOtherSql = "UPDATE Users SET CentreID = NULL, UpdatedAt = GETDATE() WHERE CentreID = ? AND Role = 'MANAGER' AND UserID <> ?";
-            try (PreparedStatement psClear = connection.prepareStatement(clearOtherSql)) {
-                psClear.setInt(1, toCentreId);
-                psClear.setInt(2, managerId);
-                psClear.executeUpdate();
-            }
-
-            String updateCentreSql = "UPDATE Users SET CentreID = ?, UpdatedAt = GETDATE() WHERE UserID = ?";
-            try (PreparedStatement ps = connection.prepareStatement(updateCentreSql)) {
-                ps.setInt(1, toCentreId);
-                ps.setInt(2, managerId);
-                ps.executeUpdate();
-            }
-
-            // 8. Lưu vết vào StaffTransferHistory
-            String insertTransferLog = "INSERT INTO StaffTransferHistory (UserID, FromCentreID, ToCentreID, TransferredBy, TransferDate, EffectiveDate, OldRole, NewRole, Reason, Notes) "
-                    + "VALUES (?, ?, ?, ?, GETDATE(), CAST(GETDATE() AS DATE), 'MANAGER', 'MANAGER', ?, ?)";
-            try (PreparedStatement ps = connection.prepareStatement(insertTransferLog)) {
-                ps.setInt(1, managerId);
-                ps.setInt(2, fromCentreId);
-                ps.setInt(3, toCentreId);
-                ps.setInt(4, adminId);
-                ps.setString(5, reason != null ? reason.trim() : "Điều chuyển Quản lý");
-                ps.setString(6, notes != null ? notes.trim() : "");
-                ps.executeUpdate();
-            }
-
-            connection.commit();
-            return "SUCCESS";
-        } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Giao dịch điều chuyển Quản lý thất bại", e);
-            if (connection != null) {
-                try {
-                    connection.rollback();
-                } catch (SQLException ex) {
-                    ex.printStackTrace();
-                }
-            }
-            if (e.getErrorCode() == 2601 || e.getErrorCode() == 2627) {
-                return "CONCURRENCY_CONFLICT";
-            }
-            return "ERROR";
-        } finally {
-            if (connection != null) {
-                try {
-                    connection.setAutoCommit(true);
-                    connection.close();
-                } catch (SQLException ex) {
-                    ex.printStackTrace();
-                }
-            }
-        }
-    }
-
-    /**
-     * Điều chuyển Nhân sự (Staff) thông thường. Bảo đảm quy tắc Rule 12: Giữ
-     * nguyên hoạt động của Staff transfer, không can thiệp bảng phân công
-     * Manager.
-     */
-    public String transferRegularStaff(int staffUserId, int toCentreId, int adminId, String reason, String notes, java.sql.Date effectiveDate) {
-        return transferRegularStaff(staffUserId, toCentreId, adminId, reason, notes, effectiveDate, null);
-    }
-
-    public String transferRegularStaff(int staffUserId, int toCentreId, int adminId, String reason, String notes, java.sql.Date effectiveDate, String newRole) {
-        Connection connection = null;
-        try {
-            connection = DBContext.getConnection();
-            connection.setAutoCommit(false);
-
-            // 1. Kiểm tra tài khoản nhân viên
-            Integer fromCentreId = null;
-            String currentRole = null;
-            String checkUserSql = "SELECT UserID, Role, Status, CentreID FROM Users WITH (UPDLOCK, HOLDLOCK) WHERE UserID = ?";
-            try (PreparedStatement ps = connection.prepareStatement(checkUserSql)) {
-                ps.setInt(1, staffUserId);
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (!rs.next()) {
-                        connection.rollback();
-                        return "USER_NOT_FOUND";
-                    }
-                    String status = rs.getString("Status");
-                    currentRole = rs.getString("Role");
-                    int cid = rs.getInt("CentreID");
-                    if (!rs.wasNull()) {
-                        fromCentreId = cid;
-                    }
-
-                    if (!"ACTIVE".equalsIgnoreCase(status)) {
-                        connection.rollback();
-                        return "USER_NOT_ACTIVE";
-                    }
-                    if ("MANAGER".equalsIgnoreCase(currentRole)) {
-                        connection.rollback();
-                        return "USE_MANAGER_TRANSFER";
-                    }
-                }
-            }
-
-            if (fromCentreId != null && fromCentreId == toCentreId) {
-                connection.rollback();
-                return "SAME_CENTRE";
-            }
-
-            // 2. Kiểm tra Centre đích
-            String checkCentreSql = "SELECT CentreID, Status FROM Centres WITH (UPDLOCK, HOLDLOCK) WHERE CentreID = ?";
-            try (PreparedStatement ps = connection.prepareStatement(checkCentreSql)) {
-                ps.setInt(1, toCentreId);
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (!rs.next()) {
-                        connection.rollback();
-                        return "CENTRE_NOT_FOUND";
-                    }
-                    String cStatus = rs.getString("Status");
-                    if (!"ACTIVE".equalsIgnoreCase(cStatus)) {
-                        connection.rollback();
-                        return "CENTRE_INACTIVE";
-                    }
-                }
-            }
-
-            // 3. Cập nhật Users.CentreID và Role mới (nếu có)
-            String targetRole = (newRole != null && !newRole.trim().isEmpty() && !"KEEP".equalsIgnoreCase(newRole.trim())) ? newRole.trim().toUpperCase() : currentRole;
-            String updateUserSql = "UPDATE Users SET CentreID = ?, Role = ?, UpdatedAt = GETDATE() WHERE UserID = ?";
-            try (PreparedStatement ps = connection.prepareStatement(updateUserSql)) {
-                ps.setInt(1, toCentreId);
-                ps.setString(2, targetRole);
-                ps.setInt(3, staffUserId);
-                ps.executeUpdate();
-            }
-
-            // 4. Lưu vết vào StaffTransferHistory
-            String insertSql = "INSERT INTO StaffTransferHistory (UserID, FromCentreID, ToCentreID, TransferredBy, TransferDate, EffectiveDate, OldRole, NewRole, Reason, Notes) "
-                    + "VALUES (?, ?, ?, ?, GETDATE(), ?, ?, ?, ?, ?)";
-            try (PreparedStatement ps = connection.prepareStatement(insertSql)) {
-                ps.setInt(1, staffUserId);
-                if (fromCentreId != null) {
-                    ps.setInt(2, fromCentreId);
-                } else {
-                    ps.setNull(2, Types.INTEGER);
-                }
-                ps.setInt(3, toCentreId);
-                ps.setInt(4, adminId);
-                if (effectiveDate != null) {
-                    ps.setDate(5, effectiveDate);
-                } else {
-                    ps.setDate(5, new java.sql.Date(System.currentTimeMillis()));
-                }
-                ps.setString(6, currentRole);
-                ps.setString(7, targetRole);
-                ps.setString(8, reason != null ? reason.trim() : "Điều chuyển nhân viên");
-                ps.setString(9, notes != null ? notes.trim() : "");
-                ps.executeUpdate();
-            }
-
-            connection.commit();
-            return "SUCCESS";
-        } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Giao dịch điều chuyển nhân viên thất bại", e);
-            if (connection != null) {
-                try {
-                    connection.rollback();
-                } catch (SQLException ex) {
-                    ex.printStackTrace();
-                }
-            }
-            return "ERROR";
-        } finally {
-            if (connection != null) {
-                try {
-                    connection.setAutoCommit(true);
-                    connection.close();
-                } catch (SQLException ex) {
-                    ex.printStackTrace();
-                }
-            }
-        }
-    }
-
-    /**
-     * Thăng chức nhân viên lên Quản lý và điều chuyển tới trung tâm mới. Trung
-     * tâm đích bắt buộc phải CHƯA CÓ Quản lý hoạt động.
-     */
-    public String promoteStaffToManager(int staffUserId, int toCentreId, int adminId, String reason, String notes, java.sql.Date effectiveDate) {
-        Connection connection = null;
-        try {
-            connection = DBContext.getConnection();
-            connection.setAutoCommit(false);
-
-            // 1. Kiểm tra tài khoản nhân viên
-            Integer fromCentreId = null;
-            String currentRole = null;
-            String checkUserSql = "SELECT UserID, Role, Status, CentreID FROM Users WITH (UPDLOCK, HOLDLOCK) WHERE UserID = ?";
-            try (PreparedStatement ps = connection.prepareStatement(checkUserSql)) {
-                ps.setInt(1, staffUserId);
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (!rs.next()) {
-                        connection.rollback();
-                        return "USER_NOT_FOUND";
-                    }
-                    String status = rs.getString("Status");
-                    currentRole = rs.getString("Role");
-                    int cid = rs.getInt("CentreID");
-                    if (!rs.wasNull()) {
-                        fromCentreId = cid;
-                    }
-                    if (!"ACTIVE".equalsIgnoreCase(status)) {
-                        connection.rollback();
-                        return "USER_NOT_ACTIVE";
-                    }
-                }
-            }
-
-            // 2. Kiểm tra Centre đích
-            String checkCentreSql = "SELECT CentreID, Status FROM Centres WITH (UPDLOCK, HOLDLOCK) WHERE CentreID = ?";
-            try (PreparedStatement ps = connection.prepareStatement(checkCentreSql)) {
-                ps.setInt(1, toCentreId);
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (!rs.next()) {
-                        connection.rollback();
-                        return "CENTRE_NOT_FOUND";
-                    }
-                    String cStatus = rs.getString("Status");
-                    if (!"ACTIVE".equalsIgnoreCase(cStatus)) {
-                        connection.rollback();
-                        return "CENTRE_INACTIVE";
-                    }
-                }
-            }
-
-            // 3. Kiểm tra Centre đích đã có Quản lý ACTIVE chưa
-            String checkDestAssignSql = "SELECT AssignmentID FROM CentreManagerAssignments WITH (UPDLOCK, HOLDLOCK) "
-                    + "WHERE CentreID = ? AND Status = 'ACTIVE' AND EndDate IS NULL";
-            try (PreparedStatement ps = connection.prepareStatement(checkDestAssignSql)) {
-                ps.setInt(1, toCentreId);
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) {
-                        connection.rollback();
-                        return "CENTRE_ALREADY_HAS_MANAGER";
-                    }
-                }
-            }
-
-            // 4. Tạo bản ghi bổ nhiệm trong CentreManagerAssignments
-            String insertAssignSql = "INSERT INTO CentreManagerAssignments (CentreID, ManagerID, AssignedBy, StartDate, EndDate, Status, Notes, CreatedAt) "
-                    + "VALUES (?, ?, ?, GETDATE(), NULL, 'ACTIVE', ?, GETDATE())";
-            try (PreparedStatement ps = connection.prepareStatement(insertAssignSql)) {
-                ps.setInt(1, toCentreId);
-                ps.setInt(2, staffUserId);
-                ps.setInt(3, adminId);
-                ps.setString(4, (notes != null && !notes.trim().isEmpty()) ? notes.trim() : ("Thăng chức & điều chuyển Quản lý: " + reason));
-                ps.executeUpdate();
-            }
-
-            // 5. Cập nhật Users: Role = 'MANAGER', CentreID = toCentreId
-            String updateUserSql = "UPDATE Users SET CentreID = ?, Role = 'MANAGER', UpdatedAt = GETDATE() WHERE UserID = ?";
-            try (PreparedStatement ps = connection.prepareStatement(updateUserSql)) {
-                ps.setInt(1, toCentreId);
-                ps.setInt(2, staffUserId);
-                ps.executeUpdate();
-            }
-
-            // 6. Lưu vết vào StaffTransferHistory
-            String insertSql = "INSERT INTO StaffTransferHistory (UserID, FromCentreID, ToCentreID, TransferredBy, TransferDate, EffectiveDate, OldRole, NewRole, Reason, Notes) "
-                    + "VALUES (?, ?, ?, ?, GETDATE(), ?, ?, 'MANAGER', ?, ?)";
-            try (PreparedStatement ps = connection.prepareStatement(insertSql)) {
-                ps.setInt(1, staffUserId);
-                if (fromCentreId != null) {
-                    ps.setInt(2, fromCentreId);
-                } else {
-                    ps.setNull(2, Types.INTEGER);
-                }
-                ps.setInt(3, toCentreId);
-                ps.setInt(4, adminId);
-                if (effectiveDate != null) {
-                    ps.setDate(5, effectiveDate);
-                } else {
-                    ps.setDate(5, new java.sql.Date(System.currentTimeMillis()));
-                }
-                ps.setString(6, currentRole);
-                ps.setString(7, reason != null ? reason.trim() : "Thăng chức lên Quản lý");
-                ps.setString(8, notes != null ? notes.trim() : "");
-                ps.executeUpdate();
-            }
-
-            connection.commit();
-            return "SUCCESS";
-        } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Thăng chức Quản lý thất bại", e);
-            if (connection != null) {
-                try {
-                    connection.rollback();
-                } catch (SQLException ex) {
-                    ex.printStackTrace();
-                }
-            }
-            if (e.getErrorCode() == 2601 || e.getErrorCode() == 2627) {
-                return "CONCURRENCY_CONFLICT";
-            }
-            return "ERROR";
-        } finally {
-            if (connection != null) {
-                try {
-                    connection.setAutoCommit(true);
-                    connection.close();
-                } catch (SQLException ex) {
-                    ex.printStackTrace();
-                }
-            }
-        }
-    }
-
-    /**
-     * Chuyển Quản lý sang vai trò nhân viên thông thường tại trung tâm mới. Kết
-     * thúc nhiệm kỳ Manager tại trung tâm cũ.
-     */
-    public String demoteManagerToStaff(int managerId, int toCentreId, String targetRole, int adminId, String reason, String notes, java.sql.Date effectiveDate) {
-        Connection connection = null;
-        try {
-            connection = DBContext.getConnection();
-            connection.setAutoCommit(false);
-
-            // 1. Kiểm tra Manager
-            Integer fromCentreId = null;
-            String checkUserSql = "SELECT UserID, Role, Status, CentreID FROM Users WITH (UPDLOCK, HOLDLOCK) WHERE UserID = ?";
-            try (PreparedStatement ps = connection.prepareStatement(checkUserSql)) {
-                ps.setInt(1, managerId);
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (!rs.next()) {
-                        connection.rollback();
-                        return "USER_NOT_FOUND";
-                    }
-                    int cid = rs.getInt("CentreID");
-                    if (!rs.wasNull()) {
-                        fromCentreId = cid;
-                    }
-                }
-            }
-
-            // 2. Kết thúc phân công Manager trong CentreManagerAssignments
-            String endCurrentSql = "UPDATE CentreManagerAssignments SET EndDate = GETDATE(), Status = 'ENDED', "
-                    + "Notes = ISNULL(Notes, '') + N' [Điều chuyển sang nhân viên: ' + ? + ']' "
-                    + "WHERE ManagerID = ? AND Status = 'ACTIVE' AND EndDate IS NULL";
-            try (PreparedStatement ps = connection.prepareStatement(endCurrentSql)) {
-                ps.setString(1, reason != null ? reason : "");
-                ps.setInt(2, managerId);
-                ps.executeUpdate();
-            }
-
-            // 3. Cập nhật Role và CentreID của User
-            String newStaffRole = (targetRole != null && !targetRole.trim().isEmpty()) ? targetRole.trim().toUpperCase() : "TICKET_SALES_STAFF";
-            String updateUserSql = "UPDATE Users SET CentreID = ?, Role = ?, UpdatedAt = GETDATE() WHERE UserID = ?";
-            try (PreparedStatement ps = connection.prepareStatement(updateUserSql)) {
-                ps.setInt(1, toCentreId);
-                ps.setString(2, newStaffRole);
-                ps.setInt(3, managerId);
-                ps.executeUpdate();
-            }
-
-            // 4. Ghi nhận nhật ký
-            String insertSql = "INSERT INTO StaffTransferHistory (UserID, FromCentreID, ToCentreID, TransferredBy, TransferDate, EffectiveDate, OldRole, NewRole, Reason, Notes) "
-                    + "VALUES (?, ?, ?, ?, GETDATE(), ?, 'MANAGER', ?, ?, ?)";
-            try (PreparedStatement ps = connection.prepareStatement(insertSql)) {
-                ps.setInt(1, managerId);
-                if (fromCentreId != null) {
-                    ps.setInt(2, fromCentreId);
-                } else {
-                    ps.setNull(2, Types.INTEGER);
-                }
-                ps.setInt(3, toCentreId);
-                ps.setInt(4, adminId);
-                if (effectiveDate != null) {
-                    ps.setDate(5, effectiveDate);
-                } else {
-                    ps.setDate(5, new java.sql.Date(System.currentTimeMillis()));
-                }
-                ps.setString(6, newStaffRole);
-                ps.setString(7, reason != null ? reason.trim() : "Chuyển đổi vị trí công tác");
-                ps.setString(8, notes != null ? notes.trim() : "");
-                ps.executeUpdate();
-            }
-
-            connection.commit();
-            return "SUCCESS";
-        } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Chuyển Quản lý sang Staff thất bại", e);
-            if (connection != null) {
-                try {
-                    connection.rollback();
-                } catch (SQLException ex) {
-                    ex.printStackTrace();
-                }
-            }
-            return "ERROR";
-        } finally {
-            if (connection != null) {
-                try {
-                    connection.setAutoCommit(true);
-                    connection.close();
-                } catch (SQLException ex) {
-                    ex.printStackTrace();
-                }
-            }
-        }
-    }
-
-    /**
-     * Phương thức tương thích ngược cho bổ nhiệm Manager.
-     */
-    public boolean assignManagerToCentreWithHistory(int centreId, int managerId, int adminId, String notes) {
-        return "SUCCESS".equals(assignManager(centreId, managerId, adminId, notes));
-    }
-
-    /**
-     * Miễn nhiệm Quản lý đang phụ trách trung tâm chiếu phim.
-     *
-     * @param centreId mã trung tâm chiếu phim
-     * @param managerId mã Quản lý
-     * @param adminId mã Admin thực hiện miễn nhiệm
-     * @param reason lý do miễn nhiệm
-     * @return true nếu miễn nhiệm thành công, ngược lại false
-     */
-    public boolean unassignManager(int centreId, int managerId, int adminId, String reason) {
-        String endAssignment = "UPDATE CentreManagerAssignments SET EndDate = GETDATE(), Status = 'ENDED', "
-                + "Notes = CASE WHEN Notes IS NULL OR LTRIM(RTRIM(Notes)) = '' THEN ? ELSE Notes + N' [Miễn nhiệm: ' + ? + N']' END "
-                + "WHERE CentreID = ? AND ManagerID = ? AND (Status = 'ACTIVE' OR Status IS NULL) AND EndDate IS NULL";
-        String clearCentre = "UPDATE Users SET CentreID = NULL, UpdatedAt = GETDATE() WHERE UserID = ? AND Role = 'MANAGER'";
-
-        Connection connection = null;
-        try {
-            connection = DBContext.getConnection();
-            connection.setAutoCommit(false);
-
-            int endedRows;
-            try (PreparedStatement ps1 = connection.prepareStatement(endAssignment)) {
-                String noteReason = (reason != null && !reason.trim().isEmpty()) ? reason.trim() : "Miễn nhiệm quản lý trung tâm";
-                ps1.setString(1, "Miễn nhiệm: " + noteReason);
-                ps1.setString(2, noteReason);
-                ps1.setInt(3, centreId);
-                ps1.setInt(4, managerId);
-                endedRows = ps1.executeUpdate();
-            }
-
-            // Không được giải phóng Manager nếu phân công gửi lên không còn tồn tại
-            // hoặc không thuộc đúng chi nhánh đang thao tác.
-            if (endedRows == 0) {
-                connection.rollback();
-                return false;
-            }
-
-            try (PreparedStatement ps2 = connection.prepareStatement(clearCentre)) {
-                ps2.setInt(1, managerId);
-                ps2.executeUpdate();
-            }
-
-            connection.commit();
-            return true;
-        } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Miễn nhiệm Quản lý thất bại", e);
-            if (connection != null) {
-                try {
-                    connection.rollback();
-                } catch (SQLException ex) {
-                    ex.printStackTrace();
-                }
-            }
-            return false;
-        } finally {
-            if (connection != null) {
-                try {
-                    connection.setAutoCommit(true);
-                    connection.close();
-                } catch (SQLException ex) {
-                    ex.printStackTrace();
-                }
-            }
-        }
-    }
-
-    /**
-     * Giải phóng cụm rạp mà Quản lý đang phụ trách theo UserId (dùng khi tài
-     * khoản bị khóa/tạm ngưng).
+     * @param managerId mã Quản lý cần giải phóng phân công
+     * @param adminId   mã Admin thực hiện thao tác
+     * @param reason    lý do kết thúc phân công
+     * @return true nếu xử lý giao dịch thành công; ngược lại false
      */
     public boolean unassignManagerByUserId(int managerId, int adminId, String reason) {
         String endAssignment = "UPDATE CentreManagerAssignments SET EndDate = GETDATE(), Status = 'ENDED', "
@@ -2023,8 +1121,7 @@ public class UserDAO {
     }
 
     /**
-     * Cập nhật trạng thái Quản lý, giải phóng phân công rạp (nếu khóa/ngưng),
-     * và đồng bộ phân công trong 1 transaction.
+     * Cập nhật trạng thái Quản lý và giải phóng phân công rạp (nếu khóa/tạm ngưng) trong 1 transaction.
      */
     public boolean toggleManagerStatusTx(int managerId, String newStatus, int adminId) {
         String updateStatusSql = "UPDATE Users SET Status = ?, UpdatedAt = GETDATE() WHERE UserID = ? AND Role = 'MANAGER'";
@@ -2032,20 +1129,6 @@ public class UserDAO {
                 + "Notes = LEFT(ISNULL(Notes, '') + N' [Tài khoản Quản lý bị khóa/tạm ngưng' + CASE WHEN ? > 0 THEN N' bởi Admin #' + CAST(? AS NVARCHAR) ELSE N'' END + N']', 500) "
                 + "WHERE ManagerID = ? AND Status = 'ACTIVE' AND EndDate IS NULL";
         String clearCentreSql = "UPDATE Users SET CentreID = NULL, UpdatedAt = GETDATE() WHERE UserID = ? AND Role = 'MANAGER'";
-
-        String endAssignmentsSql = "UPDATE cma "
-                + "SET cma.EndDate = GETDATE(), cma.Status = 'ENDED', "
-                + "cma.Notes = ISNULL(cma.Notes, '') + N' [Chấm dứt phân công do tài khoản Quản lý bị khóa/tạm ngưng]' "
-                + "FROM CentreManagerAssignments cma "
-                + "JOIN Users u ON u.UserID = cma.ManagerID "
-                + "WHERE cma.Status = 'ACTIVE' AND cma.EndDate IS NULL AND UPPER(u.Status) <> 'ACTIVE'";
-        String clearUnassignedManagersSql = "UPDATE Users SET CentreID = NULL, UpdatedAt = GETDATE() "
-                + "WHERE Role = 'MANAGER' AND CentreID IS NOT NULL "
-                + "AND UserID NOT IN (SELECT ManagerID FROM CentreManagerAssignments WHERE Status = 'ACTIVE' AND EndDate IS NULL)";
-        String syncActiveManagersSql = "UPDATE u SET u.CentreID = cma.CentreID, u.UpdatedAt = GETDATE() "
-                + "FROM Users u "
-                + "JOIN CentreManagerAssignments cma ON cma.ManagerID = u.UserID AND cma.Status = 'ACTIVE' AND cma.EndDate IS NULL "
-                + "WHERE u.Role = 'MANAGER' AND (u.CentreID IS NULL OR u.CentreID <> cma.CentreID)";
 
         Connection conn = null;
         try {
@@ -2077,13 +1160,6 @@ public class UserDAO {
                 }
             }
 
-            // 3. Đồng bộ phân công quản lý
-            try (PreparedStatement ps3a = conn.prepareStatement(endAssignmentsSql); PreparedStatement ps3b = conn.prepareStatement(clearUnassignedManagersSql); PreparedStatement ps3c = conn.prepareStatement(syncActiveManagersSql)) {
-                ps3a.executeUpdate();
-                ps3b.executeUpdate();
-                ps3c.executeUpdate();
-            }
-
             conn.commit();
             return true;
         } catch (SQLException e) {
@@ -2109,118 +1185,18 @@ public class UserDAO {
     }
 
     /**
-     * Lấy lịch sử bổ nhiệm, miễn nhiệm Quản lý trung tâm chiếu phim.
-     */
-    public List<ManagerAssignment> getManagerAssignmentHistory(Integer centreId, Integer managerId) {
-        StringBuilder sql = new StringBuilder(
-                "SELECT bma.AssignmentID, bma.CentreID, bma.ManagerID, bma.AssignedBy, "
-                + "bma.StartDate, bma.EndDate, bma.Status, bma.Notes, bma.CreatedAt, "
-                + "b.CentreName, b.City AS CentreCity, "
-                + "u.FullName AS ManagerName, u.Account AS ManagerAccount, u.Email AS ManagerEmail, "
-                + "adm.FullName AS AssignedByName "
-                + "FROM CentreManagerAssignments bma "
-                + "JOIN Centres b ON b.CentreID = bma.CentreID "
-                + "JOIN Users u ON u.UserID = bma.ManagerID "
-                + "JOIN Users adm ON adm.UserID = bma.AssignedBy "
-                + "WHERE 1=1 "
-        );
-
-        if (centreId != null) {
-            sql.append("AND bma.CentreID = ? ");
-        }
-        if (managerId != null) {
-            sql.append("AND bma.ManagerID = ? ");
-        }
-        sql.append("ORDER BY bma.StartDate DESC, bma.AssignmentID DESC");
-
-        List<ManagerAssignment> list = new ArrayList<>();
-        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql.toString())) {
-            int paramIndex = 1;
-            if (centreId != null) {
-                ps.setInt(paramIndex++, centreId);
-            }
-            if (managerId != null) {
-                ps.setInt(paramIndex++, managerId);
-            }
-
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    ManagerAssignment item = new ManagerAssignment();
-                    item.setAssignmentId(rs.getInt("AssignmentID"));
-                    item.setCentreId(rs.getInt("CentreID"));
-                    item.setCentreName(rs.getString("CentreName"));
-                    item.setCentreCity(rs.getString("CentreCity"));
-                    item.setManagerId(rs.getInt("ManagerID"));
-                    item.setManagerName(rs.getString("ManagerName"));
-                    item.setManagerAccount(rs.getString("ManagerAccount"));
-                    item.setManagerEmail(rs.getString("ManagerEmail"));
-                    item.setAssignedBy(rs.getInt("AssignedBy"));
-                    item.setAssignedByName(rs.getString("AssignedByName"));
-                    item.setStartDate(rs.getTimestamp("StartDate"));
-                    item.setEndDate(rs.getTimestamp("EndDate"));
-                    item.setStatus(rs.getString("Status"));
-                    item.setNotes(rs.getString("Notes"));
-                    item.setCreatedAt(rs.getTimestamp("CreatedAt"));
-                    list.add(item);
-                }
-            }
-        } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Không thể tải lịch sử bổ nhiệm Quản lý", e);
-        }
-        return list;
-    }
-
-    /**
-     * Lấy danh sách khách hàng phục vụ trang quản trị kèm số vé đã đặt và tổng
-     * chi tiêu.
+     * Lấy danh sách toàn bộ khách hàng phục vụ trang quản trị.
      *
-     * @param search từ khóa tìm kiếm
-     * @param status bộ lọc trạng thái (ACTIVE, INACTIVE, LOCKED hoặc ALL)
-     * @return danh sách khách hàng
+     * @return danh sách tất cả người dùng có vai trò CUSTOMER
      */
-    public List<User> getCustomers(String search, String status) {
-        StringBuilder sql = new StringBuilder();
-        sql.append("SELECT u.*, ")
-                .append("  (SELECT COUNT(*) FROM Bookings b WHERE b.UserID = u.UserID) AS BookingCount, ")
-                .append("  (SELECT ISNULL(SUM(b.TotalAmount), 0) FROM Bookings b WHERE b.UserID = u.UserID AND b.BookingStatus <> 'CANCELLED') AS TotalSpent ")
-                .append("FROM Users u ")
-                .append("WHERE u.Role = 'CUSTOMER' ");
-
-        List<Object> params = new ArrayList<>();
-
-        if (status != null && !status.isBlank() && !"ALL".equalsIgnoreCase(status)) {
-            String filterStatus = status.trim();
-            sql.append("AND u.Status = ? ");
-            params.add(filterStatus);
-        }
-
-        if (search != null && !search.isBlank()) {
-            sql.append("AND (u.FullName LIKE ? OR u.Account LIKE ? OR u.Email LIKE ? OR u.Phone LIKE ? ")
-                    .append("OR ('KH' + RIGHT('00000' + CAST(u.UserID AS VARCHAR(10)), 5)) LIKE ? ")
-                    .append("OR CAST(u.UserID AS VARCHAR(10)) LIKE ?) ");
-            String keyword = "%" + search.trim() + "%";
-            params.add(keyword);
-            params.add(keyword);
-            params.add(keyword);
-            params.add(keyword);
-            params.add(keyword);
-            params.add(keyword);
-        }
-
-        sql.append("ORDER BY u.CreatedAt DESC, u.UserID DESC");
-
+    public List<User> getCustomers() {
+        String sql = "SELECT * FROM Users WHERE Role = 'CUSTOMER' ORDER BY UserID DESC";
         List<User> list = new ArrayList<>();
-        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql.toString())) {
-            for (int i = 0; i < params.size(); i++) {
-                ps.setObject(i + 1, params.get(i));
-            }
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    User u = mapUser(rs);
-                    u.setBookingCount(rs.getInt("BookingCount"));
-                    u.setTotalSpent(rs.getBigDecimal("TotalSpent"));
-                    list.add(u);
-                }
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                list.add(mapUser(rs));
             }
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Không thể tải danh sách khách hàng", e);
@@ -2228,34 +1204,6 @@ public class UserDAO {
         return list;
     }
 
-    /**
-     * Đếm tổng số lượng khách hàng theo trạng thái tài khoản.
-     *
-     * @param status trạng thái tài khoản hoặc ALL
-     * @return số lượng khách hàng tương ứng
-     */
-    public int countCustomersByStatus(String status) {
-        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM Users WHERE Role = 'CUSTOMER' ");
-        List<Object> params = new ArrayList<>();
-        if (status != null && !status.isBlank() && !"ALL".equalsIgnoreCase(status)) {
-            String filterStatus = status.trim();
-            sql.append("AND Status = ? ");
-            params.add(filterStatus);
-        }
-        try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql.toString())) {
-            for (int i = 0; i < params.size(); i++) {
-                ps.setObject(i + 1, params.get(i));
-            }
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt(1);
-                }
-            }
-        } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Không thể đếm số lượng khách hàng", e);
-        }
-        return 0;
-    }
 
     /**
      * Lay vai tro va ID rap chieu duoc phan cong cua nguoi dung.

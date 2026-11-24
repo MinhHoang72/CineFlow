@@ -64,11 +64,13 @@ public class DistributionBusinessTestRunner {
             // TEST 4: Tắt riêng 1 cụm rạp (chỉ lưu activeCentreId1) -> activeCentreId2 phải chuyển sang false
             test4_ToggleOffIndividualCentre(testMovieId, activeCentreId1, activeCentreId2);
 
-            // TEST 5: Thử phân phối cho cụm rạp đang bảo trì/tạm ngừng -> Không được phép lưu Active trong DB
+            // TEST 5: Admin tự do phân phối phim tới mọi cụm rạp trong hệ thống (kể cả rạp tạm ngưng)
             if (inactiveCentreId > 0) {
-                test5_InactiveCentreCannotBeDistributed(testMovieId, activeCentreId1, inactiveCentreId);
+                test5_FreeDistributionToAnyCentre(testMovieId, activeCentreId1, inactiveCentreId);
+            } else if (activeCentreId2 > 0) {
+                test5_FreeDistributionToAnyCentre(testMovieId, activeCentreId1, activeCentreId2);
             } else {
-                System.out.println("  [SKIP] Hệ thống hiện không có cụm rạp INACTIVE, bỏ qua Test 5.");
+                System.out.println("  [SKIP] Hệ thống chỉ có 1 cụm rạp, bỏ qua Test 5.");
             }
 
             // TEST 6: Mở lại cấu hình phân phối -> Trạng thái phải khớp chính xác 100% với DB
@@ -153,20 +155,27 @@ public class DistributionBusinessTestRunner {
         System.out.println("  [PASS] Cụm rạp " + turnOffId + " đã chuyển sang OFF thành công, chỉ còn cụm rạp " + keepId + " là ON.");
     }
 
-    private static void test5_InactiveCentreCannotBeDistributed(int movieId, int keepActiveId, int inactiveId) {
-        System.out.println("\n[TEST 5] Kiểm tra ràng buộc rạp INACTIVE không được phép phân phối");
+    private static void test5_FreeDistributionToAnyCentre(int movieId, int keepActiveId, int otherId) {
+        System.out.println("\n[TEST 5] Kiểm tra Admin tự do phân phối phim tới mọi cụm rạp trong hệ thống");
         Set<Integer> set = new HashSet<>();
         set.add(keepActiveId);
-        set.add(inactiveId);
-        movieService.saveMovieDistribution(movieId, set);
+        set.add(otherId);
+        boolean saved = movieService.saveMovieDistribution(movieId, set);
+        if (!saved) {
+            throw new AssertionError("Lưu phân phối tự do thất bại!");
+        }
 
         List<Centre> centres = movieService.getDistributionCentres(movieId);
+        boolean otherOk = false;
         for (Centre c : centres) {
-            if (c.getCentreId() == inactiveId && c.isDistributed()) {
-                throw new AssertionError("Lỗi: Cụm rạp bảo trì/ngừng hoạt động (ID " + inactiveId + ") lại được phân phối!");
+            if (c.getCentreId() == otherId && c.isDistributed()) {
+                otherOk = true;
             }
         }
-        System.out.println("  [PASS] Rạp INACTIVE (ID " + inactiveId + ") bị chặn phân phối đúng như quy định.");
+        if (!otherOk) {
+            throw new AssertionError("Lỗi: Cụm rạp " + otherId + " không được lưu trạng thái phân phối!");
+        }
+        System.out.println("  [PASS] Cụm rạp " + otherId + " được phân phối thành công theo đúng quyền tự do của Admin.");
     }
 
     private static void test6_ReopenMatchesDatabase(int movieId, int expectedActiveId) {

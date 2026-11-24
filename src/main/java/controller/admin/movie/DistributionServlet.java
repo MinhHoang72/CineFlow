@@ -9,7 +9,6 @@ import jakarta.servlet.http.HttpSession;
 import model.entity.Centre;
 import model.entity.Movie;
 import model.entity.User;
-
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
@@ -66,8 +65,8 @@ public class DistributionServlet extends HttpServlet {
             return;
         }
 
-        // 2. Lấy toàn bộ danh sách phim từ Service
-        List<Movie> allMovies = movieService.getAllMovies();
+        // 2. Lấy danh sách phim có thể phân phối 
+        List<Movie> allMovies = movieService.getDistributableMovies();
 
         // 3. Tự động xác định phim được chọn (theo movieId hoặc phim ưu tiên mặc định)
         String movieIdValue = request.getParameter("movieId");
@@ -119,25 +118,13 @@ public class DistributionServlet extends HttpServlet {
             }
 
             // 4. Ủy quyền toàn bộ xử lý nghiệp vụ cho MovieService (Mô hình 3 lớp)
-            MovieService.DistributionResult result = movieService.saveDistribution(movieId, selectedCentreIds);
+            boolean success = movieService.saveDistribution(movieId, selectedCentreIds);
 
             // 5. Điều hướng theo kết quả nghiệp vụ trả về từ Service
-            switch (result) {
-                case SUCCESS:
-                    response.sendRedirect(request.getContextPath() + "/admin/distribution?movieId=" + movieId + "&saved=1");
-                    break;
-                case MOVIE_ENDED_OR_ARCHIVED:
-                    response.sendRedirect(request.getContextPath() + "/admin/distribution?movieId=" + movieId + "&error=movie_ended_or_archived");
-                    break;
-                case MOVIE_NOT_FOUND:
-                    response.sendRedirect(request.getContextPath() + "/admin/distribution?error=movie_not_found");
-                    break;
-                case INVALID_CENTRES:
-                    response.sendRedirect(request.getContextPath() + "/admin/distribution?movieId=" + movieId + "&error=invalid_centres");
-                    break;
-                default:
-                    response.sendRedirect(request.getContextPath() + "/admin/distribution?movieId=" + movieId + "&error=save_failed");
-                    break;
+            if (success) {
+                response.sendRedirect(request.getContextPath() + "/admin/distribution?movieId=" + movieId + "&saved=1");
+            } else {
+                response.sendRedirect(request.getContextPath() + "/admin/distribution?movieId=" + movieId + "&error=failed");
             }
         } catch (NumberFormatException exception) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Mã phim hoặc mã cụm rạp không hợp lệ.");

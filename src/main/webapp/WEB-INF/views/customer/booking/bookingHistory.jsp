@@ -65,9 +65,9 @@
                                     <span class="booking-meta">
                                         <%= esc(item.getCentreName()) %> · <%= item.getStartTime() == null ? "Chưa có lịch" : dateTime.format(item.getStartTime()) %>
                                     </span>
-                                    <% if (item.isShowtimeCancelled()) { %>
+                                    <% if (item.isShowtimeCancelled() || item.isPaidTicketCancelled()) { %>
                                         <span style="font-size: 12px; color: #ef4444; margin-top: 5px; font-weight: 600;">
-                                            ⚠️ Suất chiếu đã huỷ, vé không còn hiệu lực.
+                                            ⚠️ Vé của đơn này đã bị huỷ và không còn hiệu lực.
                                             Để được hỗ trợ hoàn tiền, liên hệ
                                             <a href="${pageContext.request.contextPath}/support" style="color: inherit; text-decoration: underline;">CSKH</a>
                                             hoặc hotline 1900 6868, email cskh@cineflow.vn; cung cấp mã đơn

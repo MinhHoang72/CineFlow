@@ -1,0 +1,18 @@
+DEMO MOVIE DATA — CINEFLOW
+
+Title: The Pianist (Nghệ sĩ dương cầm)
+Description: Câu chuyện có thật về nghệ sĩ piano người Ba Lan Władysław Szpilman, người phải tìm cách sinh tồn tại Warsaw trong thời kỳ Đức Quốc xã chiếm đóng.
+Duration: 148 phút
+Genre: Chính kịch, Chiến tranh
+Director: Roman Polanski
+Cast: Adrien Brody, Thomas Kretschmann, Frank Finlay, Emilia Fox
+Language: Tiếng Anh, Tiếng Đức, Tiếng Ba Lan
+Release date: 2002-09-25
+End date: 2026-12-31
+Age rating: T16
+Release status: NOW_SHOWING
+
+POSTER FILE: poster-the-pianist.jpg
+TRAILER FILE: trailer-the-pianist.mp4
+
+Dùng để demo TẠO PHIM MỚI: title này chưa có trong dữ liệu phim seed hiện tại. Nếu CSDL của bạn đã được thêm title này thủ công, hãy đổi title trước khi lưu để tránh trùng tên.
