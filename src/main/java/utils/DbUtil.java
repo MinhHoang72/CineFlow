@@ -12,6 +12,7 @@ import java.util.Collections;
  */
 public final class DbUtil {
 
+    /** Lớp tiện ích chỉ có hàm static, không tạo đối tượng. */
     private DbUtil() {}
 
     /** Mot khoi cong viec dung chung mot ket noi (mot transaction). */
@@ -21,8 +22,9 @@ public final class DbUtil {
     }
 
     /**
-     * Mo ket noi, chay work trong transaction: thanh cong thi commit, co loi thi rollback va nem lai loi.
-     * Service dung de gom nhieu thao tac DAO thanh mot don vi (tat ca thanh cong hoac khong co gi thay doi).
+     * Chạy một khối công việc trong một transaction:
+     * mở kết nối, tắt auto-commit, chạy work; thành công thì commit, có lỗi thì rollback rồi ném lại lỗi; cuối cùng đóng kết nối.
+     * Service dùng hàm này để các bước ghi CSDL (ví dụ giữ ghế, xác nhận thanh toán) hoặc thành công hết, hoặc không bước nào được lưu.
      */
     public static <T, E extends Exception> T inTransaction(TransactionWork<T, E> work) throws SQLException, E {
         try (Connection conn = DBContext.getConnection()) {
@@ -38,7 +40,10 @@ public final class DbUtil {
         }
     }
 
-    /** Loi vi pham UNIQUE / PRIMARY KEY cua SQL Server (2601, 2627). */
+    /**
+     * Lỗi có phải do vi phạm UNIQUE / PRIMARY KEY của SQL Server không (mã 2601, 2627).
+     * Dùng để nhận biết hai người cùng giữ một ghế.
+     */
     public static boolean isDuplicateKey(SQLException e) {
         for (Throwable t = e; t != null; t = t.getCause()) {
             if (t instanceof SQLException sql && (sql.getErrorCode() == 2601 || sql.getErrorCode() == 2627)) return true;
@@ -46,12 +51,15 @@ public final class DbUtil {
         return false;
     }
 
-    /** "?, ?, ?" cho cau lenh IN (n >= 1). */
+    /** Tạo chuỗi "?, ?, ?" với n dấu hỏi cho câu lệnh IN (n >= 1). */
     public static String placeholders(int n) {
         return String.join(", ", Collections.nCopies(n, "?"));
     }
 
-    /** Gan cac gia tri int vao PreparedStatement bat dau tu vi tri start. @return vi tri tham so ke tiep */
+    /**
+     * Gán lần lượt các giá trị int vào PreparedStatement, bắt đầu từ vị trí start.
+     * @return vị trí tham số kế tiếp
+     */
     public static int setInts(PreparedStatement ps, int start, Collection<Integer> values) throws SQLException {
         int i = start;
         for (int v : values) ps.setInt(i++, v);

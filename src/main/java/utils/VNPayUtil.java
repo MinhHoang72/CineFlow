@@ -48,22 +48,33 @@ public final class VNPayUtil {
         RETURN_URL = setting("VNP_RETURN_URL", props, "vnp.returnUrl");
     }
 
+    /** Lớp tiện ích chỉ có hàm static, không tạo đối tượng. */
     private VNPayUtil() {}
 
+    /**
+     * Đọc một cấu hình VNPay: ưu tiên biến môi trường (ví dụ VNP_TMN_CODE), không có thì lấy từ vnpay.properties.
+     */
     private static String setting(String env, Properties props, String key) {
         String value = System.getenv(env);
         if (value == null || value.isBlank()) value = props.getProperty(key, "");
         return value.trim();
     }
 
+    /**
+     * Đã có đủ mã website (vnp.tmnCode) và khoá bí mật (vnp.hashSecret) chưa. Chưa có thì không tạo được link VNPay.
+     */
     public static boolean isConfigured() {
         return !TMN_CODE.isEmpty() && !HASH_SECRET.isEmpty();
     }
 
     /**
-     * Tao URL chuyen khach sang trang thanh toan VNPay.
-     * @param txnRef ma giao dich duy nhat (Payments.TransactionCode)
-     * @param expireSeconds so giay con lai de thanh toan (= thoi gian giu ghe con lai)
+     * Tạo link chuyển khách sang trang thanh toán VNPay.
+     * 1. Đưa các tham số VNPay yêu cầu vào TreeMap (tự sắp xếp theo tên): phiên bản, lệnh pay, mã website, số tiền x100, VND,
+     *    mã giao dịch, nội dung, ngôn ngữ, địa chỉ quay về, IP khách, thời điểm tạo, hạn thanh toán.
+     * 2. Ghép thành chuỗi key=value&... (encode) và ký bằng HMAC-SHA512 với khoá bí mật.
+     * 3. Link = địa chỉ VNPay + "?" + chuỗi tham số + "&vnp_SecureHash=" + chữ ký.
+     * @param txnRef mã giao dịch duy nhất (Payments.TransactionCode)
+     * @param expireSeconds số giây còn lại để thanh toán (= thời gian giữ ghế còn lại, tối thiểu 60 giây)
      */
     public static String buildPayUrl(HttpServletRequest req, String txnRef, BigDecimal amount, String orderInfo,
             long expireSeconds) {
@@ -87,7 +98,11 @@ public final class VNPayUtil {
         return PAY_URL + "?" + query + "&vnp_SecureHash=" + hmacSha512(HASH_SECRET, query);
     }
 
-    /** Kiem tra chu ky du lieu VNPay gui ve (return URL / IPN). */
+    /**
+     * Kiểm tra chữ ký dữ liệu VNPay gửi về (return URL hoặc IPN):
+     * bỏ vnp_SecureHash khỏi dữ liệu, tự ký lại bằng khoá bí mật rồi so với chữ ký nhận được.
+     * Ai sửa bất kỳ tham số nào (số tiền, mã kết quả) thì chữ ký không còn khớp.
+     */
     public static boolean verify(Map<String, String> vnpParams) {
         String received = vnpParams.get("vnp_SecureHash");
         if (received == null || !isConfigured()) return false;
@@ -98,7 +113,7 @@ public final class VNPayUtil {
         return MessageDigest.isEqual(expected, received.toLowerCase().getBytes(StandardCharsets.US_ASCII));
     }
 
-    /** Lay cac tham so vnp_* tu request. */
+    /** Lấy các tham số bắt đầu bằng vnp_ trên request (bỏ tham số rỗng), sắp xếp theo tên. */
     public static Map<String, String> vnpParams(HttpServletRequest req) {
         Map<String, String> params = new TreeMap<>();
         for (Map.Entry<String, String[]> e : req.getParameterMap().entrySet()) {
@@ -108,17 +123,17 @@ public final class VNPayUtil {
         return params;
     }
 
-    /** Giao dich thanh cong: ma phan hoi 00 va trang thai giao dich 00. */
+    /** Giao dịch thành công khi vnp_ResponseCode = 00 và vnp_TransactionStatus = 00. */
     public static boolean isSuccess(Map<String, String> vnpParams) {
         return "00".equals(vnpParams.get("vnp_ResponseCode")) && "00".equals(vnpParams.get("vnp_TransactionStatus"));
     }
 
-    /** VNPay gui so tien x100. */
+    /** Đổi số tiền sang định dạng VNPay: nhân 100, bỏ phần thập phân (140.000 đ -> "14000000"). */
     public static String toVnpAmount(BigDecimal amount) {
         return amount.movePointRight(2).setScale(0, java.math.RoundingMode.HALF_UP).toPlainString();
     }
 
-    /** Ly do that bai theo vnp_ResponseCode, hien cho khach. */
+    /** Câu báo lỗi tiếng Việt cho khách theo vnp_ResponseCode (24 = khách huỷ, 11 = hết hạn...). */
     public static String failureMessage(String responseCode) {
         if (responseCode == null) return "Giao dịch không thành công.";
         return switch (responseCode) {
@@ -135,6 +150,10 @@ public final class VNPayUtil {
         };
     }
 
+    /**
+     * Địa chỉ VNPay chuyển khách quay về: dùng vnp.returnUrl nếu có cấu hình,
+     * không thì tự ghép theo địa chỉ app đang chạy + /payment/vnpay-return (máy nào chạy cũng đúng).
+     */
     private static String returnUrl(HttpServletRequest req) {
         if (!RETURN_URL.isEmpty()) return RETURN_URL;
         StringBuilder url = new StringBuilder(req.getScheme()).append("://").append(req.getServerName());
@@ -144,13 +163,19 @@ public final class VNPayUtil {
         return url.append(req.getContextPath()).append("/payment/vnpay-return").toString();
     }
 
+    /**
+     * Địa chỉ IP của khách (VNPay bắt buộc gửi kèm). VNPay chỉ nhận IPv4, nên địa chỉ IPv6 (ví dụ localhost ::1) được đổi thành 127.0.0.1.
+     */
     private static String clientIp(HttpServletRequest req) {
         String ip = req.getRemoteAddr();
         // VNPay chi nhan IPv4; localhost IPv6 (0:0:0:0:0:0:0:1) -> 127.0.0.1
         return ip == null || ip.contains(":") ? "127.0.0.1" : ip;
     }
 
-    /** key=value&... da sap xep theo key, gia tri ma hoa URL (US-ASCII) dung nhu code mau cua VNPay. */
+    /**
+     * Ghép tham số thành chuỗi key=value&... theo thứ tự tên, giá trị mã hoá URL, đúng như code mẫu của VNPay.
+     * Chuỗi này vừa dùng làm query của link, vừa là dữ liệu đem đi ký.
+     */
     private static String encode(Map<String, String> sorted) {
         StringBuilder sb = new StringBuilder();
         for (Map.Entry<String, String> e : sorted.entrySet()) {
@@ -162,6 +187,7 @@ public final class VNPayUtil {
         return sb.toString();
     }
 
+    /** Tạo chữ ký HMAC-SHA512 (dạng hex chữ thường) cho chuỗi dữ liệu bằng khoá bí mật. */
     static String hmacSha512(String key, String data) {
         try {
             Mac mac = Mac.getInstance("HmacSHA512");
