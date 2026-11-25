@@ -72,7 +72,6 @@ public class MovieManagementServlet extends HttpServlet {
 
                 // Thống kê số suất chiếu và vé đã bán để cảnh báo khi đổi trạng thái
                 int[] stats = movieService.getUpcomingStats(movieId);
-                request.setAttribute("hasUpcomingShowtimes", stats[0] > 0);
                 request.setAttribute("upcomingShowtimesCount", stats[0]);
                 request.setAttribute("soldTicketsCount", stats[1]);
             } catch (NumberFormatException e) {
@@ -184,12 +183,17 @@ public class MovieManagementServlet extends HttpServlet {
      */
     private void deleteFiles(String... urls) {
         for (String url : urls) {
+                    // Bỏ qua nếu không có URL
             if (url == null) continue;
+                    // Xác định thư mục chứa file
             String category = url.contains("/uploads/video_trailer/") ? "video_trailer"
                     : url.contains("/uploads/poster/") ? "poster" : null;
+                    // Không phải Poster hoặc Trailer thì bỏ qua
             if (category == null) continue;
             try {
+                     // Lấy tên file
                 String fileName = url.substring(url.lastIndexOf('/') + 1);
+                    // Xóa file nếu tồn tại
                 Files.deleteIfExists(MediaStorage.uploadDirectory(getServletContext(), category).resolve(fileName));
             } catch (Exception ignored) {}
         }

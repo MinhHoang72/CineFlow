@@ -19,35 +19,16 @@
         return;
     }
 
-    // 2. Lấy dữ liệu do DistributionServlet nạp sẵn từ MovieService
+    // 2. Lấy dữ liệu sạch do DistributionServlet nạp sẵn từ MovieService
     Movie movie = (Movie) request.getAttribute("movie");
     List<Movie> allMovies = (List<Movie>) request.getAttribute("allMovies");
-    List<Centre> rawCentres = (List<Centre>) request.getAttribute("centres");
+    List<Centre> centres = (List<Centre>) request.getAttribute("centres");
+    Set<String> cities = (Set<String>) request.getAttribute("cities");
+    int totalDistributed = request.getAttribute("totalDistributed") != null ? (Integer) request.getAttribute("totalDistributed") : 0;
+    int totalCentres = request.getAttribute("totalCentres") != null ? (Integer) request.getAttribute("totalCentres") : 0;
     if (allMovies == null) allMovies = java.util.Collections.emptyList();
-
-    // Chỉ lấy các rạp Đang hoạt động (ACTIVE) hoặc Tạm ngưng (SUSPENDED), loại bỏ hoàn toàn rạp Ngừng hoạt động (INACTIVE)
-    List<Centre> centres = new java.util.ArrayList<>();
-    if (rawCentres != null) {
-        for (Centre c : rawCentres) {
-            if (c.getStatus() != null && !"INACTIVE".equalsIgnoreCase(c.getStatus().trim())) {
-                centres.add(c);
-            }
-        }
-    }
-
-    // 3. Đếm số rạp đã phân phối và gom danh sách thành phố phục vụ bộ lọc
-    int totalCentres = centres.size();
-    int totalDistributed = 0;
-    Set<String> cities = new LinkedHashSet<>();
-
-    for (Centre c : centres) {
-        if (c.getCity() != null && !c.getCity().isBlank()) {
-            cities.add(c.getCity().trim());
-        }
-        if (c.isDistributed()) {
-            totalDistributed++;
-        }
-    }
+    if (centres == null) centres = java.util.Collections.emptyList();
+    if (cities == null) cities = java.util.Collections.emptySet();
 %>
 <!DOCTYPE html>
 <html lang="vi">

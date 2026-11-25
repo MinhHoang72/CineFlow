@@ -13,11 +13,13 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Service: Xử lý toàn bộ logic nghiệp vụ liên quan đến Phim (Movie) và Phân phối phim (Distribution).
- * Nhiệm vụ:
- * - Quản lý danh mục phim: Lấy danh sách phim kèm số lượng rạp phân phối, tìm kiếm theo mã định danh.
- * - Quản lý vòng đời phim: Thêm mới, cập nhật thông tin, thay đổi trạng thái (COMING_SOON, NOW_SHOWING, ENDED, ARCHIVED).
- * - Quản lý phân phối phim tới các cụm rạp chiếu: Lấy danh sách rạp kèm số lượng suất chiếu tương lai, cập nhật gán phim theo cụm rạp trong khối Transaction an toàn.
+ * Service: Xử lý toàn bộ logic nghiệp vụ liên quan đến Phim (Movie) và Phân
+ * phối phim (Distribution). Nhiệm vụ: - Quản lý danh mục phim: Lấy danh sách
+ * phim kèm số lượng rạp phân phối, tìm kiếm theo mã định danh. - Quản lý vòng
+ * đời phim: Thêm mới, cập nhật thông tin, thay đổi trạng thái (COMING_SOON,
+ * NOW_SHOWING, ENDED, ARCHIVED). - Quản lý phân phối phim tới các cụm rạp
+ * chiếu: Lấy danh sách rạp kèm số lượng suất chiếu tương lai, cập nhật gán phim
+ * theo cụm rạp trong khối Transaction an toàn.
  */
 public class MovieService {
 
@@ -32,7 +34,8 @@ public class MovieService {
     }
 
     /**
-     * Lấy toàn bộ danh sách phim kèm tỷ lệ phân phối rạp thực tế phục vụ màn hình quản trị.
+     * Lấy toàn bộ danh sách phim kèm tỷ lệ phân phối rạp thực tế phục vụ màn
+     * hình quản trị.
      *
      * @return danh sách các phim sắp xếp mới nhất lên đầu
      */
@@ -81,10 +84,10 @@ public class MovieService {
     }
 
     /**
-     * Lấy danh sách phim có thể phân phối tới các rạp.
-     * Logic nghiệp vụ:
-     * 1. Bắt đầu bằng việc lấy toàn bộ danh sách phim từ DAO (getAllMovies).
-     * 2. Lọc chỉ giữ lại các phim đang chiếu (NOW_SHOWING) hoặc sắp khởi chiếu (COMING_SOON).
+     * Lấy danh sách phim có thể phân phối tới các rạp. Logic nghiệp vụ: 1. Bắt
+     * đầu bằng việc lấy toàn bộ danh sách phim từ DAO (getAllMovies). 2. Lọc
+     * chỉ giữ lại các phim đang chiếu (NOW_SHOWING) hoặc sắp khởi chiếu
+     * (COMING_SOON).
      *
      * @return danh sách các bộ phim thỏa mãn điều kiện phân phối
      */
@@ -102,9 +105,9 @@ public class MovieService {
     }
 
     /**
-     * Tự động xác định phim được chọn cho màn hình phân phối:
-     * - Nếu có movieId hợp lệ từ request -> tìm và trả về phim đó trong danh sách.
-     * - Nếu không truyền movieId -> lấy phim đầu tiên trong danh sách làm mặc định.
+     * Tự động xác định phim được chọn cho màn hình phân phối: - Nếu có movieId
+     * hợp lệ từ request -> tìm và trả về phim đó trong danh sách. - Nếu không
+     * truyền movieId -> lấy phim đầu tiên trong danh sách làm mặc định.
      *
      * @param movies danh sách phim phân phối
      * @param movieIdParam chuỗi tham số movieId từ request
@@ -128,16 +131,19 @@ public class MovieService {
         return movies.get(0);
     }
 
-
     /**
-     * Lưu thông tin phim: Tự động phân nhánh Tạo mới (INSERT) hoặc Cập nhật (UPDATE).
+     * Lưu thông tin phim: Tự động phân nhánh Tạo mới (INSERT) hoặc Cập nhật
+     * (UPDATE).
      *
      * @param movie đối tượng thông tin phim
      * @return mã movieId của phim nếu thành công (> 0), ngược lại 0
-     * @throws IllegalArgumentException nếu dữ liệu hoặc quy tắc chuyển trạng thái không hợp lệ
+     * @throws IllegalArgumentException nếu dữ liệu hoặc quy tắc chuyển trạng
+     * thái không hợp lệ
      */
     public int saveMovie(Movie movie) {
-        if (movie == null) return 0;
+        if (movie == null) {
+            return 0;
+        }
 
         Date today = Date.valueOf(LocalDate.now());
         String status = movie.getStatus() != null ? movie.getStatus().trim().toUpperCase() : "";
@@ -157,28 +163,36 @@ public class MovieService {
     }
 
     /**
-     * Tự động điều chỉnh ngày kết thúc về hôm nay nếu phim chuyển sang trạng thái kết thúc (ENDED/ARCHIVED).
+     * Tự động điều chỉnh ngày kết thúc về hôm nay nếu phim chuyển sang trạng
+     * thái kết thúc (ENDED/ARCHIVED).
      */
+    // Chỉ xử lý khi phim kết thúc hoặc lưu trữ
     private void adjustEndDateIfClosed(Movie movie, Movie existing, String status, Date today) {
         if (!"ARCHIVED".equals(status) && !"ENDED".equals(status)) {
             return;
         }
+        // Nếu thiếu ngày phát hành thì lấy ngày cũ
+
         if (movie.getReleaseDate() == null && existing != null) {
             movie.setReleaseDate(existing.getReleaseDate());
         }
+            // Nếu thiếu ngày kết thúc thì lấy ngày cũ
         if (movie.getEndDate() == null && existing != null) {
             movie.setEndDate(existing.getEndDate());
         }
+            // Xác định ngày kết thúc tối thiểu
         Date minEndDate = (movie.getReleaseDate() != null && movie.getReleaseDate().after(today))
                 ? movie.getReleaseDate()
                 : today;
+            // Điều chỉnh ngày kết thúc nếu cần
         if (movie.getEndDate() == null || movie.getEndDate().after(minEndDate)) {
             movie.setEndDate(minEndDate);
         }
     }
 
     /**
-     * Kiểm tra toàn bộ tính hợp lệ của thông tin phim và quy tắc chuyển trạng thái.
+     * Kiểm tra toàn bộ tính hợp lệ của thông tin phim và quy tắc chuyển trạng
+     * thái.
      */
     private void validateMovie(Movie movie, Movie existing, String status, Date today) {
         movie.setGenre(ValidationUtil.normalizeGenres(movie.getGenre()));
@@ -227,11 +241,13 @@ public class MovieService {
     }
 
     /**
-     * Kiểm tra quy tắc chuyển trạng thái từ trạng thái cũ sang COMING_SOON hoặc NOW_SHOWING.
-     * Dùng chung cho cả saveMovie và updateMovieStatus.
+     * Kiểm tra quy tắc chuyển trạng thái từ trạng thái cũ sang COMING_SOON hoặc
+     * NOW_SHOWING. Dùng chung cho cả saveMovie và updateMovieStatus.
      */
     private void checkTransition(Movie existing, String targetStatus, Date releaseDate, Date endDate) {
-        if (existing == null) return;
+        if (existing == null) {
+            return;
+        }
         String oldStatus = existing.getStatus() != null ? existing.getStatus().toUpperCase() : "";
         LocalDate today = LocalDate.now();
 
@@ -261,8 +277,9 @@ public class MovieService {
     }
 
     /**
-     * Cập nhật nhanh trạng thái phát hành của một bộ phim.
-     * Quy tắc nghiệp vụ: Nếu trạng thái chuyển thành 'ENDED', tự động chốt ngày kết thúc (EndDate) là hôm nay.
+     * Cập nhật nhanh trạng thái phát hành của một bộ phim. Quy tắc nghiệp vụ:
+     * Nếu trạng thái chuyển thành 'ENDED', tự động chốt ngày kết thúc (EndDate)
+     * là hôm nay.
      *
      * @param movieId mã định danh phim
      * @param status trạng thái mới (COMING_SOON, NOW_SHOWING, ENDED, ARCHIVED)
@@ -292,25 +309,73 @@ public class MovieService {
         return movieDAO.updateMovieStatus(movieId, targetStatus);
     }
 
-
     /**
-     * Lấy danh sách toàn bộ cụm rạp và trạng thái đã phân phối (Distributed) thực tế của một bộ phim từ CSDL.
+     * Lấy danh sách các cụm rạp hợp lệ kèm trạng thái phân phối của phim. Quy
+     * tắc nghiệp vụ: Loại bỏ hoàn toàn các rạp ngừng hoạt động (INACTIVE), chỉ
+     * lấy rạp ACTIVE hoặc SUSPENDED.
      *
      * @param movieId mã định danh phim
-     * @return danh sách các cụm rạp kèm cờ isDistributed
+     * @return danh sách các cụm rạp hợp lệ kèm cờ isDistributed
      */
     public List<Centre> getDistributionCentres(int movieId) {
         if (movieId <= 0) {
             return Collections.emptyList();
         }
-        return movieDAO.getDistributionCentres(movieId);
+        List<Centre> rawList = movieDAO.getDistributionCentres(movieId);
+        List<Centre> validCentres = new java.util.ArrayList<>();
+        if (rawList != null) {
+            for (Centre c : rawList) {
+                if (c.getStatus() != null && !"INACTIVE".equalsIgnoreCase(c.getStatus().trim())) {
+                    validCentres.add(c);
+                }
+            }
+        }
+        return validCentres;
     }
 
     /**
-     * Cập nhật danh sách các cụm rạp được phép chiếu bộ phim này.
-     * Logic nghiệp vụ:
-     * - Chỉ phim đang chiếu (NOW_SHOWING) hoặc sắp chiếu (COMING_SOON) mới được phân phối.
-     * - Phim không tồn tại, đã kết thúc (ENDED) hoặc lưu trữ (ARCHIVED) sẽ bị từ chối.
+     * Trích xuất danh sách tên các thành phố duy nhất từ danh sách rạp để hiển
+     * thị bộ lọc.
+     *
+     * @param centres danh sách cụm rạp
+     * @return tập hợp tên thành phố
+     */
+    public Set<String> extractCities(List<Centre> centres) {
+        Set<String> cities = new java.util.LinkedHashSet<>();
+        if (centres != null) {
+            for (Centre c : centres) {
+                if (c.getCity() != null && !c.getCity().isBlank()) {
+                    cities.add(c.getCity().trim());
+                }
+            }
+        }
+        return cities;
+    }
+
+    /**
+     * Đếm tổng số lượng cụm rạp đã được phân phối bộ phim này.
+     *
+     * @param centres danh sách cụm rạp
+     * @return số lượng rạp đã phân phối
+     */
+    public int countDistributedCentres(List<Centre> centres) {
+        if (centres == null) {
+            return 0;
+        }
+        int count = 0;
+        for (Centre c : centres) {
+            if (c.isDistributed()) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    /**
+     * Cập nhật danh sách các cụm rạp được phép chiếu bộ phim này. Logic nghiệp
+     * vụ: - Chỉ phim đang chiếu (NOW_SHOWING) hoặc sắp chiếu (COMING_SOON) mới
+     * được phân phối. - Phim không tồn tại, đã kết thúc (ENDED) hoặc lưu trữ
+     * (ARCHIVED) sẽ bị từ chối.
      *
      * @param movieId mã định danh phim
      * @param selectedCentreIds tập hợp mã ID các cụm rạp được chọn

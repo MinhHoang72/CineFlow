@@ -72,16 +72,23 @@ public class DistributionServlet extends HttpServlet {
         String movieIdValue = request.getParameter("movieId");
         Movie selectedMovie = movieService.resolveSelectedMovie(allMovies, movieIdValue);
 
-        // 4. Lấy danh sách toàn bộ cụm rạp kèm trạng thái đã phân phối của phim được chọn
+        // 4. Lấy danh sách cụm rạp hợp lệ (đã lọc rạp INACTIVE tại Service) kèm trạng thái đã phân phối
         List<Centre> centres = selectedMovie != null
                 ? movieService.getDistributionCentres(selectedMovie.getMovieId())
                 : java.util.Collections.emptyList();
 
-        // 5. Đưa dữ liệu vào request attributes và chuyển tiếp sang trang JSP hiển thị
+        // 5. Chuẩn bị dữ liệu hiển thị (gom danh sách thành phố và đếm số rạp phân phối) qua Service
+        Set<String> cities = movieService.extractCities(centres);
+        int totalDistributed = movieService.countDistributedCentres(centres);
+
+        // 6. Đưa dữ liệu sạch vào request attributes và chuyển tiếp sang trang JSP hiển thị
         request.setAttribute("activeNav", "distribution");
         request.setAttribute("movie", selectedMovie);
         request.setAttribute("allMovies", allMovies != null ? allMovies : java.util.Collections.emptyList());
         request.setAttribute("centres", centres);
+        request.setAttribute("cities", cities);
+        request.setAttribute("totalDistributed", totalDistributed);
+        request.setAttribute("totalCentres", centres.size());
         request.getRequestDispatcher("/WEB-INF/views/admin/movie/movieDistribution.jsp").forward(request, response);
     }
 
