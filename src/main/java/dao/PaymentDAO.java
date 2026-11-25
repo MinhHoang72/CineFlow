@@ -83,7 +83,9 @@ public class PaymentDAO {
     /** Giao dịch PENDING -> FAILED (VNPay báo không thành công). */
     public void markFailed(int paymentId) throws SQLException {
         try (Connection conn = DBContext.getConnection()) {
-            update(conn, "UPDATE Payments SET PaymentStatus = 'FAILED' WHERE PaymentID = ? AND PaymentStatus = 'PENDING'",
+            update(conn, """
+                    UPDATE Payments SET PaymentStatus = 'FAILED' WHERE PaymentID = ? AND PaymentStatus = 'PENDING'
+                    """,
                     paymentId);
         }
     }
@@ -111,7 +113,9 @@ public class PaymentDAO {
      */
     public LockedPayment lockBookingPayment(Connection conn, int paymentId, Integer centreId) throws SQLException {
         // Serialize payment confirmation with manager edits/cancellation and seat holds.
-        try (PreparedStatement ps = conn.prepareStatement("SELECT s.ShowtimeID FROM Showtimes s WITH(UPDLOCK,HOLDLOCK) WHERE s.ShowtimeID=(SELECT b.ShowtimeID FROM Payments p JOIN Bookings b ON b.BookingID=p.BookingID WHERE p.PaymentID=?)")) {
+        try (PreparedStatement ps = conn.prepareStatement("""
+                SELECT s.ShowtimeID FROM Showtimes s WITH(UPDLOCK,HOLDLOCK) WHERE s.ShowtimeID=(SELECT b.ShowtimeID FROM Payments p JOIN Bookings b ON b.BookingID=p.BookingID WHERE p.PaymentID=?)
+                """)) {
             ps.setInt(1, paymentId);
             try (ResultSet rs = ps.executeQuery()) { while (rs.next()) { /* hold until commit */ } }
         }
@@ -135,7 +139,9 @@ public class PaymentDAO {
 
     /** Giao dịch -> PAID và ghi thời điểm thanh toán (PaidAt). */
     public void markPaid(Connection conn, int paymentId) throws SQLException {
-        update(conn, "UPDATE Payments SET PaymentStatus = 'PAID', PaidAt = SYSDATETIME() WHERE PaymentID = ?", paymentId);
+        update(conn, """
+                UPDATE Payments SET PaymentStatus = 'PAID', PaidAt = SYSDATETIME() WHERE PaymentID = ?
+                """, paymentId);
     }
 
     /**
@@ -144,7 +150,9 @@ public class PaymentDAO {
      * Sai một điều kiện thì confirmPaid huỷ đơn (tiền về muộn sau khi suất bị sửa hoặc ngừng bán).
      */
     public boolean bookingStillMatchesShowtime(Connection conn, int bookingId) throws SQLException {
-        try (PreparedStatement ps = conn.prepareStatement("SELECT 1 FROM Bookings b JOIN Showtimes s ON s.ShowtimeID=b.ShowtimeID JOIN Halls h ON h.HallID=s.HallID JOIN Movies m ON m.MovieID=s.MovieID JOIN Centres c ON c.CentreID=h.CentreID WHERE b.BookingID=? AND b.BookingStatus<>'CANCELLED' AND s.Status='SCHEDULED' AND s.StartTime>SYSDATETIME() AND s.SaleState='OPEN' AND m.Status='NOW_SHOWING' AND c.Status='ACTIVE' AND h.Status='AVAILABLE' AND EXISTS (SELECT 1 FROM CentreMovies cm WHERE cm.MovieID=s.MovieID AND cm.CentreID=c.CentreID AND cm.IsActive=1 AND cm.Status='ACTIVE')")) {
+        try (PreparedStatement ps = conn.prepareStatement("""
+                SELECT 1 FROM Bookings b JOIN Showtimes s ON s.ShowtimeID=b.ShowtimeID JOIN Halls h ON h.HallID=s.HallID JOIN Movies m ON m.MovieID=s.MovieID JOIN Centres c ON c.CentreID=h.CentreID WHERE b.BookingID=? AND b.BookingStatus<>'CANCELLED' AND s.Status='SCHEDULED' AND s.StartTime>SYSDATETIME() AND s.SaleState='OPEN' AND m.Status='NOW_SHOWING' AND c.Status='ACTIVE' AND h.Status='AVAILABLE' AND EXISTS (SELECT 1 FROM CentreMovies cm WHERE cm.MovieID=s.MovieID AND cm.CentreID=c.CentreID AND cm.IsActive=1 AND cm.Status='ACTIVE')
+                """)) {
             ps.setInt(1, bookingId);
             try (ResultSet rs = ps.executeQuery()) { return rs.next(); }
         }
@@ -222,7 +230,9 @@ public class PaymentDAO {
     public void insertTickets(Connection conn, List<NewTicket> tickets) throws SQLException {
         if (tickets.isEmpty()) return;
         try (PreparedStatement ps = conn.prepareStatement(
-                "INSERT INTO Tickets (BookingSeatID, TicketCode, QRCode, TicketStatus) VALUES (?, ?, ?, 'VALID')")) {
+                """
+                        INSERT INTO Tickets (BookingSeatID, TicketCode, QRCode, TicketStatus) VALUES (?, ?, ?, 'VALID')
+                        """)) {
             for (NewTicket t : tickets) {
                 ps.setInt(1, t.bookingSeatId());
                 ps.setString(2, t.ticketCode());
@@ -331,9 +341,11 @@ public class PaymentDAO {
      */
     private static int insert(Connection conn, String ownerColumn, int ownerId, String transactionCode, String method,
             BigDecimal amount, BigDecimal cashReceived) throws SQLException {
-        try (PreparedStatement ps = conn.prepareStatement(
-                "INSERT INTO Payments (" + ownerColumn + ", TransactionCode, PaymentMethod, Amount, PaymentStatus, CashReceived) "
-              + "VALUES (?, ?, ?, ?, 'PENDING', ?)", Statement.RETURN_GENERATED_KEYS)) {
+        // %s = ownerColumn (BookingID hoặc FnbOrderID)
+        try (PreparedStatement ps = conn.prepareStatement("""
+                INSERT INTO Payments (%s, TransactionCode, PaymentMethod, Amount, PaymentStatus, CashReceived)
+                VALUES (?, ?, ?, ?, 'PENDING', ?)
+                """.formatted(ownerColumn), Statement.RETURN_GENERATED_KEYS)) {
             ps.setInt(1, ownerId);
             ps.setString(2, transactionCode);
             ps.setString(3, method);
@@ -351,9 +363,11 @@ public class PaymentDAO {
     private static void updatePendingIn(Connection conn, String ownerColumn, List<Integer> ids, String newStatus)
             throws SQLException {
         if (ids.isEmpty()) return;
-        try (PreparedStatement ps = conn.prepareStatement(
-                "UPDATE Payments SET PaymentStatus = ? WHERE PaymentStatus = 'PENDING' "
-              + "AND " + ownerColumn + " IN (" + DbUtil.placeholders(ids.size()) + ")")) {
+        // %1$s = ownerColumn (BookingID hoặc FnbOrderID), %2$s = "?, ?, ?" (một dấu ? cho mỗi đơn)
+        try (PreparedStatement ps = conn.prepareStatement("""
+                UPDATE Payments SET PaymentStatus = ? WHERE PaymentStatus = 'PENDING'
+                AND %1$s IN (%2$s)
+                """.formatted(ownerColumn, DbUtil.placeholders(ids.size())))) {
             ps.setString(1, newStatus);
             DbUtil.setInts(ps, 2, ids);
             ps.executeUpdate();
@@ -363,9 +377,11 @@ public class PaymentDAO {
     /** Huỷ các giao dịch còn chờ khác của một đơn, trừ giao dịch vừa PAID. */
     private static void cancelOthers(Connection conn, String ownerColumn, int ownerId, int paidPaymentId)
             throws SQLException {
-        try (PreparedStatement ps = conn.prepareStatement(
-                "UPDATE Payments SET PaymentStatus = 'CANCELLED' "
-              + "WHERE " + ownerColumn + " = ? AND PaymentID <> ? AND PaymentStatus IN ('PENDING', 'TIMEOUT')")) {
+        // %s = ownerColumn (BookingID hoặc FnbOrderID)
+        try (PreparedStatement ps = conn.prepareStatement("""
+                UPDATE Payments SET PaymentStatus = 'CANCELLED'
+                WHERE %s = ? AND PaymentID <> ? AND PaymentStatus IN ('PENDING', 'TIMEOUT')
+                """.formatted(ownerColumn))) {
             ps.setInt(1, ownerId);
             ps.setInt(2, paidPaymentId);
             ps.executeUpdate();
@@ -374,8 +390,11 @@ public class PaymentDAO {
 
     /** Đọc danh sách giao dịch của một đơn theo cột BookingID hoặc FnbOrderID, cũ nhất trước. */
     private List<PaymentTransaction> transactions(String column, int id) throws SQLException {
-        String sql = "SELECT PaymentID, TransactionCode, PaymentMethod, Amount, PaymentStatus, CreatedAt, PaidAt, CashReceived "
-                   + "FROM Payments WHERE " + column + " = ? ORDER BY PaymentID";
+        // %s = column (BookingID hoặc FnbOrderID)
+        String sql = """
+                SELECT PaymentID, TransactionCode, PaymentMethod, Amount, PaymentStatus, CreatedAt, PaidAt, CashReceived
+                FROM Payments WHERE %s = ? ORDER BY PaymentID
+                """.formatted(column);
         List<PaymentTransaction> list = new ArrayList<>();
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {

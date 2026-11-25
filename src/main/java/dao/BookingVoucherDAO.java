@@ -27,7 +27,10 @@ public class BookingVoucherDAO {
     /** Tìm voucher theo mã (không phân biệt hoa thường); không có thì null. */
     public Voucher findByCode(String code) throws SQLException {
         try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement("SELECT " + COLUMNS + " FROM Vouchers v WHERE v.VoucherCode = ?")) {
+             PreparedStatement ps = conn.prepareStatement("""
+                     SELECT %s
+                     FROM Vouchers v WHERE v.VoucherCode = ?
+                     """.formatted(COLUMNS))) {   // %s = COLUMNS (danh sách cột voucher)
             ps.setString(1, code.trim().toUpperCase());
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next() ? map(rs) : null;
@@ -40,19 +43,23 @@ public class BookingVoucherDAO {
      * và khách (nếu có tài khoản) chưa dùng hết lượt của mình. Dùng cho danh sách voucher gợi ý ở trang xem lại đơn.
      */
     public List<Voucher> findAvailable(int centreId, int movieId, LocalDate showDate, Integer userId) throws SQLException {
-        String sql = "SELECT " + COLUMNS + " FROM Vouchers v "
-                   + "WHERE v.Status = 'ACTIVE' AND v.StartDate <= SYSDATETIME() AND v.EndDate >= SYSDATETIME() "
-                   + "  AND (v.UsageLimit IS NULL OR v.UsedCount < v.UsageLimit) "
-                   + "  AND (v.CentreID IS NULL OR v.CentreID = ?) "
-                   + "  AND (NOT EXISTS (SELECT 1 FROM VoucherCentres x WHERE x.VoucherID = v.VoucherID) "
-                   + "       OR EXISTS (SELECT 1 FROM VoucherCentres x WHERE x.VoucherID = v.VoucherID AND x.CentreID = ?)) "
-                   + "  AND (NOT EXISTS (SELECT 1 FROM VoucherMovies x WHERE x.VoucherID = v.VoucherID) "
-                   + "       OR EXISTS (SELECT 1 FROM VoucherMovies x WHERE x.VoucherID = v.VoucherID AND x.MovieID = ?)) "
-                   + "  AND (NOT EXISTS (SELECT 1 FROM VoucherDays x WHERE x.VoucherID = v.VoucherID) "
-                   + "       OR EXISTS (SELECT 1 FROM VoucherDays x WHERE x.VoucherID = v.VoucherID AND x.DayOfWeek = ?)) "
-                   + "  AND (? IS NULL OR (SELECT COUNT(*) FROM VoucherUsages u "
-                   + "                     WHERE u.VoucherID = v.VoucherID AND u.UserID = ?) < v.PerCustomerLimit) "
-                   + "ORDER BY v.EndDate, v.VoucherCode";
+        // %s = COLUMNS (danh sách cột voucher)
+        String sql = """
+                SELECT %s
+                FROM Vouchers v
+                WHERE v.Status = 'ACTIVE' AND v.StartDate <= SYSDATETIME() AND v.EndDate >= SYSDATETIME()
+                  AND (v.UsageLimit IS NULL OR v.UsedCount < v.UsageLimit)
+                  AND (v.CentreID IS NULL OR v.CentreID = ?)
+                  AND (NOT EXISTS (SELECT 1 FROM VoucherCentres x WHERE x.VoucherID = v.VoucherID)
+                       OR EXISTS (SELECT 1 FROM VoucherCentres x WHERE x.VoucherID = v.VoucherID AND x.CentreID = ?))
+                  AND (NOT EXISTS (SELECT 1 FROM VoucherMovies x WHERE x.VoucherID = v.VoucherID)
+                       OR EXISTS (SELECT 1 FROM VoucherMovies x WHERE x.VoucherID = v.VoucherID AND x.MovieID = ?))
+                  AND (NOT EXISTS (SELECT 1 FROM VoucherDays x WHERE x.VoucherID = v.VoucherID)
+                       OR EXISTS (SELECT 1 FROM VoucherDays x WHERE x.VoucherID = v.VoucherID AND x.DayOfWeek = ?))
+                  AND (? IS NULL OR (SELECT COUNT(*) FROM VoucherUsages u
+                                     WHERE u.VoucherID = v.VoucherID AND u.UserID = ?) < v.PerCustomerLimit)
+                ORDER BY v.EndDate, v.VoucherCode
+                """.formatted(COLUMNS);
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, centreId);
@@ -99,29 +106,39 @@ public class BookingVoucherDAO {
 
     /** Số lượt mỗi khách được dùng voucher (cột PerCustomerLimit). */
     public int perCustomerLimit(int voucherId) throws SQLException {
-        return queryInt("SELECT PerCustomerLimit FROM Vouchers WHERE VoucherID = ?", voucherId);
+        return queryInt("""
+                SELECT PerCustomerLimit FROM Vouchers WHERE VoucherID = ?
+                """, voucherId);
     }
 
     /** Số lần khách đã dùng voucher ở các đơn đã thanh toán. */
     public int countUserUsages(int voucherId, int userId) throws SQLException {
-        return queryInt("SELECT COUNT(*) FROM VoucherUsages WHERE VoucherID = ? AND UserID = ?", voucherId, userId);
+        return queryInt("""
+                SELECT COUNT(*) FROM VoucherUsages WHERE VoucherID = ? AND UserID = ?
+                """, voucherId, userId);
     }
 
     /** Các rạp được khai báo riêng cho voucher (rỗng = áp dụng mọi rạp). */
     public List<Integer> getScopeCentreIds(int voucherId) throws SQLException {
-        return intList("SELECT CentreID FROM VoucherCentres WHERE VoucherID = ?", voucherId);
+        return intList("""
+                SELECT CentreID FROM VoucherCentres WHERE VoucherID = ?
+                """, voucherId);
     }
 
     /** Các phim được khai báo riêng cho voucher (rỗng = áp dụng mọi phim). */
     public List<Integer> getScopeMovieIds(int voucherId) throws SQLException {
-        return intList("SELECT MovieID FROM VoucherMovies WHERE VoucherID = ?", voucherId);
+        return intList("""
+                SELECT MovieID FROM VoucherMovies WHERE VoucherID = ?
+                """, voucherId);
     }
 
     /** Các thứ trong tuần (MONDAY...) được khai báo riêng cho voucher (rỗng = áp dụng mọi ngày). */
     public List<String> getScopeDays(int voucherId) throws SQLException {
         List<String> days = new ArrayList<>();
         try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement("SELECT DayOfWeek FROM VoucherDays WHERE VoucherID = ?")) {
+             PreparedStatement ps = conn.prepareStatement("""
+                     SELECT DayOfWeek FROM VoucherDays WHERE VoucherID = ?
+                     """)) {
             ps.setInt(1, voucherId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) days.add(rs.getString(1));
@@ -148,7 +165,9 @@ public class BookingVoucherDAO {
 
     /** Tăng số lượt đã dùng (UsedCount) của voucher thêm 1. */
     public void incrementUsedCount(Connection conn, int voucherId) throws SQLException {
-        try (PreparedStatement ps = conn.prepareStatement("UPDATE Vouchers SET UsedCount = UsedCount + 1 WHERE VoucherID = ?")) {
+        try (PreparedStatement ps = conn.prepareStatement("""
+                UPDATE Vouchers SET UsedCount = UsedCount + 1 WHERE VoucherID = ?
+                """)) {
             ps.setInt(1, voucherId);
             ps.executeUpdate();
         }

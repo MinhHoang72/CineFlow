@@ -102,7 +102,9 @@ public class FnbOrderDAO {
     /** Các món lẻ và số lượng tạo nên một combo (để tách combo khi kiểm và trừ kho). */
     public List<ComboPart> getComboParts(Connection conn, int comboId) throws SQLException {
         List<ComboPart> parts = new ArrayList<>();
-        try (PreparedStatement ps = conn.prepareStatement("SELECT FnbItemID, Quantity FROM ComboItems WHERE ComboID = ?")) {
+        try (PreparedStatement ps = conn.prepareStatement("""
+                SELECT FnbItemID, Quantity FROM ComboItems WHERE ComboID = ?
+                """)) {
             ps.setInt(1, comboId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) parts.add(new ComboPart(rs.getInt(1), rs.getInt(2)));
@@ -183,7 +185,9 @@ public class FnbOrderDAO {
     /** Tổng tiền các đơn bắp nước chưa huỷ của đơn vé (dùng khi tính lại tổng tiền đơn). */
     public BigDecimal sumActiveTotalForBooking(Connection conn, int bookingId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT ISNULL(SUM(TotalAmount), 0) FROM FnbOrders WHERE BookingID = ? AND OrderStatus <> 'CANCELLED'")) {
+                """
+                        SELECT ISNULL(SUM(TotalAmount), 0) FROM FnbOrders WHERE BookingID = ? AND OrderStatus <> 'CANCELLED'
+                        """)) {
             ps.setInt(1, bookingId);
             try (ResultSet rs = ps.executeQuery()) {
                 rs.next();
@@ -194,9 +198,12 @@ public class FnbOrderDAO {
 
     /** Xoá giỏ bắp nước chưa thanh toán của đơn vé (trước khi ghi giỏ mới). */
     public void deletePendingForBooking(Connection conn, int bookingId) throws SQLException {
-        String pending = "SELECT FnbOrderID FROM FnbOrders WHERE BookingID = ? AND OrderStatus = 'PENDING'";
-        try (PreparedStatement items = conn.prepareStatement("DELETE FROM FnbOrderItems WHERE FnbOrderID IN (" + pending + ")");
-             PreparedStatement orders = conn.prepareStatement("DELETE FROM FnbOrders WHERE BookingID = ? AND OrderStatus = 'PENDING'")) {
+        try (PreparedStatement items = conn.prepareStatement("""
+                DELETE FROM FnbOrderItems WHERE FnbOrderID IN (SELECT FnbOrderID FROM FnbOrders WHERE BookingID = ? AND OrderStatus = 'PENDING')
+                """);
+             PreparedStatement orders = conn.prepareStatement("""
+                     DELETE FROM FnbOrders WHERE BookingID = ? AND OrderStatus = 'PENDING'
+                     """)) {
             items.setInt(1, bookingId);
             items.executeUpdate();
             orders.setInt(1, bookingId);
@@ -222,9 +229,11 @@ public class FnbOrderDAO {
     /** Đơn bắp nước PENDING của các đơn vé -> CANCELLED (đơn vé bị huỷ hoặc hết hạn). */
     public void cancelPendingForBookings(Connection conn, List<Integer> bookingIds) throws SQLException {
         if (bookingIds.isEmpty()) return;
-        try (PreparedStatement ps = conn.prepareStatement(
-                "UPDATE FnbOrders SET OrderStatus = 'CANCELLED', UpdatedAt = SYSDATETIME() "
-              + "WHERE OrderStatus = 'PENDING' AND BookingID IN (" + DbUtil.placeholders(bookingIds.size()) + ")")) {
+        // %s = "?, ?, ?" (một dấu ? cho mỗi đơn vé)
+        try (PreparedStatement ps = conn.prepareStatement("""
+                UPDATE FnbOrders SET OrderStatus = 'CANCELLED', UpdatedAt = SYSDATETIME()
+                WHERE OrderStatus = 'PENDING' AND BookingID IN (%s)
+                """.formatted(DbUtil.placeholders(bookingIds.size())))) {
             DbUtil.setInts(ps, 1, bookingIds);
             ps.executeUpdate();
         }
@@ -263,7 +272,9 @@ public class FnbOrderDAO {
     /** Ghi các dòng món của đơn bắp nước (món lẻ hoặc combo, số lượng, đơn giá). */
     public void insertOrderLines(Connection conn, int orderId, List<OrderLine> lines) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
-                "INSERT INTO FnbOrderItems (FnbOrderID, FnbItemID, ComboID, Quantity, UnitPrice) VALUES (?, ?, ?, ?, ?)")) {
+                """
+                        INSERT INTO FnbOrderItems (FnbOrderID, FnbItemID, ComboID, Quantity, UnitPrice) VALUES (?, ?, ?, ?, ?)
+                        """)) {
             for (OrderLine line : lines) {
                 ps.setInt(1, orderId);
                 if (line.itemId() == null) ps.setNull(2, Types.INTEGER);
@@ -330,10 +341,12 @@ public class FnbOrderDAO {
      */
     public int cancelPendingStandalone(Connection conn, List<Integer> orderIds) throws SQLException {
         if (orderIds.isEmpty()) return 0;
-        try (PreparedStatement ps = conn.prepareStatement(
-                "UPDATE FnbOrders SET OrderStatus = 'CANCELLED', UpdatedAt = SYSDATETIME() "
-              + "WHERE BookingID IS NULL AND OrderStatus = 'PENDING' "
-              + "AND FnbOrderID IN (" + DbUtil.placeholders(orderIds.size()) + ")")) {
+        // %s = "?, ?, ?" (một dấu ? cho mỗi đơn bắp nước)
+        try (PreparedStatement ps = conn.prepareStatement("""
+                UPDATE FnbOrders SET OrderStatus = 'CANCELLED', UpdatedAt = SYSDATETIME()
+                WHERE BookingID IS NULL AND OrderStatus = 'PENDING'
+                AND FnbOrderID IN (%s)
+                """.formatted(DbUtil.placeholders(orderIds.size())))) {
             DbUtil.setInts(ps, 1, orderIds);
             return ps.executeUpdate();
         }
@@ -360,11 +373,14 @@ public class FnbOrderDAO {
      * Đọc các dòng món (tên, số lượng, đơn giá) theo điều kiện truyền vào; dùng chung cho đơn kèm vé và đơn lẻ.
      */
     private static List<FnbLineDTO> lines(Connection conn, String from, String where, int id) throws SQLException {
-        String sql = "SELECT oi.FnbItemID, oi.ComboID, COALESCE(i.ItemName, c.ComboName) AS Name, oi.Quantity, oi.UnitPrice "
-                   + from
-                   + "LEFT JOIN FnbItems i ON i.FnbItemID = oi.FnbItemID LEFT JOIN FnbCombos c ON c.ComboID = oi.ComboID "
-                   + "WHERE " + where + " "
-                   + "ORDER BY CASE WHEN oi.ComboID IS NULL THEN 1 ELSE 0 END, Name";
+        // %1$s = from (FROM ... JOIN ...), %2$s = where (điều kiện theo đơn vé hoặc đơn lẻ)
+        String sql = """
+                SELECT oi.FnbItemID, oi.ComboID, COALESCE(i.ItemName, c.ComboName) AS Name, oi.Quantity, oi.UnitPrice
+                %1$s
+                LEFT JOIN FnbItems i ON i.FnbItemID = oi.FnbItemID LEFT JOIN FnbCombos c ON c.ComboID = oi.ComboID
+                WHERE %2$s
+                ORDER BY CASE WHEN oi.ComboID IS NULL THEN 1 ELSE 0 END, Name
+                """.formatted(from, where);
         List<FnbLineDTO> lines = new ArrayList<>();
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
@@ -383,13 +399,16 @@ public class FnbOrderDAO {
      * Tính nhu cầu trừ kho theo món lẻ: món lẻ lấy trực tiếp, combo tách thành các món thành phần nhân số lượng.
      */
     private static List<Demand> demand(Connection conn, String orderFilter, int id) throws SQLException {
-        String sql = "SELECT o.CentreID, x.FnbItemID, SUM(x.Qty) AS Qty FROM FnbOrders o JOIN ("
-                   + "  SELECT FnbOrderID, FnbItemID, Quantity AS Qty FROM FnbOrderItems WHERE FnbItemID IS NOT NULL "
-                   + "  UNION ALL "
-                   + "  SELECT oi.FnbOrderID, ci.FnbItemID, oi.Quantity * ci.Quantity FROM FnbOrderItems oi "
-                   + "  JOIN ComboItems ci ON ci.ComboID = oi.ComboID"
-                   + ") x ON x.FnbOrderID = o.FnbOrderID WHERE " + orderFilter + " AND o.OrderStatus = 'PREPARING' "
-                   + "GROUP BY o.CentreID, x.FnbItemID";
+        // %s = orderFilter (o.BookingID = ? hoặc o.FnbOrderID = ?)
+        String sql = """
+                SELECT o.CentreID, x.FnbItemID, SUM(x.Qty) AS Qty FROM FnbOrders o JOIN (
+                  SELECT FnbOrderID, FnbItemID, Quantity AS Qty FROM FnbOrderItems WHERE FnbItemID IS NOT NULL
+                  UNION ALL
+                  SELECT oi.FnbOrderID, ci.FnbItemID, oi.Quantity * ci.Quantity FROM FnbOrderItems oi
+                  JOIN ComboItems ci ON ci.ComboID = oi.ComboID
+                ) x ON x.FnbOrderID = o.FnbOrderID WHERE %s AND o.OrderStatus = 'PREPARING'
+                GROUP BY o.CentreID, x.FnbItemID
+                """.formatted(orderFilter);
         List<Demand> list = new ArrayList<>();
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);

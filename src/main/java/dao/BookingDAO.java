@@ -65,7 +65,9 @@ public class BookingDAO {
     /** Đọc tiền vé, số tiền giảm và trạng thái của đơn (trong transaction có sẵn). */
     public Amounts getAmounts(Connection conn, int bookingId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT SubTotal, DiscountAmount, BookingStatus FROM Bookings WHERE BookingID = ?")) {
+                """
+                        SELECT SubTotal, DiscountAmount, BookingStatus FROM Bookings WHERE BookingID = ?
+                        """)) {
             ps.setInt(1, bookingId);
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next() ? new Amounts(rs.getBigDecimal(1), rs.getBigDecimal(2), rs.getString(3)) : null;
@@ -75,7 +77,9 @@ public class BookingDAO {
 
     /** Đọc voucher đang áp và khách của đơn (trong transaction có sẵn). */
     public VoucherOwner getVoucherOwner(Connection conn, int bookingId) throws SQLException {
-        try (PreparedStatement ps = conn.prepareStatement("SELECT VoucherID, UserID FROM Bookings WHERE BookingID = ?")) {
+        try (PreparedStatement ps = conn.prepareStatement("""
+                SELECT VoucherID, UserID FROM Bookings WHERE BookingID = ?
+                """)) {
             ps.setInt(1, bookingId);
             try (ResultSet rs = ps.executeQuery()) {
                 if (!rs.next()) return new VoucherOwner(null, null);
@@ -101,13 +105,17 @@ public class BookingDAO {
 
     /** Tìm các đơn PENDING của một khách cho một suất chiếu (để huỷ trước khi khách giữ ghế mới). */
     public List<Integer> findPendingIdsOfUserForShowtime(Connection conn, int userId, int showtimeId) throws SQLException {
-        return ids(conn, "SELECT BookingID FROM Bookings WHERE BookingStatus = 'PENDING' AND UserID = ? AND ShowtimeID = ?",
+        return ids(conn, """
+                SELECT BookingID FROM Bookings WHERE BookingStatus = 'PENDING' AND UserID = ? AND ShowtimeID = ?
+                """,
                 userId, showtimeId);
     }
 
     /** Tìm đơn PENDING có mã bookingId và thuộc khách userId (danh sách 0 hoặc 1 phần tử). */
     public List<Integer> findPendingIdOfUser(Connection conn, int bookingId, int userId) throws SQLException {
-        return ids(conn, "SELECT BookingID FROM Bookings WHERE BookingStatus = 'PENDING' AND BookingID = ? AND UserID = ?",
+        return ids(conn, """
+                SELECT BookingID FROM Bookings WHERE BookingStatus = 'PENDING' AND BookingID = ? AND UserID = ?
+                """,
                 bookingId, userId);
     }
 
@@ -153,9 +161,11 @@ public class BookingDAO {
      */
     public int updatePendingStatus(Connection conn, List<Integer> bookingIds, String newStatus) throws SQLException {
         if (bookingIds.isEmpty()) return 0;
-        try (PreparedStatement ps = conn.prepareStatement(
-                "UPDATE Bookings SET BookingStatus = ?, UpdatedAt = SYSDATETIME() "
-              + "WHERE BookingStatus = 'PENDING' AND BookingID IN (" + DbUtil.placeholders(bookingIds.size()) + ")")) {
+        // %s = "?, ?, ?" (một dấu ? cho mỗi đơn)
+        try (PreparedStatement ps = conn.prepareStatement("""
+                UPDATE Bookings SET BookingStatus = ?, UpdatedAt = SYSDATETIME()
+                WHERE BookingStatus = 'PENDING' AND BookingID IN (%s)
+                """.formatted(DbUtil.placeholders(bookingIds.size())))) {
             ps.setString(1, newStatus);
             DbUtil.setInts(ps, 2, bookingIds);
             return ps.executeUpdate();
@@ -165,7 +175,9 @@ public class BookingDAO {
     /** Đổi trạng thái một đơn (CONFIRMED, CANCELLED...) và cập nhật UpdatedAt. */
     public void updateStatus(Connection conn, int bookingId, String newStatus) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
-                "UPDATE Bookings SET BookingStatus = ?, UpdatedAt = SYSDATETIME() WHERE BookingID = ?")) {
+                """
+                        UPDATE Bookings SET BookingStatus = ?, UpdatedAt = SYSDATETIME() WHERE BookingID = ?
+                        """)) {
             ps.setString(1, newStatus);
             ps.setInt(2, bookingId);
             ps.executeUpdate();
@@ -190,7 +202,9 @@ public class BookingDAO {
     /** Ghi tổng tiền mới cho đơn còn PENDING. */
     public void updateTotal(Connection conn, int bookingId, BigDecimal total) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
-                "UPDATE Bookings SET TotalAmount = ?, UpdatedAt = SYSDATETIME() WHERE BookingID = ? AND BookingStatus = 'PENDING'")) {
+                """
+                        UPDATE Bookings SET TotalAmount = ?, UpdatedAt = SYSDATETIME() WHERE BookingID = ? AND BookingStatus = 'PENDING'
+                        """)) {
             ps.setBigDecimal(1, total);
             ps.setInt(2, bookingId);
             ps.executeUpdate();
@@ -253,9 +267,11 @@ public class BookingDAO {
     /** Ghế HELD của các đơn -> CANCELLED (đơn bị huỷ). */
     public void cancelHeldSeats(Connection conn, List<Integer> bookingIds) throws SQLException {
         if (bookingIds.isEmpty()) return;
-        try (PreparedStatement ps = conn.prepareStatement(
-                "UPDATE BookingSeats SET SeatStatus = 'CANCELLED' WHERE SeatStatus = 'HELD' "
-              + "AND BookingID IN (" + DbUtil.placeholders(bookingIds.size()) + ")")) {
+        // %s = "?, ?, ?" (một dấu ? cho mỗi đơn)
+        try (PreparedStatement ps = conn.prepareStatement("""
+                UPDATE BookingSeats SET SeatStatus = 'CANCELLED' WHERE SeatStatus = 'HELD'
+                AND BookingID IN (%s)
+                """.formatted(DbUtil.placeholders(bookingIds.size())))) {
             DbUtil.setInts(ps, 1, bookingIds);
             ps.executeUpdate();
         }
@@ -290,7 +306,9 @@ public class BookingDAO {
      * Dùng giờ SQL Server (không dùng giờ Java) để khớp với các câu lệnh so sánh HoldUntil với SYSDATETIME().
      */
     public Timestamp getDbTimePlusMinutes(Connection conn, int minutes) throws SQLException {
-        try (PreparedStatement ps = conn.prepareStatement("SELECT DATEADD(MINUTE, ?, SYSDATETIME())")) {
+        try (PreparedStatement ps = conn.prepareStatement("""
+                SELECT DATEADD(MINUTE, ?, SYSDATETIME())
+                """)) {
             ps.setInt(1, minutes);
             try (ResultSet rs = ps.executeQuery()) {
                 rs.next();
@@ -303,7 +321,11 @@ public class BookingDAO {
 
     /** Đọc thông tin suất chiếu của đơn (phim, rạp, phòng, giờ) để gắn vào đối tượng Booking. */
     private static Showtime loadShowtime(Connection conn, int showtimeId) throws SQLException {
-        try (PreparedStatement ps = conn.prepareStatement(ShowtimeDAO.SELECT + "WHERE s.ShowtimeID = ?")) {
+        // %s = ShowtimeDAO.SELECT (cột suất chiếu + phim + phòng + rạp)
+        try (PreparedStatement ps = conn.prepareStatement("""
+                %s
+                WHERE s.ShowtimeID = ?
+                """.formatted(ShowtimeDAO.SELECT))) {
             ps.setInt(1, showtimeId);
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next() ? ShowtimeDAO.map(rs) : null;

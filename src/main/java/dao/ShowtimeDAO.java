@@ -21,16 +21,22 @@ public class ShowtimeDAO {
     /** The parent showtime lock is also taken by BookingService before it inserts a booking. */
     // Khóa suất trước khi kiểm tra booking để không có khách đặt chen vào lúc sửa/hủy.
     private void lockEditable(Connection c,int centre,int id) throws SQLException {
-        try(PreparedStatement ps=c.prepareStatement("SELECT s.Status,s.SaleState,s.StartTime FROM Showtimes s WITH(UPDLOCK,HOLDLOCK) JOIN Halls h ON h.HallID=s.HallID WHERE s.ShowtimeID=? AND h.CentreID=?")){
+        try(PreparedStatement ps=c.prepareStatement("""
+                SELECT s.Status,s.SaleState,s.StartTime FROM Showtimes s WITH(UPDLOCK,HOLDLOCK) JOIN Halls h ON h.HallID=s.HallID WHERE s.ShowtimeID=? AND h.CentreID=?
+                """)){
             ps.setInt(1,id);ps.setInt(2,centre);
             try(ResultSet rs=ps.executeQuery()){
                 if(!rs.next()||!"SCHEDULED".equals(rs.getString(1)))throw new IllegalArgumentException("Suất chiếu không thuộc rạp của bạn hoặc đã chiếu/đã hủy.");
             }
         }
-        try(PreparedStatement ps=c.prepareStatement("SELECT 1 FROM Bookings bk WITH(UPDLOCK,HOLDLOCK) WHERE bk.ShowtimeID=? AND (bk.BookingStatus='CONFIRMED' OR (bk.BookingStatus='PENDING' AND EXISTS(SELECT 1 FROM BookingSeats bs WHERE bs.BookingID=bk.BookingID AND bs.SeatStatus='HELD' AND bs.HoldUntil>SYSDATETIME())))")){
+        try(PreparedStatement ps=c.prepareStatement("""
+                SELECT 1 FROM Bookings bk WITH(UPDLOCK,HOLDLOCK) WHERE bk.ShowtimeID=? AND (bk.BookingStatus='CONFIRMED' OR (bk.BookingStatus='PENDING' AND EXISTS(SELECT 1 FROM BookingSeats bs WHERE bs.BookingID=bk.BookingID AND bs.SeatStatus='HELD' AND bs.HoldUntil>SYSDATETIME())))
+                """)){
             ps.setInt(1,id);try(ResultSet rs=ps.executeQuery()){if(rs.next())throw new IllegalArgumentException("Suất chiếu đang có vé đã thanh toán hoặc ghế đang giữ: không thể sửa hoặc hủy.");}
         }
-        try(PreparedStatement ps=c.prepareStatement("SELECT 1 FROM Showtimes WHERE ShowtimeID=? AND StartTime>SYSDATETIME()")){
+        try(PreparedStatement ps=c.prepareStatement("""
+                SELECT 1 FROM Showtimes WHERE ShowtimeID=? AND StartTime>SYSDATETIME()
+                """)){
             ps.setInt(1,id);try(ResultSet rs=ps.executeQuery()){if(!rs.next())throw new IllegalArgumentException("Suất chiếu đã đến giờ bắt đầu.");}
         }
     }
@@ -43,33 +49,51 @@ public class ShowtimeDAO {
                 if(id!=null){
                     lockEditable(c,centre,id);
                     // Expired/cancelled orders cannot later confirm against a changed schedule.
-                    try(PreparedStatement ps=c.prepareStatement("UPDATE Bookings SET BookingStatus='CANCELLED',UpdatedAt=SYSDATETIME() WHERE ShowtimeID=? AND BookingStatus<>'CONFIRMED'")){ps.setInt(1,id);ps.executeUpdate();}
-                    try(PreparedStatement ps=c.prepareStatement("UPDATE BookingSeats SET SeatStatus='CANCELLED' WHERE ShowtimeID=? AND SeatStatus='HELD'")){ps.setInt(1,id);ps.executeUpdate();}
+                    try(PreparedStatement ps=c.prepareStatement("""
+                            UPDATE Bookings SET BookingStatus='CANCELLED',UpdatedAt=SYSDATETIME() WHERE ShowtimeID=? AND BookingStatus<>'CONFIRMED'
+                            """)){ps.setInt(1,id);ps.executeUpdate();}
+                    try(PreparedStatement ps=c.prepareStatement("""
+                            UPDATE BookingSeats SET SeatStatus='CANCELLED' WHERE ShowtimeID=? AND SeatStatus='HELD'
+                            """)){ps.setInt(1,id);ps.executeUpdate();}
                 }
                 // Lock the destination hall to serialize concurrent schedule creation and edits.
-                try(PreparedStatement ps=c.prepareStatement("SELECT HallID FROM Halls WITH(UPDLOCK,HOLDLOCK) WHERE HallID=? AND CentreID=? AND Status='AVAILABLE'")){
+                try(PreparedStatement ps=c.prepareStatement("""
+                        SELECT HallID FROM Halls WITH(UPDLOCK,HOLDLOCK) WHERE HallID=? AND CentreID=? AND Status='AVAILABLE'
+                        """)){
                     ps.setInt(1,hall);ps.setInt(2,centre);try(ResultSet rs=ps.executeQuery()){if(!rs.next())throw new IllegalArgumentException("Phòng không khả dụng tại cụm rạp của bạn.");}
                 }
                 int duration;
-                try(PreparedStatement ps=c.prepareStatement("SELECT m.Duration FROM Movies m JOIN CentreMovies cm ON cm.MovieID=m.MovieID WHERE m.MovieID=? AND cm.CentreID=? AND cm.IsActive=1")){
+                try(PreparedStatement ps=c.prepareStatement("""
+                        SELECT m.Duration FROM Movies m JOIN CentreMovies cm ON cm.MovieID=m.MovieID WHERE m.MovieID=? AND cm.CentreID=? AND cm.IsActive=1
+                        """)){
                     ps.setInt(1,movie);ps.setInt(2,centre);try(ResultSet rs=ps.executeQuery()){if(!rs.next()||(duration=rs.getInt(1))<=0)throw new IllegalArgumentException("Phim chưa được phân phối hoặc thời lượng không hợp lệ.");}
                 }
                 LocalDateTime end=start.plusMinutes(duration);
-                try(PreparedStatement ps=c.prepareStatement("SELECT 1 WHERE ?>SYSDATETIME()")){
+                try(PreparedStatement ps=c.prepareStatement("""
+                        SELECT 1 WHERE ?>SYSDATETIME()
+                        """)){
                     ps.setTimestamp(1,Timestamp.valueOf(start));try(ResultSet rs=ps.executeQuery()){if(!rs.next())throw new IllegalArgumentException("Giờ bắt đầu phải nằm trong tương lai.");}
                 }
-                try(PreparedStatement ps=c.prepareStatement("SELECT 1 FROM Showtimes WHERE HallID=? AND Status<>'CANCELLED' AND ShowtimeID<>? AND StartTime<DATEADD(MINUTE,15,?) AND DATEADD(MINUTE,CleaningBufferMinutes,EndTime)>?")){
+                try(PreparedStatement ps=c.prepareStatement("""
+                        SELECT 1 FROM Showtimes WHERE HallID=? AND Status<>'CANCELLED' AND ShowtimeID<>? AND StartTime<DATEADD(MINUTE,15,?) AND DATEADD(MINUTE,CleaningBufferMinutes,EndTime)>?
+                        """)){
                     ps.setInt(1,hall);ps.setInt(2,id==null?-1:id);ps.setTimestamp(3,Timestamp.valueOf(end));ps.setTimestamp(4,Timestamp.valueOf(start));
                     try(ResultSet rs=ps.executeQuery()){if(rs.next())throw new IllegalArgumentException("Trùng lịch chiếu hoặc thời gian dọn phòng.");}
                 }
-                String sql=id==null?"INSERT Showtimes(MovieID,HallID,StartTime,EndTime,CleaningBufferMinutes,Status,CreatedBy,SaleState) VALUES(?,?,?,?,15,'SCHEDULED',?,'DRAFT')":"UPDATE Showtimes SET MovieID=?,HallID=?,StartTime=?,EndTime=?,UpdatedAt=SYSDATETIME() WHERE ShowtimeID=?";
+                String sql=id==null?"""
+                        INSERT Showtimes(MovieID,HallID,StartTime,EndTime,CleaningBufferMinutes,Status,CreatedBy,SaleState) VALUES(?,?,?,?,15,'SCHEDULED',?,'DRAFT')
+                        """:"""
+                        UPDATE Showtimes SET MovieID=?,HallID=?,StartTime=?,EndTime=?,UpdatedAt=SYSDATETIME() WHERE ShowtimeID=?
+                        """;
                 try(PreparedStatement ps=c.prepareStatement(sql,Statement.RETURN_GENERATED_KEYS)){
                     ps.setInt(1,movie);ps.setInt(2,hall);ps.setTimestamp(3,Timestamp.valueOf(start));ps.setTimestamp(4,Timestamp.valueOf(end));ps.setInt(5,id==null?user:id);
                     if(ps.executeUpdate()!=1)throw new SQLException("Không lưu được suất chiếu.");
                     if(id==null)try(ResultSet keys=ps.getGeneratedKeys()){if(!keys.next())throw new SQLException("Không lấy được mã suất chiếu.");id=keys.getInt(1);}
                 }
                 // Rebuild the snapshot atomically while the parent row blocks new bookings.
-                try(PreparedStatement ps=c.prepareStatement("UPDATE Showtimes SET SaleState='DRAFT',PriceLockedAt=NULL,SaleOpensAt=NULL WHERE ShowtimeID=?")){ps.setInt(1,id);ps.executeUpdate();}
+                try(PreparedStatement ps=c.prepareStatement("""
+                        UPDATE Showtimes SET SaleState='DRAFT',PriceLockedAt=NULL,SaleOpensAt=NULL WHERE ShowtimeID=?
+                        """)){ps.setInt(1,id);ps.executeUpdate();}
                 // Chốt giá theo giờ bắt đầu chiếu và mở bán ngay; lỗi sẽ rollback cả lần lưu.
                 try(PreparedStatement ps=c.prepareStatement("EXEC dbo.CfOpenShowtime ?")){ps.setInt(1,id);ps.execute();}
                 c.commit();
@@ -83,7 +107,9 @@ public class ShowtimeDAO {
             c.setAutoCommit(false);
             try{
                 lockEditable(c,centre,id);
-                try(PreparedStatement ps=c.prepareStatement("UPDATE Showtimes SET Status='CANCELLED',UpdatedAt=SYSDATETIME() WHERE ShowtimeID=?")){ps.setInt(1,id);ps.executeUpdate();}
+                try(PreparedStatement ps=c.prepareStatement("""
+                        UPDATE Showtimes SET Status='CANCELLED',UpdatedAt=SYSDATETIME() WHERE ShowtimeID=?
+                        """)){ps.setInt(1,id);ps.executeUpdate();}
                 c.commit();
             }catch(Exception e){if(!c.isClosed())c.rollback();throw e;}
         }
@@ -99,13 +125,15 @@ public class ShowtimeDAO {
 
     public List<Showtime> findScheduleConflicts(Connection connection, int centreId, int hallId,
             LocalDateTime start, LocalDateTime end, int cleaningBuffer) throws SQLException {
-        String sql = "SELECT s.*, m.Title AS MovieTitle, h.HallName, h.HallType, h.CentreID, CASE WHEN EXISTS(SELECT 1 FROM Bookings bk WHERE bk.ShowtimeID=s.ShowtimeID AND (bk.BookingStatus='CONFIRMED' OR (bk.BookingStatus='PENDING' AND EXISTS(SELECT 1 FROM BookingSeats bs WHERE bs.BookingID=bk.BookingID AND bs.SeatStatus='HELD' AND bs.HoldUntil>SYSDATETIME())))) THEN 1 ELSE 0 END HasBookings "
-                + "FROM Showtimes s JOIN Halls h ON h.HallID = s.HallID "
-                + "JOIN Movies m ON m.MovieID = s.MovieID "
-                + "WHERE h.CentreID = ? AND s.HallID = ? AND s.Status <> 'CANCELLED' "
-                + "AND s.StartTime < DATEADD(MINUTE, ?, ?) "
-                + "AND DATEADD(MINUTE, s.CleaningBufferMinutes, s.EndTime) > ? "
-                + "ORDER BY s.StartTime";
+        String sql = """
+                SELECT s.*, m.Title AS MovieTitle, h.HallName, h.HallType, h.CentreID, CASE WHEN EXISTS(SELECT 1 FROM Bookings bk WHERE bk.ShowtimeID=s.ShowtimeID AND (bk.BookingStatus='CONFIRMED' OR (bk.BookingStatus='PENDING' AND EXISTS(SELECT 1 FROM BookingSeats bs WHERE bs.BookingID=bk.BookingID AND bs.SeatStatus='HELD' AND bs.HoldUntil>SYSDATETIME())))) THEN 1 ELSE 0 END HasBookings
+                FROM Showtimes s JOIN Halls h ON h.HallID = s.HallID
+                JOIN Movies m ON m.MovieID = s.MovieID
+                WHERE h.CentreID = ? AND s.HallID = ? AND s.Status <> 'CANCELLED'
+                AND s.StartTime < DATEADD(MINUTE, ?, ?)
+                AND DATEADD(MINUTE, s.CleaningBufferMinutes, s.EndTime) > ?
+                ORDER BY s.StartTime
+                """;
         List<Showtime> conflicts = new ArrayList<>();
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, centreId);
@@ -128,11 +156,13 @@ public class ShowtimeDAO {
     }
 
     public int synchronizeStatuses(Connection connection) throws SQLException {
-        String sql = "DECLARE @Now DATETIME2 = SYSDATETIME(); "
-                + "UPDATE Showtimes SET Status = CASE WHEN EndTime <= @Now "
-                + "THEN 'COMPLETED' ELSE 'ONGOING' END, UpdatedAt = @Now "
-                + "WHERE (SaleState='OPEN' OR EndTime<=@Now) AND Status IN ('SCHEDULED', 'ONGOING') AND StartTime <= @Now "
-                + "AND Status <> CASE WHEN EndTime <= @Now THEN 'COMPLETED' ELSE 'ONGOING' END";
+        String sql = """
+                DECLARE @Now DATETIME2 = SYSDATETIME();
+                UPDATE Showtimes SET Status = CASE WHEN EndTime <= @Now
+                THEN 'COMPLETED' ELSE 'ONGOING' END, UpdatedAt = @Now
+                WHERE (SaleState='OPEN' OR EndTime<=@Now) AND Status IN ('SCHEDULED', 'ONGOING') AND StartTime <= @Now
+                AND Status <> CASE WHEN EndTime <= @Now THEN 'COMPLETED' ELSE 'ONGOING' END
+                """;
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             return ps.executeUpdate();
         }
@@ -141,21 +171,24 @@ public class ShowtimeDAO {
     private static final String CENTRE_BASE_PRICE="(SELECT Total FROM ShowtimeEffectivePrices p WHERE p.ShowtimeID=s.ShowtimeID AND p.SeatType='STANDARD')";
     private static final String TICKET_PRICE=CENTRE_BASE_PRICE;
 
-    static final String SELECT =
-            "SELECT s.ShowtimeID, s.MovieID, m.Title, b.CentreID, b.CentreName, h.HallID, h.HallName, "
-          + "       h.HallType, s.StartTime, s.EndTime, s.Status, " + TICKET_PRICE + " AS TicketPrice "
-          + "FROM Showtimes s "
-          + "JOIN Movies m ON m.MovieID = s.MovieID "
-          + "JOIN Halls h ON h.HallID = s.HallID "
-          + "JOIN Centres b ON b.CentreID = h.CentreID ";
+    /** Cot cua suat chieu + phim + phong + rap; %s = gia ghe thuong (TICKET_PRICE). */
+    static final String SELECT = """
+            SELECT s.ShowtimeID, s.MovieID, m.Title, b.CentreID, b.CentreName, h.HallID, h.HallName,
+                   h.HallType, s.StartTime, s.EndTime, s.Status, %s AS TicketPrice
+            FROM Showtimes s
+            JOIN Movies m ON m.MovieID = s.MovieID
+            JOIN Halls h ON h.HallID = s.HallID
+            JOIN Centres b ON b.CentreID = h.CentreID
+            """.formatted(TICKET_PRICE);
 
-    /** Suat con mo ban: chua chieu, phim dang chieu, phong va rap hoat dong, rap da co bang gia. */
-    private static final String BOOKABLE =
-            "s.SaleState = 'OPEN' AND s.PriceLockedAt IS NOT NULL AND s.Status = 'SCHEDULED' AND s.StartTime > SYSDATETIME() AND m.Status = 'NOW_SHOWING' "
-          + "AND h.Status = 'AVAILABLE' AND b.Status = 'ACTIVE' "
-          + "AND EXISTS (SELECT 1 FROM CentreMovies cm WHERE cm.MovieID = s.MovieID AND cm.CentreID = b.CentreID "
-          + "AND cm.IsActive = 1 AND cm.Status = 'ACTIVE') "
-          + "AND " + CENTRE_BASE_PRICE + " IS NOT NULL ";
+    /** Suat con mo ban: chua chieu, phim dang chieu, phong va rap hoat dong, rap da co bang gia. %s = CENTRE_BASE_PRICE */
+    private static final String BOOKABLE = """
+            s.SaleState = 'OPEN' AND s.PriceLockedAt IS NOT NULL AND s.Status = 'SCHEDULED' AND s.StartTime > SYSDATETIME() AND m.Status = 'NOW_SHOWING'
+            AND h.Status = 'AVAILABLE' AND b.Status = 'ACTIVE'
+            AND EXISTS (SELECT 1 FROM CentreMovies cm WHERE cm.MovieID = s.MovieID AND cm.CentreID = b.CentreID
+            AND cm.IsActive = 1 AND cm.Status = 'ACTIVE')
+            AND %s IS NOT NULL
+            """.formatted(CENTRE_BASE_PRICE);
 
     static Showtime map(ResultSet rs) throws SQLException {
         Showtime showtime = new Showtime(rs.getInt("ShowtimeID"), rs.getInt("MovieID"), rs.getString("Title"),
@@ -168,10 +201,13 @@ public class ShowtimeDAO {
 
     /** Cac ngay con suat chieu cua phim tai chi nhanh. */
     public List<LocalDate> getShowDates(int centreId, int movieId) throws SQLException {
-        String sql = "SELECT DISTINCT CAST(s.StartTime AS DATE) AS ShowDate "
-                   + "FROM Showtimes s JOIN Movies m ON m.MovieID = s.MovieID "
-                   + "JOIN Halls h ON h.HallID = s.HallID JOIN Centres b ON b.CentreID = h.CentreID "
-                   + "WHERE " + BOOKABLE + "AND b.CentreID = ? AND s.MovieID = ? ORDER BY ShowDate";
+        String sql = """
+                SELECT DISTINCT CAST(s.StartTime AS DATE) AS ShowDate
+                FROM Showtimes s JOIN Movies m ON m.MovieID = s.MovieID
+                JOIN Halls h ON h.HallID = s.HallID JOIN Centres b ON b.CentreID = h.CentreID
+                WHERE %s
+                AND b.CentreID = ? AND s.MovieID = ? ORDER BY ShowDate
+                """.formatted(BOOKABLE);
         List<LocalDate> list = new ArrayList<>();
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -185,9 +221,12 @@ public class ShowtimeDAO {
     }
 
     public List<Showtime> getShowtimes(int centreId, int movieId, LocalDate date) throws SQLException {
-        String sql = SELECT + "WHERE " + BOOKABLE
-                   + "AND b.CentreID = ? AND s.MovieID = ? "
-                   + "AND s.StartTime >= ? AND s.StartTime < ? ORDER BY s.StartTime";
+        String sql = """
+                %s
+                WHERE %s
+                AND b.CentreID = ? AND s.MovieID = ?
+                AND s.StartTime >= ? AND s.StartTime < ? ORDER BY s.StartTime
+                """.formatted(SELECT, BOOKABLE);
         List<Showtime> list = new ArrayList<>();
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -204,10 +243,13 @@ public class ShowtimeDAO {
 
     /** Cac ngay con suat chieu tai chi nhanh (ban tai quay). */
     public List<LocalDate> getShowDatesAtCentre(int centreId) throws SQLException {
-        String sql = "SELECT DISTINCT CAST(s.StartTime AS DATE) AS ShowDate "
-                   + "FROM Showtimes s JOIN Movies m ON m.MovieID = s.MovieID "
-                   + "JOIN Halls h ON h.HallID = s.HallID JOIN Centres b ON b.CentreID = h.CentreID "
-                   + "WHERE " + BOOKABLE + "AND b.CentreID = ? ORDER BY ShowDate";
+        String sql = """
+                SELECT DISTINCT CAST(s.StartTime AS DATE) AS ShowDate
+                FROM Showtimes s JOIN Movies m ON m.MovieID = s.MovieID
+                JOIN Halls h ON h.HallID = s.HallID JOIN Centres b ON b.CentreID = h.CentreID
+                WHERE %s
+                AND b.CentreID = ? ORDER BY ShowDate
+                """.formatted(BOOKABLE);
         List<LocalDate> list = new ArrayList<>();
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -221,8 +263,11 @@ public class ShowtimeDAO {
 
     /** Tat ca suat con mo ban cua chi nhanh trong ngay, sap theo phim roi gio chieu. */
     public List<Showtime> getShowtimesAtCentre(int centreId, LocalDate date) throws SQLException {
-        String sql = SELECT + "WHERE " + BOOKABLE
-                   + "AND b.CentreID = ? AND s.StartTime >= ? AND s.StartTime < ? ORDER BY m.Title, s.StartTime";
+        String sql = """
+                %s
+                WHERE %s
+                AND b.CentreID = ? AND s.StartTime >= ? AND s.StartTime < ? ORDER BY m.Title, s.StartTime
+                """.formatted(SELECT, BOOKABLE);
         List<Showtime> list = new ArrayList<>();
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -240,18 +285,22 @@ public class ShowtimeDAO {
     public static final String OTHER_CITY = "Khác";
     private static final String CITY = "ISNULL(NULLIF(LTRIM(RTRIM(b.City)), ''), N'" + OTHER_CITY + "')";
 
-    static final String BOOKABLE_FROM =
-            "FROM Showtimes s JOIN Movies m ON m.MovieID = s.MovieID "
-          + "JOIN Halls h ON h.HallID = s.HallID JOIN Centres b ON b.CentreID = h.CentreID "
-          + "WHERE " + BOOKABLE;
+    /** FROM + JOIN + WHERE suat con mo ban; %s = BOOKABLE. */
+    static final String BOOKABLE_FROM = """
+            FROM Showtimes s JOIN Movies m ON m.MovieID = s.MovieID
+            JOIN Halls h ON h.HallID = s.HallID JOIN Centres b ON b.CentreID = h.CentreID
+            WHERE %s""".formatted(BOOKABLE);
 
     /** Thanh pho dang co suat mo ban va so rap co suat. */
     public record CityOption(String name, int centreCount) {}
 
     /** Buoc 1: thanh pho con suat mo ban. @param movieId != null: chi thanh pho co chieu phim nay */
     public List<CityOption> getCities(Integer movieId) throws SQLException {
-        String sql = "SELECT " + CITY + " AS City, COUNT(DISTINCT b.CentreID) AS Centres " + BOOKABLE_FROM
-                   + "AND (? IS NULL OR s.MovieID = ?) GROUP BY " + CITY + " ORDER BY City";
+        String sql = """
+                SELECT %1$s AS City, COUNT(DISTINCT b.CentreID) AS Centres
+                %2$s
+                AND (? IS NULL OR s.MovieID = ?) GROUP BY %1$s ORDER BY City
+                """.formatted(CITY, BOOKABLE_FROM);
         List<CityOption> list = new ArrayList<>();
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -266,8 +315,11 @@ public class ShowtimeDAO {
 
     /** Buoc 2: rap trong thanh pho con suat mo ban. @param movieId != null: chi rap co chieu phim nay */
     public List<Centre> getCentresInCity(String city, Integer movieId) throws SQLException {
-        String sql = "SELECT DISTINCT b.CentreID, b.CentreName, b.Address, " + CITY + " AS City " + BOOKABLE_FROM
-                   + "AND " + CITY + " = ? AND (? IS NULL OR s.MovieID = ?) ORDER BY b.CentreName";
+        String sql = """
+                SELECT DISTINCT b.CentreID, b.CentreName, b.Address, %1$s AS City
+                %2$s
+                AND %1$s = ? AND (? IS NULL OR s.MovieID = ?) ORDER BY b.CentreName
+                """.formatted(CITY, BOOKABLE_FROM);
         List<Centre> list = new ArrayList<>();
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -291,8 +343,9 @@ public class ShowtimeDAO {
     /** Thanh pho cua rap (theo cach nhom o getCities), null neu khong co rap. */
     public String getCityOfCentre(int centreId) throws SQLException {
         try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(
-                     "SELECT " + CITY + " FROM Centres b WHERE b.CentreID = ?")) {
+             PreparedStatement ps = conn.prepareStatement("""
+                     SELECT %s FROM Centres b WHERE b.CentreID = ?
+                     """.formatted(CITY))) {
             ps.setInt(1, centreId);
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next() ? rs.getString(1) : null;
@@ -302,7 +355,11 @@ public class ShowtimeDAO {
 
     /** Rap co suat chieu som nhat con mo ban cua phim, null neu phim khong con suat nao. */
     public Integer findFirstCentreForMovie(int movieId) throws SQLException {
-        String sql = "SELECT TOP 1 b.CentreID " + BOOKABLE_FROM + "AND s.MovieID = ? ORDER BY s.StartTime";
+        String sql = """
+                SELECT TOP 1 b.CentreID
+                %s
+                AND s.MovieID = ? ORDER BY s.StartTime
+                """.formatted(BOOKABLE_FROM);
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, movieId);
@@ -325,7 +382,13 @@ public class ShowtimeDAO {
     }
 
     public Showtime getBookableById(Connection conn, int showtimeId) throws SQLException {
-        try (PreparedStatement ps = conn.prepareStatement(SELECT.replace("FROM Showtimes s ","FROM Showtimes s WITH (UPDLOCK,HOLDLOCK) ") + "WHERE " + BOOKABLE + "AND s.ShowtimeID = ?")) {
+        // Khoa dong suat chieu (UPDLOCK, HOLDLOCK) den het transaction
+        String sql = """
+                %s
+                WHERE %s
+                AND s.ShowtimeID = ?
+                """.formatted(SELECT.replace("FROM Showtimes s\n", "FROM Showtimes s WITH (UPDLOCK,HOLDLOCK)\n"), BOOKABLE);
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, showtimeId);
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next() ? map(rs) : null;
@@ -340,12 +403,14 @@ public class ShowtimeDAO {
     public boolean isHallAvailable(int hallId) {
 
         String sql
-                = "SELECT 1 "
-                + "FROM Halls h "
-                + "JOIN Centres c ON c.CentreID = h.CentreID "
-                + "WHERE h.HallID = ? "
-                + "AND h.Status = 'AVAILABLE' "
-                + "AND c.Status = 'ACTIVE'";
+                = """
+                        SELECT 1
+                        FROM Halls h
+                        JOIN Centres c ON c.CentreID = h.CentreID
+                        WHERE h.HallID = ?
+                        AND h.Status = 'AVAILABLE'
+                        AND c.Status = 'ACTIVE'
+                        """;
 
         try (Connection connection = DBContext.getConnection();
              PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -372,13 +437,15 @@ public class ShowtimeDAO {
             int hallId) {
 
         String sql
-                = "SELECT 1 "
-                + "FROM Halls h "
-                + "JOIN CentreMovies bm "
-                + "ON bm.CentreID = h.CentreID "
-                + "WHERE h.HallID = ? "
-                + "AND bm.MovieID = ? "
-                + "AND bm.IsActive = 1";
+                = """
+                        SELECT 1
+                        FROM Halls h
+                        JOIN CentreMovies bm
+                        ON bm.CentreID = h.CentreID
+                        WHERE h.HallID = ?
+                        AND bm.MovieID = ?
+                        AND bm.IsActive = 1
+                        """;
 
         try (Connection connection = DBContext.getConnection();
              PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -409,12 +476,14 @@ public class ShowtimeDAO {
             Integer excludeShowtimeId) {
 
         String sql
-                = "SELECT COUNT(*) AS Total "
-                + "FROM Showtimes "
-                + "WHERE HallID = ? "
-                + "AND Status <> 'CANCELLED' "
-                + "AND StartTime < DATEADD(MINUTE, ?, ?) "
-                + "AND DATEADD(MINUTE, CleaningBufferMinutes, EndTime) > ? ";
+                = """
+                        SELECT COUNT(*) AS Total
+                        FROM Showtimes
+                        WHERE HallID = ?
+                        AND Status <> 'CANCELLED'
+                        AND StartTime < DATEADD(MINUTE, ?, ?)
+                        AND DATEADD(MINUTE, CleaningBufferMinutes, EndTime) > ?
+                        """;
 
         if (excludeShowtimeId != null) {
             sql += "AND ShowtimeID <> ?";
@@ -469,12 +538,14 @@ public class ShowtimeDAO {
             Showtime showtime) {
 
         String sql
-                = "INSERT INTO Showtimes "
-                + "(MovieID, HallID, "
-                + "StartTime, EndTime, "
-                + "CleaningBufferMinutes, "
-                + "Status, CreatedBy) "
-                + "VALUES (?, ?, ?, ?, ?, 'SCHEDULED', ?)";
+                = """
+                        INSERT INTO Showtimes
+                        (MovieID, HallID,
+                        StartTime, EndTime,
+                        CleaningBufferMinutes,
+                        Status, CreatedBy)
+                        VALUES (?, ?, ?, ?, ?, 'SCHEDULED', ?)
+                        """;
 
         try (Connection connection = DBContext.getConnection();
              PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -540,16 +611,19 @@ public class ShowtimeDAO {
                 = new ArrayList<>();
 
         String sql
-                = "SELECT s.*, m.Title AS MovieTitle, h.HallName, h.HallType, h.CentreID, CASE WHEN EXISTS(SELECT 1 FROM Bookings bk WHERE bk.ShowtimeID=s.ShowtimeID AND (bk.BookingStatus='CONFIRMED' OR (bk.BookingStatus='PENDING' AND EXISTS(SELECT 1 FROM BookingSeats bs WHERE bs.BookingID=bk.BookingID AND bs.SeatStatus='HELD' AND bs.HoldUntil>SYSDATETIME())))) THEN 1 ELSE 0 END HasBookings "
-                + "FROM Showtimes s "
-                + "JOIN Halls h "
-                + "ON h.HallID = s.HallID "
-                + "JOIN Movies m "
-                + "ON m.MovieID = s.MovieID "
-                + "WHERE h.CentreID = ? "
-                // Danh sách Manager ẩn phim đã hủy phân phối, không xóa lịch chiếu hoặc vé.
-                + (onlyDistributed ? "AND EXISTS (SELECT 1 FROM CentreMovies cm WHERE cm.CentreID=h.CentreID AND cm.MovieID=s.MovieID AND cm.Status IN ('ACTIVE','SUSPENDED')) " : "")
-                + "ORDER BY s.StartTime";
+                = """
+                        SELECT s.*, m.Title AS MovieTitle, h.HallName, h.HallType, h.CentreID, CASE WHEN EXISTS(SELECT 1 FROM Bookings bk WHERE bk.ShowtimeID=s.ShowtimeID AND (bk.BookingStatus='CONFIRMED' OR (bk.BookingStatus='PENDING' AND EXISTS(SELECT 1 FROM BookingSeats bs WHERE bs.BookingID=bk.BookingID AND bs.SeatStatus='HELD' AND bs.HoldUntil>SYSDATETIME())))) THEN 1 ELSE 0 END HasBookings
+                        FROM Showtimes s
+                        JOIN Halls h
+                        ON h.HallID = s.HallID
+                        JOIN Movies m
+                        ON m.MovieID = s.MovieID
+                        WHERE h.CentreID = ?
+                        %s
+                        ORDER BY s.StartTime
+                        """.formatted(
+                // %s: danh sách Manager ẩn phim đã hủy phân phối, không xóa lịch chiếu hoặc vé (rỗng nếu lấy tất cả).
+                onlyDistributed ? "AND EXISTS (SELECT 1 FROM CentreMovies cm WHERE cm.CentreID=h.CentreID AND cm.MovieID=s.MovieID AND cm.Status IN ('ACTIVE','SUSPENDED'))" : "");
 
         try (Connection connection = DBContext.getConnection();
              PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -585,9 +659,11 @@ public class ShowtimeDAO {
             int showtimeId) {
 
         String sql
-                = "SELECT s.*, m.Title AS MovieTitle, h.HallName, h.HallType, h.CentreID, CASE WHEN EXISTS(SELECT 1 FROM Bookings bk WHERE bk.ShowtimeID=s.ShowtimeID AND (bk.BookingStatus='CONFIRMED' OR (bk.BookingStatus='PENDING' AND EXISTS(SELECT 1 FROM BookingSeats bs WHERE bs.BookingID=bk.BookingID AND bs.SeatStatus='HELD' AND bs.HoldUntil>SYSDATETIME())))) THEN 1 ELSE 0 END HasBookings "
-                + "FROM Showtimes s JOIN Halls h ON h.HallID = s.HallID "
-                + "JOIN Movies m ON m.MovieID = s.MovieID WHERE s.ShowtimeID = ?";
+                = """
+                        SELECT s.*, m.Title AS MovieTitle, h.HallName, h.HallType, h.CentreID, CASE WHEN EXISTS(SELECT 1 FROM Bookings bk WHERE bk.ShowtimeID=s.ShowtimeID AND (bk.BookingStatus='CONFIRMED' OR (bk.BookingStatus='PENDING' AND EXISTS(SELECT 1 FROM BookingSeats bs WHERE bs.BookingID=bk.BookingID AND bs.SeatStatus='HELD' AND bs.HoldUntil>SYSDATETIME())))) THEN 1 ELSE 0 END HasBookings
+                        FROM Showtimes s JOIN Halls h ON h.HallID = s.HallID
+                        JOIN Movies m ON m.MovieID = s.MovieID WHERE s.ShowtimeID = ?
+                        """;
 
         try (Connection connection = DBContext.getConnection();
              PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -619,15 +695,17 @@ public class ShowtimeDAO {
             Showtime showtime) {
 
         String sql
-                = "UPDATE Showtimes "
-                + "SET MovieID = ?, "
-                + "HallID = ?, "
-                + "StartTime = ?, "
-                + "EndTime = ?, "
-                + "CleaningBufferMinutes = ?, "
-                + "UpdatedAt = GETDATE() "
-                + "WHERE ShowtimeID = ? "
-                + "AND Status = 'SCHEDULED' AND SaleState='DRAFT' AND StartTime > SYSDATETIME() AND NOT EXISTS(SELECT 1 FROM Bookings bk WHERE bk.ShowtimeID=Showtimes.ShowtimeID)";
+                = """
+                        UPDATE Showtimes
+                        SET MovieID = ?,
+                        HallID = ?,
+                        StartTime = ?,
+                        EndTime = ?,
+                        CleaningBufferMinutes = ?,
+                        UpdatedAt = GETDATE()
+                        WHERE ShowtimeID = ?
+                        AND Status = 'SCHEDULED' AND SaleState='DRAFT' AND StartTime > SYSDATETIME() AND NOT EXISTS(SELECT 1 FROM Bookings bk WHERE bk.ShowtimeID=Showtimes.ShowtimeID)
+                        """;
 
         try (Connection connection = DBContext.getConnection();
              PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -679,11 +757,13 @@ public class ShowtimeDAO {
             int showtimeId) {
 
         String sql
-                = "SELECT COUNT(*) AS Total "
-                + "FROM Bookings "
-                + "WHERE ShowtimeID = ? "
-                + "AND BookingStatus IN "
-                + "('PENDING','CONFIRMED','COMPLETED')";
+                = """
+                        SELECT COUNT(*) AS Total
+                        FROM Bookings
+                        WHERE ShowtimeID = ?
+                        AND BookingStatus IN
+                        ('PENDING','CONFIRMED','COMPLETED')
+                        """;
 
         try (Connection connection = DBContext.getConnection();
              PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -715,11 +795,13 @@ public class ShowtimeDAO {
             int showtimeId) {
 
         String sql
-                = "UPDATE Showtimes "
-                + "SET Status = 'CANCELLED', "
-                + "UpdatedAt = GETDATE() "
-                + "WHERE ShowtimeID = ? "
-                + "AND Status = 'SCHEDULED' AND SaleState='DRAFT' AND StartTime > SYSDATETIME() AND NOT EXISTS(SELECT 1 FROM Bookings bk WHERE bk.ShowtimeID=Showtimes.ShowtimeID)";
+                = """
+                        UPDATE Showtimes
+                        SET Status = 'CANCELLED',
+                        UpdatedAt = GETDATE()
+                        WHERE ShowtimeID = ?
+                        AND Status = 'SCHEDULED' AND SaleState='DRAFT' AND StartTime > SYSDATETIME() AND NOT EXISTS(SELECT 1 FROM Bookings bk WHERE bk.ShowtimeID=Showtimes.ShowtimeID)
+                        """;
 
         try (Connection connection = DBContext.getConnection();
              PreparedStatement ps = connection.prepareStatement(sql)) {

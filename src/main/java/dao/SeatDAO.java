@@ -57,7 +57,9 @@ public class SeatDAO {
 
     public Map<String,BigDecimal> getLockedPrices(Connection conn,int showtimeId) throws SQLException {
         Map<String,BigDecimal> prices=new HashMap<>();
-        try(PreparedStatement ps=conn.prepareStatement("SELECT p.SeatType,p.Total FROM ShowtimeSeatPrices p JOIN Showtimes s ON s.ShowtimeID=p.ShowtimeID WHERE p.ShowtimeID=? AND s.SaleState='OPEN' AND s.PriceLockedAt IS NOT NULL")){
+        try(PreparedStatement ps=conn.prepareStatement("""
+                SELECT p.SeatType,p.Total FROM ShowtimeSeatPrices p JOIN Showtimes s ON s.ShowtimeID=p.ShowtimeID WHERE p.ShowtimeID=? AND s.SaleState='OPEN' AND s.PriceLockedAt IS NOT NULL
+                """)){
             ps.setInt(1,showtimeId);try(ResultSet rs=ps.executeQuery()){while(rs.next())prices.put(rs.getString(1),rs.getBigDecimal(2));}
         }
         return prices;
@@ -67,9 +69,11 @@ public class SeatDAO {
     public Map<String, BigDecimal> getSeatTypeSurcharges(Connection conn, Timestamp at) throws SQLException {
         Map<String, BigDecimal> map = new HashMap<>();
         try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT TargetValue, SUM(Amount) AS Amount FROM Surcharges "
-              + "WHERE SurchargeType = 'SEAT' AND EffectiveFrom <= ? AND (EffectiveTo IS NULL OR EffectiveTo > ?) "
-              + "GROUP BY TargetValue")) {
+                """
+                        SELECT TargetValue, SUM(Amount) AS Amount FROM Surcharges
+                        WHERE SurchargeType = 'SEAT' AND EffectiveFrom <= ? AND (EffectiveTo IS NULL OR EffectiveTo > ?)
+                        GROUP BY TargetValue
+                        """)) {
             ps.setTimestamp(1, at);
             ps.setTimestamp(2, at);
             try (ResultSet rs = ps.executeQuery()) {
@@ -81,9 +85,11 @@ public class SeatDAO {
 
     /** Read-only breakdown using the same period boundaries and surcharge sums as booking. */
     public Map<Integer, model.dto.showtime.ShowtimeSeatMatrixDTO> getShowtimeSeatPrices(int showtimeId) throws SQLException {
-        String sql="SELECT se.SeatID,p.BasePrice,p.CentreAmount,p.MovieAmount,p.TimeAmount,p.HallAmount,p.SeatAmount,saved.Price SavedPrice "
-            +"FROM Showtimes sh JOIN Seats se ON se.HallID=sh.HallID LEFT JOIN ShowtimeEffectivePrices p ON p.ShowtimeID=sh.ShowtimeID AND p.SeatType=se.SeatType "
-            +"OUTER APPLY (SELECT TOP 1 bs.Price FROM BookingSeats bs JOIN Bookings b ON b.BookingID=bs.BookingID WHERE b.ShowtimeID=sh.ShowtimeID AND bs.SeatID=se.SeatID AND ((bs.SeatStatus='CONFIRMED' AND b.BookingStatus IN ('CONFIRMED','COMPLETED')) OR (bs.SeatStatus='HELD' AND b.BookingStatus='PENDING' AND bs.HoldUntil>SYSDATETIME())) ORDER BY bs.BookingSeatID DESC) saved WHERE sh.ShowtimeID=?";
+        String sql="""
+                SELECT se.SeatID,p.BasePrice,p.CentreAmount,p.MovieAmount,p.TimeAmount,p.HallAmount,p.SeatAmount,saved.Price SavedPrice
+                FROM Showtimes sh JOIN Seats se ON se.HallID=sh.HallID LEFT JOIN ShowtimeEffectivePrices p ON p.ShowtimeID=sh.ShowtimeID AND p.SeatType=se.SeatType
+                OUTER APPLY (SELECT TOP 1 bs.Price FROM BookingSeats bs JOIN Bookings b ON b.BookingID=bs.BookingID WHERE b.ShowtimeID=sh.ShowtimeID AND bs.SeatID=se.SeatID AND ((bs.SeatStatus='CONFIRMED' AND b.BookingStatus IN ('CONFIRMED','COMPLETED')) OR (bs.SeatStatus='HELD' AND b.BookingStatus='PENDING' AND bs.HoldUntil>SYSDATETIME())) ORDER BY bs.BookingSeatID DESC) saved WHERE sh.ShowtimeID=?
+                """;
         Map<Integer, model.dto.showtime.ShowtimeSeatMatrixDTO> prices = new HashMap<>();
         try (Connection c = DBContext.getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setInt(1,showtimeId);
@@ -116,9 +122,11 @@ public class SeatDAO {
      */
     public List<SeatConfigDTO> getSeatConfigsByHall(int hallId) {
         List<SeatConfigDTO> list = new ArrayList<>();
-        String sql = "SELECT SeatID, HallID, SeatRow, SeatNumber, SeatType, Status "
-                   + "FROM Seats WHERE HallID = ? "
-                   + "ORDER BY SeatRow ASC, SeatNumber ASC";
+        String sql = """
+                SELECT SeatID, HallID, SeatRow, SeatNumber, SeatType, Status
+                FROM Seats WHERE HallID = ?
+                ORDER BY SeatRow ASC, SeatNumber ASC
+                """;
 
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -154,16 +162,20 @@ public class SeatDAO {
      * @return tổng số ghế tìm thấy
      */
     public int countSeatsByHall(int hallId, String search, String seatType, String status) {
-        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM Seats WHERE HallID = ? ");
+        StringBuilder sql = new StringBuilder("""
+                SELECT COUNT(*) FROM Seats WHERE HallID = ?
+                """);
         List<Object> params = new ArrayList<>();
         params.add(hallId);
 
         if (search != null && !search.trim().isEmpty()) {
             String safeKey = search.trim().replace("[", "[[]").replace("%", "[%]").replace("_", "[_]");
             String kw = "%" + safeKey + "%";
-            sql.append("AND (SeatRow COLLATE Latin1_General_100_CI_AI LIKE ? "
-                    + "OR CONCAT(SeatRow, CAST(SeatNumber AS VARCHAR)) COLLATE Latin1_General_100_CI_AI LIKE ? "
-                    + "OR CAST(SeatNumber AS VARCHAR) LIKE ?) ");
+            sql.append("""
+                    AND (SeatRow COLLATE Latin1_General_100_CI_AI LIKE ?
+                    OR CONCAT(SeatRow, CAST(SeatNumber AS VARCHAR)) COLLATE Latin1_General_100_CI_AI LIKE ?
+                    OR CAST(SeatNumber AS VARCHAR) LIKE ?)
+                    """);
             params.add(kw);
             params.add(kw);
             params.add(kw);
@@ -219,8 +231,10 @@ public class SeatDAO {
 
         List<SeatConfigDTO> list = new ArrayList<>();
         StringBuilder sql = new StringBuilder(
-            "SELECT SeatID, HallID, SeatRow, SeatNumber, SeatType, Status "
-            + "FROM Seats WHERE HallID = ? "
+            """
+                    SELECT SeatID, HallID, SeatRow, SeatNumber, SeatType, Status
+                    FROM Seats WHERE HallID = ?
+                    """
         );
 
         List<Object> params = new ArrayList<>();
@@ -229,9 +243,11 @@ public class SeatDAO {
         if (search != null && !search.trim().isEmpty()) {
             String safeKey = search.trim().replace("[", "[[]").replace("%", "[%]").replace("_", "[_]");
             String kw = "%" + safeKey + "%";
-            sql.append("AND (SeatRow COLLATE Latin1_General_100_CI_AI LIKE ? "
-                    + "OR CONCAT(SeatRow, CAST(SeatNumber AS VARCHAR)) COLLATE Latin1_General_100_CI_AI LIKE ? "
-                    + "OR CAST(SeatNumber AS VARCHAR) LIKE ?) ");
+            sql.append("""
+                    AND (SeatRow COLLATE Latin1_General_100_CI_AI LIKE ?
+                    OR CONCAT(SeatRow, CAST(SeatNumber AS VARCHAR)) COLLATE Latin1_General_100_CI_AI LIKE ?
+                    OR CAST(SeatNumber AS VARCHAR) LIKE ?)
+                    """);
             params.add(kw);
             params.add(kw);
             params.add(kw);
@@ -287,7 +303,9 @@ public class SeatDAO {
      * @return chuỗi kết quả: "SUCCESS", "HAS_FUTURE_BOOKINGS:[thời gian]", "FAILED"
      */
     public String toggleSeatMaintenance(int seatId, int hallId) {
-        String queryCurrent = "SELECT SeatRow, SeatNumber, Status FROM Seats WHERE SeatID = ? AND HallID = ?";
+        String queryCurrent = """
+                SELECT SeatRow, SeatNumber, Status FROM Seats WHERE SeatID = ? AND HallID = ?
+                """;
         String seatRow = null;
         int seatNumber = 0;
         String currentStatus = null;
@@ -319,7 +337,9 @@ public class SeatDAO {
             String newStatus = "AVAILABLE".equalsIgnoreCase(currentStatus) ? "MAINTENANCE" : "AVAILABLE";
 
             // Cập nhật trạng thái ghế
-            String updateSql = "UPDATE Seats SET Status = ? WHERE SeatID = ? AND HallID = ?";
+            String updateSql = """
+                    UPDATE Seats SET Status = ? WHERE SeatID = ? AND HallID = ?
+                    """;
             try (PreparedStatement ps = conn.prepareStatement(updateSql)) {
                 ps.setString(1, newStatus);
                 ps.setInt(2, seatId);
@@ -328,7 +348,9 @@ public class SeatDAO {
             }
 
             // Đồng bộ lại Capacity của phòng chiếu (Total Capacity = số ghế AVAILABLE)
-            String syncCapacitySql = "UPDATE Halls SET Capacity = (SELECT COUNT(*) FROM Seats WHERE HallID = ? AND UPPER(Status) = 'AVAILABLE') WHERE HallID = ?";
+            String syncCapacitySql = """
+                    UPDATE Halls SET Capacity = (SELECT COUNT(*) FROM Seats WHERE HallID = ? AND UPPER(Status) = 'AVAILABLE') WHERE HallID = ?
+                    """;
             try (PreparedStatement ps = conn.prepareStatement(syncCapacitySql)) {
                 ps.setInt(1, hallId);
                 ps.setInt(2, hallId);
@@ -351,18 +373,20 @@ public class SeatDAO {
      * @return Chuỗi thời gian suất chiếu bị trùng nếu có (VD: "19:30 25/10/2026"), ngược lại trả về null.
      */
     public String checkFutureBookingForSeat(int hallId, String seatRow, int seatNumber) {
-        String sql = "SELECT TOP 1 s.StartTime, b.BookingCode "
-                   + "FROM Showtimes s "
-                   + "JOIN Bookings b ON b.ShowtimeID = s.ShowtimeID "
-                   + "JOIN BookingSeats bs ON bs.BookingID = b.BookingID "
-                   + "JOIN Seats se ON se.SeatID = bs.SeatID "
-                   + "WHERE se.HallID = ? "
-                   + "  AND se.SeatRow = ? "
-                   + "  AND se.SeatNumber = ? "
-                   + "  AND s.StartTime > GETDATE() "
-                   + "  AND UPPER(s.Status) = 'SCHEDULED' "
-                   + "  AND UPPER(b.BookingStatus) IN ('CONFIRMED', 'COMPLETED') "
-                   + "ORDER BY s.StartTime ASC";
+        String sql = """
+                SELECT TOP 1 s.StartTime, b.BookingCode
+                FROM Showtimes s
+                JOIN Bookings b ON b.ShowtimeID = s.ShowtimeID
+                JOIN BookingSeats bs ON bs.BookingID = b.BookingID
+                JOIN Seats se ON se.SeatID = bs.SeatID
+                WHERE se.HallID = ?
+                  AND se.SeatRow = ?
+                  AND se.SeatNumber = ?
+                  AND s.StartTime > GETDATE()
+                  AND UPPER(s.Status) = 'SCHEDULED'
+                  AND UPPER(b.BookingStatus) IN ('CONFIRMED', 'COMPLETED')
+                ORDER BY s.StartTime ASC
+                """;
 
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -401,13 +425,17 @@ public class SeatDAO {
     public boolean saveSeatLayout(int hallId, List<SeatConfigDTO> seats, boolean isRegeneratingGrid) {
         // Alt 1: Nếu cố tình khởi tạo lại lưới trong khi phòng đã có lịch chiếu mở bán vé -> Chặn ngay
 
-        String mergeSql = "MERGE Seats AS target "
-                        + "USING (SELECT ? AS HallID, ? AS SeatRow, ? AS SeatNumber) AS source "
-                        + "ON target.HallID = source.HallID AND target.SeatRow = source.SeatRow AND target.SeatNumber = source.SeatNumber "
-                        + "WHEN MATCHED THEN UPDATE SET SeatType = ?, Status = ? "
-                        + "WHEN NOT MATCHED THEN INSERT (HallID, SeatRow, SeatNumber, SeatType, Status) VALUES (source.HallID, source.SeatRow, source.SeatNumber, ?, ?);";
+        String mergeSql = """
+                MERGE Seats AS target
+                USING (SELECT ? AS HallID, ? AS SeatRow, ? AS SeatNumber) AS source
+                ON target.HallID = source.HallID AND target.SeatRow = source.SeatRow AND target.SeatNumber = source.SeatNumber
+                WHEN MATCHED THEN UPDATE SET SeatType = ?, Status = ?
+                WHEN NOT MATCHED THEN INSERT (HallID, SeatRow, SeatNumber, SeatType, Status) VALUES (source.HallID, source.SeatRow, source.SeatNumber, ?, ?);
+                """;
 
-        String syncCapacitySql = "UPDATE Halls SET Capacity = (SELECT COUNT(*) FROM Seats WHERE HallID = ? AND Status = 'AVAILABLE') WHERE HallID = ?";
+        String syncCapacitySql = """
+                UPDATE Halls SET Capacity = (SELECT COUNT(*) FROM Seats WHERE HallID = ? AND Status = 'AVAILABLE') WHERE HallID = ?
+                """;
 
         Connection conn = null;
         try {
@@ -430,18 +458,23 @@ public class SeatDAO {
 
                 if (keepPositions.length() > 0) {
                     // Đánh dấu các ghế nằm ngoài lưới mới thành UNAVAILABLE
-                    String disableRemovedSql = "UPDATE Seats SET Status = 'UNAVAILABLE' WHERE HallID = ? "
-                                             + "AND (SeatRow + CAST(SeatNumber AS VARCHAR)) NOT IN ("
-                                             + "    SELECT SeatRow + CAST(SeatNumber AS VARCHAR) FROM (VALUES " + keepPositions + ") AS V(SeatRow, SeatNumber)"
-                                             + ")";
+                    // %s = keepPositions, ví dụ ('A', 1), ('A', 2)
+                    String disableRemovedSql = """
+                            UPDATE Seats SET Status = 'UNAVAILABLE' WHERE HallID = ?
+                            AND (SeatRow + CAST(SeatNumber AS VARCHAR)) NOT IN (
+                                SELECT SeatRow + CAST(SeatNumber AS VARCHAR) FROM (VALUES %s) AS V(SeatRow, SeatNumber)
+                            )
+                            """.formatted(keepPositions);
                     try (PreparedStatement psDisable = conn.prepareStatement(disableRemovedSql)) {
                         psDisable.setInt(1, hallId);
                         psDisable.executeUpdate();
                     }
 
                     // Xóa an toàn những ghế ngoài lưới chưa từng có vé đặt
-                    String cleanRemovedSql = "DELETE FROM Seats WHERE HallID = ? AND Status = 'UNAVAILABLE' "
-                                           + "AND SeatID NOT IN (SELECT SeatID FROM BookingSeats)";
+                    String cleanRemovedSql = """
+                            DELETE FROM Seats WHERE HallID = ? AND Status = 'UNAVAILABLE'
+                            AND SeatID NOT IN (SELECT SeatID FROM BookingSeats)
+                            """;
                     try (PreparedStatement psClean = conn.prepareStatement(cleanRemovedSql)) {
                         psClean.setInt(1, hallId);
                         psClean.executeUpdate();
@@ -524,58 +557,41 @@ public class SeatDAO {
                 new ArrayList<>();
 
         String sql =
-                "SELECT "
-                + "s.SeatID, "
-                + "s.SeatRow, "
-                + "s.SeatNumber, "
-                + "s.SeatType, "
-
-                + "CASE "
-
-                + "WHEN bs.SeatStatus = 'CONFIRMED' "
-                + "THEN 'BOOKED' "
-
-                + "WHEN bs.SeatStatus = 'HELD' "
-                + "THEN 'HELD' "
-
-                + "ELSE 'AVAILABLE' "
-
-                + "END AS AvailabilityStatus "
-
-                + "FROM Showtimes sh "
-
-                + "JOIN Seats s "
-                + "ON s.HallID = sh.HallID "
-
-                + "LEFT JOIN ( "
-
-                + "SELECT bs2.SeatID, "
-                + "bs2.SeatStatus "
-
-                + "FROM BookingSeats bs2 "
-
-                + "JOIN Bookings b "
-                + "ON b.BookingID = bs2.BookingID "
-
-                + "WHERE b.ShowtimeID = ? "
-
-                + "AND b.BookingStatus "
-                + "IN ('PENDING','CONFIRMED','COMPLETED') "
-
-                + "AND (bs2.SeatStatus = 'CONFIRMED' "
-                + "OR (bs2.SeatStatus = 'HELD' AND bs2.HoldUntil > SYSDATETIME())) "
-
-                + ") bs "
-
-                + "ON bs.SeatID = s.SeatID "
-
-                + "WHERE sh.ShowtimeID = ? "
-
-                + "AND s.Status = 'AVAILABLE' "
-
-                + "ORDER BY "
-                + "s.SeatRow, "
-                + "s.SeatNumber";
+                """
+                        SELECT
+                        s.SeatID,
+                        s.SeatRow,
+                        s.SeatNumber,
+                        s.SeatType,
+                        CASE
+                        WHEN bs.SeatStatus = 'CONFIRMED'
+                        THEN 'BOOKED'
+                        WHEN bs.SeatStatus = 'HELD'
+                        THEN 'HELD'
+                        ELSE 'AVAILABLE'
+                        END AS AvailabilityStatus
+                        FROM Showtimes sh
+                        JOIN Seats s
+                        ON s.HallID = sh.HallID
+                        LEFT JOIN (
+                        SELECT bs2.SeatID,
+                        bs2.SeatStatus
+                        FROM BookingSeats bs2
+                        JOIN Bookings b
+                        ON b.BookingID = bs2.BookingID
+                        WHERE b.ShowtimeID = ?
+                        AND b.BookingStatus
+                        IN ('PENDING','CONFIRMED','COMPLETED')
+                        AND (bs2.SeatStatus = 'CONFIRMED'
+                        OR (bs2.SeatStatus = 'HELD' AND bs2.HoldUntil > SYSDATETIME()))
+                        ) bs
+                        ON bs.SeatID = s.SeatID
+                        WHERE sh.ShowtimeID = ?
+                        AND s.Status = 'AVAILABLE'
+                        ORDER BY
+                        s.SeatRow,
+                        s.SeatNumber
+                        """;
 
         try (Connection connection = DBContext.getConnection();
              PreparedStatement ps = connection.prepareStatement(sql)) {
