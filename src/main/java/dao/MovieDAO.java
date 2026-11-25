@@ -607,7 +607,7 @@ public class MovieDAO {
         // Câu SQL rút gọn: Nếu tìm thấy thì là 1, không thấy (NULL) thì là 0
         String sql = """
                 SELECT b.CentreID, b.CentreName, b.Address, b.City, b.Phone, b.Status,
-                       (CASE WHEN bm.CentreID IS NOT NULL THEN 1 ELSE 0 END) AS Distributed
+                       (CASE WHEN bm.CentreID IS NOT NULL THEN 1 ELSE 0 END) AS [Distributed]
                 FROM Centres b
                 LEFT JOIN CentreMovies bm ON bm.CentreID = b.CentreID
                                           AND bm.MovieID = ?
