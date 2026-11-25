@@ -124,13 +124,17 @@ public class MovieDAO {
     public List<Movie> getAllMovies() {
         String sql = """
                 SELECT m.*,
-                       (SELECT COUNT(*) FROM Centres WHERE Status = 'ACTIVE') AS TotalCentres,
+                       (SELECT COUNT(*)
+                        FROM Centres
+                        WHERE Status IS NOT NULL
+                          AND UPPER(LTRIM(RTRIM(Status))) <> 'INACTIVE') AS TotalCentres,
                        (SELECT COUNT(*)
                         FROM CentreMovies cm
                         JOIN Centres c ON c.CentreID = cm.CentreID
                         WHERE cm.MovieID = m.MovieID
-                          AND cm.Status = 'ACTIVE'
-                          AND c.Status = 'ACTIVE') AS DistributedCentres
+                          AND cm.Status IN ('ACTIVE', 'SUSPENDED')
+                          AND c.Status IS NOT NULL
+                          AND UPPER(LTRIM(RTRIM(c.Status))) <> 'INACTIVE') AS DistributedCentres
                 FROM Movies m
                 ORDER BY m.MovieID DESC
                 """;
@@ -157,9 +161,7 @@ public class MovieDAO {
                 FROM Movies
                 GROUP BY Status
                 """;
-        try (Connection conn = DBContext.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+        try (Connection conn = DBContext.getConnection(); PreparedStatement ps = conn.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 String status = rs.getString("Status");
                 if (status != null) {
