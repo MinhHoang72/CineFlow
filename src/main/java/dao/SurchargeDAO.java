@@ -11,7 +11,22 @@ public class SurchargeDAO extends DBContext {
     /** Lấy chính sách và lịch sử theo đúng CentreID, kèm tên người cập nhật và trạng thái hiệu lực. */
     public java.util.List<java.util.Map<String,Object>> policies(int centreId,String type) throws SQLException {
         var rows=new java.util.ArrayList<java.util.Map<String,Object>>();
-        try(Connection c=DBContext.getConnection();PreparedStatement ps=c.prepareStatement("SELECT p.*,u.FullName UpdatedByName,CASE WHEN p.EffectiveTo IS NOT NULL AND (p.EffectiveTo<=p.EffectiveFrom OR p.EffectiveTo<=SYSDATETIME()) THEN N'Đã kết thúc' WHEN p.EffectiveFrom>SYSDATETIME() THEN N'Chờ áp dụng' ELSE N'Đang áp dụng' END PolicyState FROM CentreSurcharges p LEFT JOIN Users u ON u.UserID=p.UpdatedBy WHERE p.CentreID=? AND p.SurchargeType=? ORDER BY p.EffectiveFrom DESC,p.SurchargeID DESC")) {
+        try(Connection c=DBContext.getConnection();PreparedStatement ps=c.prepareStatement("""
+            SELECT p.*,u.FullName UpdatedByName,CASE
+            WHEN p.EffectiveTo IS NOT NULL
+            AND (p.EffectiveTo<=p.EffectiveFrom
+            OR p.EffectiveTo<=SYSDATETIME())
+            THEN N'Đã kết thúc'
+            WHEN p.EffectiveFrom>SYSDATETIME()
+            THEN N'Chờ áp dụng'
+            ELSE N'Đang áp dụng' END PolicyState
+            FROM CentreSurcharges p
+            LEFT
+            JOIN Users u ON u.UserID=p.UpdatedBy
+            WHERE p.CentreID=?
+            AND p.SurchargeType=?
+            ORDER BY p.EffectiveFrom DESC,p.SurchargeID DESC
+            """)) {
             ps.setInt(1,centreId);ps.setString(2,type);
             try(ResultSet rs=ps.executeQuery()){while(rs.next()){
                 var row=new java.util.LinkedHashMap<String,Object>();
@@ -25,10 +40,29 @@ public class SurchargeDAO extends DBContext {
     /** Map mã → tên cho ô chọn đối tượng; chỉ lấy phòng, ghế, phim thuộc rạp. */
     public java.util.Map<String,String> targets(int centreId,String type) throws SQLException {
         String sql=switch(type){
-            case "CENTRE" -> "SELECT CAST(CentreID AS VARCHAR(30)),CentreName FROM Centres WHERE CentreID=?";
-            case "HALL" -> "SELECT DISTINCT HallType,HallType FROM Halls WHERE CentreID=?";
-            case "SEAT" -> "SELECT DISTINCT s.SeatType,s.SeatType FROM Seats s JOIN Halls h ON h.HallID=s.HallID WHERE h.CentreID=?";
-            case "MOVIE" -> "SELECT CAST(m.MovieID AS VARCHAR(30)),m.Title FROM Movies m JOIN CentreMovies cm ON cm.MovieID=m.MovieID WHERE cm.CentreID=? AND cm.IsActive=1";
+            case "CENTRE" -> """
+                SELECT CAST(CentreID AS VARCHAR(30)),CentreName
+                FROM Centres
+                WHERE CentreID=?
+                """;
+            case "HALL" -> """
+                SELECT DISTINCT HallType,HallType
+                FROM Halls
+                WHERE CentreID=?
+                """;
+            case "SEAT" -> """
+                SELECT DISTINCT s.SeatType,s.SeatType
+                FROM Seats s
+                JOIN Halls h ON h.HallID=s.HallID
+                WHERE h.CentreID=?
+                """;
+            case "MOVIE" -> """
+                SELECT CAST(m.MovieID AS VARCHAR(30)),m.Title
+                FROM Movies m
+                JOIN CentreMovies cm ON cm.MovieID=m.MovieID
+                WHERE cm.CentreID=?
+                AND cm.IsActive=1
+                """;
             case "TIME" -> null;
             default -> throw new IllegalArgumentException("Loại phụ thu không hợp lệ.");
         };
@@ -47,33 +81,86 @@ public class SurchargeDAO extends DBContext {
             c.setAutoCommit(false);
             try{
                 // Khóa rạp trong giao dịch để hai lần cập nhật không tạo chính sách chồng lấn.
-                try(PreparedStatement ps=c.prepareStatement("SELECT CentreID FROM Centres WITH(UPDLOCK,HOLDLOCK) WHERE CentreID=?")){
+                try(PreparedStatement ps=c.prepareStatement("""
+                    SELECT CentreID
+                    FROM Centres WITH(UPDLOCK,HOLDLOCK)
+                    WHERE CentreID=?
+                    """)){
                     ps.setInt(1,centreId);try(ResultSet rs=ps.executeQuery()){if(!rs.next())throw new IllegalArgumentException("Không tìm thấy cụm rạp.");}
                 }
-                Timestamp now;try(Statement st=c.createStatement();ResultSet rs=st.executeQuery("SELECT SYSDATETIME()")){rs.next();now=rs.getTimestamp(1);}
+                Timestamp now;try(Statement st=c.createStatement();ResultSet rs=st.executeQuery("""
+                    SELECT SYSDATETIME()
+                    """)){rs.next();now=rs.getTimestamp(1);}
                 if(from==null)from=now;else if(!from.after(now))throw new IllegalArgumentException("Thời gian áp dụng phải nằm trong tương lai.");
                 if(editId!=null){
-                    try(PreparedStatement ps=c.prepareStatement("SELECT TargetValue FROM CentreSurcharges WHERE SurchargeID=? AND CentreID=? AND SurchargeType=? AND (EffectiveTo IS NULL OR EffectiveTo>SYSDATETIME())")){
+                    try(PreparedStatement ps=c.prepareStatement("""
+                        SELECT TargetValue
+                        FROM CentreSurcharges
+                        WHERE SurchargeID=?
+                        AND CentreID=?
+                        AND SurchargeType=?
+                        AND (EffectiveTo IS NULL
+                        OR EffectiveTo>SYSDATETIME())
+                        """)){
                         ps.setInt(1,editId);ps.setInt(2,centreId);ps.setString(3,type);
                         try(ResultSet rs=ps.executeQuery()){if(!rs.next()||!target.equals(rs.getString(1)))throw new IllegalArgumentException("Chỉ được sửa chính sách cùng đối tượng thuộc rạp của bạn.");}
                     }
                 }
                 Timestamp next=null;
-                try(PreparedStatement ps=c.prepareStatement("SELECT TOP 1 EffectiveFrom FROM CentreSurcharges WHERE CentreID=? AND SurchargeType=? AND TargetValue=? AND EffectiveFrom>=? AND (EffectiveTo IS NULL OR EffectiveTo>EffectiveFrom) AND SurchargeID<>? ORDER BY EffectiveFrom")){
+                try(PreparedStatement ps=c.prepareStatement("""
+                    SELECT TOP 1 EffectiveFrom
+                    FROM CentreSurcharges
+                    WHERE CentreID=?
+                    AND SurchargeType=?
+                    AND TargetValue=?
+                    AND EffectiveFrom>=?
+                    AND (EffectiveTo IS NULL
+                    OR EffectiveTo>EffectiveFrom)
+                    AND SurchargeID<>?
+                    ORDER BY EffectiveFrom
+                    """)){
                     ps.setInt(1,centreId);ps.setString(2,type);ps.setString(3,target);ps.setTimestamp(4,from);ps.setInt(5,editId==null?-1:editId);
                     try(ResultSet rs=ps.executeQuery()){if(rs.next())next=rs.getTimestamp(1);}
                 }
                 if(from.equals(next))throw new IllegalArgumentException("Đã có chính sách bắt đầu tại thời điểm này.");
                 if("TIME".equals(type)){
-                    try(PreparedStatement ps=c.prepareStatement("SELECT 1 FROM CentreSurcharges WHERE CentreID=? AND SurchargeType='TIME' AND TargetValue<>? AND StartTime<CAST(? AS TIME) AND EndTime>CAST(? AS TIME) AND (EffectiveTo IS NULL OR EffectiveTo>?) AND (? IS NULL OR EffectiveFrom<?)")){
+                    try(PreparedStatement ps=c.prepareStatement("""
+                        SELECT 1
+                        FROM CentreSurcharges
+                        WHERE CentreID=?
+                        AND SurchargeType='TIME'
+                        AND TargetValue<>?
+                        AND StartTime<CAST(? AS TIME)
+                        AND EndTime>CAST(? AS TIME)
+                        AND (EffectiveTo IS NULL
+                        OR EffectiveTo>?)
+                        AND (? IS NULL
+                        OR EffectiveFrom<?)
+                        """)){
                         ps.setInt(1,centreId);ps.setString(2,target);ps.setTime(3,end);ps.setTime(4,start);ps.setTimestamp(5,from);ps.setTimestamp(6,next);ps.setTimestamp(7,next);
                         try(ResultSet rs=ps.executeQuery()){if(rs.next())throw new IllegalArgumentException("Khung giờ trùng với chính sách khác trong thời gian áp dụng.");}
                     }
                 }
-                try(PreparedStatement ps=c.prepareStatement("UPDATE CentreSurcharges SET EffectiveTo=CASE WHEN EffectiveFrom>? THEN EffectiveFrom ELSE ? END WHERE CentreID=? AND SurchargeType=? AND TargetValue=? AND (EffectiveTo IS NULL OR EffectiveTo>?) AND (EffectiveFrom<? OR SurchargeID=?)")){
+                try(PreparedStatement ps=c.prepareStatement("""
+                    UPDATE CentreSurcharges
+                    SET EffectiveTo=CASE
+                    WHEN EffectiveFrom>?
+                    THEN EffectiveFrom
+                    ELSE ? END
+                    WHERE CentreID=?
+                    AND SurchargeType=?
+                    AND TargetValue=?
+                    AND (EffectiveTo IS NULL
+                    OR EffectiveTo>?)
+                    AND (EffectiveFrom<?
+                    OR SurchargeID=?)
+                    """)){
                     ps.setTimestamp(1,from);ps.setTimestamp(2,from);ps.setInt(3,centreId);ps.setString(4,type);ps.setString(5,target);ps.setTimestamp(6,from);ps.setTimestamp(7,from);ps.setInt(8,editId==null?-1:editId);ps.executeUpdate();
                 }
-                try(PreparedStatement ps=c.prepareStatement("INSERT CentreSurcharges(CentreID,SurchargeType,TargetValue,SurchargeName,Amount,StartTime,EndTime,EffectiveFrom,EffectiveTo,UpdatedBy) VALUES(?,?,?,?,?,?,?,?,?,?)")){
+                try(PreparedStatement ps=c.prepareStatement("""
+                    INSERT CentreSurcharges(CentreID,SurchargeType,TargetValue,SurchargeName,Amount,StartTime,EndTime,EffectiveFrom,EffectiveTo,UpdatedBy)
+                    VALUES(?,?,?,?,?,?,?,?,?,?)
+                    """)){
                     ps.setInt(1,centreId);ps.setString(2,type);ps.setString(3,target);ps.setString(4,name);ps.setBigDecimal(5,amount);ps.setTime(6,start);ps.setTime(7,end);ps.setTimestamp(8,from);ps.setTimestamp(9,next);ps.setInt(10,userId);ps.executeUpdate();
                 }
                 c.commit();
@@ -86,8 +173,22 @@ public class SurchargeDAO extends DBContext {
         try(Connection c=DBContext.getConnection()){
             c.setAutoCommit(false);
             try{
-                try(PreparedStatement ps=c.prepareStatement("SELECT CentreID FROM Centres WITH(UPDLOCK,HOLDLOCK) WHERE CentreID=?")){ps.setInt(1,centreId);ps.executeQuery().close();}
-                try(PreparedStatement ps=c.prepareStatement("UPDATE CentreSurcharges SET EffectiveTo=CASE WHEN EffectiveFrom>SYSDATETIME() THEN EffectiveFrom ELSE SYSDATETIME() END WHERE CentreID=? AND SurchargeID=? AND (EffectiveTo IS NULL OR EffectiveTo>SYSDATETIME())")){
+                try(PreparedStatement ps=c.prepareStatement("""
+                    SELECT CentreID
+                    FROM Centres WITH(UPDLOCK,HOLDLOCK)
+                    WHERE CentreID=?
+                    """)){ps.setInt(1,centreId);ps.executeQuery().close();}
+                try(PreparedStatement ps=c.prepareStatement("""
+                    UPDATE CentreSurcharges
+                    SET EffectiveTo=CASE
+                    WHEN EffectiveFrom>SYSDATETIME()
+                    THEN EffectiveFrom
+                    ELSE SYSDATETIME() END
+                    WHERE CentreID=?
+                    AND SurchargeID=?
+                    AND (EffectiveTo IS NULL
+                    OR EffectiveTo>SYSDATETIME())
+                    """)){
                     ps.setInt(1,centreId);ps.setInt(2,id);if(ps.executeUpdate()!=1)throw new IllegalArgumentException("Không tìm thấy phụ thu còn hiệu lực trong rạp của bạn.");
                 }
                 c.commit();
@@ -99,9 +200,18 @@ public class SurchargeDAO extends DBContext {
     public List<String> getConfiguredTargets(String type) throws SQLException {
         String sql;
         if ("SEAT".equals(type))
-            sql = "SELECT DISTINCT SeatType AS TargetValue FROM Seats WHERE SeatType <> 'STANDARD' ORDER BY SeatType";
+            sql = """
+                SELECT DISTINCT SeatType AS TargetValue
+                FROM Seats
+                WHERE SeatType <> 'STANDARD'
+                ORDER BY SeatType
+                """;
         else if ("HALL".equals(type))
-            sql = "SELECT DISTINCT HallType AS TargetValue FROM Halls ORDER BY HallType";
+            sql = """
+                SELECT DISTINCT HallType AS TargetValue
+                FROM Halls
+                ORDER BY HallType
+                """;
         else throw new IllegalArgumentException("Loại phụ thu không hợp lệ.");
         List<String> targets = new ArrayList<>();
         try (Connection c = DBContext.getConnection(); PreparedStatement ps = c.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
