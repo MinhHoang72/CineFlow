@@ -22,6 +22,17 @@ import java.util.List;
  */
 public class BookingDAO {
 
+    /* ============================== MỤC LỤC ==============================
+     * Tìm nhanh: Ctrl + F tên hàm. Mỗi hàm có dòng ">> Dùng ở: ... | Loại: ĐỌC / GHI" trong chú thích.
+     * Đọc đơn ......... getBooking (+ loadShowtime, loadSeats), getAmounts, getVoucherOwner
+     * Giữ ghế ......... findExpiredPendingIds, releaseOverdueSeats, findPendingIdsOfUserForShowtime,
+     *                   getDbTimePlusMinutes, insertBooking, insertHeldSeats
+     * Huỷ / hết hạn ... updatePendingStatus, cancelHeldSeats, findPendingIdOfUser, findPendingCounterId
+     * Tiền / voucher .. updateTotal, updateVoucher
+     * Đã thanh toán ... confirmSeats, updateStatus, findConfirmedSeatsWithoutTicket
+     * Suất chiếu xong . completeFinishedBookings
+     * ===================================================================== */
+
     /**
      * Tiền vé (SubTotal), số tiền giảm (DiscountAmount) và trạng thái hiện tại của đơn, dùng để tính lại tổng tiền.
      */
@@ -35,6 +46,7 @@ public class BookingDAO {
     /**
      * Lấy đơn kèm suất chiếu và danh sách ghế (chưa gồm bắp nước); không có thì null.
      * Bảng: Bookings, Vouchers, BookingSeats, Showtimes, Movies, Halls, Centres, Seats.
+     * >> Dùng ở: mọi trang có đơn: bắp nước, checkout, chi tiết đơn, in vé (BookingService.getBooking) | Loại: ĐỌC (SELECT)
      */
     public Booking getBooking(int bookingId) throws SQLException {
         String sql = """
@@ -62,7 +74,10 @@ public class BookingDAO {
         }
     }
 
-    /** Đọc tiền vé, số tiền giảm và trạng thái của đơn (trong transaction có sẵn). */
+    /**
+     * Đọc tiền vé, số tiền giảm và trạng thái của đơn (trong transaction có sẵn).
+     * >> Dùng ở: tính lại tổng tiền (BookingService.recalculateTotal) | Loại: ĐỌC (SELECT)
+     */
     public Amounts getAmounts(Connection conn, int bookingId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
                 """
@@ -75,7 +90,10 @@ public class BookingDAO {
         }
     }
 
-    /** Đọc voucher đang áp và khách của đơn (trong transaction có sẵn). */
+    /**
+     * Đọc voucher đang áp và khách của đơn (trong transaction có sẵn).
+     * >> Dùng ở: thanh toán xong - ghi lượt dùng voucher (PaymentService.recordVoucherUsage) | Loại: ĐỌC (SELECT)
+     */
     public VoucherOwner getVoucherOwner(Connection conn, int bookingId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement("""
                 SELECT VoucherID, UserID FROM Bookings WHERE BookingID = ?
@@ -94,7 +112,10 @@ public class BookingDAO {
 
     // ---------------------------------------------------------------- tim don cho thanh toan
 
-    /** Tìm các đơn PENDING có ghế HELD đã quá HoldUntil (so theo giờ SQL Server). */
+    /**
+     * Tìm các đơn PENDING có ghế HELD đã quá HoldUntil (so theo giờ SQL Server).
+     * >> Dùng ở: giữ ghế - dọn đơn quá 5 phút (BookingService.releaseExpiredHolds) | Loại: ĐỌC (SELECT)
+     */
     public List<Integer> findExpiredPendingIds(Connection conn) throws SQLException {
         return ids(conn, """
                 SELECT BookingID FROM Bookings b WHERE b.BookingStatus = 'PENDING' AND EXISTS (
@@ -103,7 +124,10 @@ public class BookingDAO {
                 """);
     }
 
-    /** Tìm các đơn PENDING của một khách cho một suất chiếu (để huỷ trước khi khách giữ ghế mới). */
+    /**
+     * Tìm các đơn PENDING của một khách cho một suất chiếu (để huỷ trước khi khách giữ ghế mới).
+     * >> Dùng ở: giữ ghế - đơn chờ cũ của khách ở cùng suất (BookingService.hold) | Loại: ĐỌC (SELECT)
+     */
     public List<Integer> findPendingIdsOfUserForShowtime(Connection conn, int userId, int showtimeId) throws SQLException {
         return ids(conn, """
                 SELECT BookingID FROM Bookings WHERE BookingStatus = 'PENDING' AND UserID = ? AND ShowtimeID = ?
@@ -111,7 +135,10 @@ public class BookingDAO {
                 userId, showtimeId);
     }
 
-    /** Tìm đơn PENDING có mã bookingId và thuộc khách userId (danh sách 0 hoặc 1 phần tử). */
+    /**
+     * Tìm đơn PENDING có mã bookingId và thuộc khách userId (danh sách 0 hoặc 1 phần tử).
+     * >> Dùng ở: khách bấm Huỷ đơn (BookingService.cancelPendingBooking) | Loại: ĐỌC (SELECT)
+     */
     public List<Integer> findPendingIdOfUser(Connection conn, int bookingId, int userId) throws SQLException {
         return ids(conn, """
                 SELECT BookingID FROM Bookings WHERE BookingStatus = 'PENDING' AND BookingID = ? AND UserID = ?
@@ -119,7 +146,10 @@ public class BookingDAO {
                 bookingId, userId);
     }
 
-    /** Tìm đơn tại quầy PENDING có mã bookingId (danh sách 0 hoặc 1 phần tử). */
+    /**
+     * Tìm đơn tại quầy PENDING có mã bookingId (danh sách 0 hoặc 1 phần tử).
+     * >> Dùng ở: nhân viên huỷ đơn tại quầy (BookingService.cancelCounterPendingBooking) | Loại: ĐỌC (SELECT)
+     */
     public List<Integer> findPendingCounterId(Connection conn, int bookingId) throws SQLException {
         return ids(conn, """
                 SELECT BookingID FROM Bookings WHERE BookingStatus = 'PENDING' AND BookingID = ?
@@ -132,6 +162,7 @@ public class BookingDAO {
     /**
      * Ghi đơn mới: mã đơn, khách (null nếu tại quầy), loại ONLINE / COUNTER, suất chiếu, tiền vé; trạng thái PENDING.
      * @return BookingID vừa tạo
+     * >> Dùng ở: giữ ghế - tạo đơn PENDING (BookingService.hold) | Loại: GHI (INSERT / UPDATE / DELETE)
      */
     public int insertBooking(Connection conn, String code, Integer userId, String bookingType, int showtimeId,
             BigDecimal subTotal) throws SQLException {
@@ -158,6 +189,7 @@ public class BookingDAO {
     /**
      * Đổi trạng thái các đơn còn PENDING (ví dụ sang EXPIRED hoặc CANCELLED). Đơn đã đổi trạng thái khác thì không bị đụng.
      * @return số đơn đã đổi
+     * >> Dùng ở: hết hạn / huỷ đơn - đơn chờ -> EXPIRED / CANCELLED (releaseExpiredHolds, cancelPending) | Loại: GHI (INSERT / UPDATE / DELETE)
      */
     public int updatePendingStatus(Connection conn, List<Integer> bookingIds, String newStatus) throws SQLException {
         if (bookingIds.isEmpty()) return 0;
@@ -172,7 +204,10 @@ public class BookingDAO {
         }
     }
 
-    /** Đổi trạng thái một đơn (CONFIRMED, CANCELLED...) và cập nhật UpdatedAt. */
+    /**
+     * Đổi trạng thái một đơn (CONFIRMED, CANCELLED...) và cập nhật UpdatedAt.
+     * >> Dùng ở: thanh toán - đơn -> CONFIRMED / CANCELLED (PaymentService.confirmPaid) | Loại: GHI (INSERT / UPDATE / DELETE)
+     */
     public void updateStatus(Connection conn, int bookingId, String newStatus) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
                 """
@@ -187,6 +222,7 @@ public class BookingDAO {
     /**
      * Đơn CONFIRMED của suất đã chiếu xong (không tính suất bị huỷ) -> COMPLETED.
      * @return số đơn đã đổi
+     * >> Dùng ở: job mỗi phút - suất chiếu xong: CONFIRMED -> COMPLETED (BookingCompletionJob) | Loại: GHI (INSERT / UPDATE / DELETE)
      */
     public int completeFinishedBookings(Connection conn) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
@@ -199,7 +235,10 @@ public class BookingDAO {
         }
     }
 
-    /** Ghi tổng tiền mới cho đơn còn PENDING. */
+    /**
+     * Ghi tổng tiền mới cho đơn còn PENDING.
+     * >> Dùng ở: lưu bắp nước / áp voucher - ghi tổng tiền mới (BookingService.recalculateTotal) | Loại: GHI (INSERT / UPDATE / DELETE)
+     */
     public void updateTotal(Connection conn, int bookingId, BigDecimal total) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
                 """
@@ -214,6 +253,7 @@ public class BookingDAO {
     /**
      * Gán hoặc bỏ voucher và số tiền giảm của đơn còn PENDING.
      * @param voucherId null = bỏ voucher
+     * >> Dùng ở: trang checkout - áp / bỏ voucher (BookingExtrasService.setVoucher) | Loại: GHI (INSERT / UPDATE / DELETE)
      */
     public void updateVoucher(Connection conn, int bookingId, Integer voucherId, BigDecimal discount) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
@@ -234,6 +274,7 @@ public class BookingDAO {
     /**
      * Ghi các ghế đang giữ của đơn vào BookingSeats: trạng thái HELD, giá từng ghế, hạn giữ ghế (HoldUntil).
      * Unique index UX_BookingSeats_ActiveSeat chặn hai đơn cùng giữ một ghế của một suất.
+     * >> Dùng ở: giữ ghế - ghi ghế HELD + hạn giữ (BookingService.hold) | Loại: GHI (INSERT / UPDATE / DELETE)
      */
     public void insertHeldSeats(Connection conn, int bookingId, int showtimeId, List<Seat> seats, Timestamp holdUntil)
             throws SQLException {
@@ -254,7 +295,10 @@ public class BookingDAO {
         }
     }
 
-    /** Ghế HELD đã quá HoldUntil -> RELEASED. Khi đó ghế ra khỏi unique index nên người khác giữ được. */
+    /**
+     * Ghế HELD đã quá HoldUntil -> RELEASED. Khi đó ghế ra khỏi unique index nên người khác giữ được.
+     * >> Dùng ở: giữ ghế - nhả ghế HELD quá hạn (BookingService.releaseExpiredHolds) | Loại: GHI (INSERT / UPDATE / DELETE)
+     */
     public void releaseOverdueSeats(Connection conn) throws SQLException {
         try (Statement st = conn.createStatement()) {
             st.executeUpdate("""
@@ -264,7 +308,10 @@ public class BookingDAO {
         }
     }
 
-    /** Ghế HELD của các đơn -> CANCELLED (đơn bị huỷ). */
+    /**
+     * Ghế HELD của các đơn -> CANCELLED (đơn bị huỷ).
+     * >> Dùng ở: huỷ đơn - nhả ghế HELD (BookingService.cancelPending) | Loại: GHI (INSERT / UPDATE / DELETE)
+     */
     public void cancelHeldSeats(Connection conn, List<Integer> bookingIds) throws SQLException {
         if (bookingIds.isEmpty()) return;
         // %s = "?, ?, ?" (một dấu ? cho mỗi đơn)
@@ -280,6 +327,7 @@ public class BookingDAO {
     /**
      * Ghế của đơn -> CONFIRMED khi đã nhận tiền. Gồm cả ghế RELEASED / CANCELLED khi tiền về sau lúc hết hạn giữ ghế.
      * @throws SQLException lỗi trùng khoá nếu ghế đã thuộc đơn khác (confirmPaid bắt lỗi này để huỷ đơn)
+     * >> Dùng ở: thanh toán xong - ghế -> CONFIRMED (PaymentService.confirmPaid) | Loại: GHI (INSERT / UPDATE / DELETE)
      */
     public void confirmSeats(Connection conn, int bookingId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
@@ -292,7 +340,10 @@ public class BookingDAO {
         }
     }
 
-    /** Các BookingSeatID đã CONFIRMED mà chưa có vé (để xuất vé, tránh xuất trùng). */
+    /**
+     * Các BookingSeatID đã CONFIRMED mà chưa có vé (để xuất vé, tránh xuất trùng).
+     * >> Dùng ở: thanh toán xong - ghế chưa có vé để xuất vé (PaymentService.issueTickets) | Loại: ĐỌC (SELECT)
+     */
     public List<Integer> findConfirmedSeatsWithoutTicket(Connection conn, int bookingId) throws SQLException {
         return ids(conn, """
                 SELECT bs.BookingSeatID FROM BookingSeats bs
@@ -304,6 +355,7 @@ public class BookingDAO {
     /**
      * Giờ hiện tại của SQL Server cộng thêm số phút, dùng làm hạn giữ ghế.
      * Dùng giờ SQL Server (không dùng giờ Java) để khớp với các câu lệnh so sánh HoldUntil với SYSDATETIME().
+     * >> Dùng ở: giữ ghế - hạn giữ ghế theo giờ SQL Server (BookingService.hold) | Loại: ĐỌC (SELECT)
      */
     public Timestamp getDbTimePlusMinutes(Connection conn, int minutes) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement("""
@@ -319,7 +371,10 @@ public class BookingDAO {
 
     // ---------------------------------------------------------------- noi bo
 
-    /** Đọc thông tin suất chiếu của đơn (phim, rạp, phòng, giờ) để gắn vào đối tượng Booking. */
+    /**
+     * Đọc thông tin suất chiếu của đơn (phim, rạp, phòng, giờ) để gắn vào đối tượng Booking.
+     * >> Dùng ở: nội bộ - getBooking | Loại: ĐỌC (SELECT)
+     */
     private static Showtime loadShowtime(Connection conn, int showtimeId) throws SQLException {
         // %s = ShowtimeDAO.SELECT (cột suất chiếu + phim + phòng + rạp)
         try (PreparedStatement ps = conn.prepareStatement("""
@@ -333,7 +388,10 @@ public class BookingDAO {
         }
     }
 
-    /** Đọc danh sách ghế của đơn (nhãn ghế, loại, giá, trạng thái) để gắn vào đối tượng Booking. */
+    /**
+     * Đọc danh sách ghế của đơn (nhãn ghế, loại, giá, trạng thái) để gắn vào đối tượng Booking.
+     * >> Dùng ở: nội bộ - getBooking | Loại: ĐỌC (SELECT)
+     */
     private static List<Seat> loadSeats(Connection conn, int bookingId) throws SQLException {
         String sql = """
                 SELECT se.SeatID, se.SeatRow, se.SeatNumber, se.SeatType, bs.Price
@@ -353,7 +411,10 @@ public class BookingDAO {
         return seats;
     }
 
-    /** Chạy câu SELECT trả về một cột số nguyên với các tham số truyền vào, gom thành danh sách id. */
+    /**
+     * Chạy câu SELECT trả về một cột số nguyên với các tham số truyền vào, gom thành danh sách id.
+     * >> Dùng ở: nội bộ - chạy câu SELECT trả về danh sách mã (gán ? theo thứ tự tham số) | Loại: ĐỌC (SELECT)
+     */
     private static List<Integer> ids(Connection conn, String sql, int... params) throws SQLException {
         List<Integer> ids = new ArrayList<>();
         try (PreparedStatement ps = conn.prepareStatement(sql)) {

@@ -18,6 +18,21 @@ import java.util.List;
 
 public class ShowtimeDAO {
 
+    /* ============================== MỤC LỤC ==============================
+     * Tìm nhanh: Ctrl + F tên hàm. Mỗi hàm có dòng ">> Dùng ở: ... | Loại: ĐỌC / GHI" trong chú thích.
+     * PHẦN ĐẶT VÉ (huythhe171800) - các phần khác trong file là quản lý suất chiếu của nhóm.
+     * Trang chọn suất (khách online):
+     *   getCities ............... hàng nút thành phố
+     *   getCentresInCity ........ cột Rạp phim
+     *   getCityOfCentre ......... link chỉ có centreId: suy ra thành phố
+     *   findFirstCentreForMovie . bấm Mua vé từ trang phim: rạp có suất sớm nhất
+     *   getShowDates ............ hàng nút ngày
+     *   getShowtimes ............ các ô giờ chiếu
+     * Bán vé tại quầy: getShowDatesAtCentre, getShowtimesAtCentre
+     * Kiểm tra suất còn bán (trang chọn ghế, giữ ghế): getBookableById
+     * Đoạn SQL dùng chung: SELECT, BOOKABLE (suất còn mở bán), BOOKABLE_FROM, CITY
+     * ===================================================================== */
+
     /** The parent showtime lock is also taken by BookingService before it inserts a booking. */
     // Khóa suất trước khi kiểm tra booking để không có khách đặt chen vào lúc sửa/hủy.
     private void lockEditable(Connection c,int centre,int id) throws SQLException {
@@ -199,7 +214,10 @@ public class ShowtimeDAO {
         return showtime;
     }
 
-    /** Cac ngay con suat chieu cua phim tai chi nhanh. */
+    /**
+     * Cac ngay con suat chieu cua phim tai chi nhanh.
+     * >> Dùng ở: trang chọn suất - hàng nút ngày (BookingService.selectShowtime) | Loại: ĐỌC (SELECT)
+     */
     public List<LocalDate> getShowDates(int centreId, int movieId) throws SQLException {
         String sql = """
                 SELECT DISTINCT CAST(s.StartTime AS DATE) AS ShowDate
@@ -220,6 +238,9 @@ public class ShowtimeDAO {
         return list;
     }
 
+    /**
+     * >> Dùng ở: trang chọn suất - các ô giờ chiếu (BookingService.selectShowtime) | Loại: ĐỌC (SELECT)
+     */
     public List<Showtime> getShowtimes(int centreId, int movieId, LocalDate date) throws SQLException {
         String sql = """
                 %s
@@ -241,7 +262,10 @@ public class ShowtimeDAO {
         return list;
     }
 
-    /** Cac ngay con suat chieu tai chi nhanh (ban tai quay). */
+    /**
+     * Cac ngay con suat chieu tai chi nhanh (ban tai quay).
+     * >> Dùng ở: bán vé tại quầy - hàng nút ngày (BookingService.getShowDatesAtCentre) | Loại: ĐỌC (SELECT)
+     */
     public List<LocalDate> getShowDatesAtCentre(int centreId) throws SQLException {
         String sql = """
                 SELECT DISTINCT CAST(s.StartTime AS DATE) AS ShowDate
@@ -261,7 +285,10 @@ public class ShowtimeDAO {
         return list;
     }
 
-    /** Tat ca suat con mo ban cua chi nhanh trong ngay, sap theo phim roi gio chieu. */
+    /**
+     * Tat ca suat con mo ban cua chi nhanh trong ngay, sap theo phim roi gio chieu.
+     * >> Dùng ở: bán vé tại quầy - suất trong ngày theo phim (BookingService.getShowtimesByMovieAtCentre) | Loại: ĐỌC (SELECT)
+     */
     public List<Showtime> getShowtimesAtCentre(int centreId, LocalDate date) throws SQLException {
         String sql = """
                 %s
@@ -294,7 +321,10 @@ public class ShowtimeDAO {
     /** Thanh pho dang co suat mo ban va so rap co suat. */
     public record CityOption(String name, int centreCount) {}
 
-    /** Buoc 1: thanh pho con suat mo ban. @param movieId != null: chi thanh pho co chieu phim nay */
+    /**
+     * Buoc 1: thanh pho con suat mo ban. @param movieId != null: chi thanh pho co chieu phim nay
+     * >> Dùng ở: trang chọn suất - hàng nút thành phố (BookingService.selectShowtime) | Loại: ĐỌC (SELECT)
+     */
     public List<CityOption> getCities(Integer movieId) throws SQLException {
         String sql = """
                 SELECT %1$s AS City, COUNT(DISTINCT b.CentreID) AS Centres
@@ -313,7 +343,10 @@ public class ShowtimeDAO {
         return list;
     }
 
-    /** Buoc 2: rap trong thanh pho con suat mo ban. @param movieId != null: chi rap co chieu phim nay */
+    /**
+     * Buoc 2: rap trong thanh pho con suat mo ban. @param movieId != null: chi rap co chieu phim nay
+     * >> Dùng ở: trang chọn suất - cột Rạp phim (BookingService.selectShowtime) | Loại: ĐỌC (SELECT)
+     */
     public List<Centre> getCentresInCity(String city, Integer movieId) throws SQLException {
         String sql = """
                 SELECT DISTINCT b.CentreID, b.CentreName, b.Address, %1$s AS City
@@ -340,7 +373,10 @@ public class ShowtimeDAO {
         return list;
     }
 
-    /** Thanh pho cua rap (theo cach nhom o getCities), null neu khong co rap. */
+    /**
+     * Thanh pho cua rap (theo cach nhom o getCities), null neu khong co rap.
+     * >> Dùng ở: trang chọn suất - suy ra thành phố từ rạp (BookingService.selectShowtime) | Loại: ĐỌC (SELECT)
+     */
     public String getCityOfCentre(int centreId) throws SQLException {
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement("""
@@ -353,7 +389,10 @@ public class ShowtimeDAO {
         }
     }
 
-    /** Rap co suat chieu som nhat con mo ban cua phim, null neu phim khong con suat nao. */
+    /**
+     * Rap co suat chieu som nhat con mo ban cua phim, null neu phim khong con suat nao.
+     * >> Dùng ở: trang chọn suất - tự chọn rạp khi chỉ có phim (BookingService.selectShowtime) | Loại: ĐỌC (SELECT)
+     */
     public Integer findFirstCentreForMovie(int movieId) throws SQLException {
         String sql = """
                 SELECT TOP 1 b.CentreID
@@ -374,13 +413,19 @@ public class ShowtimeDAO {
         else ps.setInt(index, value);
     }
 
-    /** Suat chieu con mo ban, null neu khong ton tai hoac da qua gio. */
+    /**
+     * Suat chieu con mo ban, null neu khong ton tai hoac da qua gio.
+     * >> Dùng ở: trang chọn ghế + giữ ghế - suất còn bán không (BookingService.getBookableShowtime, hold) | Loại: ĐỌC + KHOÁ DÒNG (UPDLOCK)
+     */
     public Showtime getBookableById(int showtimeId) throws SQLException {
         try (Connection conn = DBContext.getConnection()) {
             return getBookableById(conn, showtimeId);
         }
     }
 
+    /**
+     * >> Dùng ở: trang chọn ghế + giữ ghế - suất còn bán không (BookingService.getBookableShowtime, hold) | Loại: ĐỌC + KHOÁ DÒNG (UPDLOCK)
+     */
     public Showtime getBookableById(Connection conn, int showtimeId) throws SQLException {
         // Khoa dong suat chieu (UPDLOCK, HOLDLOCK) den het transaction
         String sql = """

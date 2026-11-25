@@ -18,13 +18,25 @@ import java.util.List;
  */
 public class BookingVoucherDAO {
 
+    /* ============================== MỤC LỤC ==============================
+     * Tìm nhanh: Ctrl + F tên hàm. Mỗi hàm có dòng ">> Dùng ở: ... | Loại: ĐỌC / GHI" trong chú thích.
+     * Danh sách mã gợi ý ở trang checkout .. findAvailable
+     * Khách nhập / bấm Dùng một mã ......... findByCode, getScopeCentreIds, getScopeMovieIds, getScopeDays,
+     *                                        perCustomerLimit, countUserUsages
+     * Thanh toán xong (ghi lượt dùng) ...... insertUsageIfAbsent, incrementUsedCount
+     * Hằng COLUMNS = danh sách cột voucher dùng chung
+     * ===================================================================== */
+
     private static final String COLUMNS = """
             v.VoucherID, v.VoucherCode, v.VoucherName, v.Description, v.CentreID,
             v.DiscountType, v.DiscountValue, v.MinimumOrderValue, v.MaximumDiscount, v.StartDate, v.EndDate,
             v.UsageLimit, v.UsedCount, v.PerCustomerLimit, v.Status
             """;
 
-    /** Tìm voucher theo mã (không phân biệt hoa thường); không có thì null. */
+    /**
+     * Tìm voucher theo mã (không phân biệt hoa thường); không có thì null.
+     * >> Dùng ở: trang checkout - khách nhập / bấm Dùng một mã (BookingExtrasService.applyVoucher) | Loại: ĐỌC (SELECT)
+     */
     public Voucher findByCode(String code) throws SQLException {
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement("""
@@ -41,6 +53,7 @@ public class BookingVoucherDAO {
     /**
      * Các voucher đang dùng được cho suất chiếu: đang hoạt động, trong hạn, còn lượt, đúng rạp / phim / thứ trong tuần,
      * và khách (nếu có tài khoản) chưa dùng hết lượt của mình. Dùng cho danh sách voucher gợi ý ở trang xem lại đơn.
+     * >> Dùng ở: trang checkout - danh sách mã có sẵn (BookingExtrasService.getVoucherOptions) | Loại: ĐỌC (SELECT)
      */
     public List<Voucher> findAvailable(int centreId, int movieId, LocalDate showDate, Integer userId) throws SQLException {
         // %s = COLUMNS (danh sách cột voucher)
@@ -104,35 +117,50 @@ public class BookingVoucherDAO {
         return v;
     }
 
-    /** Số lượt mỗi khách được dùng voucher (cột PerCustomerLimit). */
+    /**
+     * Số lượt mỗi khách được dùng voucher (cột PerCustomerLimit).
+     * >> Dùng ở: áp voucher - mỗi khách dùng tối đa mấy lần (BookingExtrasService.applyVoucher) | Loại: ĐỌC (SELECT)
+     */
     public int perCustomerLimit(int voucherId) throws SQLException {
         return queryInt("""
                 SELECT PerCustomerLimit FROM Vouchers WHERE VoucherID = ?
                 """, voucherId);
     }
 
-    /** Số lần khách đã dùng voucher ở các đơn đã thanh toán. */
+    /**
+     * Số lần khách đã dùng voucher ở các đơn đã thanh toán.
+     * >> Dùng ở: áp voucher - khách đã dùng mấy lần (BookingExtrasService.applyVoucher) | Loại: ĐỌC (SELECT)
+     */
     public int countUserUsages(int voucherId, int userId) throws SQLException {
         return queryInt("""
                 SELECT COUNT(*) FROM VoucherUsages WHERE VoucherID = ? AND UserID = ?
                 """, voucherId, userId);
     }
 
-    /** Các rạp được khai báo riêng cho voucher (rỗng = áp dụng mọi rạp). */
+    /**
+     * Các rạp được khai báo riêng cho voucher (rỗng = áp dụng mọi rạp).
+     * >> Dùng ở: áp voucher - mã chỉ dùng cho rạp nào (BookingExtrasService.checkScope) | Loại: ĐỌC (SELECT)
+     */
     public List<Integer> getScopeCentreIds(int voucherId) throws SQLException {
         return intList("""
                 SELECT CentreID FROM VoucherCentres WHERE VoucherID = ?
                 """, voucherId);
     }
 
-    /** Các phim được khai báo riêng cho voucher (rỗng = áp dụng mọi phim). */
+    /**
+     * Các phim được khai báo riêng cho voucher (rỗng = áp dụng mọi phim).
+     * >> Dùng ở: áp voucher - mã chỉ dùng cho phim nào (BookingExtrasService.checkScope) | Loại: ĐỌC (SELECT)
+     */
     public List<Integer> getScopeMovieIds(int voucherId) throws SQLException {
         return intList("""
                 SELECT MovieID FROM VoucherMovies WHERE VoucherID = ?
                 """, voucherId);
     }
 
-    /** Các thứ trong tuần (MONDAY...) được khai báo riêng cho voucher (rỗng = áp dụng mọi ngày). */
+    /**
+     * Các thứ trong tuần (MONDAY...) được khai báo riêng cho voucher (rỗng = áp dụng mọi ngày).
+     * >> Dùng ở: áp voucher - mã chỉ dùng thứ nào (BookingExtrasService.checkScope) | Loại: ĐỌC (SELECT)
+     */
     public List<String> getScopeDays(int voucherId) throws SQLException {
         List<String> days = new ArrayList<>();
         try (Connection conn = DBContext.getConnection();
@@ -147,7 +175,10 @@ public class BookingVoucherDAO {
         return days;
     }
 
-    /** Ghi lượt dùng voucher của khách cho đơn vào VoucherUsages; đã ghi rồi thì bỏ qua. */
+    /**
+     * Ghi lượt dùng voucher của khách cho đơn vào VoucherUsages; đã ghi rồi thì bỏ qua.
+     * >> Dùng ở: thanh toán xong - ghi lượt dùng của khách (PaymentService.recordVoucherUsage) | Loại: GHI (INSERT / UPDATE / DELETE)
+     */
     public void insertUsageIfAbsent(Connection conn, int voucherId, int userId, int bookingId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
                 """
@@ -163,7 +194,10 @@ public class BookingVoucherDAO {
         }
     }
 
-    /** Tăng số lượt đã dùng (UsedCount) của voucher thêm 1. */
+    /**
+     * Tăng số lượt đã dùng (UsedCount) của voucher thêm 1.
+     * >> Dùng ở: thanh toán xong - tăng tổng lượt dùng của mã (PaymentService.recordVoucherUsage) | Loại: GHI (INSERT / UPDATE / DELETE)
+     */
     public void incrementUsedCount(Connection conn, int voucherId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement("""
                 UPDATE Vouchers SET UsedCount = UsedCount + 1 WHERE VoucherID = ?
@@ -173,7 +207,10 @@ public class BookingVoucherDAO {
         }
     }
 
-    /** Chạy câu SELECT một cột số nguyên với một tham số id, trả về danh sách. */
+    /**
+     * Chạy câu SELECT một cột số nguyên với một tham số id, trả về danh sách.
+     * >> Dùng ở: nội bộ - SELECT trả về danh sách số | Loại: ĐỌC (SELECT)
+     */
     private static List<Integer> intList(String sql, int param) throws SQLException {
         List<Integer> list = new ArrayList<>();
         try (Connection conn = DBContext.getConnection();
@@ -186,7 +223,10 @@ public class BookingVoucherDAO {
         return list;
     }
 
-    /** Chạy câu SELECT trả về một số nguyên (ví dụ COUNT); không có dòng thì 0. */
+    /**
+     * Chạy câu SELECT trả về một số nguyên (ví dụ COUNT); không có dòng thì 0.
+     * >> Dùng ở: nội bộ - SELECT trả về một số | Loại: ĐỌC (SELECT)
+     */
     private static int queryInt(String sql, int... params) throws SQLException {
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {

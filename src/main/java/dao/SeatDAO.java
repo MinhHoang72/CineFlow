@@ -26,9 +26,16 @@ import java.util.Map;
  */
 public class SeatDAO {
 
+    /* ============================== MỤC LỤC ==============================
+     * Tìm nhanh: Ctrl + F tên hàm. Mỗi hàm có dòng ">> Dùng ở: ... | Loại: ĐỌC / GHI" trong chú thích.
+     * PHẦN ĐẶT VÉ (huythhe171800) - các phần khác trong file là cấu hình sơ đồ ghế của nhóm.
+     * Trang chọn ghế: getSeatMap (ghế + đã bán / đang giữ), getLockedPrices (giá đã chốt theo loại ghế)
+     * ===================================================================== */
+
     /**
      * Ghế của phòng chiếu kèm trạng thái đã giữ/đã bán cho suất chiếu (luồng đặt vé).
      * Giá ghế chưa tính (null): BookingService cộng giá suất chiếu với phụ thu loại ghế.
+     * >> Dùng ở: trang chọn ghế + giữ ghế - ghế của phòng, cột Taken = ô xám (BookingService.pricedSeats) | Loại: ĐỌC (SELECT)
      */
     public List<Seat> getSeatMap(Connection conn, Showtime showtime) throws SQLException {
         String sql = """
@@ -55,6 +62,9 @@ public class SeatDAO {
         return seats;
     }
 
+    /**
+     * >> Dùng ở: trang chọn ghế + giữ ghế - giá theo loại ghế (BookingService.pricedSeats) | Loại: ĐỌC (SELECT)
+     */
     public Map<String,BigDecimal> getLockedPrices(Connection conn,int showtimeId) throws SQLException {
         Map<String,BigDecimal> prices=new HashMap<>();
         try(PreparedStatement ps=conn.prepareStatement("""

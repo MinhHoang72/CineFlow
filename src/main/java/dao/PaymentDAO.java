@@ -21,6 +21,20 @@ import java.util.List;
  */
 public class PaymentDAO {
 
+    /* ============================== MỤC LỤC ==============================
+     * Tìm nhanh: Ctrl + F tên hàm. Mỗi hàm có dòng ">> Dùng ở: ... | Loại: ĐỌC / GHI" trong chú thích.
+     * Bấm Thanh toán VNPay ... cancelPendingQr, insertBookingPayment
+     * VNPay báo về ........... findVnpay, markFailed, lockBookingPayment, markPaid,
+     *                          bookingStillMatchesShowtime, cancelOtherPending, insertTickets
+     * Trang thất bại ......... latestQrStatus
+     * Trang chi tiết đơn ..... getTickets, getTransactions
+     * Hết hạn / huỷ đơn ...... updatePendingForBookings
+     * Bắp nước lẻ tại quầy ... insertFnbPayment, cancelPendingQrForOrder, updatePendingForOrders, findFnbVnpay,
+     *                          lockFnbPayment, cancelOtherPendingForOrder, getFnbTransactions
+     * Nhân viên theo dõi ..... getTransactionsForTracking
+     * Hàm nội bộ dùng chung (đơn vé / đơn lẻ): insert, updatePendingIn, cancelOthers, transactions
+     * ===================================================================== */
+
     /**
      * Giao dịch VNPay của đơn vé (PaymentMethod = 'QR', TransactionCode = vnp_TxnRef): id, đơn, số tiền, trạng thái.
      */
@@ -43,13 +57,17 @@ public class PaymentDAO {
     /**
      * Ghi giao dịch PENDING cho đơn vé (VNPay hoặc tiền mặt).
      * @return PaymentID
+     * >> Dùng ở: bấm Thanh toán VNPay / thu tiền mặt - tạo giao dịch (createVnpayPayment, payCash) | Loại: GHI (INSERT / UPDATE / DELETE)
      */
     public int insertBookingPayment(Connection conn, int bookingId, String transactionCode, String method,
             BigDecimal amount, BigDecimal cashReceived) throws SQLException {
         return insert(conn, "BookingID", bookingId, transactionCode, method, amount, cashReceived);
     }
 
-    /** Giao dịch VNPay đang chờ của đơn -> CANCELLED (khách tạo giao dịch mới khi thanh toán lại). */
+    /**
+     * Giao dịch VNPay đang chờ của đơn -> CANCELLED (khách tạo giao dịch mới khi thanh toán lại).
+     * >> Dùng ở: bấm Thanh toán VNPay - huỷ giao dịch chờ cũ (PaymentService.createVnpayPayment) | Loại: GHI (INSERT / UPDATE / DELETE)
+     */
     public void cancelPendingQr(Connection conn, int bookingId) throws SQLException {
         update(conn, """
                 UPDATE Payments SET PaymentStatus = 'CANCELLED'
@@ -59,12 +77,16 @@ public class PaymentDAO {
 
     /**
      * Giao dịch đang chờ của các đơn vé -> trạng thái mới (CANCELLED khi huỷ đơn, TIMEOUT khi hết hạn giữ ghế).
+     * >> Dùng ở: hết hạn / huỷ đơn - giao dịch chờ -> TIMEOUT / CANCELLED (releaseExpiredHolds, cancelPending) | Loại: GHI (INSERT / UPDATE / DELETE)
      */
     public void updatePendingForBookings(Connection conn, List<Integer> bookingIds, String newStatus) throws SQLException {
         updatePendingIn(conn, "BookingID", bookingIds, newStatus);
     }
 
-    /** Tìm giao dịch VNPay của đơn vé theo mã giao dịch (vnp_TxnRef); không có thì null. */
+    /**
+     * Tìm giao dịch VNPay của đơn vé theo mã giao dịch (vnp_TxnRef); không có thì null.
+     * >> Dùng ở: VNPay báo về - tìm giao dịch theo vnp_TxnRef (PaymentService.processVnpay) | Loại: ĐỌC (SELECT)
+     */
     public VnpayRef findVnpay(String txnRef) throws SQLException {
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(
@@ -80,7 +102,10 @@ public class PaymentDAO {
         }
     }
 
-    /** Giao dịch PENDING -> FAILED (VNPay báo không thành công). */
+    /**
+     * Giao dịch PENDING -> FAILED (VNPay báo không thành công).
+     * >> Dùng ở: VNPay báo thất bại - giao dịch -> FAILED (PaymentService.processVnpay) | Loại: GHI (INSERT / UPDATE / DELETE)
+     */
     public void markFailed(int paymentId) throws SQLException {
         try (Connection conn = DBContext.getConnection()) {
             update(conn, """
@@ -90,7 +115,10 @@ public class PaymentDAO {
         }
     }
 
-    /** Trạng thái giao dịch VNPay mới nhất của đơn (để biết lý do thanh toán thất bại); chưa có thì null. */
+    /**
+     * Trạng thái giao dịch VNPay mới nhất của đơn (để biết lý do thanh toán thất bại); chưa có thì null.
+     * >> Dùng ở: trang thanh toán thất bại - lý do (PaymentService.getFailureReason) | Loại: ĐỌC (SELECT)
+     */
     public String latestQrStatus(int bookingId) throws SQLException {
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(
@@ -110,6 +138,7 @@ public class PaymentDAO {
      * Khoá giúp hai yêu cầu xác nhận cùng lúc (return URL và IPN) không chạy chồng nhau.
      * @param centreId null = không giới hạn rạp; có giá trị thì giao dịch phải thuộc rạp đó
      * @return null nếu không có hoặc không thuộc rạp
+     * >> Dùng ở: VNPay báo thành công / thu tiền mặt - khoá trước khi xác nhận (PaymentService.confirmPaid) | Loại: ĐỌC + KHOÁ DÒNG (UPDLOCK)
      */
     public LockedPayment lockBookingPayment(Connection conn, int paymentId, Integer centreId) throws SQLException {
         // Serialize payment confirmation with manager edits/cancellation and seat holds.
@@ -137,7 +166,10 @@ public class PaymentDAO {
         }
     }
 
-    /** Giao dịch -> PAID và ghi thời điểm thanh toán (PaidAt). */
+    /**
+     * Giao dịch -> PAID và ghi thời điểm thanh toán (PaidAt).
+     * >> Dùng ở: xác nhận thanh toán - giao dịch -> PAID (PaymentService.confirmPaid) | Loại: GHI (INSERT / UPDATE / DELETE)
+     */
     public void markPaid(Connection conn, int paymentId) throws SQLException {
         update(conn, """
                 UPDATE Payments SET PaymentStatus = 'PAID', PaidAt = SYSDATETIME() WHERE PaymentID = ?
@@ -148,6 +180,7 @@ public class PaymentDAO {
      * Đơn còn hợp lệ để xác nhận không: đơn chưa huỷ; suất vẫn SCHEDULED, chưa chiếu, đang mở bán;
      * phim đang chiếu; rạp ACTIVE; phòng AVAILABLE; phim còn được phân phối cho rạp.
      * Sai một điều kiện thì confirmPaid huỷ đơn (tiền về muộn sau khi suất bị sửa hoặc ngừng bán).
+     * >> Dùng ở: xác nhận thanh toán - suất còn hợp lệ không (PaymentService.confirmPaid) | Loại: ĐỌC (SELECT)
      */
     public boolean bookingStillMatchesShowtime(Connection conn, int bookingId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement("""
@@ -158,17 +191,26 @@ public class PaymentDAO {
         }
     }
 
-    /** Các giao dịch còn chờ khác (PENDING / TIMEOUT) của đơn -> CANCELLED, sau khi một giao dịch đã PAID. */
+    /**
+     * Các giao dịch còn chờ khác (PENDING / TIMEOUT) của đơn -> CANCELLED, sau khi một giao dịch đã PAID.
+     * >> Dùng ở: xác nhận thanh toán - huỷ giao dịch chờ khác của đơn (PaymentService.confirmPaid) | Loại: GHI (INSERT / UPDATE / DELETE)
+     */
     public void cancelOtherPending(Connection conn, int bookingId, int paidPaymentId) throws SQLException {
         cancelOthers(conn, "BookingID", bookingId, paidPaymentId);
     }
 
-    /** Tất cả giao dịch của đơn vé, cũ nhất trước. */
+    /**
+     * Tất cả giao dịch của đơn vé, cũ nhất trước.
+     * >> Dùng ở: trang chi tiết đơn - bảng Thanh toán (PaymentService.getTransactions) | Loại: ĐỌC (SELECT)
+     */
     public List<PaymentTransaction> getTransactions(int bookingId) throws SQLException {
         return transactions("BookingID", bookingId);
     }
 
-    /** Tất cả giao dịch của đơn bắp nước lẻ, cũ nhất trước. */
+    /**
+     * Tất cả giao dịch của đơn bắp nước lẻ, cũ nhất trước.
+     * >> Dùng ở: hoá đơn bắp nước lẻ (FnbSaleService) | Loại: ĐỌC (SELECT)
+     */
     public List<PaymentTransaction> getFnbTransactions(int orderId) throws SQLException {
         return transactions("FnbOrderID", orderId);
     }
@@ -176,6 +218,7 @@ public class PaymentDAO {
     /**
      * Giao dịch vé và bắp nước lẻ cho trang theo dõi giao dịch, mới nhất trước.
      * @param centreId null = mọi rạp; status, method null = không lọc; days = số ngày gần nhất
+     * >> Dùng ở: nhân viên - trang theo dõi giao dịch /staff/payments | Loại: ĐỌC (SELECT)
      */
     public List<Payment> getTransactionsForTracking(Integer centreId, String status, String method, int days)
             throws SQLException {
@@ -226,7 +269,10 @@ public class PaymentDAO {
 
     // ---------------------------------------------------------------- ve
 
-    /** Ghi các vé mới vào bảng Tickets (trạng thái VALID), mỗi vé gắn với một ghế đã CONFIRMED. */
+    /**
+     * Ghi các vé mới vào bảng Tickets (trạng thái VALID), mỗi vé gắn với một ghế đã CONFIRMED.
+     * >> Dùng ở: thanh toán xong - xuất vé, mỗi ghế một vé (PaymentService.issueTickets) | Loại: GHI (INSERT / UPDATE / DELETE)
+     */
     public void insertTickets(Connection conn, List<NewTicket> tickets) throws SQLException {
         if (tickets.isEmpty()) return;
         try (PreparedStatement ps = conn.prepareStatement(
@@ -243,7 +289,10 @@ public class PaymentDAO {
         }
     }
 
-    /** Danh sách vé của đơn kèm thông tin phim, rạp, phòng, ghế để hiện và in vé. */
+    /**
+     * Danh sách vé của đơn kèm thông tin phim, rạp, phòng, ghế để hiện và in vé.
+     * >> Dùng ở: trang chi tiết đơn / in vé tại quầy - vé điện tử (PaymentService.getTickets) | Loại: ĐỌC (SELECT)
+     */
     public List<Ticket> getTickets(int bookingId) throws SQLException {
         String sql = """
                 SELECT t.TicketCode, t.QRCode, t.TicketStatus, se.SeatRow, se.SeatNumber, se.SeatType
@@ -271,13 +320,17 @@ public class PaymentDAO {
     /**
      * Ghi giao dịch PENDING cho đơn bắp nước lẻ (cột FnbOrderID).
      * @return PaymentID
+     * >> Dùng ở: bắp nước lẻ tại quầy - tạo giao dịch (FnbSaleService) | Loại: GHI (INSERT / UPDATE / DELETE)
      */
     public int insertFnbPayment(Connection conn, int orderId, String transactionCode, String method,
             BigDecimal amount, BigDecimal cashReceived) throws SQLException {
         return insert(conn, "FnbOrderID", orderId, transactionCode, method, amount, cashReceived);
     }
 
-    /** Giao dịch VNPay đang chờ của đơn bắp nước lẻ -> CANCELLED. */
+    /**
+     * Giao dịch VNPay đang chờ của đơn bắp nước lẻ -> CANCELLED.
+     * >> Dùng ở: bắp nước lẻ tại quầy - huỷ giao dịch VNPay chờ cũ (FnbSaleService) | Loại: GHI (INSERT / UPDATE / DELETE)
+     */
     public void cancelPendingQrForOrder(Connection conn, int orderId) throws SQLException {
         update(conn, """
                 UPDATE Payments SET PaymentStatus = 'CANCELLED'
@@ -285,12 +338,18 @@ public class PaymentDAO {
                 """, orderId);
     }
 
-    /** Giao dịch đang chờ của các đơn bắp nước lẻ -> trạng thái mới (CANCELLED / TIMEOUT). */
+    /**
+     * Giao dịch đang chờ của các đơn bắp nước lẻ -> trạng thái mới (CANCELLED / TIMEOUT).
+     * >> Dùng ở: bắp nước lẻ - dọn đơn quá hạn (FnbSaleService) | Loại: GHI (INSERT / UPDATE / DELETE)
+     */
     public void updatePendingForOrders(Connection conn, List<Integer> orderIds, String newStatus) throws SQLException {
         updatePendingIn(conn, "FnbOrderID", orderIds, newStatus);
     }
 
-    /** Tìm giao dịch VNPay của đơn bắp nước lẻ theo mã giao dịch; không có thì null. */
+    /**
+     * Tìm giao dịch VNPay của đơn bắp nước lẻ theo mã giao dịch; không có thì null.
+     * >> Dùng ở: VNPay báo về cho đơn bắp nước lẻ (PaymentService.processFnbVnpay, findFnbOrderId) | Loại: ĐỌC (SELECT)
+     */
     public FnbVnpayRef findFnbVnpay(String txnRef) throws SQLException {
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(
@@ -310,6 +369,7 @@ public class PaymentDAO {
      * Khoá dòng giao dịch bắp nước lẻ (UPDLOCK) để xác nhận.
      * @param centreId null = không giới hạn rạp
      * @return null nếu không có hoặc không thuộc rạp
+     * >> Dùng ở: xác nhận thanh toán đơn bắp nước lẻ (FnbSaleService.confirmPaid) | Loại: ĐỌC + KHOÁ DÒNG (UPDLOCK)
      */
     public LockedFnbPayment lockFnbPayment(Connection conn, int paymentId, Integer centreId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
@@ -327,7 +387,10 @@ public class PaymentDAO {
         }
     }
 
-    /** Các giao dịch còn chờ khác của đơn bắp nước lẻ -> CANCELLED, sau khi một giao dịch đã PAID. */
+    /**
+     * Các giao dịch còn chờ khác của đơn bắp nước lẻ -> CANCELLED, sau khi một giao dịch đã PAID.
+     * >> Dùng ở: xác nhận thanh toán đơn bắp nước lẻ - huỷ giao dịch chờ khác (FnbSaleService.confirmPaid) | Loại: GHI (INSERT / UPDATE / DELETE)
+     */
     public void cancelOtherPendingForOrder(Connection conn, int orderId, int paidPaymentId) throws SQLException {
         cancelOthers(conn, "FnbOrderID", orderId, paidPaymentId);
     }
@@ -338,6 +401,7 @@ public class PaymentDAO {
      * Hàm ghi giao dịch dùng chung cho đơn vé (BookingID) và đơn bắp nước lẻ (FnbOrderID):
      * trạng thái PENDING, mã giao dịch, phương thức, số tiền, tiền khách đưa (null nếu VNPay).
      * @return PaymentID vừa tạo
+     * >> Dùng ở: nội bộ - insertBookingPayment / insertFnbPayment (%s = BookingID hoặc FnbOrderID) | Loại: GHI (INSERT / UPDATE / DELETE)
      */
     private static int insert(Connection conn, String ownerColumn, int ownerId, String transactionCode, String method,
             BigDecimal amount, BigDecimal cashReceived) throws SQLException {
@@ -359,7 +423,10 @@ public class PaymentDAO {
         }
     }
 
-    /** Đổi trạng thái các giao dịch PENDING của danh sách đơn (theo cột BookingID hoặc FnbOrderID). */
+    /**
+     * Đổi trạng thái các giao dịch PENDING của danh sách đơn (theo cột BookingID hoặc FnbOrderID).
+     * >> Dùng ở: nội bộ - updatePendingForBookings / updatePendingForOrders | Loại: GHI (INSERT / UPDATE / DELETE)
+     */
     private static void updatePendingIn(Connection conn, String ownerColumn, List<Integer> ids, String newStatus)
             throws SQLException {
         if (ids.isEmpty()) return;
@@ -374,7 +441,10 @@ public class PaymentDAO {
         }
     }
 
-    /** Huỷ các giao dịch còn chờ khác của một đơn, trừ giao dịch vừa PAID. */
+    /**
+     * Huỷ các giao dịch còn chờ khác của một đơn, trừ giao dịch vừa PAID.
+     * >> Dùng ở: nội bộ - cancelOtherPending / cancelOtherPendingForOrder | Loại: GHI (INSERT / UPDATE / DELETE)
+     */
     private static void cancelOthers(Connection conn, String ownerColumn, int ownerId, int paidPaymentId)
             throws SQLException {
         // %s = ownerColumn (BookingID hoặc FnbOrderID)
@@ -388,7 +458,10 @@ public class PaymentDAO {
         }
     }
 
-    /** Đọc danh sách giao dịch của một đơn theo cột BookingID hoặc FnbOrderID, cũ nhất trước. */
+    /**
+     * Đọc danh sách giao dịch của một đơn theo cột BookingID hoặc FnbOrderID, cũ nhất trước.
+     * >> Dùng ở: nội bộ - getTransactions / getFnbTransactions | Loại: ĐỌC (SELECT)
+     */
     private List<PaymentTransaction> transactions(String column, int id) throws SQLException {
         // %s = column (BookingID hoặc FnbOrderID)
         String sql = """
