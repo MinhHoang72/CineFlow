@@ -7,7 +7,7 @@
     - Chỉ hiển thị và phân phối các phim Đang chiếu (NOW_SHOWING) và Sắp chiếu (COMING_SOON).
 --%>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ page import="model.entity.Movie, model.entity.Centre, java.util.List, java.util.Set, java.util.LinkedHashSet" %>
+<%@ page import="model.entity.Movie, model.entity.Centre, java.util.List, java.util.Set" %>
 <%
     // 1. Kiểm tra quyền Quản trị viên (ADMIN)
     String authRole = (String) session.getAttribute("role");
@@ -19,35 +19,16 @@
         return;
     }
 
-    // 2. Lấy dữ liệu do DistributionServlet nạp sẵn từ MovieService
+    // 2. Lấy dữ liệu sạch do DistributionServlet nạp sẵn từ MovieService
     Movie movie = (Movie) request.getAttribute("movie");
     List<Movie> allMovies = (List<Movie>) request.getAttribute("allMovies");
-    List<Centre> rawCentres = (List<Centre>) request.getAttribute("centres");
+    List<Centre> centres = (List<Centre>) request.getAttribute("centres");
+    Set<String> cities = (Set<String>) request.getAttribute("cities");
+    int totalDistributed = request.getAttribute("totalDistributed") != null ? (Integer) request.getAttribute("totalDistributed") : 0;
+    int totalCentres = request.getAttribute("totalCentres") != null ? (Integer) request.getAttribute("totalCentres") : 0;
     if (allMovies == null) allMovies = java.util.Collections.emptyList();
-
-    // Chỉ lấy các rạp Đang hoạt động (ACTIVE) hoặc Tạm ngưng (SUSPENDED), loại bỏ hoàn toàn rạp Ngừng hoạt động (INACTIVE)
-    List<Centre> centres = new java.util.ArrayList<>();
-    if (rawCentres != null) {
-        for (Centre c : rawCentres) {
-            if (c.getStatus() != null && !"INACTIVE".equalsIgnoreCase(c.getStatus().trim())) {
-                centres.add(c);
-            }
-        }
-    }
-
-    // 3. Đếm số rạp đã phân phối và gom danh sách thành phố phục vụ bộ lọc
-    int totalCentres = centres.size();
-    int totalDistributed = 0;
-    Set<String> cities = new LinkedHashSet<>();
-
-    for (Centre c : centres) {
-        if (c.getCity() != null && !c.getCity().isBlank()) {
-            cities.add(c.getCity().trim());
-        }
-        if (c.isDistributed()) {
-            totalDistributed++;
-        }
-    }
+    if (centres == null) centres = java.util.Collections.emptyList();
+    if (cities == null) cities = java.util.Collections.emptySet();
 %>
 <!DOCTYPE html>
 <html lang="vi">
@@ -109,76 +90,25 @@
                     </div>
                 </div>
 
-                <div class="cf-movie-picker-container" id="moviePickerContainer" data-context-path="${pageContext.request.contextPath}">
-                    <div class="cf-movie-input-box" id="movieInputBox">
-                        <span class="cf-movie-search-icon">
-                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="11" cy="11" r="8"></circle>
-                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                            </svg>
-                        </span>
-                        <input type="text"
-                               id="movieSearchInput"
-                               class="cf-movie-search-input"
-                               placeholder="Tìm kiếm phim theo tên hoặc mã phim..."
-                               value="<%= movie != null ? movie.getTitle() : "" %>"
-                               data-selected-title="<%= movie != null ? movie.getTitle().replace("\"", "&quot;") : "" %>"
-                               autocomplete="off">
-                        <div class="cf-movie-input-actions">
-                            <button type="button" class="cf-btn-clear-search" id="btnClearMovieSearch" title="Xóa từ khóa" style="display: none;">✕</button>
-                            <span class="cf-movie-dropdown-icon" id="toggleMovieDropdown">
-                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polyline points="6 9 12 15 18 9"></polyline>
-                                </svg>
-                            </span>
-                        </div>
-                    </div>
-
-                    <div class="cf-movie-dropdown-panel" id="movieDropdownPanel">
-                        <div class="cf-movie-list-scroll" id="movieListScroll">
-                            <% if (allMovies.isEmpty()) { %>
-                                <div class="cf-movie-empty-opt">Chưa có phim nào trong hệ thống</div>
-                            <% } else {
-                                for (Movie m : allMovies) {
-                                    String st = m.getStatus();
-                                    boolean isSelected = (movie != null && m.getMovieId() == movie.getMovieId());
-                                    String mCode = "Mã phim: " + m.getMovieId();
-                                    String stText = "NOW_SHOWING".equals(st) ? "Đang chiếu" : "Sắp khởi chiếu";
-                                    String badgeClass = "NOW_SHOWING".equals(st) ? "cf-badge-success" : "cf-badge-info";
-                            %>
-                            <div class="cf-movie-option <%= isSelected ? "is-selected" : "" %>"
-                                 data-movie-id="<%= m.getMovieId() %>"
-                                 data-title="<%= m.getTitle() != null ? m.getTitle().toLowerCase().replace("\"", "&quot;") : "" %>"
-                                 data-code="<%= m.getMovieId() %> <%= mCode.toLowerCase() %>"
-                                 onclick="selectMovie(<%= m.getMovieId() %>)">
-                                <div class="cf-movie-opt-poster">
-                                    <% if (m.getPosterUrl() != null && !m.getPosterUrl().isBlank()) { %>
-                                        <img src="<%= m.getPosterUrl() %>" alt="<%= m.getTitle() %>" loading="lazy" onerror="this.parentElement.innerHTML='🎬';">
-                                    <% } else { %>
-                                        🎬
-                                    <% } %>
-                                </div>
-                                <div class="cf-movie-opt-info">
-                                    <div class="cf-movie-opt-title-row">
-                                        <span class="cf-movie-opt-title"><%= m.getTitle() %></span>
-                                        <span class="cf-badge <%= badgeClass %>"><%= stText %></span>
-                                    </div>
-                                    <div class="cf-movie-opt-sub">
-                                        <span><%= mCode %></span> · <span><%= m.getGenre() != null ? m.getGenre() : "Chưa cập nhật" %></span>
-                                        <% if (m.getDuration() > 0) { %> · <span><%= m.getDuration() %> phút</span><% } %>
-                                    </div>
-                                </div>
-                                <% if (isSelected) { %>
-                                    <span class="cf-movie-opt-check" title="Đang chọn"></span>
-                                <% } %>
-                            </div>
-                            <% }} %>
-                            <div class="cf-movie-empty-opt" id="movieEmptyOption" style="display: none;">
-                                Không tìm thấy phim nào khớp với từ khóa
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <form action="${pageContext.request.contextPath}/admin/distribution" method="GET" style="margin-bottom: 16px;">
+                    <select name="movieId"
+                            class="cf-filter-select"
+                            style="width: 100%; height: 44px; font-size: 14px;"
+                            onchange="this.form.submit()"
+                            <%= allMovies.isEmpty() ? "disabled" : "" %>>
+                        <% if (allMovies.isEmpty()) { %>
+                            <option value="">Chưa có phim nào trong hệ thống</option>
+                        <% } else {
+                            for (Movie m : allMovies) {
+                                boolean isSelected = (movie != null && m.getMovieId() == movie.getMovieId());
+                                String stText = "NOW_SHOWING".equals(m.getStatus()) ? "Đang chiếu" : "Sắp khởi chiếu";
+                        %>
+                        <option value="<%= m.getMovieId() %>" <%= isSelected ? "selected" : "" %>>
+                            [Mã phim: <%= m.getMovieId() %>] <%= m.getTitle() %> — <%= stText %>
+                        </option>
+                        <% }} %>
+                    </select>
+                </form>
 
                 <!-- THẺ THÔNG TIN PHIM ĐƯỢC CHỌN -->
                 <% if (movie != null) {
@@ -234,7 +164,7 @@
                             <div class="cf-step-badge">2</div>
                             <h2 class="cf-step-title">Chọn cụm rạp phân phối</h2>
                         </div>
-                        <div class="cf-step-counter" id="selectedCounterText">
+                        <div class="cf-step-counter">
                             Đã chọn <strong id="selectedCountNum" style="color: #ffffff;"><%= totalDistributed %></strong>/<%= totalCentres %> cụm rạp
                         </div>
                     </div>
@@ -285,14 +215,10 @@
                                     String cCity = c.getCity() != null ? c.getCity() : "";
                                 %>
                                 <tr class="cf-centre-row"
-                                    data-id="<%= c.getCentreId() %>"
-                                    data-active="1"
                                     data-name="<%= c.getCentreName().toLowerCase() %>"
-                                    data-centre-name="<%= c.getCentreName() %>"
                                     data-city="<%= cCity.toLowerCase() %>"
                                     data-city-raw="<%= cCity %>"
-                                    data-status="<%= rawStatus %>"
-                                    data-originally-distributed="<%= isDistributed ? "1" : "0" %>">
+                                    data-status="<%= rawStatus %>">
                                     <td>
                                         <div class="cf-centre-name-cell">
                                              <span><%= c.getCentreName() %></span>
@@ -305,7 +231,7 @@
                                         <% if (isActive) { %>
                                             <span class="cf-badge-active">Hoạt động</span>
                                         <% } else { %>
-                                            <span class="cf-badge-maintenance" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3);">Tạm ngưng</span>
+                                            <span class="cf-badge-maintenance">Tạm ngưng</span>
                                         <% } %>
                                     </td>
                                     <td style="text-align: center;">
