@@ -31,22 +31,7 @@
     request.setAttribute("pageTitle", "Quản lý phim");
     request.setAttribute("pageBreadcrumb", "Danh mục phim");
 
-    // 4. Đếm số lượng phim theo từng trạng thái để hiển thị trên 5 thẻ KPI
-    int totalMovies = movies.size();
-    int nowShowingCount = 0;
-    int comingSoonCount = 0;
-    int endedCount = 0;
-    int archivedCount = 0;
-
-    for (Movie m : movies) {
-        String st = m.getStatus();
-        if ("NOW_SHOWING".equals(st)) nowShowingCount++;
-        else if ("COMING_SOON".equals(st)) comingSoonCount++;
-        else if ("ENDED".equals(st)) endedCount++;
-        else if ("ARCHIVED".equals(st)) archivedCount++;
-    }
-
-    // 5. Đọc tham số thông báo sau khi lưu thành công từ movieForm.jsp
+    // 4. Đọc tham số thông báo sau khi lưu thành công từ movieForm.jsp
     String successParam = request.getParameter("success");
 %>
 <!DOCTYPE html>
@@ -97,23 +82,23 @@
                     <div class="cf-kpi-grid cf-kpi-grid-5">
                         <div class="cf-kpi-card">
                             <span class="cf-kpi-label">Tổng số phim</span>
-                            <div class="cf-kpi-value"><%= totalMovies %></div>
+                            <div class="cf-kpi-value">${totalMovies}</div>
                         </div>
                         <div class="cf-kpi-card">
                             <span class="cf-kpi-label" style="color: #0284c7;">Sắp khởi chiếu</span>
-                            <div class="cf-kpi-value"><%= comingSoonCount %></div>
+                            <div class="cf-kpi-value">${comingSoonCount}</div>
                         </div>
                         <div class="cf-kpi-card">
                             <span class="cf-kpi-label" style="color: #059669;">Đang chiếu</span>
-                            <div class="cf-kpi-value"><%= nowShowingCount %></div>
+                            <div class="cf-kpi-value">${nowShowingCount}</div>
                         </div>
                         <div class="cf-kpi-card">
                             <span class="cf-kpi-label" style="color: #d97706;">Đã kết thúc</span>
-                            <div class="cf-kpi-value"><%= endedCount %></div>
+                            <div class="cf-kpi-value">${endedCount}</div>
                         </div>
                         <div class="cf-kpi-card">
                             <span class="cf-kpi-label" style="color: #64748b;">Lưu trữ</span>
-                            <div class="cf-kpi-value"><%= archivedCount %></div>
+                            <div class="cf-kpi-value">${archivedCount}</div>
                         </div>
                     </div>
 
@@ -123,11 +108,11 @@
                             <!-- BỘ LỌC TRẠNG THÁI -->
                             <div class="cf-toolbar-left">
                                 <div class="cf-filter-pills">
-                                    <button type="button" class="cf-pill active" data-status="ALL">Tất cả phim (<%= totalMovies %>)</button>
-                                    <button type="button" class="cf-pill" data-status="NOW_SHOWING">Đang chiếu (<%= nowShowingCount %>)</button>
-                                    <button type="button" class="cf-pill" data-status="COMING_SOON">Sắp khởi chiếu (<%= comingSoonCount %>)</button>
-                                    <button type="button" class="cf-pill" data-status="ENDED">Đã kết thúc (<%= endedCount %>)</button>
-                                    <button type="button" class="cf-pill" data-status="ARCHIVED">Lưu trữ (<%= archivedCount %>)</button>
+                                    <button type="button" class="cf-pill active" data-status="ALL">Tất cả phim (${totalMovies})</button>
+                                    <button type="button" class="cf-pill" data-status="NOW_SHOWING">Đang chiếu (${nowShowingCount})</button>
+                                    <button type="button" class="cf-pill" data-status="COMING_SOON">Sắp khởi chiếu (${comingSoonCount})</button>
+                                    <button type="button" class="cf-pill" data-status="ENDED">Đã kết thúc (${endedCount})</button>
+                                    <button type="button" class="cf-pill" data-status="ARCHIVED">Lưu trữ (${archivedCount})</button>
                                 </div>
                             </div>
 

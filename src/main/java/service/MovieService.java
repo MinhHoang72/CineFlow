@@ -10,6 +10,7 @@ import java.time.LocalDate;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -41,6 +42,26 @@ public class MovieService {
      */
     public List<Movie> getAllMovies() {
         return movieDAO.getAllMovies();
+    }
+
+    public record MovieKpi(int total, int comingSoon, int nowShowing, int ended, int archived) {}
+
+    /**
+     * Lấy dữ liệu đếm phim theo trạng thái từ MovieDAO rồi tổng hợp thành đối tượng MovieKpi cho Controller.
+     *
+     * @return đối tượng MovieKpi chứa đủ 5 chỉ số thống kê
+     */
+    public MovieKpi getMovieKpi() {
+        Map<String, Integer> counts = movieDAO.getMovieCountByStatus();
+        int comingSoon = counts.getOrDefault("COMING_SOON", 0);
+        int nowShowing = counts.getOrDefault("NOW_SHOWING", 0);
+        int ended = counts.getOrDefault("ENDED", 0);
+        int archived = counts.getOrDefault("ARCHIVED", 0);
+        int total = 0;
+        for (int c : counts.values()) {
+            total += c;
+        }
+        return new MovieKpi(total, comingSoon, nowShowing, ended, archived);
     }
 
     /**

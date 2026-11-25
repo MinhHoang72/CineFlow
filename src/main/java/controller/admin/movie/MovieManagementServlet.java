@@ -53,7 +53,13 @@ public class MovieManagementServlet extends HttpServlet {
 
         // Danh sách phim
         if ("/admin/movies".equals(request.getServletPath())) {
+            MovieService.MovieKpi kpi = movieService.getMovieKpi();
             request.setAttribute("movies", movieService.getAllMovies());
+            request.setAttribute("totalMovies", kpi.total());
+            request.setAttribute("comingSoonCount", kpi.comingSoon());
+            request.setAttribute("nowShowingCount", kpi.nowShowing());
+            request.setAttribute("endedCount", kpi.ended());
+            request.setAttribute("archivedCount", kpi.archived());
             request.getRequestDispatcher("/WEB-INF/views/admin/movie/movieList.jsp").forward(request, response);
             return;
         }
