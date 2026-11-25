@@ -4,6 +4,7 @@ import model.dto.common.PageDTO;
 import model.entity.Centre;
 import model.entity.Hall;
 import utils.DBContext;
+import utils.EmailUtil;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -598,6 +599,9 @@ public class CentreDAO {
         }
     }
 
+    /** Bản ghi tạm lưu thông tin để gửi email thông báo hủy vé. */
+    private record NoticeInfo(String email, String fullName, String bookingCode, String movieTitle, String showtimeInfo, String reason) {}
+
     /** Các suất chiếu chưa bắt đầu của rạp (dùng làm điều kiện chung cho các câu huỷ). */
     private static final String UPCOMING_SHOWTIMES_OF_CENTRE =
             "SELECT s.ShowtimeID FROM Showtimes s JOIN Halls h ON h.HallID = s.HallID "
@@ -630,7 +634,7 @@ public class CentreDAO {
      * Huỷ toàn bộ suất chiếu chưa bắt đầu của rạp khi rạp đóng cửa, trong transaction của changeStatus.
      * Đơn đang giữ ghế hoặc đã thanh toán chuyển CANCELLED, ghế được nhả, vé hết hiệu lực,
      * giao dịch đang chờ bị huỷ và đơn bắp nước kèm vé bị huỷ.
-     * Giao dịch đã PAID giữ nguyên: hệ thống không hoàn tiền tự động, khách liên hệ hotline để được hoàn tiền.
+     * Đồng thời gửi email thông báo hủy vé và hoàn tiền tới từng khách hàng bị ảnh hưởng.
      */
     private void cancelUpcomingShowtimes(Connection conn, int centreId, boolean temporary) throws SQLException {
         // Khoá suất trước khi huỷ đơn để đồng bộ với luồng giữ ghế và xác nhận thanh toán.
@@ -641,6 +645,35 @@ public class CentreDAO {
                 + "AND s.StartTime>SYSDATETIME()")) {
             ps.setInt(1, centreId);
             try (ResultSet rs = ps.executeQuery()) { while (rs.next()) { /* Giữ khoá tới commit. */ } }
+        }
+
+        // Thu thập thông tin khách hàng có vé bị ảnh hưởng để gửi email thông báo
+        List<NoticeInfo> notices = new ArrayList<>();
+        String noticeSql = "SELECT b.BookingCode, u.Email, u.FullName, m.Title, s.StartTime, c.CentreName, h.HallName "
+                + "FROM Bookings b "
+                + "JOIN Users u ON u.UserID = b.UserID "
+                + "JOIN Showtimes s ON s.ShowtimeID = b.ShowtimeID "
+                + "JOIN Movies m ON m.MovieID = s.MovieID "
+                + "JOIN Halls h ON h.HallID = s.HallID "
+                + "JOIN Centres c ON c.CentreID = h.CentreID "
+                + "WHERE b.BookingStatus IN ('CONFIRMED', 'PENDING') "
+                + "AND h.CentreID = ? AND s.Status = 'SCHEDULED' AND s.StartTime > SYSDATETIME()";
+        try (PreparedStatement ps = conn.prepareStatement(noticeSql)) {
+            ps.setInt(1, centreId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    notices.add(new NoticeInfo(
+                            rs.getString("Email"),
+                            rs.getString("FullName"),
+                            rs.getString("BookingCode"),
+                            rs.getString("Title"),
+                            rs.getString("CentreName") + " - " + rs.getString("HallName") + " (" + rs.getTimestamp("StartTime") + ")",
+                            "Cụm rạp tạm thời dừng tiếp đón hoặc bảo trì cơ sở vật chất"
+                    ));
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.log(java.util.logging.Level.WARNING, "Không thể lấy danh sách email khách hàng khi đóng rạp ID: " + centreId, e);
         }
         String target = "IN (" + UPCOMING_SHOWTIMES_OF_CENTRE + ")";
         String bookingsOfTarget = "IN (SELECT BookingID FROM Bookings WHERE ShowtimeID " + target + ")";
@@ -671,6 +704,11 @@ public class CentreDAO {
                 ps.setInt(1, centreId);
                 ps.executeUpdate();
             }
+        }
+
+        // Gửi email thông báo hủy vé (hàm tự động chạy CompletableFuture bất đồng bộ)
+        for (NoticeInfo n : notices) {
+            EmailUtil.sendTicketCancellationEmail(n.email(), n.fullName(), n.bookingCode(), n.movieTitle(), n.showtimeInfo(), n.reason());
         }
     }
 

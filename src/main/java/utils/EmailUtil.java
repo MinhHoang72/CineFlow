@@ -241,4 +241,79 @@ public class EmailUtil {
 
         Transport.send(message);
     }
+
+    /**
+     * Gửi email thông báo hủy vé xem phim cho khách hàng khi suất chiếu hoặc phân phối phim bị hủy.
+     *
+     * @param toEmail địa chỉ email người nhận
+     * @param fullName họ tên khách hàng
+     * @param bookingCode mã đặt vé
+     * @param movieTitle tên phim
+     * @param showtimeInfo thông tin suất chiếu / rạp
+     * @param reason lý do hủy vé
+     */
+    public static void sendTicketCancellationEmail(
+            String toEmail,
+            String fullName,
+            String bookingCode,
+            String movieTitle,
+            String showtimeInfo,
+            String reason) {
+        if (toEmail == null || toEmail.isBlank()) {
+            return;
+        }
+
+        java.util.concurrent.CompletableFuture.runAsync(() -> {
+            try {
+                MimeMessage message = createMessage(toEmail, "CineFlow - Thông báo hủy vé xem phim #" + (bookingCode != null ? bookingCode : ""));
+
+                String recipientName = (fullName != null && !fullName.isBlank()) ? fullName : "Quý khách";
+                String displayMovie = (movieTitle != null && !movieTitle.isBlank()) ? movieTitle : "Phim";
+                String displayReason = (reason != null && !reason.isBlank()) ? reason : "Lịch chiếu có sự thay đổi.";
+
+                message.setContent(
+                        "<!DOCTYPE html>"
+                        + "<html>"
+                        + "<head><meta charset='UTF-8'></head>"
+                        + "<body style='margin:0; padding:0; background-color:#0B0F17; font-family:Arial,sans-serif; color:#F8FAFC;'>"
+                        + "<div style='max-width:600px; margin:40px auto; background:#161B26; "
+                        + "border-radius:14px; overflow:hidden; border:1px solid rgba(255,255,255,0.08); "
+                        + "box-shadow:0 12px 40px rgba(0,0,0,0.6);'>"
+                        + "<div style='background:linear-gradient(135deg, #FF2A54 0%, #E11D48 100%); padding:28px; text-align:center;'>"
+                        + "<h1 style='margin:0; color:#ffffff; font-size:28px; font-weight:800; letter-spacing:1px;'>CineFlow</h1>"
+                        + "<p style='margin:6px 0 0; color:#ffffff; font-size:13px; opacity:0.9;'>Thông báo hủy vé và hỗ trợ hoàn tiền</p>"
+                        + "</div>"
+                        + "<div style='padding:36px; color:#F8FAFC;'>"
+                        + "<h2 style='color:#ffffff; margin-top:0; font-size:20px;'>Kính gửi " + recipientName + ",</h2>"
+                        + "<p style='color:#94A3B8; font-size:14px; line-height:1.6;'>"
+                        + "CineFlow xin thông báo: Đơn đặt vé của bạn đã được hủy do: " + displayReason
+                        + "</p>"
+                        + "<div style='background:#111622; border-left:4px solid #FF2A54; border-radius:6px; padding:18px; margin:20px 0;'>"
+                        + "<p style='margin:6px 0; color:#F8FAFC;'><strong>Mã đặt vé:</strong> " + (bookingCode != null ? bookingCode : "N/A") + "</p>"
+                        + "<p style='margin:6px 0; color:#F8FAFC;'><strong>Tên phim:</strong> " + displayMovie + "</p>"
+                        + (showtimeInfo != null && !showtimeInfo.isBlank() ? "<p style='margin:6px 0; color:#F8FAFC;'><strong>Suất chiếu / Rạp:</strong> " + showtimeInfo + "</p>" : "")
+                        + "</div>"
+                        + "<p style='color:#94A3B8; font-size:14px; line-height:1.6;'>"
+                        + "Nếu bạn đã thanh toán, hệ thống sẽ tự động đối soát và hoàn tiền theo quy định. Vui lòng liên hệ hotline CineFlow hoặc đến trực tiếp quầy vé nếu cần hỗ trợ thêm."
+                        + "</p>"
+                        + "<p style='margin-top:28px; color:#64748B; font-size:11px;'>"
+                        + "Đây là email tự động từ hệ thống CineFlow. Vui lòng không phản hồi thư này."
+                        + "</p>"
+                        + "</div>"
+                        + "<div style='background:#111622; padding:16px; text-align:center; border-top:1px solid rgba(255,255,255,0.05);'>"
+                        + "<p style='margin:0; color:#64748B; font-size:12px;'>© 2026 CineFlow - Cinema Modern Experience</p>"
+                        + "</div>"
+                        + "</div>"
+                        + "</body>"
+                        + "</html>",
+                        "text/html; charset=UTF-8"
+                );
+
+                Transport.send(message);
+            } catch (Exception e) {
+                java.util.logging.Logger.getLogger(EmailUtil.class.getName())
+                        .log(java.util.logging.Level.WARNING, "Lỗi gửi email thông báo hủy vé tới: " + toEmail, e);
+            }
+        });
+    }
 }

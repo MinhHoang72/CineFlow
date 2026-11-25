@@ -3,8 +3,6 @@ package service;
 import dao.CinemaDAO;
 import dao.UserDAO;
 import model.entity.Centre;
-import model.entity.ManagerAssignment;
-import model.entity.StaffTransfer;
 import model.entity.User;
 import utils.PasswordUtil;
 import utils.ValidationUtil;
@@ -138,6 +136,25 @@ public class UserService {
         return new AuthResult(AuthStatus.SUCCESS, user);
     }
 
+    /**
+     * Đối chiếu mật khẩu người dùng nhập với mật khẩu lưu trong CSDL (hỗ trợ cả BCrypt lẫn dữ liệu cũ).
+     *
+     * @param rawPassword    mật khẩu thô người dùng nhập
+     * @param storedPassword mật khẩu đang lưu trong CSDL
+     * @return true nếu mật khẩu khớp; ngược lại false
+     */
+    private boolean isPasswordMatch(String rawPassword, String storedPassword) {
+        if (rawPassword == null || storedPassword == null) {
+            return false;
+        }
+        return storedPassword.startsWith("$2")
+                ? PasswordUtil.checkPassword(rawPassword, storedPassword)
+                : rawPassword.equals(storedPassword);
+    }
+
+    /**
+     * Kết quả kiểm tra và đổi mật khẩu.
+     */
     public enum ChangePasswordResult {
         SUCCESS,
         USER_NOT_FOUND,
@@ -146,6 +163,14 @@ public class UserService {
         FAILED
     }
 
+    /**
+     * Đổi mật khẩu người dùng có kiểm tra mật khẩu hiện tại và đảm bảo mật khẩu mới không trùng mật khẩu cũ.
+     *
+     * @param userId          mã người dùng
+     * @param currentPassword mật khẩu hiện tại
+     * @param newPassword     mật khẩu mới
+     * @return kết quả thao tác thuộc {@link ChangePasswordResult}
+     */
     public ChangePasswordResult changePasswordWithValidation(int userId, String currentPassword, String newPassword) {
         User user = userDAO.getUserById(userId);
         if (user == null) {
@@ -153,57 +178,15 @@ public class UserService {
         }
 
         String storedPassword = user.getPassword();
-        boolean validOld;
-        if (storedPassword != null && storedPassword.startsWith("$2")) {
-            validOld = PasswordUtil.checkPassword(currentPassword, storedPassword);
-        } else {
-            validOld = currentPassword.equals(storedPassword);
-        }
-
-        if (!validOld) {
+        if (!isPasswordMatch(currentPassword, storedPassword)) {
             return ChangePasswordResult.WRONG_CURRENT_PASSWORD;
         }
-
-        if (storedPassword != null && (storedPassword.startsWith("$2") ? PasswordUtil.checkPassword(newPassword, storedPassword) : newPassword.equals(storedPassword))) {
+        if (isPasswordMatch(newPassword, storedPassword)) {
             return ChangePasswordResult.SAME_AS_CURRENT;
         }
 
-        String hashedNew = PasswordUtil.hashPassword(newPassword);
-        boolean ok = userDAO.changePassword(userId, hashedNew);
+        boolean ok = userDAO.changePassword(userId, PasswordUtil.hashPassword(newPassword));
         return ok ? ChangePasswordResult.SUCCESS : ChangePasswordResult.FAILED;
-    }
-
-    /**
-     * Đổi mật khẩu người dùng (có băm BCrypt an toàn).
-     */
-    public boolean changePassword(int userId, String oldPassword, String newPassword) {
-        User user = userDAO.getUserById(userId);
-        if (user == null) {
-            return false;
-        }
-
-        String storedPassword = user.getPassword();
-        boolean validOld;
-        if (storedPassword != null && storedPassword.startsWith("$2")) {
-            validOld = PasswordUtil.checkPassword(oldPassword, storedPassword);
-        } else {
-            validOld = oldPassword.equals(storedPassword);
-        }
-
-        if (!validOld) {
-            return false;
-        }
-
-        String hashedNew = PasswordUtil.hashPassword(newPassword);
-        return userDAO.changePassword(userId, hashedNew);
-    }
-
-    /**
-     * Đặt lại mật khẩu (quên mật khẩu).
-     */
-    public boolean resetPassword(int userId, String newPassword) {
-        String hashedPassword = PasswordUtil.hashPassword(newPassword);
-        return userDAO.resetPassword(userId, hashedPassword);
     }
 
     /**
@@ -213,71 +196,59 @@ public class UserService {
         return userDAO.getUserById(userId);
     }
 
-    /**
-     * Lấy thông tin người dùng theo Account hoặc Email.
-     */
-    public User getUserByAccountOrEmail(String accountOrEmail) {
-        return userDAO.getUserByAccountOrEmail(accountOrEmail);
-    }
-
     // ==============================================================
     // NGHIỆP VỤ QUẢN LÝ TÀI KHOẢN MANAGER
     // ==============================================================
 
-    public List<User> getManagers(String searchParam) {
-        return userDAO.getManagers(searchParam);
+    /**
+     * Lấy danh sách tài khoản Quản lý (Manager).
+     *
+     * @return danh sách các đối tượng {@link User} có vai trò MANAGER
+     */
+    public List<User> getManagers() {
+        return userDAO.getManagers();
     }
 
+    /**
+     * Lấy danh sách các cụm rạp hiện chưa có Quản lý hoạt động (phục vụ form tạo mới Manager).
+     *
+     * @return danh sách cụm rạp còn trống vị trí Quản lý
+     */
     public List<Centre> getCentresWithoutActiveManager() {
         return cinemaDAO.getCentresWithoutActiveManager();
     }
 
+    /**
+     * Đồng bộ hóa trạng thái phân công cụm rạp cho các tài khoản Manager đang bị khóa hoặc tạm ngưng.
+     */
     public void syncLockedManagersAssignments() {
         userDAO.syncLockedManagersAssignments();
     }
 
-    public enum ManagerOpStatus {
-        SUCCESS,
-        MISSING_FIELDS,
-        INVALID_CENTRE,
-        CENTRE_HAS_MANAGER,
-        INVALID_NAME,
-        INVALID_ACCOUNT,
-        INVALID_EMAIL,
-        DISPOSABLE_EMAIL,
-        WEAK_PASSWORD,
-        INVALID_PHONE,
-        ACCOUNT_EXISTS,
-        EMAIL_EXISTS,
-        NOT_MANAGER,
-        FAILED
-    }
-
-    public record ManagerOpResult(ManagerOpStatus status, String message, User user) {
-        public boolean isSuccess() {
-            return status == ManagerOpStatus.SUCCESS;
-        }
-    }
-
-    public ManagerOpResult createManager(int sessionUserId, String fullName, String account,
-                                         String email, String password, String phone, String centreIdParam) {
+    /**
+     * Tạo mới tài khoản Quản lý chi nhánh và phân công cụm rạp phụ trách ban đầu.
+     *
+     * @return null nếu thành công; ngược lại chuỗi mã lỗi
+     */
+    public String createManager(int sessionUserId, String fullName, String account,
+                                String email, String password, String phone, String centreIdParam) {
         if (ValidationUtil.isBlank(fullName)
                 || ValidationUtil.isBlank(account)
                 || ValidationUtil.isBlank(email)
                 || ValidationUtil.isBlank(password)
                 || ValidationUtil.isBlank(centreIdParam)) {
-            return new ManagerOpResult(ManagerOpStatus.MISSING_FIELDS, "Vui lòng nhập đầy đủ các trường thông tin.", null);
+            return "missing_fields";
         }
 
         int centreId;
         try {
             centreId = Integer.parseInt(centreIdParam.trim());
         } catch (NumberFormatException e) {
-            return new ManagerOpResult(ManagerOpStatus.INVALID_CENTRE, "Cụm rạp không hợp lệ.", null);
+            return "invalid_centre";
         }
 
         if (cinemaDAO.hasActiveManager(centreId)) {
-            return new ManagerOpResult(ManagerOpStatus.CENTRE_HAS_MANAGER, "Cụm rạp này đã có Quản lý hoạt động.", null);
+            return "centre_has_manager";
         }
 
         fullName = fullName.trim();
@@ -285,37 +256,14 @@ public class UserService {
         email = email.trim();
         phone = phone != null ? phone.trim() : "";
 
-        if (!ValidationUtil.isValidFullName(fullName)) {
-            return new ManagerOpResult(ManagerOpStatus.INVALID_NAME, "Họ tên không hợp lệ.", null);
-        }
-
-        if (!ValidationUtil.isValidAccount(account)) {
-            return new ManagerOpResult(ManagerOpStatus.INVALID_ACCOUNT, "Tên tài khoản không hợp lệ.", null);
-        }
-
-        if (!ValidationUtil.isValidEmail(email)) {
-            return new ManagerOpResult(ManagerOpStatus.INVALID_EMAIL, "Email không hợp lệ.", null);
-        }
-
-        if (ValidationUtil.isDisposableEmail(email)) {
-            return new ManagerOpResult(ManagerOpStatus.DISPOSABLE_EMAIL, "Không sử dụng email tạm thời.", null);
-        }
-
-        if (!ValidationUtil.isValidPassword(password)) {
-            return new ManagerOpResult(ManagerOpStatus.WEAK_PASSWORD, "Mật khẩu chưa đủ độ mạnh.", null);
-        }
-
-        if (!ValidationUtil.isValidPhone(phone, false)) {
-            return new ManagerOpResult(ManagerOpStatus.INVALID_PHONE, "Số điện thoại không hợp lệ.", null);
-        }
-
-        if (userDAO.isAccountExists(account)) {
-            return new ManagerOpResult(ManagerOpStatus.ACCOUNT_EXISTS, "Tên tài khoản đã tồn tại.", null);
-        }
-
-        if (userDAO.isEmailExists(email)) {
-            return new ManagerOpResult(ManagerOpStatus.EMAIL_EXISTS, "Email đã tồn tại.", null);
-        }
+        if (!ValidationUtil.isValidFullName(fullName)) return "invalid_name";
+        if (!ValidationUtil.isValidAccount(account)) return "invalid_account";
+        if (!ValidationUtil.isValidEmail(email)) return "invalid_email";
+        if (ValidationUtil.isDisposableEmail(email)) return "disposable_email";
+        if (!ValidationUtil.isValidPassword(password)) return "weak_password";
+        if (!ValidationUtil.isValidPhone(phone, false)) return "invalid_phone";
+        if (userDAO.isAccountExists(account)) return "account_exists";
+        if (userDAO.isEmailExists(email)) return "email_exists";
 
         User newManager = new User();
         newManager.setFullName(fullName);
@@ -326,243 +274,151 @@ public class UserService {
         newManager.setCentreId(centreId);
 
         int createdId = userDAO.createManager(newManager, sessionUserId);
-        if (createdId > 0) {
-            newManager.setUserId(createdId);
-            return new ManagerOpResult(ManagerOpStatus.SUCCESS, "Tạo tài khoản quản lý thành công.", newManager);
-        } else {
-            return new ManagerOpResult(ManagerOpStatus.FAILED, "Không thể tạo tài khoản quản lý.", null);
-        }
+        return createdId > 0 ? null : "create_failed";
     }
 
-    public ManagerOpResult updateManager(int userId, String fullName, String phone, String email) {
+    /**
+     * Cập nhật thông tin Quản lý (họ tên, số điện thoại, email, phân công rạp).
+     *
+     * @param adminId        mã Admin thực hiện
+     * @param userId         mã Quản lý cần cập nhật
+     * @param fullName       họ và tên mới
+     * @param phone          số điện thoại
+     * @param email          email liên hệ
+     * @param centreIdParam  mã cụm rạp phân công mới (hoặc rỗng/null nếu gỡ rạp)
+     * @return null nếu thành công; ngược lại chuỗi mã lỗi
+     */
+    public String updateManager(int adminId, int userId, String fullName, String phone, String email, String centreIdParam) {
         if (ValidationUtil.isBlank(fullName) || ValidationUtil.isBlank(email)) {
-            return new ManagerOpResult(ManagerOpStatus.MISSING_FIELDS, "Họ tên và email không được để trống.", null);
+            return "missing_fields";
         }
 
         fullName = fullName.trim();
         email = email.trim();
         phone = phone != null ? phone.trim() : "";
 
-        if (!ValidationUtil.isValidFullName(fullName)) {
-            return new ManagerOpResult(ManagerOpStatus.INVALID_NAME, "Họ tên không hợp lệ.", null);
-        }
-
-        if (!ValidationUtil.isValidEmail(email)) {
-            return new ManagerOpResult(ManagerOpStatus.INVALID_EMAIL, "Email không hợp lệ.", null);
-        }
-
-        if (ValidationUtil.isDisposableEmail(email)) {
-            return new ManagerOpResult(ManagerOpStatus.DISPOSABLE_EMAIL, "Không dùng email tạm thời.", null);
-        }
-
-        if (!ValidationUtil.isValidPhone(phone, false)) {
-            return new ManagerOpResult(ManagerOpStatus.INVALID_PHONE, "Số điện thoại không hợp lệ.", null);
-        }
+        if (!ValidationUtil.isValidFullName(fullName)) return "invalid_name";
+        if (!ValidationUtil.isValidEmail(email)) return "invalid_email";
+        if (ValidationUtil.isDisposableEmail(email)) return "disposable_email";
+        if (!ValidationUtil.isValidPhone(phone, false)) return "invalid_phone";
 
         User target = userDAO.getUserById(userId);
         if (target == null || !"MANAGER".equalsIgnoreCase(target.getRole())) {
-            return new ManagerOpResult(ManagerOpStatus.NOT_MANAGER, "Không tìm thấy tài khoản quản lý.", null);
+            return "not_manager";
         }
 
         if (userDAO.isEmailExistsForOtherUser(email, userId)) {
-            return new ManagerOpResult(ManagerOpStatus.EMAIL_EXISTS, "Email đã được sử dụng.", null);
+            return "email_exists";
         }
 
-        boolean updated = userDAO.updateUserBasicInfo(userId, fullName, phone, email);
-        if (updated) {
-            target.setFullName(fullName);
-            target.setPhone(phone);
-            target.setEmail(email);
-            return new ManagerOpResult(ManagerOpStatus.SUCCESS, "Cập nhật thành công.", target);
-        } else {
-            return new ManagerOpResult(ManagerOpStatus.FAILED, "Cập nhật thất bại.", null);
+        Integer newCentreId = null;
+        if (centreIdParam != null && !centreIdParam.isBlank()) {
+            try {
+                newCentreId = Integer.parseInt(centreIdParam.trim());
+            } catch (NumberFormatException e) {
+                return "invalid_centre";
+            }
         }
+
+        // Kiểm tra quy tắc nghiệp vụ phân công cụm rạp:
+        // - Mỗi cụm rạp tại một thời điểm chỉ có tối đa 1 Quản lý hoạt động (Quy tắc GBR-09).
+        // - Nếu chọn rạp mới (khác rạp hiện tại): rạp đó bắt buộc phải đang trống (chưa có Quản lý).
+        // - Nếu giữ nguyên rạp hiện tại hoặc chọn bỏ trống (gỡ rạp về trạng thái tự do): cho phép thực hiện.
+        if (newCentreId != null) {
+            boolean isSameCentre = target.getCentreId() != null && target.getCentreId().intValue() == newCentreId.intValue();
+            if (!isSameCentre) {
+                // Kiểm tra xem rạp mới đã có Quản lý nào đang hoạt động phụ trách hay chưa
+                if (cinemaDAO.hasActiveManager(newCentreId)) {
+                    return "centre_has_manager";
+                }
+            }
+        }
+
+        boolean updated = userDAO.updateManagerWithCentreTx(userId, fullName, phone, email, newCentreId, adminId);
+        return updated ? null : "update_failed";
     }
 
-    public enum ManagerStatusResult {
-        SUCCESS,
-        NOT_FOUND,
-        NOT_MANAGER,
-        FAILED
+    /**
+     * Cập nhật thông tin cơ bản của tài khoản Quản lý (họ tên, số điện thoại, email).
+     *
+     * @return null nếu thành công; ngược lại chuỗi mã lỗi
+     */
+    public String updateManager(int userId, String fullName, String phone, String email) {
+        return updateManager(0, userId, fullName, phone, email, null);
     }
 
-    public ManagerStatusResult toggleManagerStatus(int userId, String status, int sessionAdminId) {
+    /**
+     * Chuyển đổi trạng thái tài khoản Quản lý (ACTIVE / INACTIVE / LOCKED).
+     *
+     * @param userId         mã tài khoản Manager
+     * @param status         trạng thái mới cần áp dụng
+     * @param sessionAdminId mã Admin thực hiện thao tác
+     * @return true nếu thành công; ngược lại false
+     */
+    public boolean toggleManagerStatus(int userId, String status, int sessionAdminId) {
         if (!ValidationUtil.isValidUserStatus(status)) {
             status = "ACTIVE";
         }
         User target = userDAO.getUserById(userId);
-        if (target == null) {
-            return ManagerStatusResult.NOT_FOUND;
+        if (target == null || !"MANAGER".equalsIgnoreCase(target.getRole())) {
+            return false;
         }
-        if (!"MANAGER".equalsIgnoreCase(target.getRole())) {
-            return ManagerStatusResult.NOT_MANAGER;
-        }
-        String newStatus = status.toUpperCase();
-        boolean ok = userDAO.toggleManagerStatusTx(userId, newStatus, sessionAdminId);
-        return ok ? ManagerStatusResult.SUCCESS : ManagerStatusResult.FAILED;
+        return userDAO.toggleManagerStatusTx(userId, status.toUpperCase(), sessionAdminId);
     }
 
     // ==============================================================
     // NGHIỆP VỤ QUẢN LÝ KHÁCH HÀNG (CUSTOMER)
     // ==============================================================
 
-    public List<User> getCustomers(String search, String status) {
-        return userDAO.getCustomers(search, status);
+    /**
+     * Lấy toàn bộ danh sách khách hàng phục vụ trang quản trị.
+     */
+    public List<User> getCustomers() {
+        return userDAO.getCustomers();
     }
 
+    /**
+     * Chỉ số KPI tổng quan về tài khoản khách hàng.
+     *
+     * @param total  tổng số khách hàng
+     * @param active số khách hàng đang hoạt động
+     * @param locked số khách hàng đang bị tạm khóa
+     */
     public record CustomerKpi(int total, int active, int locked) {}
 
-    public CustomerKpi getCustomerKpi() {
-        int total = userDAO.countCustomersByStatus("ALL");
-        int active = userDAO.countCustomersByStatus("ACTIVE");
-        int locked = userDAO.countCustomersByStatus("LOCKED");
-        return new CustomerKpi(total, active, locked);
-    }
-
-    public enum CustomerStatusResult {
-        SUCCESS,
-        INVALID_USER,
-        INVALID_STATUS,
-        FAILED
-    }
-
-    public CustomerStatusResult updateCustomerStatus(int userId, String newStatus) {
-        User targetCustomer = userDAO.getUserById(userId);
-        if (targetCustomer == null || !"CUSTOMER".equalsIgnoreCase(targetCustomer.getRole())) {
-            return CustomerStatusResult.INVALID_USER;
-        }
-
-        String normalizedStatus = newStatus != null ? newStatus.trim().toUpperCase() : "";
-        if (!"ACTIVE".equals(normalizedStatus) && !"LOCKED".equals(normalizedStatus)) {
-            return CustomerStatusResult.INVALID_STATUS;
-        }
-
-        boolean updated = userDAO.updateUserStatus(userId, normalizedStatus);
-        return updated ? CustomerStatusResult.SUCCESS : CustomerStatusResult.FAILED;
-    }
-
-    // ==============================================================
-    // NGHIỆP VỤ BỔ NHIỆM, ĐIỀU CHUYỂN & LỊCH SỬ NHÂN SỰ
-    // ==============================================================
-
-    public record TransferKpi(int totalCentres, int assignedCentres, int unassignedCentres, int unassignedManagers) {}
-
-    public record TransferPageData(
-            List<Centre> centresWithManager,
-            List<Centre> activeCentres,
-            List<User> managers,
-            List<ManagerAssignment> managerAssignments,
-            List<User> staffList,
-            List<StaffTransfer> transferHistory,
-            TransferKpi kpi
-    ) {}
-
-    public TransferPageData getTransferPageData(Integer centreFilter, String searchParam, String roleFilter) {
-        syncLockedManagersAssignments();
-        List<Centre> centresWithManager = cinemaDAO.getAllCentresWithManager();
-        List<Centre> activeCentres = cinemaDAO.getActiveCentres();
-        List<User> managers = userDAO.getManagers();
-        List<ManagerAssignment> managerAssignments = userDAO.getManagerAssignmentHistory(centreFilter, null);
-        List<User> staffList = userDAO.getTransferableUsers(centreFilter, searchParam, roleFilter);
-        List<StaffTransfer> transferHistory = userDAO.getTransferHistory(centreFilter, null);
-
-        int totalCentres = centresWithManager != null ? centresWithManager.size() : 0;
-        int assignedCentres = 0;
-        int unassignedCentres = 0;
-        if (centresWithManager != null) {
-            for (Centre c : centresWithManager) {
-                if (c.hasActiveManager()) {
-                    assignedCentres++;
-                } else if ("ACTIVE".equalsIgnoreCase(c.getStatus())) {
-                    unassignedCentres++;
-                }
+    /**
+     * Thống kê các chỉ số KPI của danh mục khách hàng trực tiếp trên danh sách khách hàng trong bộ nhớ.
+     *
+     * @param customers danh sách khách hàng
+     * @return bản ghi {@link CustomerKpi}
+     */
+    public CustomerKpi getCustomerKpi(List<User> customers) {
+        if (customers == null) return new CustomerKpi(0, 0, 0);
+        int active = 0;
+        int locked = 0;
+        for (User u : customers) {
+            if ("ACTIVE".equalsIgnoreCase(u.getStatus())) {
+                active++;
+            } else if ("LOCKED".equalsIgnoreCase(u.getStatus())) {
+                locked++;
             }
         }
-
-        int unassignedManagers = 0;
-        if (managers != null) {
-            for (User m : managers) {
-                if ("ACTIVE".equalsIgnoreCase(m.getStatus()) && (m.getCentreId() == null || m.getCentreId() <= 0)) {
-                    unassignedManagers++;
-                }
-            }
-        }
-        TransferKpi kpi = new TransferKpi(totalCentres, assignedCentres, unassignedCentres, unassignedManagers);
-        return new TransferPageData(centresWithManager, activeCentres, managers, managerAssignments, staffList, transferHistory, kpi);
+        return new CustomerKpi(customers.size(), active, locked);
     }
 
-    public String assignManager(int centreId, int managerId, int adminId, String notes) {
-        return userDAO.assignManager(centreId, managerId, adminId, notes);
-    }
-
-    public boolean unassignManager(int centreId, int managerId, int adminId, String reason) {
-        if (reason == null || reason.trim().isEmpty()) {
+    /**
+     * Khóa hoặc mở khóa tài khoản khách hàng (ACTIVE hoặc LOCKED).
+     *
+     * @param userId    mã tài khoản khách hàng
+     * @param newStatus trạng thái mới (ACTIVE hoặc LOCKED)
+     * @return true nếu cập nhật thành công, ngược lại false
+     */
+    public boolean updateCustomerStatus(int userId, String newStatus) {
+        if (userId <= 0 || newStatus == null) return false;
+        String status = newStatus.trim().toUpperCase();
+        if (!"ACTIVE".equals(status) && !"LOCKED".equals(status)) {
             return false;
         }
-        return userDAO.unassignManager(centreId, managerId, adminId, reason.trim());
+        return userDAO.updateUserStatus(userId, status);
     }
-
-    public String transferStaff(int userId, int toCentreId, int adminId, String reason, String notes, String effectiveDateParam, String newRoleParam) {
-        User targetUser = userDAO.getUserById(userId);
-        if (targetUser == null) {
-            return "USER_NOT_FOUND";
-        }
-        if ("MANAGER".equalsIgnoreCase(targetUser.getRole()) || targetUser.isManager()) {
-            return "MANAGER_TRANSFER_NOT_ALLOWED";
-        }
-
-        String finalRole = (newRoleParam != null && !newRoleParam.trim().isEmpty() && !"KEEP".equalsIgnoreCase(newRoleParam.trim()))
-                ? newRoleParam.trim().toUpperCase()
-                : targetUser.getRole();
-
-        if ("MANAGER".equalsIgnoreCase(finalRole)) {
-            return "MANAGER_TRANSFER_NOT_ALLOWED";
-        }
-
-        java.sql.Date effectiveDate = null;
-        if (effectiveDateParam != null && !effectiveDateParam.trim().isEmpty()) {
-            try {
-                effectiveDate = java.sql.Date.valueOf(effectiveDateParam.trim());
-            } catch (Exception ignored) {
-            }
-        }
-        if (effectiveDate == null) {
-            effectiveDate = new java.sql.Date(System.currentTimeMillis());
-        }
-
-        String transferReason = reason != null ? reason.trim() : "";
-        String transferNotes = notes != null ? notes.trim() : "";
-        return userDAO.transferRegularStaff(userId, toCentreId, adminId, transferReason, transferNotes, effectiveDate, finalRole);
-    }
-
-    public record HistoryKpi(int totalAssignments, int activeAssignments, int totalTransfers) {}
-
-    public record HistoryPageData(
-            List<Centre> activeCentres,
-            List<ManagerAssignment> managerAssignments,
-            List<StaffTransfer> transferHistory,
-            HistoryKpi kpi
-    ) {}
-
-    public HistoryPageData getHistoryPageData(Integer centreFilter) {
-        syncLockedManagersAssignments();
-        List<Centre> activeCentres = cinemaDAO.getActiveCentres();
-        List<ManagerAssignment> managerAssignments = userDAO.getManagerAssignmentHistory(centreFilter, null);
-        List<StaffTransfer> transferHistory = userDAO.getTransferHistory(centreFilter, null);
-
-        int totalAssignments = managerAssignments != null ? managerAssignments.size() : 0;
-        int activeAssignments = 0;
-        if (managerAssignments != null) {
-            for (ManagerAssignment ma : managerAssignments) {
-                if ("ACTIVE".equalsIgnoreCase(ma.getStatus()) && ma.getEndDate() == null) {
-                    activeAssignments++;
-                }
-            }
-        }
-        int totalTransfers = transferHistory != null ? transferHistory.size() : 0;
-        HistoryKpi kpi = new HistoryKpi(totalAssignments, activeAssignments, totalTransfers);
-
-        return new HistoryPageData(activeCentres, managerAssignments, transferHistory, kpi);
-    }
-
 }

@@ -44,6 +44,7 @@ public class Movie {
     }
 
     public String getDistributionRatio() {
+        if (totalCentres <= 0) return "—";
         return distributedCentres + "/" + totalCentres;
     }
 

@@ -1,9 +1,8 @@
 package controller.admin.movie;
-import jakarta.servlet.annotation.WebServlet;
 
-import service.MovieService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.MultipartConfig;
+import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -11,8 +10,10 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.Part;
 import model.entity.Movie;
 import model.entity.User;
+import service.MovieService;
 import utils.MediaStorage;
 import utils.ValidationUtil;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -21,12 +22,9 @@ import java.sql.Date;
 import java.util.UUID;
 
 /**
- * Điều khiển phân hệ Quản lý danh mục phim dành cho Quản trị viên (Admin).
- * Chức năng:
- * - Xem toàn bộ danh sách phim kèm số lượng rạp đã phân phối (/admin/movies)
- * - Mở form thêm phim mới hoặc chỉnh sửa thông tin phim có sẵn (/admin/movie)
- * - Lưu thông tin phim, xác thực dữ liệu và upload file Poster / Trailer vật lý
- * - Cập nhật trạng thái phát hành (Coming Soon, Now Showing, Ended, Archived)
+ * Controller: Quản lý danh mục phim dành cho Quản trị viên (Admin).
+ *
+ * <p>Kiến trúc 3 lớp: {@code MovieManagementServlet -> MovieService -> MovieDAO}</p>
  */
 @WebServlet(name = "MovieManagementServlet", urlPatterns = {"/admin/movies", "/admin/movie"})
 @MultipartConfig(maxFileSize = 50 * 1024 * 1024, maxRequestSize = 60 * 1024 * 1024)
@@ -35,287 +33,137 @@ public class MovieManagementServlet extends HttpServlet {
     private final MovieService movieService = new MovieService();
 
     /**
-     * Kiểm tra quyền truy cập: Chỉ tài khoản có vai trò Quản trị viên (ADMIN) mới được thao tác.
-     *
-     * @param session phiên làm việc hiện tại của người dùng
-     * @return true nếu là Admin hợp lệ, ngược lại false
+     * Kiểm tra phiên đăng nhập có quyền ADMIN hay không.
      */
     private boolean allowed(HttpSession session) {
-        if (session == null) {
-            return false;
-        }
-        // Kiểm tra quyền từ attribute role trong session
+        if (session == null) return false;
         Object roleObj = session.getAttribute("role");
-        if (roleObj instanceof String && "ADMIN".equalsIgnoreCase((String) roleObj)) {
-            return true;
-        }
-        // Kiểm tra quyền dự phòng từ đối tượng User trong session
+        if (roleObj instanceof String && "ADMIN".equalsIgnoreCase((String) roleObj)) return true;
         Object userObj = session.getAttribute("user");
-        if (userObj instanceof User) {
-            String role = ((User) userObj).getRole();
-            return role != null && "ADMIN".equalsIgnoreCase(role);
-        }
-        return false;
+        return userObj instanceof User && "ADMIN".equalsIgnoreCase(((User) userObj).getRole());
     }
 
-    /**
-     * Xử lý yêu cầu HTTP GET: Điều hướng hiển thị danh mục phim hoặc mở form tạo/chỉnh sửa phim.
-     *
-     * @param request  yêu cầu HTTP từ client
-     * @param response phản hồi HTTP gửi về client
-     * @throws ServletException nếu xảy ra lỗi servlet
-     * @throws IOException      nếu xảy ra lỗi vào/ra dữ liệu
-     */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        // 1. Kiểm tra quyền Admin (nếu không phải Admin thì trả về mã lỗi 403 Forbidden)
         if (!allowed(request.getSession(false))) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN, "Chỉ Admin được quản lý danh mục phim.");
             return;
         }
 
-        // 2. Nếu là URL /admin/movies: Lấy toàn bộ danh sách phim và hiển thị trang danh mục
+        // Danh sách phim
         if ("/admin/movies".equals(request.getServletPath())) {
             request.setAttribute("movies", movieService.getAllMovies());
             request.getRequestDispatcher("/WEB-INF/views/admin/movie/movieList.jsp").forward(request, response);
             return;
         }
 
-        // 3. Nếu là URL /admin/movie: Kiểm tra xem là form Chỉnh sửa (có movieId) hay Thêm mới
-        String id = request.getParameter("movieId");
-        if (id != null && !id.isBlank()) {
+        // Form thêm mới hoặc chỉnh sửa phim (/admin/movie)
+        String idParam = request.getParameter("movieId");
+        if (idParam != null && !idParam.isBlank()) {
             try {
-                int movieId = Integer.parseInt(id.trim());
+                int movieId = Integer.parseInt(idParam.trim());
                 Movie movie = movieService.getMovieById(movieId);
                 if (movie == null) {
                     response.sendError(HttpServletResponse.SC_NOT_FOUND, "Không tìm thấy phim yêu cầu.");
                     return;
                 }
-                // Đưa đối tượng phim vào request để form hiển thị sẵn dữ liệu cũ
                 request.setAttribute("movie", movie);
-            } catch (NumberFormatException exception) {
+
+                // Thống kê số suất chiếu và vé đã bán để cảnh báo khi đổi trạng thái
+                int[] stats = movieService.getUpcomingStats(movieId);
+                request.setAttribute("hasUpcomingShowtimes", stats[0] > 0);
+                request.setAttribute("upcomingShowtimesCount", stats[0]);
+                request.setAttribute("soldTicketsCount", stats[1]);
+            } catch (NumberFormatException e) {
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Mã phim không hợp lệ.");
                 return;
             }
         }
 
-        if (request.getParameter("error") != null) {
-            HttpSession session = request.getSession(false);
-            if (session != null) {
-                Object draft = session.getAttribute("movieFormDraft");
-                if (draft instanceof Movie) {
-                    request.setAttribute("movie", draft);
-                    session.removeAttribute("movieFormDraft");
-                }
-            }
-        }
-
-        // 4. Chuyển tiếp (forward) sang giao diện form nhập liệu (movie-management.jsp)
         request.getRequestDispatcher("/WEB-INF/views/admin/movie/movieForm.jsp").forward(request, response);
     }
 
-    /**
-     * Xử lý yêu cầu HTTP POST: Lưu thông tin phim mới/cập nhật và cập nhật trạng thái phát hành.
-     *
-     * @param request  yêu cầu HTTP từ client
-     * @param response phản hồi HTTP gửi về client
-     * @throws IOException nếu xảy ra lỗi vào/ra dữ liệu
-     */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
         request.setCharacterEncoding("UTF-8");
-
-        // 1. Kiểm tra quyền hạn Admin trước khi xử lý bất kỳ thao tác thay đổi dữ liệu nào
         if (!allowed(request.getSession(false))) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN);
             return;
         }
 
-        String action = request.getParameter("action");
-
-        // 2. Xử lý hành động LƯU PHIM (Thêm mới hoặc Cập nhật thông tin phim)
-        if ("save".equals(action)) {
-            // 2.1. Đọc mã định danh phim (movieId = 0 nếu là thêm mới)
-            String movieIdStr = request.getParameter("movieId");
-            int movieId = 0;
-            if (movieIdStr != null && !movieIdStr.isBlank()) {
-                try {
-                    movieId = Integer.parseInt(movieIdStr.trim());
-                    if (movieId <= 0) {
-                        response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Mã phim không hợp lệ.");
-                        return;
-                    }
-                } catch (NumberFormatException ignored) {
-                    response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Mã phim không hợp lệ.");
-                    return;
-                }
-            }
-
-            // 2.2. Đọc các trường thông tin cơ bản từ biểu mẫu
-            String title = request.getParameter("title");
-            String durationStr = request.getParameter("duration");
-            String releaseDateStr = request.getParameter("releaseDate");
-            String endDateStr = request.getParameter("endDate");
-
-            // Xác định URL chuyển hướng khi có lỗi nhập liệu
-            String redirectTarget = request.getContextPath() + (movieId > 0 ? "/admin/movie?movieId=" + movieId : "/admin/movie");
-            String sep = redirectTarget.contains("?") ? "&" : "?";
-            Movie draft = readMovie(request, parseIntOrZero(durationStr));
-            draft.setReleaseDate(parseDate(releaseDateStr));
-            draft.setEndDate(parseDate(endDateStr));
-            request.getSession(true).setAttribute("movieFormDraft", draft);
-
-            // 2.3. Kiểm tra tính hợp lệ (Validation) của tiêu đề phim
-            if (ValidationUtil.isBlank(title)) {
-                response.sendRedirect(redirectTarget + sep + "error=missing_title");
-                return;
-            }
-            // 2.4. Chuyển đổi thời lượng; validation nghiệp vụ tập trung tại MovieService.
-            int duration;
-            try {
-                duration = Integer.parseInt(durationStr != null ? durationStr.trim() : "0");
-            } catch (NumberFormatException e) {
-                response.sendRedirect(redirectTarget + sep + "error=invalid_duration");
-                return;
-            }
-
-            // 2.7. Đọc ngày khởi chiếu và ngày kết thúc
-            Date releaseDate = parseDate(releaseDateStr);
-            Date endDate = parseDate(endDateStr);
-            if ((releaseDateStr != null && !releaseDateStr.isBlank() && releaseDate == null)
-                    || (endDateStr != null && !endDateStr.isBlank() && endDate == null)) {
-                response.sendRedirect(redirectTarget + sep + "error=invalid_date_format");
-                return;
-            }
-            String posterUrl = null;
-            String trailerUrl = null;
-            try {
-                // 2.8. Đóng gói thông tin form vào đối tượng Movie POJO (truyền duration đã validate)
-                Movie movie = readMovie(request, duration);
-                movie.setReleaseDate(releaseDate);
-                movie.setEndDate(endDate);
-
-                // 2.9. Xử lý lưu trữ tệp tin Poster và Trailer tải lên thư mục máy chủ nếu có
-                posterUrl = saveUpload(request, "posterFile", "poster");
-                trailerUrl = saveUpload(request, "trailerFile", "trailer");
-                if (posterUrl != null) {
-                    movie.setPosterUrl(posterUrl);
-                }
-                if (trailerUrl != null) {
-                    movie.setTrailerUrl(trailerUrl);
-                }
-
-                // 2.10. Phân nhánh: Tạo mới (INSERT) nếu movieId == 0, Cập nhật (UPDATE) nếu movieId > 0
-                int savedId = movieService.saveMovie(movie);
-                if (savedId <= 0) {
-                    deleteUploadedFileSilently(posterUrl);
-                    deleteUploadedFileSilently(trailerUrl);
-                    response.sendRedirect(redirectTarget + sep + "error=save_failed");
-                    return;
-                }
-
-                // 2.11. Chuyển hướng về trang danh sách phim kèm thông báo thành công
-                response.sendRedirect(request.getContextPath() + "/admin/movies?success=saved");
-                request.getSession(false).removeAttribute("movieFormDraft");
-            } catch (IllegalArgumentException e) {
-                deleteUploadedFileSilently(posterUrl);
-                deleteUploadedFileSilently(trailerUrl);
-                response.sendRedirect(redirectTarget + sep + "error=" + e.getMessage());
-            } catch (Exception e) {
-                deleteUploadedFileSilently(posterUrl);
-                deleteUploadedFileSilently(trailerUrl);
-                response.sendRedirect(redirectTarget + sep + "error=save_failed");
-            }
-            return;
-        }
-
-        // 3. Xử lý hành động ĐỔI NHANH TRẠNG THÁI PHÁT HÀNH (Now Showing, Coming Soon, Ended, Archived)
-        if ("changeStatus".equals(action)) {
-            String movieIdParam = request.getParameter("movieId");
-            String newStatus = request.getParameter("newStatus");
-            if (movieIdParam != null && newStatus != null) {
-                try {
-                    int movieId = Integer.parseInt(movieIdParam.trim());
-                    String targetStatus = newStatus.trim().toUpperCase();
-                    if (ValidationUtil.isValidMovieStatus(targetStatus)) {
-                        try {
-                            boolean ok = movieService.updateMovieStatus(movieId, targetStatus);
-                            if (ok) {
-                                response.sendRedirect(request.getContextPath() + "/admin/movies?success=statusUpdated");
-                                return;
-                            } else {
-                                response.sendRedirect(request.getContextPath() + "/admin/movies?error=update_failed");
-                                return;
-                            }
-                        } catch (IllegalArgumentException e) {
-                            response.sendRedirect(request.getContextPath() + "/admin/movies?error=" + e.getMessage());
-                            return;
-                        }
-                    }
-                } catch (NumberFormatException ignored) {
-                }
-            }
-            response.sendRedirect(request.getContextPath() + "/admin/movies?error=invalid_status");
-            return;
-        }
-
-        // Mặc định chuyển hướng về trang danh mục phim nếu không khớp hành động nào
-        response.sendRedirect(request.getContextPath() + "/admin/movies");
+        handleSaveMovie(request, response);
     }
 
     /**
-     * Xóa tệp tải lên nếu lưu DB thất bại hoặc ném ngoại lệ.
-     * Chỉ xóa các file mới tạo trong lần gọi này dựa trên URL trả về từ saveUpload.
+     * Xử lý lưu thông tin phim (tạo mới hoặc cập nhật) kèm tải lên Poster / Trailer.
      */
-    private void deleteUploadedFileSilently(String url) {
-        if (url == null) {
-            return;
-        }
-        String category = null;
-        if (url.contains("/uploads/video_trailer/")) {
-            category = "video_trailer";
-        } else if (url.contains("/uploads/poster/")) {
-            category = "poster";
-        } else if (url.contains("/uploads/movies/")) {
-            category = "movies";
-        }
-        if (category == null) {
-            return;
-        }
+    private void handleSaveMovie(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        int movieId = parseIntOrZero(request.getParameter("movieId"));
+        String posterUrl = null;
+        String trailerUrl = null;
         try {
-            String fileName = url.substring(url.lastIndexOf('/') + 1);
-            Path directory = MediaStorage.uploadDirectory(getServletContext(), category);
-            Files.deleteIfExists(directory.resolve(fileName));
-        } catch (Exception ignored) {
+            Movie movie = readMovieFromRequest(request);
+
+            posterUrl = saveUpload(request, "posterFile", "poster");
+            trailerUrl = saveUpload(request, "trailerFile", "trailer");
+            if (posterUrl != null) movie.setPosterUrl(posterUrl);
+            if (trailerUrl != null) movie.setTrailerUrl(trailerUrl);
+
+            int savedId = movieService.saveMovie(movie);
+            if (savedId <= 0) {
+                deleteFiles(posterUrl, trailerUrl);
+                redirectError(request, response, movieId, "save_failed");
+                return;
+            }
+
+            response.sendRedirect(request.getContextPath() + "/admin/movies?success=saved");
+        } catch (IllegalArgumentException e) {
+            deleteFiles(posterUrl, trailerUrl);
+            redirectError(request, response, movieId, e.getMessage());
+        } catch (Exception e) {
+            deleteFiles(posterUrl, trailerUrl);
+            redirectError(request, response, movieId, "save_failed");
         }
     }
 
     /**
-     * Đọc và trích xuất dữ liệu của bộ phim từ các tham số trong HttpServletRequest.
-     *
-     * @param request  đối tượng yêu cầu HTTP
-     * @param duration thời lượng phim đã được kiểm tra tính hợp lệ
-     * @return đối tượng Movie đã được thiết lập đầy đủ thông tin
+     * Đọc các tham số từ request và đóng gói vào đối tượng Movie.
      */
-    private Movie readMovie(HttpServletRequest request, int duration) {
-        Movie movie = new Movie();
-        String id = request.getParameter("movieId");
-        if (id != null && !id.isBlank()) {
-            try {
-                movie.setMovieId(Integer.parseInt(id.trim()));
-            } catch (NumberFormatException ignored) {
-            }
+    private Movie readMovieFromRequest(HttpServletRequest request) {
+        String title = request.getParameter("title");
+        if (ValidationUtil.isBlank(title)) {
+            throw new IllegalArgumentException("missing_title");
         }
-        movie.setTitle(request.getParameter("title"));
+
+        String durationStr = request.getParameter("duration");
+        int duration;
+        try {
+            duration = Integer.parseInt(durationStr != null ? durationStr.trim() : "0");
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("invalid_duration");
+        }
+
+        String releaseDateStr = request.getParameter("releaseDate");
+        String endDateStr = request.getParameter("endDate");
+        Date releaseDate = parseDate(releaseDateStr);
+        Date endDate = parseDate(endDateStr);
+        if ((releaseDateStr != null && !releaseDateStr.isBlank() && releaseDate == null)
+                || (endDateStr != null && !endDateStr.isBlank() && endDate == null)) {
+            throw new IllegalArgumentException("invalid_date_format");
+        }
+
+        Movie movie = new Movie();
+        movie.setMovieId(parseIntOrZero(request.getParameter("movieId")));
+        movie.setTitle(title.trim());
         movie.setDescription(request.getParameter("description"));
         movie.setDuration(duration);
         movie.setGenre(request.getParameter("genre"));
         movie.setDirector(request.getParameter("director"));
         movie.setCast(request.getParameter("cast"));
         movie.setLanguage(request.getParameter("language"));
-        movie.setReleaseDate(parseDate(request.getParameter("releaseDate")));
-        movie.setEndDate(parseDate(request.getParameter("endDate")));
+        movie.setReleaseDate(releaseDate);
+        movie.setEndDate(endDate);
         movie.setPosterUrl(request.getParameter("posterUrl"));
         movie.setTrailerUrl(request.getParameter("trailerUrl"));
         movie.setAgeRating(request.getParameter("ageRating"));
@@ -324,15 +172,68 @@ public class MovieManagementServlet extends HttpServlet {
     }
 
     /**
-     * Chuyển đổi chuỗi ngày tháng dạng YYYY-MM-DD sang đối tượng java.sql.Date.
-     *
-     * @param value chuỗi ngày tháng đầu vào
-     * @return đối tượng java.sql.Date hoặc null nếu chuỗi rỗng/không hợp lệ
+     * Chuyển hướng về trang form kèm mã lỗi.
      */
-    private Date parseDate(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
+    private void redirectError(HttpServletRequest request, HttpServletResponse response, int movieId, String error) throws IOException {
+        String url = request.getContextPath() + (movieId > 0 ? "/admin/movie?movieId=" + movieId + "&error=" : "/admin/movie?error=") + error;
+        response.sendRedirect(url);
+    }
+
+    /**
+     * Xóa các tệp tải lên nếu quá trình lưu thất bại (tránh rác trên máy chủ).
+     */
+    private void deleteFiles(String... urls) {
+        for (String url : urls) {
+            if (url == null) continue;
+            String category = url.contains("/uploads/video_trailer/") ? "video_trailer"
+                    : url.contains("/uploads/poster/") ? "poster" : null;
+            if (category == null) continue;
+            try {
+                String fileName = url.substring(url.lastIndexOf('/') + 1);
+                Files.deleteIfExists(MediaStorage.uploadDirectory(getServletContext(), category).resolve(fileName));
+            } catch (Exception ignored) {}
         }
+    }
+
+    /**
+     * Kiểm tra định dạng, dung lượng và lưu tệp tải lên (Poster hoặc Trailer).
+     */
+    private String saveUpload(HttpServletRequest request, String partName, String prefix) throws Exception {
+        Part part = request.getPart(partName);
+        if (part == null || part.getSize() == 0) return null;
+
+        String submitted = part.getSubmittedFileName();
+        if (submitted == null || submitted.isBlank()) return null;
+
+        String original = Paths.get(submitted).getFileName().toString();
+        String extension = "";
+        int dot = original.lastIndexOf('.');
+        if (dot >= 0) extension = original.substring(dot).toLowerCase();
+
+        boolean isPoster = "poster".equals(prefix);
+        if (isPoster) {
+            if (part.getSize() > 5L * 1024 * 1024) throw new IllegalArgumentException("poster_too_large");
+            if (part.getContentType() == null || !part.getContentType().toLowerCase().startsWith("image/")
+                    || !ValidationUtil.isValidImageExtension(original)) {
+                throw new IllegalArgumentException("invalid_poster_file");
+            }
+        } else if ("trailer".equals(prefix)) {
+            if (part.getSize() > 50L * 1024 * 1024) throw new IllegalArgumentException("trailer_too_large");
+            if (part.getContentType() == null || !part.getContentType().toLowerCase().startsWith("video/")
+                    || !ValidationUtil.isValidVideoExtension(original)) {
+                throw new IllegalArgumentException("invalid_trailer_file");
+            }
+        }
+
+        String category = isPoster ? "poster" : "video_trailer";
+        Path directory = MediaStorage.uploadDirectory(getServletContext(), category);
+        String fileName = prefix + "-" + UUID.randomUUID() + extension;
+        part.write(directory.resolve(fileName).toString());
+        return request.getContextPath() + "/uploads/" + category + "/" + fileName;
+    }
+
+    private Date parseDate(String value) {
+        if (value == null || value.isBlank()) return null;
         try {
             return Date.valueOf(value.trim());
         } catch (IllegalArgumentException e) {
@@ -341,82 +242,11 @@ public class MovieManagementServlet extends HttpServlet {
     }
 
     private int parseIntOrZero(String value) {
+        if (value == null || value.isBlank()) return 0;
         try {
-            return Integer.parseInt(value == null ? "0" : value.trim());
-        } catch (NumberFormatException ignored) {
+            return Integer.parseInt(value.trim());
+        } catch (NumberFormatException e) {
             return 0;
         }
-    }
-
-    /**
-     * Lưu trữ tệp tin tải lên (poster vào uploads/poster, trailer vào uploads/video_trailer) trên máy chủ.
-     * Sử dụng UUID ngẫu nhiên để đảm bảo tên tệp không bao giờ bị trùng lặp.
-     *
-     * @param request  đối tượng yêu cầu HTTP chứa multipart data
-     * @param partName tên trường upload trong biểu mẫu (posterFile hoặc trailerFile)
-     * @param prefix   tiền tố đặt tên file (poster hoặc trailer)
-     * @return đường dẫn URL tương đối dẫn đến tệp đã lưu trên máy chủ
-     * @throws Exception khi tệp tin không hợp lệ hoặc lỗi ghi đĩa
-     */
-    private String saveUpload(HttpServletRequest request, String partName, String prefix) throws Exception {
-        // 1. Lấy phần dữ liệu tải lên (Part) từ request
-        Part part = request.getPart(partName);
-        if (part == null || part.getSize() == 0) {
-            return null;
-        }
-
-        // 2. Lấy tên tệp tin gốc do người dùng tải lên
-        String submitted = part.getSubmittedFileName();
-        if (submitted == null || submitted.isBlank()) {
-            return null;
-        }
-
-        // 3. Trích xuất phần đuôi mở rộng (extension) của tệp tin
-        String original = Paths.get(submitted).getFileName().toString();
-        String extension = "";
-        int dot = original.lastIndexOf('.');
-        if (dot >= 0) {
-            extension = original.substring(dot).toLowerCase();
-        }
-
-        // 4. Kiểm tra phần mở rộng tệp tin theo quy chuẩn an toàn
-        String category;
-        if ("poster".equals(prefix)) {
-            if (part.getSize() > 5L * 1024 * 1024) {
-                throw new IllegalArgumentException("poster_too_large");
-            }
-            if (part.getContentType() == null || !part.getContentType().toLowerCase().startsWith("image/")) {
-                throw new IllegalArgumentException("invalid_poster_file");
-            }
-            if (!ValidationUtil.isValidImageExtension(original)) {
-                throw new IllegalArgumentException("invalid_poster_file");
-            }
-            category = "poster";
-        } else if ("trailer".equals(prefix)) {
-            if (part.getSize() > 50L * 1024 * 1024) {
-                throw new IllegalArgumentException("trailer_too_large");
-            }
-            if (part.getContentType() == null || !part.getContentType().toLowerCase().startsWith("video/")) {
-                throw new IllegalArgumentException("invalid_trailer_file");
-            }
-            if (!ValidationUtil.isValidVideoExtension(original)) {
-                throw new IllegalArgumentException("invalid_trailer_file");
-            }
-            category = "video_trailer";
-        } else if (!extension.matches("\\.(jpg|jpeg|png|webp|mp4|webm|ogg)")) {
-            return null;
-        } else {
-            category = extension.matches("\\.(mp4|webm|ogg)") ? "video_trailer" : "poster";
-        }
-
-        // 5. Xác định thư mục lưu trữ trên máy chủ và tạo tên tệp ngẫu nhiên bằng UUID
-        Path directory = MediaStorage.uploadDirectory(getServletContext(), category);
-        String fileName = prefix + "-" + UUID.randomUUID() + extension;
-
-        // 6. Ghi dữ liệu nhị phân xuống đĩa cứng máy chủ
-        part.write(directory.resolve(fileName).toString());
-
-        // 7. Trả về đường dẫn truy cập phục vụ hiển thị trên giao diện web
-        return request.getContextPath() + "/uploads/" + category + "/" + fileName;
     }
 }

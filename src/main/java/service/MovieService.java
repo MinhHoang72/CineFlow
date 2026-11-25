@@ -68,55 +68,119 @@ public class MovieService {
     }
 
     /**
-     * Tự động xác định phim được chọn cho màn hình phân phối/chi tiết:
-     * - Nếu có movieId hợp lệ từ client -> tìm và trả về phim đó.
-     * - Nếu không truyền movieId -> ưu tiên chọn phim đầu tiên đang chiếu (NOW_SHOWING) hoặc sắp chiếu (COMING_SOON).
+     * Lấy thống kê số suất chiếu sắp tới và số vé đã bán của phim.
      *
-     * @param allMovies danh sách tất cả phim hiện có
-     * @param movieIdParam chuỗi tham số movieId từ request
-     * @return đối tượng Movie được chọn, hoặc null nếu danh sách rỗng
+     * @param movieId mã định danh phim
+     * @return mảng int[] với [0] = số suất chiếu, [1] = số vé đã bán
      */
-    public Movie resolveSelectedMovie(List<Movie> allMovies, String movieIdParam) {
-        if (movieIdParam != null && !movieIdParam.isBlank()) {
-            try {
-                int id = Integer.parseInt(movieIdParam.trim());
-                if (allMovies != null) {
-                    for (Movie m : allMovies) {
-                        if (m.getMovieId() == id) {
-                            return m;
-                        }
-                    }
-                }
-                return getMovieById(id);
-            } catch (NumberFormatException ignored) {
-            }
+    public int[] getUpcomingStats(int movieId) {
+        if (movieId <= 0) {
+            return new int[]{0, 0};
         }
-
-        if (allMovies != null && !allMovies.isEmpty()) {
-            for (Movie m : allMovies) {
-                if ("NOW_SHOWING".equalsIgnoreCase(m.getStatus()) || "COMING_SOON".equalsIgnoreCase(m.getStatus())) {
-                    return m;
-                }
-            }
-                return allMovies.get(0);
-        }
-        return null;
+        return movieDAO.getUpcomingStats(movieId);
     }
 
     /**
+     * Lấy danh sách phim có thể phân phối tới các rạp.
+     * Logic nghiệp vụ:
+     * 1. Bắt đầu bằng việc lấy toàn bộ danh sách phim từ DAO (getAllMovies).
+     * 2. Lọc chỉ giữ lại các phim đang chiếu (NOW_SHOWING) hoặc sắp khởi chiếu (COMING_SOON).
+     *
+     * @return danh sách các bộ phim thỏa mãn điều kiện phân phối
+     */
+    public List<Movie> getDistributableMovies() {
+        List<Movie> allMovies = getAllMovies();
+        List<Movie> distributable = new java.util.ArrayList<>();
+        if (allMovies != null) {
+            for (Movie m : allMovies) {
+                if ("NOW_SHOWING".equalsIgnoreCase(m.getStatus()) || "COMING_SOON".equalsIgnoreCase(m.getStatus())) {
+                    distributable.add(m);
+                }
+            }
+        }
+        return distributable;
+    }
+
+    /**
+     * Tự động xác định phim được chọn cho màn hình phân phối:
+     * - Nếu có movieId hợp lệ từ request -> tìm và trả về phim đó trong danh sách.
+     * - Nếu không truyền movieId -> lấy phim đầu tiên trong danh sách làm mặc định.
+     *
+     * @param movies danh sách phim phân phối
+     * @param movieIdParam chuỗi tham số movieId từ request
+     * @return đối tượng Movie được chọn, hoặc null nếu danh sách rỗng
+     */
+    public Movie resolveSelectedMovie(List<Movie> movies, String movieIdParam) {
+        if (movies == null || movies.isEmpty()) {
+            return null;
+        }
+        if (movieIdParam != null && !movieIdParam.isBlank()) {
+            try {
+                int id = Integer.parseInt(movieIdParam.trim());
+                for (Movie m : movies) {
+                    if (m.getMovieId() == id) {
+                        return m;
+                    }
+                }
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return movies.get(0);
+    }
+
+
+    /**
      * Lưu thông tin phim: Tự động phân nhánh Tạo mới (INSERT) hoặc Cập nhật (UPDATE).
-     * Kiểm tra toàn bộ quy tắc nghiệp vụ về ngày phát hành, tính nhất quán trạng thái và chuyển đổi trạng thái.
      *
      * @param movie đối tượng thông tin phim
      * @return mã movieId của phim nếu thành công (> 0), ngược lại 0
      * @throws IllegalArgumentException nếu dữ liệu hoặc quy tắc chuyển trạng thái không hợp lệ
      */
     public int saveMovie(Movie movie) {
-        if (movie == null) {
-            return 0;
-        }
+        if (movie == null) return 0;
+
         Date today = Date.valueOf(LocalDate.now());
         String status = movie.getStatus() != null ? movie.getStatus().trim().toUpperCase() : "";
+        Movie existing = movie.getMovieId() > 0 ? movieDAO.getMovieById(movie.getMovieId()) : null;
+
+        // 1. Tự động chốt ngày kết thúc nếu phim dừng chiếu (ENDED hoặc ARCHIVED)
+        adjustEndDateIfClosed(movie, existing, status, today);
+
+        // 2. Kiểm tra tính hợp lệ dữ liệu và quy tắc vòng đời phim
+        validateMovie(movie, existing, status, today);
+
+        // 3. Phân nhánh: Tạo mới (INSERT) hoặc Cập nhật (UPDATE)
+        if (movie.getMovieId() == 0) {
+            return movieDAO.insertMovie(movie);
+        }
+        return movieDAO.updateMovie(movie) ? movie.getMovieId() : 0;
+    }
+
+    /**
+     * Tự động điều chỉnh ngày kết thúc về hôm nay nếu phim chuyển sang trạng thái kết thúc (ENDED/ARCHIVED).
+     */
+    private void adjustEndDateIfClosed(Movie movie, Movie existing, String status, Date today) {
+        if (!"ARCHIVED".equals(status) && !"ENDED".equals(status)) {
+            return;
+        }
+        if (movie.getReleaseDate() == null && existing != null) {
+            movie.setReleaseDate(existing.getReleaseDate());
+        }
+        if (movie.getEndDate() == null && existing != null) {
+            movie.setEndDate(existing.getEndDate());
+        }
+        Date minEndDate = (movie.getReleaseDate() != null && movie.getReleaseDate().after(today))
+                ? movie.getReleaseDate()
+                : today;
+        if (movie.getEndDate() == null || movie.getEndDate().after(minEndDate)) {
+            movie.setEndDate(minEndDate);
+        }
+    }
+
+    /**
+     * Kiểm tra toàn bộ tính hợp lệ của thông tin phim và quy tắc chuyển trạng thái.
+     */
+    private void validateMovie(Movie movie, Movie existing, String status, Date today) {
         movie.setGenre(ValidationUtil.normalizeGenres(movie.getGenre()));
 
         if (movie.getTitle() == null || movie.getTitle().trim().length() > 200) {
@@ -138,33 +202,13 @@ public class MovieService {
             throw new IllegalArgumentException("duplicate_title");
         }
 
-        Movie existing = movie.getMovieId() > 0 ? movieDAO.getMovieById(movie.getMovieId()) : null;
-
-        // ENDED/ARCHIVED: giữ lại ngày đã có làm hồ sơ lịch sử.
-        // Chỉ chốt EndDate = hôm nay khi ngày kết thúc đang trống hoặc còn ở tương lai.
-        if ("ARCHIVED".equals(status) || "ENDED".equals(status)) {
-            if (movie.getReleaseDate() == null && existing != null) {
-                movie.setReleaseDate(existing.getReleaseDate());
-            }
-            if (movie.getEndDate() == null && existing != null) {
-                movie.setEndDate(existing.getEndDate());
-            }
-            if (movie.getEndDate() == null || movie.getEndDate().after(today)) {
-                movie.setEndDate(today);
-            }
-        }
-
-        // Kiểm tra chuyển trạng thái đối với phim đã có
         if (existing != null) {
             checkTransition(existing, status, movie.getReleaseDate(), movie.getEndDate());
         }
 
-        // Bắt buộc có đủ ngày khởi chiếu và ngày kết thúc
         if (movie.getReleaseDate() == null || movie.getEndDate() == null) {
             throw new IllegalArgumentException("missing_dates");
         }
-
-        // Kiểm tra khoảng thời gian chiếu (Ngày kết thúc phải lớn hơn hoặc bằng ngày khởi chiếu)
         if (!ValidationUtil.isValidDateRange(movie.getReleaseDate(), movie.getEndDate())) {
             throw new IllegalArgumentException("invalid_date_range");
         }
@@ -176,17 +220,9 @@ public class MovieService {
             throw new IllegalArgumentException("end_date_not_future");
         }
 
-        // Kiểm tra tính nhất quán giữa trạng thái và ngày phát hành
         String dateConsistencyError = ValidationUtil.validateMovieStatusDateConsistency(status, movie.getReleaseDate(), today);
         if (dateConsistencyError != null) {
             throw new IllegalArgumentException(dateConsistencyError);
-        }
-
-        if (movie.getMovieId() == 0) {
-            return movieDAO.insertMovie(movie);
-        } else {
-            boolean updated = movieDAO.updateMovie(movie);
-            return updated ? movie.getMovieId() : 0;
         }
     }
 
@@ -195,54 +231,31 @@ public class MovieService {
      * Dùng chung cho cả saveMovie và updateMovieStatus.
      */
     private void checkTransition(Movie existing, String targetStatus, Date releaseDate, Date endDate) {
-        if (existing == null) {
-            return;
-        }
+        if (existing == null) return;
         String oldStatus = existing.getStatus() != null ? existing.getStatus().toUpperCase() : "";
         LocalDate today = LocalDate.now();
 
-        // 1. Phim ARCHIVED (đã lưu trữ/hết bản quyền): Không thể chuyển trực tiếp sang NOW_SHOWING
-        if ("ARCHIVED".equals(oldStatus)) {
-            if ("NOW_SHOWING".equals(targetStatus)) {
-                throw new IllegalArgumentException("cannot_reopen_to_now_showing");
-            }
-            if ("COMING_SOON".equals(targetStatus)) {
-                if (releaseDate == null || endDate == null) {
-                    throw new IllegalArgumentException("reissue_dates_required");
-                }
-                if (existing.getEndDate() != null && !existing.getEndDate().toLocalDate().isAfter(today)) {
-                    if (endDate.equals(existing.getEndDate())) {
-                        throw new IllegalArgumentException("reissue_dates_required");
-                    }
-                }
-                String dateErr = ValidationUtil.validateTransitionToComingSoon(oldStatus, targetStatus, releaseDate, endDate);
-                if (dateErr != null) {
-                    throw new IllegalArgumentException(dateErr);
-                }
+        // 1. Phim ARCHIVED (lưu trữ/hết bản quyền): Không được mở thẳng sang NOW_SHOWING
+        if ("ARCHIVED".equals(oldStatus) && "NOW_SHOWING".equals(targetStatus)) {
+            throw new IllegalArgumentException("cannot_reopen_to_now_showing");
+        }
+
+        // 2. Phim ENDED (đã dừng chiếu): Chuyển sang NOW_SHOWING phải có ngày kết thúc mới từ hôm nay
+        if ("ENDED".equals(oldStatus) && "NOW_SHOWING".equals(targetStatus)) {
+            if (endDate == null || endDate.toLocalDate().isBefore(today)) {
+                throw new IllegalArgumentException("extend_end_date_required");
             }
         }
 
-        // 2. Phim ENDED (đã kết thúc đợt chiếu):
-        if ("ENDED".equals(oldStatus)) {
-            // Chuyển sang NOW_SHOWING bắt buộc phải có ngày kết thúc mới từ hôm nay trở đi
-            if ("NOW_SHOWING".equals(targetStatus)) {
-                if (endDate == null || endDate.toLocalDate().isBefore(today)) {
-                    throw new IllegalArgumentException("extend_end_date_required");
-                }
+        // 3. Tái chiếu (ARCHIVED hoặc ENDED sang COMING_SOON): Phải có ngày chiếu mới
+        if (("ARCHIVED".equals(oldStatus) || "ENDED".equals(oldStatus)) && "COMING_SOON".equals(targetStatus)) {
+            boolean isExpired = existing.getEndDate() != null && !existing.getEndDate().toLocalDate().isAfter(today);
+            if (releaseDate == null || endDate == null || (isExpired && endDate.equals(existing.getEndDate()))) {
+                throw new IllegalArgumentException("reissue_dates_required");
             }
-            if ("COMING_SOON".equals(targetStatus)) {
-                if (releaseDate == null || endDate == null) {
-                    throw new IllegalArgumentException("reissue_dates_required");
-                }
-                if (existing.getEndDate() != null && !existing.getEndDate().toLocalDate().isAfter(today)) {
-                    if (endDate.equals(existing.getEndDate())) {
-                        throw new IllegalArgumentException("reissue_dates_required");
-                    }
-                }
-                String dateErr = ValidationUtil.validateTransitionToComingSoon(oldStatus, targetStatus, releaseDate, endDate);
-                if (dateErr != null) {
-                    throw new IllegalArgumentException(dateErr);
-                }
+            String dateErr = ValidationUtil.validateTransitionToComingSoon(oldStatus, targetStatus, releaseDate, endDate);
+            if (dateErr != null) {
+                throw new IllegalArgumentException(dateErr);
             }
         }
     }
@@ -276,23 +289,15 @@ public class MovieService {
         // Kiểm tra quy tắc chuyển trạng thái
         checkTransition(current, targetStatus, current.getReleaseDate(), current.getEndDate());
 
-        if ("ENDED".equals(targetStatus)) {
-            return movieDAO.endMovie(movieId);
-        } else if ("ARCHIVED".equals(targetStatus)) {
-            return movieDAO.archiveMovie(movieId);
-        } else {
-            return movieDAO.updateMovieStatus(movieId, targetStatus);
-        }
+        return movieDAO.updateMovieStatus(movieId, targetStatus);
     }
+
 
     /**
      * Lấy danh sách toàn bộ cụm rạp và trạng thái đã phân phối (Distributed) thực tế của một bộ phim từ CSDL.
-     * Quy tắc nghiệp vụ chuẩn:
-     * - Khi tạo phim mới hoặc chưa có cấu hình: trả về đúng trạng thái thực tế trong database (mặc định chưa phân phối = false).
-     * - Tuyệt đối không tự động đánh dấu tất cả cụm rạp là đã phân phối.
      *
      * @param movieId mã định danh phim
-     * @return danh sách các cụm rạp kèm số lượng suất chiếu trong tương lai
+     * @return danh sách các cụm rạp kèm cờ isDistributed
      */
     public List<Centre> getDistributionCentres(int movieId) {
         if (movieId <= 0) {
@@ -302,68 +307,34 @@ public class MovieService {
     }
 
     /**
-     * Kết quả xử lý nghiệp vụ phân phối phim tới các cụm rạp.
-     */
-    public enum DistributionResult {
-        SUCCESS,
-        MOVIE_NOT_FOUND,
-        MOVIE_ENDED_OR_ARCHIVED,
-        INVALID_CENTRES,
-        FAILED
-    }
-
-    /**
-     * Cập nhật danh sách các cụm rạp được phép chiếu bộ phim này trong một Transaction CSDL an toàn.
-     * Toàn bộ quy tắc nghiệp vụ được thẩm định tập trung tại Service:
-     * - Phim không tồn tại -> MOVIE_NOT_FOUND
-     * - Phim ở trạng thái ARCHIVED hoặc ENDED không được phân phối -> MOVIE_ENDED_OR_ARCHIVED
-     * - Lưu thành công -> SUCCESS
-     * - Lỗi cơ sở dữ liệu -> FAILED
+     * Cập nhật danh sách các cụm rạp được phép chiếu bộ phim này.
+     * Logic nghiệp vụ:
+     * - Chỉ phim đang chiếu (NOW_SHOWING) hoặc sắp chiếu (COMING_SOON) mới được phân phối.
+     * - Phim không tồn tại, đã kết thúc (ENDED) hoặc lưu trữ (ARCHIVED) sẽ bị từ chối.
      *
      * @param movieId mã định danh phim
      * @param selectedCentreIds tập hợp mã ID các cụm rạp được chọn
-     * @return DistributionResult chứa mã kết quả nghiệp vụ
+     * @return true nếu lưu thành công, ngược lại false
      */
-    public DistributionResult saveDistribution(int movieId, Set<Integer> selectedCentreIds) {
+    public boolean saveDistribution(int movieId, Set<Integer> selectedCentreIds) {
         if (movieId <= 0) {
-            return DistributionResult.MOVIE_NOT_FOUND;
+            return false;
         }
-        Movie targetMovie = movieDAO.getMovieById(movieId);
-        if (targetMovie == null) {
-            return DistributionResult.MOVIE_NOT_FOUND;
+        Movie movie = movieDAO.getMovieById(movieId);
+        if (movie == null) {
+            return false;
         }
-        String st = targetMovie.getStatus() != null ? targetMovie.getStatus().toUpperCase() : "";
-        if ("ARCHIVED".equals(st) || "ENDED".equals(st)) {
-            if (selectedCentreIds != null && !selectedCentreIds.isEmpty()) {
-                return DistributionResult.MOVIE_ENDED_OR_ARCHIVED;
-            }
+        String status = movie.getStatus() != null ? movie.getStatus().toUpperCase() : "";
+        if (!"NOW_SHOWING".equals(status) && !"COMING_SOON".equals(status)) {
+            return false;
         }
-        if (selectedCentreIds != null && !selectedCentreIds.isEmpty()) {
-            Set<Integer> validCentreIds = new java.util.HashSet<>();
-            for (Centre centre : getDistributionCentres(movieId)) {
-                String centreStatus = centre.getStatus() == null ? "" : centre.getStatus().trim().toUpperCase();
-                if ("ACTIVE".equals(centreStatus) || "SUSPENDED".equals(centreStatus)) {
-                    validCentreIds.add(centre.getCentreId());
-                }
-            }
-            for (Integer centreId : selectedCentreIds) {
-                if (centreId == null || !validCentreIds.contains(centreId)) {
-                    return DistributionResult.INVALID_CENTRES;
-                }
-            }
-        }
-        boolean ok = movieDAO.saveMovieDistribution(movieId, selectedCentreIds);
-        return ok ? DistributionResult.SUCCESS : DistributionResult.FAILED;
+        return movieDAO.saveMovieDistribution(movieId, selectedCentreIds);
     }
 
     /**
-     * Cập nhật danh sách các cụm rạp được phép chiếu bộ phim này (hỗ trợ tương thích ngược boolean).
-     *
-     * @param movieId mã định danh phim
-     * @param selectedCentreIds tập hợp mã ID các cụm rạp được chọn
-     * @return true nếu lưu thành công toàn bộ, ngược lại false
+     * Tương thích ngược: Ủy quyền cho saveDistribution.
      */
     public boolean saveMovieDistribution(int movieId, Set<Integer> selectedCentreIds) {
-        return saveDistribution(movieId, selectedCentreIds) == DistributionResult.SUCCESS;
+        return saveDistribution(movieId, selectedCentreIds);
     }
 }
