@@ -321,16 +321,8 @@ public class MovieService {
         if (movieId <= 0) {
             return Collections.emptyList();
         }
-        List<Centre> rawList = movieDAO.getDistributionCentres(movieId);
-        List<Centre> validCentres = new java.util.ArrayList<>();
-        if (rawList != null) {
-            for (Centre c : rawList) {
-                if (c.getStatus() != null && !"INACTIVE".equalsIgnoreCase(c.getStatus().trim())) {
-                    validCentres.add(c);
-                }
-            }
-        }
-        return validCentres;
+        List<Centre> centres = movieDAO.getDistributionCentres(movieId);
+        return centres != null ? centres : Collections.emptyList();
     }
 
     /**
