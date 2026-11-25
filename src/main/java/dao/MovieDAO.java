@@ -47,7 +47,12 @@ public class MovieDAO {
      * @return danh sách các phim thỏa mãn
      */
     private List<Movie> getMoviesByStatus(String status) {
-        String sql = "SELECT * FROM Movies WHERE Status = ? ORDER BY MovieID DESC, ReleaseDate DESC";
+        String sql = """
+                SELECT *
+                FROM Movies
+                WHERE Status = ?
+                ORDER BY MovieID DESC, ReleaseDate DESC
+                """;
         List<Movie> movies = new ArrayList<>();
 
         try (Connection connection = DBContext.getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -71,7 +76,11 @@ public class MovieDAO {
      * @return đối tượng Movie nếu tìm thấy, ngược lại null
      */
     public Movie getMovieById(int movieId) {
-        String sql = "SELECT * FROM Movies WHERE MovieID = ?";
+        String sql = """
+                SELECT *
+                FROM Movies
+                WHERE MovieID = ?
+                """;
 
         try (Connection connection = DBContext.getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, movieId);
@@ -87,7 +96,12 @@ public class MovieDAO {
     }
 
     public boolean existsTitle(String title, int excludeMovieId) {
-        String sql = "SELECT 1 FROM Movies WHERE UPPER(LTRIM(RTRIM(Title))) = UPPER(LTRIM(RTRIM(?))) AND MovieID <> ?";
+        String sql = """
+                SELECT 1
+                FROM Movies
+                WHERE UPPER(LTRIM(RTRIM(Title))) = UPPER(LTRIM(RTRIM(?)))
+                  AND MovieID <> ?
+                """;
         try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, title);
             ps.setInt(2, excludeMovieId);
@@ -106,12 +120,18 @@ public class MovieDAO {
      * @return danh sách tất cả các phim sắp xếp mới nhất lên đầu
      */
     public List<Movie> getAllMovies() {
-        String sql = "SELECT m.*, "
-                + "(SELECT COUNT(*) FROM Centres WHERE Status = 'ACTIVE') AS TotalCentres, "
-                + "(SELECT COUNT(*) FROM CentreMovies cm "
-                + " JOIN Centres c ON c.CentreID = cm.CentreID "
-                + " WHERE cm.MovieID = m.MovieID AND cm.Status = 'ACTIVE' AND c.Status = 'ACTIVE') AS DistributedCentres "
-                + "FROM Movies m ORDER BY m.MovieID DESC";
+        String sql = """
+                SELECT m.*,
+                       (SELECT COUNT(*) FROM Centres WHERE Status = 'ACTIVE') AS TotalCentres,
+                       (SELECT COUNT(*)
+                        FROM CentreMovies cm
+                        JOIN Centres c ON c.CentreID = cm.CentreID
+                        WHERE cm.MovieID = m.MovieID
+                          AND cm.Status = 'ACTIVE'
+                          AND c.Status = 'ACTIVE') AS DistributedCentres
+                FROM Movies m
+                ORDER BY m.MovieID DESC
+                """;
         List<Movie> movies = new ArrayList<>();
         try (Connection connection = DBContext.getConnection(); PreparedStatement statement = connection.prepareStatement(sql); ResultSet rs = statement.executeQuery()) {
             while (rs.next()) {
@@ -131,9 +151,13 @@ public class MovieDAO {
      * @return mã định danh phim tự sinh nếu thành công (> 0), ngược lại 0
      */
     public int insertMovie(Movie movie) {
-        String sql = "INSERT INTO Movies (Title, Description, Duration, Genre, Director, Cast, Language, "
-                + "ReleaseDate, EndDate, PosterURL, TrailerURL, AgeRating, Status) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = """
+                INSERT INTO Movies (
+                    Title, Description, Duration, Genre, Director, Cast, Language,
+                    ReleaseDate, EndDate, PosterURL, TrailerURL, AgeRating, Status
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """;
         try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             setMovieParams(ps, movie, false);
             ps.executeUpdate();
@@ -160,9 +184,13 @@ public class MovieDAO {
      * @return true nếu cập nhật thành công, ngược lại false
      */
     public boolean updateMovie(Movie movie) {
-        String sql = "UPDATE Movies SET Title = ?, Description = ?, Duration = ?, Genre = ?, Director = ?, "
-                + "Cast = ?, Language = ?, ReleaseDate = ?, EndDate = ?, PosterURL = ?, TrailerURL = ?, "
-                + "AgeRating = ?, Status = ?, UpdatedAt = GETDATE() WHERE MovieID = ?";
+        String sql = """
+                UPDATE Movies
+                SET Title = ?, Description = ?, Duration = ?, Genre = ?, Director = ?,
+                    Cast = ?, Language = ?, ReleaseDate = ?, EndDate = ?, PosterURL = ?, TrailerURL = ?,
+                    AgeRating = ?, Status = ?, UpdatedAt = GETDATE()
+                WHERE MovieID = ?
+                """;
         try (Connection connection = DBContext.getConnection()) {
             // Tắt auto-commit để bắt đầu Transaction thủ công
             connection.setAutoCommit(false);
@@ -246,16 +274,20 @@ public class MovieDAO {
     private void cancelUpcomingShowtimesForMovie(Connection connection, int movieId) throws SQLException {
         // 1. Lấy thông tin khách hàng có vé bị ảnh hưởng để chuẩn bị gửi mail
         List<NoticeInfo> notices = new ArrayList<>();
-        String sql = "SELECT u.Email, u.FullName, b.BookingCode, m.Title, "
-                + "c.CentreName, h.HallName, s.StartTime "
-                + "FROM Bookings b "
-                + "JOIN Users u ON b.UserID = u.UserID "
-                + "JOIN Showtimes s ON b.ShowtimeID = s.ShowtimeID "
-                + "JOIN Movies m ON s.MovieID = m.MovieID "
-                + "JOIN Halls h ON s.HallID = h.HallID "
-                + "JOIN Centres c ON h.CentreID = c.CentreID "
-                + "WHERE b.BookingStatus IN ('CONFIRMED') "
-                + "AND s.MovieID = ? AND s.Status = 'SCHEDULED' AND s.StartTime > SYSDATETIME()";
+        String sql = """
+                SELECT u.Email, u.FullName, b.BookingCode, m.Title,
+                       c.CentreName, h.HallName, s.StartTime
+                FROM Bookings b
+                JOIN Users u ON b.UserID = u.UserID
+                JOIN Showtimes s ON b.ShowtimeID = s.ShowtimeID
+                JOIN Movies m ON s.MovieID = m.MovieID
+                JOIN Halls h ON s.HallID = h.HallID
+                JOIN Centres c ON h.CentreID = c.CentreID
+                WHERE b.BookingStatus IN ('CONFIRMED')
+                  AND s.MovieID = ?
+                  AND s.Status = 'SCHEDULED'
+                  AND s.StartTime > SYSDATETIME()
+                """;
 
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, movieId);
@@ -276,26 +308,115 @@ public class MovieDAO {
         }
 
         // 2. Hủy toàn bộ dữ liệu liên quan đến các suất chiếu tương lai
-        String condition = " IN (SELECT ShowtimeID FROM Showtimes "
-                + "WHERE MovieID = ? AND Status = 'SCHEDULED' AND StartTime > SYSDATETIME())";
-
         String[] sqls = {
             // 2.1 Hoàn lại số lượt đã dùng cho Voucher (giảm UsedCount tương ứng số đơn bị huỷ)
-            "UPDATE v SET v.UsedCount = CASE WHEN v.UsedCount > sub.cnt THEN v.UsedCount - sub.cnt ELSE 0 END FROM Vouchers v JOIN (SELECT b.VoucherID, COUNT(*) AS cnt FROM Bookings b WHERE b.VoucherID IS NOT NULL AND b.BookingStatus IN ('PENDING', 'CONFIRMED') AND b.ShowtimeID " + condition + " GROUP BY b.VoucherID) sub ON v.VoucherID = sub.VoucherID",
+            """
+            UPDATE v
+            SET v.UsedCount = CASE WHEN v.UsedCount > sub.cnt THEN v.UsedCount - sub.cnt ELSE 0 END
+            FROM Vouchers v
+            JOIN (
+                SELECT b.VoucherID, COUNT(*) AS cnt
+                FROM Bookings b
+                WHERE b.VoucherID IS NOT NULL
+                  AND b.BookingStatus IN ('PENDING', 'CONFIRMED')
+                  AND b.ShowtimeID IN (
+                      SELECT ShowtimeID
+                      FROM Showtimes
+                      WHERE MovieID = ? AND Status = 'SCHEDULED' AND StartTime > SYSDATETIME()
+                  )
+                GROUP BY b.VoucherID
+            ) sub ON v.VoucherID = sub.VoucherID
+            """,
             // 2.2 Thu hồi bản ghi sử dụng voucher để khách hàng có thể dùng lại mã cho lần đặt sau
-            "DELETE FROM VoucherUsages WHERE BookingID IN (SELECT BookingID FROM Bookings WHERE ShowtimeID " + condition + ")",
+            """
+            DELETE FROM VoucherUsages
+            WHERE BookingID IN (
+                SELECT BookingID
+                FROM Bookings
+                WHERE ShowtimeID IN (
+                    SELECT ShowtimeID
+                    FROM Showtimes
+                    WHERE MovieID = ? AND Status = 'SCHEDULED' AND StartTime > SYSDATETIME()
+                )
+            )
+            """,
             // 2.3 Chuyển trạng thái vé thành CANCELLED
-            "UPDATE Tickets SET TicketStatus = 'CANCELLED' WHERE TicketStatus = 'VALID' AND BookingSeatID IN (SELECT BookingSeatID FROM BookingSeats WHERE ShowtimeID " + condition + ")",
+            """
+            UPDATE Tickets
+            SET TicketStatus = 'CANCELLED'
+            WHERE TicketStatus = 'VALID'
+              AND BookingSeatID IN (
+                  SELECT BookingSeatID
+                  FROM BookingSeats
+                  WHERE ShowtimeID IN (
+                      SELECT ShowtimeID
+                      FROM Showtimes
+                      WHERE MovieID = ? AND Status = 'SCHEDULED' AND StartTime > SYSDATETIME()
+                  )
+              )
+            """,
             // 2.4 Nhả ghế phòng chiếu (CANCELLED) để không bị chiếm chỗ
-            "UPDATE BookingSeats SET SeatStatus = 'CANCELLED' WHERE SeatStatus IN ('HELD', 'CONFIRMED') AND ShowtimeID " + condition,
+            """
+            UPDATE BookingSeats
+            SET SeatStatus = 'CANCELLED'
+            WHERE SeatStatus IN ('HELD', 'CONFIRMED')
+              AND ShowtimeID IN (
+                  SELECT ShowtimeID
+                  FROM Showtimes
+                  WHERE MovieID = ? AND Status = 'SCHEDULED' AND StartTime > SYSDATETIME()
+              )
+            """,
             // 2.5 Hủy giao dịch thanh toán đang ở trạng thái PENDING
-            "UPDATE Payments SET PaymentStatus = 'CANCELLED' WHERE PaymentStatus = 'PENDING' AND BookingID IN (SELECT BookingID FROM Bookings WHERE ShowtimeID " + condition + ")",
+            """
+            UPDATE Payments
+            SET PaymentStatus = 'CANCELLED'
+            WHERE PaymentStatus = 'PENDING'
+              AND BookingID IN (
+                  SELECT BookingID
+                  FROM Bookings
+                  WHERE ShowtimeID IN (
+                      SELECT ShowtimeID
+                      FROM Showtimes
+                      WHERE MovieID = ? AND Status = 'SCHEDULED' AND StartTime > SYSDATETIME()
+                  )
+              )
+            """,
             // 2.6 Hủy đơn bắp nước đi kèm đơn đặt vé
-            "UPDATE FnbOrders SET OrderStatus = 'CANCELLED', UpdatedAt = SYSDATETIME() WHERE OrderStatus <> 'CANCELLED' AND BookingID IN (SELECT BookingID FROM Bookings WHERE ShowtimeID " + condition + ")",
+            """
+            UPDATE FnbOrders
+            SET OrderStatus = 'CANCELLED', UpdatedAt = SYSDATETIME()
+            WHERE OrderStatus <> 'CANCELLED'
+              AND BookingID IN (
+                  SELECT BookingID
+                  FROM Bookings
+                  WHERE ShowtimeID IN (
+                      SELECT ShowtimeID
+                      FROM Showtimes
+                      WHERE MovieID = ? AND Status = 'SCHEDULED' AND StartTime > SYSDATETIME()
+                  )
+              )
+            """,
             // 2.7 Hủy đơn đặt vé chính
-            "UPDATE Bookings SET BookingStatus = 'CANCELLED', UpdatedAt = SYSDATETIME() WHERE BookingStatus IN ('PENDING', 'CONFIRMED') AND ShowtimeID " + condition,
+            """
+            UPDATE Bookings
+            SET BookingStatus = 'CANCELLED', UpdatedAt = SYSDATETIME()
+            WHERE BookingStatus IN ('PENDING', 'CONFIRMED')
+              AND ShowtimeID IN (
+                  SELECT ShowtimeID
+                  FROM Showtimes
+                  WHERE MovieID = ? AND Status = 'SCHEDULED' AND StartTime > SYSDATETIME()
+              )
+            """,
             // 2.8 Cuối cùng, hủy lịch chiếu của suất tương lai
-            "UPDATE Showtimes SET Status = 'CANCELLED', UpdatedAt = SYSDATETIME() WHERE ShowtimeID " + condition
+            """
+            UPDATE Showtimes
+            SET Status = 'CANCELLED', UpdatedAt = SYSDATETIME()
+            WHERE ShowtimeID IN (
+                SELECT ShowtimeID
+                FROM Showtimes
+                WHERE MovieID = ? AND Status = 'SCHEDULED' AND StartTime > SYSDATETIME()
+            )
+            """
         };
 
         // Thực thi lần lượt từng câu lệnh UPDATE/DELETE trong cùng kết nối Transaction
@@ -325,20 +446,22 @@ public class MovieDAO {
         if (movieId <= 0) {
             return new int[]{0, 0};
         }
-        String sql = "SELECT "
-                + "(SELECT COUNT(*) "
-                + "FROM Showtimes "
-                + "WHERE MovieID = ? "
-                + "AND Status = 'SCHEDULED' "
-                + "AND StartTime > SYSDATETIME()) AS UpcomingShowtimes, "
-                + "(SELECT COUNT(t.TicketID) "
-                + "FROM Tickets t "
-                + "JOIN BookingSeats bs ON t.BookingSeatID = bs.BookingSeatID "
-                + "JOIN Showtimes s ON bs.ShowtimeID = s.ShowtimeID "
-                + "WHERE s.MovieID = ? "
-                + "AND s.Status = 'SCHEDULED' "
-                + "AND s.StartTime > SYSDATETIME() "
-                + "AND t.TicketStatus <> 'CANCELLED') AS SoldTickets";
+        String sql = """
+                SELECT
+                    (SELECT COUNT(*)
+                     FROM Showtimes
+                     WHERE MovieID = ?
+                       AND Status = 'SCHEDULED'
+                       AND StartTime > SYSDATETIME()) AS UpcomingShowtimes,
+                    (SELECT COUNT(t.TicketID)
+                     FROM Tickets t
+                     JOIN BookingSeats bs ON t.BookingSeatID = bs.BookingSeatID
+                     JOIN Showtimes s ON bs.ShowtimeID = s.ShowtimeID
+                     WHERE s.MovieID = ?
+                       AND s.Status = 'SCHEDULED'
+                       AND s.StartTime > SYSDATETIME()
+                       AND t.TicketStatus <> 'CANCELLED') AS SoldTickets
+                """;
 
         try (Connection con = DBContext.getConnection(); PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setInt(1, movieId);
@@ -361,7 +484,11 @@ public class MovieDAO {
      * @return thời lượng phim (phút), hoặc {@code -1} nếu không tìm thấy
      */
     public int getMovieDuration(int movieId) {
-        String sql = "SELECT Duration FROM Movies WHERE MovieID = ?";
+        String sql = """
+                SELECT Duration
+                FROM Movies
+                WHERE MovieID = ?
+                """;
         try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, movieId);
             try (ResultSet rs = ps.executeQuery()) {
@@ -384,11 +511,16 @@ public class MovieDAO {
      * @throws SQLException nếu xảy ra lỗi truy vấn cơ sở dữ liệu
      */
     public List<Movie> getMoviesShowingAt(int centreId) throws SQLException {
-        String sql = "SELECT mv.MovieID, mv.Title, mv.Genre, mv.Duration, mv.AgeRating, mv.PosterURL, mv.Status "
-                + "FROM Movies mv "
-                + "WHERE EXISTS (SELECT 1 " + ShowtimeDAO.BOOKABLE_FROM
-                + "              AND s.MovieID = mv.MovieID AND b.CentreID = ?) "
-                + "ORDER BY mv.Title";
+        String sql = """
+                SELECT mv.MovieID, mv.Title, mv.Genre, mv.Duration, mv.AgeRating, mv.PosterURL, mv.Status
+                FROM Movies mv
+                WHERE EXISTS (
+                    SELECT 1
+                """ + ShowtimeDAO.BOOKABLE_FROM + """
+                    AND s.MovieID = mv.MovieID AND b.CentreID = ?
+                )
+                ORDER BY mv.Title
+                """;
         List<Movie> list = new ArrayList<>();
         try (Connection conn = DBContext.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, centreId);
@@ -406,13 +538,15 @@ public class MovieDAO {
      */
     public List<Movie> getAvailableMoviesByCentre(int centreId) {
         List<Movie> list = new ArrayList<>();
-        String sql = "SELECT m.* "
-                + "FROM Movies m "
-                + "JOIN CentreMovies bm ON bm.MovieID = m.MovieID "
-                + "WHERE bm.CentreID = ? "
-                + "AND bm.IsActive = 1 "
-                + "AND m.Status = 'NOW_SHOWING' "
-                + "ORDER BY m.Title";
+        String sql = """
+                SELECT m.*
+                FROM Movies m
+                JOIN CentreMovies bm ON bm.MovieID = m.MovieID
+                WHERE bm.CentreID = ?
+                  AND bm.IsActive = 1
+                  AND m.Status = 'NOW_SHOWING'
+                ORDER BY m.Title
+                """;
 
         try (Connection connection = DBContext.getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setInt(1, centreId);
@@ -440,14 +574,17 @@ public class MovieDAO {
      */
     public List<Centre> getDistributionCentres(int movieId) {
         // Câu SQL rút gọn: Nếu tìm thấy thì là 1, không thấy (NULL) thì là 0
-        String sql = "SELECT b.CentreID, b.CentreName, b.Address, b.City, b.Phone, b.Status, "
-                + "       (CASE WHEN bm.CentreID IS NOT NULL THEN 1 ELSE 0 END) AS Distributed "
-                + "FROM Centres b "
-                + "LEFT JOIN CentreMovies bm ON bm.CentreID = b.CentreID "
-                + "                          AND bm.MovieID = ? "
-                + "                          AND bm.Status IN ('ACTIVE', 'SUSPENDED') "
-                + "WHERE b.Status IS NOT NULL AND UPPER(LTRIM(RTRIM(b.Status))) <> 'INACTIVE' "
-                + "ORDER BY b.City, b.CentreName";
+        String sql = """
+                SELECT b.CentreID, b.CentreName, b.Address, b.City, b.Phone, b.Status,
+                       (CASE WHEN bm.CentreID IS NOT NULL THEN 1 ELSE 0 END) AS Distributed
+                FROM Centres b
+                LEFT JOIN CentreMovies bm ON bm.CentreID = b.CentreID
+                                          AND bm.MovieID = ?
+                                          AND bm.Status IN ('ACTIVE', 'SUSPENDED')
+                WHERE b.Status IS NOT NULL
+                  AND UPPER(LTRIM(RTRIM(b.Status))) <> 'INACTIVE'
+                ORDER BY b.City, b.CentreName
+                """;
         List<Centre> centres = new ArrayList<>();
         try (Connection conn = DBContext.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, movieId);
@@ -474,10 +611,21 @@ public class MovieDAO {
      * Cập nhật danh sách cụm rạp được phân phối phim.
      */
     public boolean saveMovieDistribution(int movieId, Set<Integer> selectedCentreIDs) {
-        String disableSql = "UPDATE CentreMovies SET Status = 'CANCELLED', IsActive = 0, UpdatedAt = GETDATE() WHERE MovieID = ?";
-        String mergeSql = "MERGE CentreMovies t USING (SELECT ? AS c, ? AS m) s ON t.CentreID = s.c AND t.MovieID = s.m "
-                + "WHEN MATCHED THEN UPDATE SET Status = 'ACTIVE', IsActive = 1, UpdatedAt = GETDATE() "
-                + "WHEN NOT MATCHED THEN INSERT (CentreID, MovieID, Status, IsActive, CreatedAt) VALUES (s.c, s.m, 'ACTIVE', 1, GETDATE());";
+        String disableSql = """
+                UPDATE CentreMovies
+                SET Status = 'CANCELLED', IsActive = 0, UpdatedAt = GETDATE()
+                WHERE MovieID = ?
+                """;
+        String mergeSql = """
+                MERGE CentreMovies t
+                USING (SELECT ? AS c, ? AS m) s
+                ON t.CentreID = s.c AND t.MovieID = s.m
+                WHEN MATCHED THEN
+                    UPDATE SET Status = 'ACTIVE', IsActive = 1, UpdatedAt = GETDATE()
+                WHEN NOT MATCHED THEN
+                    INSERT (CentreID, MovieID, Status, IsActive, CreatedAt)
+                    VALUES (s.c, s.m, 'ACTIVE', 1, GETDATE());
+                """;
 
         try (Connection conn = DBContext.getConnection()) {
             conn.setAutoCommit(false);
