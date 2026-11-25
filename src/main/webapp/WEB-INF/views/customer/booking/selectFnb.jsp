@@ -3,12 +3,14 @@
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <%-- Buoc 3: chon bap nuoc cho don dang giu ghe (dat ve online va ban tai quay).
      Can co: booking, fnbMenu (List<FnbMenuItemDTO>), extrasAction (URL POST: /booking hoac /staff/counter). --%>
+<%-- Cấu hình trang: tiêu đề, bước 3, header; st = suất chiếu, fnbQty = số món đã chọn trước --%>
 <c:if test="${empty pageTitle}"><c:set var="pageTitle" value="Chọn bắp nước" scope="request"/></c:if>
 <c:set var="pageStep" value="3" scope="request"/>
 <%@ include file="/WEB-INF/fragments/header.jspf" %>
 <c:set var="st" value="${booking.showtime}"/>
 <c:set var="fnbQty" value="${booking.fnbQuantities}"/>
 
+<%-- CSS riêng: mỗi món một hàng, cụm nút − [số] + --%>
 <style>
     .fnb-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--bs-border-color); }
     .fnb-item:last-child { border-bottom: 0; }
@@ -20,6 +22,7 @@
     .fnb-stepper input[type=number] { -moz-appearance: textfield; }
 </style>
 
+<%-- [1] FORM LƯU BẮP NƯỚC (POST action=save-fnb + bookingId): bao danh sách món và cột phải --%>
 <form method="post" action="${extrasAction}" id="fnbForm">
     <input type="hidden" name="action" value="save-fnb">
     <input type="hidden" name="bookingId" value="${booking.id}">
@@ -29,6 +32,7 @@
             <div class="card"><div class="card-body">
                 <h5 class="mb-1">🍿 Bắp nước</h5>
                 <p class="text-muted small mb-2">Không bắt buộc. Bấm <strong>Tiếp tục</strong> để sang bước mã giảm giá và thanh toán.</p>
+                <%-- [2] DANH SÁCH MÓN: tên, nhãn Combo, mô tả, giá, ô số lượng qty_C…/qty_I… và nút −/+ --%>
                 <c:forEach var="m" items="${fnbMenu}">
                     <div class="fnb-item">
                         <div class="fnb-info">
@@ -51,6 +55,7 @@
             </div></div>
         </div>
 
+        <%-- [3] CỘT PHẢI: mã đơn, đồng hồ giữ ghế, phim/rạp/giờ, tiền vé, bắp nước, tạm tính, nút Tiếp tục / Huỷ --%>
         <div class="col-lg-4">
             <div class="card"><div class="card-body">
                 <div class="d-flex justify-content-between align-items-start mb-2">
@@ -82,11 +87,13 @@
         </div>
     </div>
 </form>
+<%-- [4] FORM HUỶ ĐƠN (POST action=cancel); nút "Huỷ đơn, chọn lại ghế" ở cột phải mượn form này --%>
 <form method="post" action="${extrasAction}" id="cancelForm" onsubmit="return confirm('Huỷ đơn và nhả ghế?');">
     <input type="hidden" name="action" value="cancel">
     <input type="hidden" name="bookingId" value="${booking.id}">
 </form>
 
+<%-- [5] JAVASCRIPT: đếm ngược giữ ghế (hết giờ sang checkout), nút −/+, tính tiền bắp nước và tạm tính --%>
 <script>
     (function () {
         let left = ${booking.secondsLeft};

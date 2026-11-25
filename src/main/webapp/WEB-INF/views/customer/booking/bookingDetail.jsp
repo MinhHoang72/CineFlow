@@ -1,14 +1,17 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
+<%-- Cấu hình trang: tiêu đề, biểu tượng 📄, header (kèm khung thông báo flash) --%>
 <c:set var="pageTitle" value="Chi tiết đơn" scope="request"/>
 <c:set var="pageStep" value="📄" scope="request"/>
 <%@ include file="/WEB-INF/fragments/header.jspf" %>
 <c:set var="ctx" value="${pageContext.request.contextPath}"/>
 <c:set var="st" value="${booking.showtime}"/>
+<%-- Cờ: suất bị huỷ / đơn hoặc suất bị huỷ (dùng cả trong ticket.jspf) --%>
 <c:set var="showtimeCancelled" value="${not empty st and st.status == 'CANCELLED'}"/>
 <c:set var="isCancelled" value="${booking.status == 'CANCELLED' or (not empty st and st.status == 'CANCELLED')}"/>
 
+<%-- [1] TIÊU ĐỀ ĐƠN: mã đơn, nhãn trạng thái, Online/Tại quầy + nút In vé, Tiếp tục thanh toán, Lịch sử --%>
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
     <h5 class="mb-0">Đơn <c:out value="${booking.code}"/>
         <span class="badge ${booking.statusBadge}">${booking.statusLabel}</span>
@@ -27,6 +30,7 @@
     </div>
 </div>
 
+<%-- [2] KHUNG ĐỎ SUẤT BỊ HUỶ + hotline hoàn tiền --%>
 <%-- Suat chieu bi huy (rap dong cua): ve het hieu luc, khach lien he de duoc hoan tien. --%>
 <c:if test="${showtimeCancelled}">
     <div class="alert alert-danger mb-3" role="alert">
@@ -38,11 +42,13 @@
     </div>
 </c:if>
 
+<%-- [3] PHẦN CHÍNH: có vé → vé điện tử (ticket.jspf); chưa có vé → bảng hạng mục --%>
 <c:choose>
     <c:when test="${not empty tickets}">
         <h6>Vé điện tử</h6>
         <%@ include file="/WEB-INF/views/customer/booking/ticket.jspf" %>
     </c:when>
+    <%-- Chưa thanh toán: bảng ghế, bắp nước, giảm giá, tổng cộng + "chưa có vé điện tử" --%>
     <c:otherwise>
         <div class="card mb-3"><div class="card-body">
             <div class="fs-5 fw-bold"><c:out value="${st.movieTitle}"/></div>
@@ -72,6 +78,7 @@
     </c:otherwise>
 </c:choose>
 
+<%-- [4] BẢNG THANH TOÁN: mỗi giao dịch một dòng (mã, VNPay/tiền mặt, số tiền, trạng thái, thời gian) --%>
 <div class="card mt-3 no-print">
     <div class="card-body">
         <h6>Thanh toán</h6>
@@ -118,6 +125,7 @@
     </div>
 </div>
 
+<%-- [5] Link Đặt vé khác --%>
 <a href="${ctx}/booking" class="btn btn-link mt-3 no-print">Đặt vé khác</a>
 
 <%@ include file="/WEB-INF/fragments/footer.jspf" %>

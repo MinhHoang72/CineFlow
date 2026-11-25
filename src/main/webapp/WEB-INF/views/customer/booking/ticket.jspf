@@ -2,6 +2,7 @@
 <%-- Ve dien tu cua don: moi ghe mot ve day du thong tin, danh sach bap nuoc de nhan mon, bang chi tiet tien.
      Can co: booking, tickets. --%>
 <div class="eticket" data-bs-theme="light">
+    <%-- [1] Khung đỏ ĐƠN ĐÃ HỦY (chỉ khi đơn / suất bị huỷ) --%>
     <c:if test="${isCancelled}">
         <div class="alert alert-danger d-flex align-items-center mb-3" role="alert">
             <span class="fs-5 me-2">⚠️</span>
@@ -11,6 +12,7 @@
         </div>
     </c:if>
 
+    <%-- [2] ĐẦU VÉ: rạp, tên phim, giờ, phòng, số ghế, mã đơn --%>
     <div class="text-muted small">CINEFLOW · <c:out value="${booking.showtime.centreName}"/></div>
     <div class="fs-4 fw-bold"><c:out value="${booking.showtime.movieTitle}"/></div>
     <div class="mb-3">
@@ -20,6 +22,7 @@
         Đơn <code><c:out value="${booking.code}"/></code>
     </div>
 
+    <%-- [3] MỖI GHẾ MỘT VÉ: suất, phòng, ghế, giá, mã vé, mã đơn, trạng thái --%>
     <div class="row g-3 mb-3">
         <c:forEach var="t" items="${tickets}">
             <div class="col-12 col-lg-6 seat-ticket">
@@ -51,12 +54,14 @@
             </div>
         </c:forEach>
     </div>
+    <%-- Ghi chú vé hết hiệu lực (khi bị huỷ) --%>
     <c:if test="${isCancelled}">
         <div class="small text-danger mb-3 font-semibold">
             * Vé không còn hiệu lực vào rạp. Vui lòng xem hướng dẫn hỗ trợ ở phía trên để đổi vé hoặc giải quyết quyền lợi.
         </div>
     </c:if>
 
+    <%-- [4] DANH SÁCH BẮP NƯỚC để nhận món --%>
     <c:if test="${not empty booking.fnbLines}">
         <div class="fw-bold">Bắp nước</div>
         <ul class="mb-1">
@@ -67,6 +72,7 @@
         <div class="small text-muted mb-3">Đưa danh sách này cho nhân viên quầy bắp nước để nhận món.</div>
     </c:if>
 
+    <%-- [5] BẢNG TIỀN: ghế, bắp nước, giảm giá, tổng cộng --%>
     <table class="table table-sm mb-0">
         <thead>
         <tr><th>Hạng mục</th><th>Chi tiết</th><th class="text-end">Thành tiền</th></tr>
