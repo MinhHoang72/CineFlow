@@ -446,6 +446,7 @@ public class MovieDAO {
                 + "LEFT JOIN CentreMovies bm ON bm.CentreID = b.CentreID "
                 + "                          AND bm.MovieID = ? "
                 + "                          AND bm.Status IN ('ACTIVE', 'SUSPENDED') "
+                + "WHERE b.Status IS NOT NULL AND UPPER(LTRIM(RTRIM(b.Status))) <> 'INACTIVE' "
                 + "ORDER BY b.City, b.CentreName";
         List<Centre> centres = new ArrayList<>();
         try (Connection conn = DBContext.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
