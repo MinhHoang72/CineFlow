@@ -7,6 +7,7 @@
 <%@ include file="/WEB-INF/fragments/header.jspf" %>
 <c:set var="ctx" value="${pageContext.request.contextPath}"/>
 
+<%-- CSS riêng: hàng món, cụm − [số] + --%>
 <style>
     .fnb-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--bs-border-color); }
     .fnb-item:last-child { border-bottom: 0; }
@@ -19,10 +20,12 @@
 </style>
 
 <c:choose>
+    <%-- Rạp chưa có món nào đang bán --%>
     <c:when test="${empty fnbMenu}">
         <div class="alert alert-secondary">Rạp hiện chưa có món nào đang bán (hết hàng hoặc chưa cấu hình kho).</div>
     </c:when>
     <c:otherwise>
+        <%-- [1] FORM TẠO ĐƠN BẮP NƯỚC LẺ (POST /staff/fnb-sale action=create) --%>
         <form method="post" action="${ctx}/staff/fnb-sale" id="fnbForm">
             <input type="hidden" name="action" value="create">
             <div class="row g-4">
@@ -30,6 +33,7 @@
                     <div class="card"><div class="card-body">
                         <h5 class="mb-1">🍿 Bắp nước bán lẻ</h5>
                         <p class="text-muted small mb-2">Bán cho khách không mua vé. Chọn món rồi bấm <strong>Tạo đơn &amp; thu tiền</strong>.</p>
+                        <%-- [2] DANH SÁCH MÓN: tên, Combo, mô tả, giá, số còn lại, ô số lượng và nút −/+ --%>
                         <c:forEach var="m" items="${fnbMenu}">
                             <div class="fnb-item">
                                 <div class="fnb-info">
@@ -53,6 +57,7 @@
                     </div></div>
                 </div>
 
+                <%-- [3] CỘT PHẢI: món đang chọn, tổng tiền, nút Tạo đơn & thu tiền --%>
                 <div class="col-lg-4">
                     <div class="card"><div class="card-body">
                         <h6>Đơn đang chọn</h6>
@@ -67,6 +72,7 @@
             </div>
         </form>
 
+        <%-- [4] JAVASCRIPT: nút −/+, giới hạn số lượng, tính tổng tiền, mở khoá nút --%>
         <script>
             (function () {
                 const fmt = new Intl.NumberFormat('vi-VN');

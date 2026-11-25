@@ -1,6 +1,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
+<%-- Cấu hình trang: in vé & hoá đơn, bước 4 --%>
 <c:set var="pageTitle" value="In vé & hoá đơn" scope="request"/>
 <c:set var="pageStep" value="4" scope="request"/>
 <c:set var="activeNav" value="counter" scope="request"/>
@@ -8,18 +9,22 @@
 <c:set var="ctx" value="${pageContext.request.contextPath}"/>
 <c:set var="st" value="${booking.showtime}"/>
 
+<%-- [1] NÚT In vé + hoá đơn, Bán vé tiếp (không in ra giấy) --%>
 <div class="d-flex gap-2 mb-3 no-print">
     <button type="button" class="btn btn-primary" onclick="window.print()">🖨 In vé + hoá đơn</button>
     <a href="${ctx}/staff/counter" class="btn btn-outline-secondary">Bán vé tiếp</a>
 </div>
 
 <c:choose>
+    <%-- Chưa thanh toán: chưa có vé --%>
     <c:when test="${empty tickets}">
         <div class="alert alert-warning">Đơn <c:out value="${booking.code}"/> chưa được thanh toán nên chưa có vé.</div>
     </c:when>
     <c:otherwise>
+        <%-- [2] VÉ ĐIỆN TỬ (ticket.jspf) --%>
         <%@ include file="/WEB-INF/views/customer/booking/ticket.jspf" %>
 
+        <%-- [3] HOÁ ĐƠN: rạp, mã đơn, giờ thu, nhân viên, từng dòng tiền, hình thức, tiền khách đưa / tiền thối --%>
         <%-- Hoa don --%>
         <div class="eticket mt-3" data-bs-theme="light" style="max-width: 420px">
             <div class="text-center">

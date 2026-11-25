@@ -1,6 +1,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
+<%-- Cấu hình trang: tiêu đề, bước 2, chèn header --%>
 <c:if test="${empty pageTitle}"><c:set var="pageTitle" value="Chọn ghế" scope="request"/></c:if>
 <c:set var="pageStep" value="2" scope="request"/>
 <%@ include file="/WEB-INF/fragments/header.jspf" %>
@@ -11,6 +12,7 @@
     <c:set var="seatBackUrl" value="${ctx}/booking?centreId=${showtime.centreId}&movieId=${showtime.movieId}"/>
 </c:if>
 
+<%-- [1] THÔNG TIN SUẤT: tên phim, rạp, phòng, giờ chiếu --%>
 <div class="card mb-4">
     <div class="card-body">
         <h5 class="mb-1"><c:out value="${showtime.movieTitle}"/></h5>
@@ -21,6 +23,7 @@
     </div>
 </div>
 
+<%-- [2] FORM GIỮ GHẾ (POST action=hold + showtimeId): bao sơ đồ ghế và cột phải, bấm Tiếp tục gửi các ghế đã tick --%>
 <form method="post" action="${seatFormAction}" id="seatForm">
     <input type="hidden" name="action" value="hold">
     <input type="hidden" name="showtimeId" value="${showtime.id}">
@@ -28,6 +31,7 @@
     <div class="row g-4">
         <div class="col-lg-8">
             <div class="card"><div class="card-body">
+                <%-- [3] SƠ ĐỒ GHẾ: vạch màn hình + từng hàng; mỗi ghế là 1 checkbox (đã đặt / hỏng thì disabled) --%>
                 <div class="screen">MÀN HÌNH</div>
                 <c:forEach var="row" items="${seatRows}">
                     <div class="seat-row">
@@ -42,6 +46,7 @@
                         </c:forEach>
                     </div>
                 </c:forEach>
+                <%-- [4] CHÚ THÍCH MÀU: Thường, VIP, Sweetbox, Đang chọn, Đã đặt --%>
                 <div class="legend d-flex flex-wrap gap-3 justify-content-center mt-3 small">
                     <div><span class="seat-std"></span>Thường</div>
                     <div><span class="seat-vip"></span>VIP</div>
@@ -52,6 +57,7 @@
             </div></div>
         </div>
 
+        <%-- [5] CỘT PHẢI: bảng giá, ghế đã chọn, tổng tiền tạm, nút Tiếp tục, link Chọn suất khác --%>
         <div class="col-lg-4">
             <div class="card"><div class="card-body">
                 <h6>Giá vé</h6>
@@ -70,6 +76,7 @@
     </div>
 </form>
 
+<%-- [6] JAVASCRIPT (trên trình duyệt): ghép cặp Sweetbox, tối đa 8 ghế, cập nhật tên ghế + tổng tiền, mở khoá nút --%>
 <script>
     (function () {
         const maxSeats = ${maxSeats};

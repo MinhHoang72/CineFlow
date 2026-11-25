@@ -1,12 +1,14 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
+<%-- Cấu hình trang: theo dõi giao dịch (nhân viên) --%>
 <c:set var="pageTitle" value="Theo dõi giao dịch thanh toán" scope="request"/>
 <c:set var="pageStep" value="₫" scope="request"/>
 <c:set var="activeNav" value="payments" scope="request"/>
 <%@ include file="/WEB-INF/fragments/header.jspf" %>
 <c:set var="ctx" value="${pageContext.request.contextPath}"/>
 
+<%-- [1] BỘ LỌC (GET): thời gian, phương thức, trạng thái; đổi lựa chọn là tự gửi form --%>
 <form method="get" action="${ctx}/staff/payments" class="row g-2 align-items-end mb-3">
     <div class="col-sm-3">
         <label class="form-label small" for="days">Thời gian</label>
@@ -40,12 +42,14 @@
     </div>
 </form>
 
+<%-- [2] TỔNG HỢP: số giao dịch, số thành công, tổng tiền đã thu --%>
 <div class="alert alert-light border d-flex flex-wrap gap-4">
     <span>Số giao dịch: <strong>${payments.size()}</strong></span>
     <span>Thành công: <strong>${paidCount}</strong></span>
     <span>Tổng tiền đã thu: <strong class="text-success"><fmt:formatNumber value="${paidTotal}" pattern="#,##0"/> đ</strong></span>
 </div>
 
+<%-- [3] BẢNG GIAO DỊCH: thời gian, mã giao dịch / đơn, khách, phim / rạp, phương thức, số tiền, trạng thái --%>
 <c:choose>
     <c:when test="${empty payments}">
         <div class="alert alert-info">Không có giao dịch nào phù hợp.</div>
@@ -101,6 +105,7 @@
     </c:otherwise>
 </c:choose>
 
+<%-- [4] JAVASCRIPT: tự tải lại trang mỗi 30 giây --%>
 <script>setTimeout(() => location.reload(), 30000);</script>
 
 <%@ include file="/WEB-INF/fragments/footer.jspf" %>

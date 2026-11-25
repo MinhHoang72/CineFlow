@@ -11,12 +11,14 @@
     <div class="col-lg-6">
         <div class="card">
             <div class="card-body">
+                <%-- [1] MÃ ĐƠN + nhãn Bắp nước lẻ + đồng hồ chờ thanh toán --%>
                 <div class="d-flex justify-content-between align-items-start">
                     <h5>Đơn <c:out value="${sale.code}"/> <span class="badge bg-warning text-dark">Bắp nước lẻ</span></h5>
                     <c:if test="${sale.pending}">
                         <span class="badge bg-warning text-dark fs-6">Còn <span id="countdown">--:--</span></span>
                     </c:if>
                 </div>
+                <%-- [2] BẢNG MÓN + Tổng tiền --%>
                 <table class="table table-sm mb-3">
                     <c:forEach var="line" items="${sale.lines}">
                         <tr><th class="fw-normal"><c:out value="${line.name}"/> × ${line.quantity}</th>
@@ -26,8 +28,10 @@
                         <td class="text-end fs-4 fw-bold text-danger"><fmt:formatNumber value="${sale.totalAmount}" pattern="#,##0"/> đ</td></tr>
                 </table>
 
+                <%-- [3] Đơn đang chờ: thu tiền mặt, VNPay, huỷ; còn lại: thông báo + Tạo đơn mới --%>
                 <c:choose>
                     <c:when test="${sale.pending}">
+                        <%-- FORM THU TIỀN MẶT (POST action=cash) --%>
                         <div class="border rounded p-3 mb-3">
                             <h6>💵 Thanh toán tiền mặt</h6>
                             <form method="post" action="${ctx}/staff/fnb-sale" id="cashForm">
@@ -43,6 +47,7 @@
                                 <button type="submit" class="btn btn-primary w-100" id="cashBtn" disabled>Xác nhận thu tiền mặt</button>
                             </form>
                         </div>
+                        <%-- FORM VNPAY (POST action=vnpay) --%>
                         <form method="post" action="${ctx}/staff/fnb-sale" class="mb-2">
                             <input type="hidden" name="action" value="vnpay">
                             <input type="hidden" name="orderId" value="${sale.id}">
@@ -50,6 +55,7 @@
                             <div class="form-text">Mở trang VNPay cho khách quét mã QR bằng app ngân hàng;
                                 VNPay xác nhận xong sẽ tự chuyển về trang hoá đơn.</div>
                         </form>
+                        <%-- FORM HUỶ ĐƠN (POST action=cancel) --%>
                         <form method="post" action="${ctx}/staff/fnb-sale" onsubmit="return confirm('Huỷ đơn bắp nước này?');">
                             <input type="hidden" name="action" value="cancel">
                             <input type="hidden" name="orderId" value="${sale.id}">
@@ -66,6 +72,7 @@
     </div>
 </div>
 
+<%-- [4] JAVASCRIPT: đếm ngược, tiền thối, gợi ý mệnh giá, hỏi xác nhận --%>
 <c:if test="${sale.pending}">
 <script>
     (function () {

@@ -1,6 +1,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ page import="model.dto.booking.BookingHistoryDTO,java.util.List,java.text.SimpleDateFormat" %>
 <%-- 5.5 Lich su dat ve cua khach hang (tach khoi trang ho so /account). Can co: bookingHistory. --%>
+<%-- Hàm phụ: esc (chống chèn HTML), money (định dạng tiền) --%>
 <%!
     private String esc(String value) {
         return value == null ? "" : value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;");
@@ -9,10 +10,12 @@
         return value == null ? "0 đ" : String.format("%,.0f đ", value);
     }
 %>
+<%-- Lấy danh sách lịch sử mà Servlet đặt vào request (bookingHistory) --%>
 <%
     List<BookingHistoryDTO> history = (List<BookingHistoryDTO>) request.getAttribute("bookingHistory");
     SimpleDateFormat dateTime = new SimpleDateFormat("dd/MM/yyyy HH:mm");
 %>
+<%-- Khung trang HTML + CSS + header chung của trang khách --%>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -29,8 +32,10 @@
     <jsp:include page="/common/header.jsp"/>
     <main class="account-page">
 
+        <%-- [1] Link quay về Hồ sơ --%>
         <a href="${pageContext.request.contextPath}/account" class="history-back-link">← Hồ sơ của tôi</a>
 
+        <%-- [2] TIÊU ĐỀ "Lịch sử đặt vé" + nút Đặt vé mới --%>
         <section class="panel history-panel">
             <div class="panel-heading history-heading">
                 <div class="heading-title-group">
@@ -45,6 +50,7 @@
                 </a>
             </div>
 
+            <%-- [3] Chưa có đơn nào: thông báo + nút khám phá phim --%>
             <% if (history == null || history.isEmpty()) { %>
                 <div class="empty-history">
                     <div class="empty-icon">🎬</div>
@@ -53,10 +59,12 @@
                         Khám phá phim đang chiếu
                     </a>
                 </div>
+            <%-- [4] DANH SÁCH ĐƠN: mỗi đơn một thẻ --%>
             <% } else { %>
                 <div class="history-list">
                     <% for (BookingHistoryDTO item : history) { %>
                         <article class="history-item">
+                            <%-- Bên trái: tên phim, mã đơn, rạp + giờ chiếu, cảnh báo vé bị huỷ (suất huỷ hoặc vé đã trả bị huỷ) --%>
                             <div class="history-left">
                                 <div class="movie-ticket-icon">🎟</div>
                                 <div class="history-details">
@@ -76,6 +84,7 @@
                                     <% } %>
                                 </div>
                             </div>
+                            <%-- Bên phải: tổng tiền, nhãn trạng thái, nút Thanh toán (đơn còn chờ) và Xem vé --%>
                             <div class="history-right">
                                 <span class="total-price"><%= money(item.getTotalAmount()) %></span>
                                 <%

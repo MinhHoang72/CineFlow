@@ -1,11 +1,13 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
+<%-- Cấu hình trang: tiêu đề tab, bước 1, chèn header (menu + CSS) --%>
 <c:set var="pageTitle" value="Chọn suất chiếu" scope="request"/>
 <c:set var="pageStep" value="1" scope="request"/>
 <%@ include file="/WEB-INF/fragments/header.jspf" %>
 <c:set var="ctx" value="${pageContext.request.contextPath}"/>
 
+<%-- [1] HÀNG NÚT THÀNH PHỐ: mỗi thành phố một nút, link /booking?city=... --%>
 <!-- Buoc 1: Thanh pho -->
 <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
     <h5 class="mb-0 me-2">Thành phố</h5>
@@ -19,11 +21,13 @@
         </a>
     </c:forEach>
 </div>
+<%-- Không có suất nào mở bán thì hiện cảnh báo --%>
 <c:if test="${empty cities}">
     <div class="alert alert-warning">Hiện chưa có suất chiếu nào mở bán.</div>
 </c:if>
 
 <div class="row g-4 mt-1">
+    <%-- [2] CỘT RẠP PHIM: chọn thành phố mới hiện rạp; link giữ city, thêm centreId --%>
     <!-- Buoc 2: Rap -->
     <div class="col-lg-3">
         <h5>Rạp phim</h5>
@@ -53,6 +57,7 @@
         </c:choose>
     </div>
 
+    <%-- [3] CỘT PHIM: chọn rạp mới hiện phim; link thêm movieId --%>
     <!-- Buoc 3: Phim -->
     <div class="col-lg-4">
         <h5>Phim</h5>
@@ -85,6 +90,7 @@
         </c:choose>
     </div>
 
+    <%-- [4] NGÀY & SUẤT CHIẾU: chọn phim mới hiện nút ngày và các ô giờ chiếu --%>
     <!-- Buoc 4: Ngay + suat chieu -->
     <div class="col-lg-5">
         <h5>Ngày &amp; suất chiếu</h5>
@@ -96,6 +102,7 @@
                 <div class="alert alert-warning">Phim này không còn suất chiếu tại rạp đã chọn.</div>
             </c:when>
             <c:otherwise>
+                <%-- Hàng nút ngày (link thêm date) --%>
                 <div class="d-flex flex-wrap gap-2 mb-3">
                     <c:forEach var="d" items="${dateOptions}">
                         <c:url var="dateUrl" value="/booking">
@@ -108,6 +115,7 @@
                            class="btn btn-sm ${d.key == selectedDate ? 'btn-primary' : 'btn-outline-primary'}">${d.value}</a>
                     </c:forEach>
                 </div>
+                <%-- Các ô suất chiếu: bấm ô → /booking?action=select-seats&showtimeId=... (sang trang chọn ghế) --%>
                 <div class="row g-2">
                     <c:forEach var="s" items="${showtimes}">
                         <div class="col-6 col-md-4">

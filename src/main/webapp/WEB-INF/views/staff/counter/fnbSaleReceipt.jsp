@@ -7,6 +7,7 @@
 <%@ include file="/WEB-INF/fragments/header.jspf" %>
 <c:set var="ctx" value="${pageContext.request.contextPath}"/>
 
+<%-- CSS hoá đơn: viền nét đứt; khi in thì ẩn nút và thông báo --%>
 <style>
     .eticket { border: 2px dashed #333; border-radius: 10px; background: #fff; padding: 20px; }
     @media print {
@@ -15,11 +16,13 @@
     }
 </style>
 
+<%-- [1] NÚT In hoá đơn, Bán đơn khác --%>
 <div class="d-flex gap-2 mb-3 no-print">
     <button type="button" class="btn btn-primary" onclick="window.print()">🖨 In hoá đơn</button>
     <a href="${ctx}/staff/fnb-sale" class="btn btn-outline-secondary">Bán đơn khác</a>
 </div>
 
+<%-- [2] HOÁ ĐƠN: rạp, mã đơn, giờ thu, nhân viên --%>
 <div class="eticket" data-bs-theme="light" style="max-width: 420px">
     <div class="text-center">
         <div class="fw-bold">CINEFLOW · <c:out value="${sale.centreName}"/></div>
@@ -31,6 +34,7 @@
         </div>
     </div>
     <hr>
+    <%-- [3] Từng món, tổng cộng, hình thức, tiền khách đưa và tiền thối (tiền mặt) --%>
     <table class="table table-sm table-borderless mb-0">
         <c:forEach var="line" items="${sale.lines}">
             <tr><td><c:out value="${line.name}"/> × ${line.quantity}</td>
