@@ -25247,5 +25247,185 @@ BEGIN
     SET @i += 1;
 END
 GO
+/* Sắp lại lịch mẫu theo phòng sau khi đã nạp hết các suất và booking.
+   Ưu tiên giữ giờ của suất có booking. Khi trùng, dời cả giờ bắt đầu và kết thúc
+   đến chỗ trống kế tiếp, tính cả thời gian dọn phòng. Giữ ID, vé và giá đã chốt. */
+SET XACT_ABORT ON;
+BEGIN TRY
+    BEGIN TRANSACTION;
+
+    SELECT s.ShowtimeID, s.HallID, s.StartTime, s.EndTime, s.CleaningBufferMinutes,
+           CASE WHEN EXISTS (SELECT 1 FROM dbo.Bookings b WHERE b.ShowtimeID = s.ShowtimeID
+                             AND b.BookingStatus IN ('PENDING', 'CONFIRMED', 'COMPLETED'))
+                THEN 1 ELSE 0 END AS HasBooking
+    INTO #ScheduleInput
+    FROM dbo.Showtimes s WITH (TABLOCKX, HOLDLOCK)
+    WHERE s.Status <> 'CANCELLED';
+
+    CREATE TABLE #ResolvedSchedule (
+        ShowtimeID INT PRIMARY KEY,
+        HallID INT NOT NULL,
+        StartTime DATETIME2 NOT NULL,
+        EndTime DATETIME2 NOT NULL,
+        BusyUntil DATETIME2 NOT NULL
+    );
+    CREATE INDEX IX_ResolvedSchedule_HallStart
+        ON #ResolvedSchedule (HallID, StartTime) INCLUDE (BusyUntil);
+
+    DECLARE @id INT, @hall INT, @start DATETIME2, @end DATETIME2, @buffer INT,
+            @candidate DATETIME2, @busy DATETIME2, @next DATETIME2;
+    DECLARE schedule_cursor CURSOR LOCAL FAST_FORWARD FOR
+        SELECT ShowtimeID, HallID, StartTime, EndTime, CleaningBufferMinutes
+        FROM #ScheduleInput
+        ORDER BY HallID, HasBooking DESC, StartTime, ShowtimeID;
+    OPEN schedule_cursor;
+    FETCH NEXT FROM schedule_cursor INTO @id, @hall, @start, @end, @buffer;
+
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        SET @candidate = @start;
+        WHILE 1 = 1
+        BEGIN
+            SET @busy = DATEADD(MINUTE, @buffer, @end);
+            SELECT @next = MIN(BusyUntil) FROM #ResolvedSchedule
+            WHERE HallID = @hall AND StartTime < @busy AND BusyUntil > @candidate;
+            IF @next IS NULL BREAK;
+
+            -- Dời giờ kết thúc cùng độ lệch với giờ bắt đầu để giữ thời lượng phim.
+            SET @end = DATEADD(DAY, DATEDIFF(DAY, @candidate, @next), @end);
+            SET @end = DATEADD(SECOND,
+                DATEDIFF(SECOND, CAST(@candidate AS TIME), CAST(@next AS TIME)), @end);
+            SET @end = DATEADD(NANOSECOND,
+                DATEPART(NANOSECOND, @next) - DATEPART(NANOSECOND, @candidate), @end);
+            SET @candidate = @next;
+        END;
+        INSERT INTO #ResolvedSchedule VALUES (@id, @hall, @candidate, @end, @busy);
+        FETCH NEXT FROM schedule_cursor INTO @id, @hall, @start, @end, @buffer;
+    END;
+    CLOSE schedule_cursor;
+    DEALLOCATE schedule_cursor;
+
+    DECLARE @now DATETIME2 = SYSDATETIME();
+    UPDATE s SET StartTime = r.StartTime, EndTime = r.EndTime, UpdatedAt = @now,
+        Status = CASE WHEN r.EndTime <= @now THEN 'COMPLETED'
+                      WHEN r.StartTime <= @now THEN 'ONGOING' ELSE 'SCHEDULED' END
+    FROM dbo.Showtimes s JOIN #ResolvedSchedule r ON r.ShowtimeID = s.ShowtimeID
+    WHERE s.StartTime <> r.StartTime;
+    DECLARE @moved INT = @@ROWCOUNT;
+
+    IF EXISTS (
+        SELECT 1 FROM (
+            SELECT StartTime, MAX(BusyUntil) OVER (
+                PARTITION BY HallID ORDER BY StartTime, ShowtimeID
+                ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
+            ) AS PreviousBusyUntil
+            FROM #ResolvedSchedule
+        ) r WHERE StartTime < PreviousBusyUntil
+    ) THROW 51020, N'Lịch chiếu vẫn còn xung đột.', 1;
+
+    SELECT @moved AS MovedShowtimes,
+           COUNT(CASE WHEN i.HasBooking = 1 THEN 1 END) AS MovedWithBookings,
+           MAX(DATEDIFF(MINUTE, i.StartTime, r.StartTime)) AS MaxDelayMinutes
+    FROM #ScheduleInput i JOIN #ResolvedSchedule r ON r.ShowtimeID = i.ShowtimeID
+    WHERE i.StartTime <> r.StartTime;
+
+    DROP TABLE #ResolvedSchedule, #ScheduleInput;
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+    THROW;
+END CATCH;
+GO
+
+/* Booking demo ngày 25/11/2026. Tối đa ba suất mỗi rạp, ba ghế thường mỗi suất. */
+SET QUOTED_IDENTIFIER ON;
+SET XACT_ABORT ON;
+BEGIN TRY
+    BEGIN TRANSACTION;
+    DECLARE @DemoDate DATE = '20261125', @Now DATETIME2 = SYSDATETIME();
+    DECLARE @Prefix VARCHAR(20) = 'DEMO261125-';
+
+    SELECT s.ShowtimeID, h.CentreID, s.StartTime, free.SeatID, free.Price
+    INTO #DemoCandidates
+    FROM dbo.Showtimes s
+    JOIN dbo.Halls h ON h.HallID = s.HallID
+    JOIN dbo.Centres c ON c.CentreID = h.CentreID
+    CROSS APPLY (
+        SELECT TOP (3) se.SeatID, p.Total AS Price
+        FROM dbo.Seats se
+        JOIN dbo.ShowtimeSeatPrices p
+          ON p.ShowtimeID = s.ShowtimeID AND p.SeatType = se.SeatType
+        WHERE se.HallID = h.HallID AND se.Status = 'AVAILABLE' AND se.SeatType = 'STANDARD'
+          AND NOT EXISTS (
+              SELECT 1 FROM dbo.BookingSeats bs
+              WHERE bs.ShowtimeID = s.ShowtimeID AND bs.SeatID = se.SeatID
+                AND bs.SeatStatus IN ('HELD', 'CONFIRMED')
+          )
+        ORDER BY se.SeatRow, se.SeatNumber, se.SeatID
+    ) free
+    WHERE s.StartTime >= @DemoDate AND s.StartTime < DATEADD(DAY, 1, @DemoDate)
+      AND s.SaleState = 'OPEN' AND s.Status <> 'CANCELLED'
+      AND h.Status = 'AVAILABLE' AND c.Status = 'ACTIVE'
+      AND NOT EXISTS (
+          SELECT 1 FROM dbo.Bookings b
+          WHERE b.BookingCode = CONCAT(@Prefix, s.ShowtimeID)
+      )
+      AND EXISTS (
+          SELECT 1 FROM dbo.CentreMovies cm
+          WHERE cm.CentreID = h.CentreID AND cm.MovieID = s.MovieID
+            AND cm.Status = 'ACTIVE' AND cm.IsActive = 1
+      )
+    OPTION (MAXDOP 1, LOOP JOIN, MAX_GRANT_PERCENT = 1);
+
+    ;WITH RankedShows AS (
+        SELECT ShowtimeID,
+               ROW_NUMBER() OVER (PARTITION BY CentreID
+                   ORDER BY CASE WHEN StartTime > @Now THEN 0 ELSE 1 END,
+                            StartTime, ShowtimeID) AS ShowRank
+        FROM #DemoCandidates
+        GROUP BY CentreID, StartTime, ShowtimeID
+        HAVING COUNT(*) = 3
+    )
+    SELECT c.ShowtimeID, c.SeatID, c.Price
+    INTO #DemoBookingSeats
+    FROM #DemoCandidates c
+    JOIN RankedShows r ON r.ShowtimeID = c.ShowtimeID
+    WHERE r.ShowRank <= 3
+      AND (SELECT COUNT(*) FROM dbo.Bookings b JOIN dbo.Showtimes s ON s.ShowtimeID=b.ShowtimeID
+           JOIN dbo.Halls h ON h.HallID=s.HallID
+           WHERE b.BookingCode LIKE @Prefix + '%' AND h.CentreID=c.CentreID)
+          + r.ShowRank <= 3;
+
+    DECLARE @Bookings TABLE (BookingID INT, ShowtimeID INT PRIMARY KEY);
+    INSERT dbo.Bookings (BookingCode, UserID, ShowtimeID, BookingType, BookingStatus,
+                         SubTotal, DiscountAmount, TotalAmount)
+    OUTPUT inserted.BookingID, inserted.ShowtimeID INTO @Bookings
+    SELECT CONCAT(@Prefix, ShowtimeID), NULL, ShowtimeID, 'COUNTER', 'CONFIRMED',
+           SUM(Price), 0, SUM(Price)
+    FROM #DemoBookingSeats GROUP BY ShowtimeID;
+
+    DECLARE @Tickets TABLE (BookingSeatID INT PRIMARY KEY);
+    INSERT dbo.BookingSeats (BookingID, ShowtimeID, SeatID, Price, SeatStatus, HoldUntil)
+    OUTPUT inserted.BookingSeatID INTO @Tickets
+    SELECT b.BookingID, s.ShowtimeID, s.SeatID, s.Price, 'CONFIRMED', NULL
+    FROM #DemoBookingSeats s JOIN @Bookings b ON b.ShowtimeID = s.ShowtimeID;
+
+    INSERT dbo.Tickets (BookingSeatID, TicketCode, QRCode, TicketStatus)
+    SELECT BookingSeatID, CONCAT(@Prefix, 'T-', BookingSeatID),
+           CONCAT(@Prefix, 'QR-', BookingSeatID), 'VALID'
+    FROM @Tickets;
+
+    SELECT (SELECT COUNT(*) FROM @Bookings) AS DemoBookingsCreated,
+           (SELECT COUNT(*) FROM @Tickets) AS DemoTicketsCreated;
+    DROP TABLE #DemoCandidates, #DemoBookingSeats;
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+    THROW;
+END CATCH;
+GO
+
 PRINT N'Hoàn tất nạp toàn bộ cấu trúc và dữ liệu CineFlow!';
 GO

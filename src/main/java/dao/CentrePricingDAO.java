@@ -19,9 +19,27 @@ public class CentrePricingDAO extends DBContext {
 
     /** One query for the chain overview, including centres without a current price. */
     public List<java.util.Map<String,Object>> getCentrePriceOverview() throws SQLException {
-        String sql="SELECT c.CentreID,c.CentreName,c.City,c.Status,p.BasePrice,p.EffectiveFrom,u.FullName UpdatedByName,n.BasePrice NextPrice,n.EffectiveFrom NextFrom "
-                +"FROM Centres c OUTER APPLY(SELECT TOP 1 BasePrice,EffectiveFrom,UpdatedBy FROM CentrePricing WHERE CentreID=c.CentreID AND EffectiveFrom<=SYSDATETIME() AND (EffectiveTo IS NULL OR EffectiveTo>SYSDATETIME()) ORDER BY EffectiveFrom DESC,CentrePricingID DESC)p "
-                +"LEFT JOIN Users u ON u.UserID=p.UpdatedBy OUTER APPLY(SELECT TOP 1 BasePrice,EffectiveFrom FROM CentrePricing WHERE CentreID=c.CentreID AND EffectiveFrom>SYSDATETIME() AND (EffectiveTo IS NULL OR EffectiveTo>EffectiveFrom) ORDER BY EffectiveFrom,CentrePricingID)n ORDER BY c.CentreName,c.CentreID";
+        String sql="""
+            SELECT c.CentreID,c.CentreName,c.City,c.Status,p.BasePrice,p.EffectiveFrom,u.FullName UpdatedByName,n.BasePrice NextPrice,n.EffectiveFrom NextFrom
+            FROM Centres c
+            OUTER APPLY(SELECT TOP 1 BasePrice,EffectiveFrom,UpdatedBy
+            FROM CentrePricing
+            WHERE CentreID=c.CentreID
+            AND EffectiveFrom<=SYSDATETIME()
+            AND (EffectiveTo IS NULL
+            OR EffectiveTo>SYSDATETIME())
+            ORDER BY EffectiveFrom DESC,CentrePricingID DESC)p
+            LEFT
+            JOIN Users u ON u.UserID=p.UpdatedBy
+            OUTER APPLY(SELECT TOP 1 BasePrice,EffectiveFrom
+            FROM CentrePricing
+            WHERE CentreID=c.CentreID
+            AND EffectiveFrom>SYSDATETIME()
+            AND (EffectiveTo IS NULL
+            OR EffectiveTo>EffectiveFrom)
+            ORDER BY EffectiveFrom,CentrePricingID)n
+            ORDER BY c.CentreName,c.CentreID
+            """;
         List<java.util.Map<String,Object>> rows=new ArrayList<>();
         try(Connection c=DBContext.getConnection();PreparedStatement ps=c.prepareStatement(sql);ResultSet rs=ps.executeQuery()){
             while(rs.next()){
@@ -36,12 +54,17 @@ public class CentrePricingDAO extends DBContext {
     public CentrePricing getCurrentPrice(int centreId) {
 
         String sql =
-            "SELECT TOP 1 bp.*, u.FullName AS UpdatedByName "
-            + "FROM CentrePricing bp LEFT JOIN Users u ON u.UserID=bp.UpdatedBy "
-            + "WHERE bp.CentreID = ? "
-            + "AND bp.EffectiveFrom <= SYSDATETIME() "
-            + "AND (bp.EffectiveTo IS NULL OR bp.EffectiveTo > SYSDATETIME()) "
-            + "ORDER BY bp.EffectiveFrom DESC,bp.CentrePricingID DESC";
+            """
+                SELECT TOP 1 bp.*, u.FullName AS UpdatedByName
+                FROM CentrePricing bp
+                LEFT
+                JOIN Users u ON u.UserID=bp.UpdatedBy
+                WHERE bp.CentreID = ?
+                AND bp.EffectiveFrom <= SYSDATETIME()
+                AND (bp.EffectiveTo IS NULL
+                OR bp.EffectiveTo > SYSDATETIME())
+                ORDER BY bp.EffectiveFrom DESC,bp.CentrePricingID DESC
+                """;
 
         try (PreparedStatement ps =
                 connection.prepareStatement(sql)) {
@@ -117,10 +140,14 @@ public class CentrePricingDAO extends DBContext {
                 new ArrayList<>();
 
         String sql =
-            "SELECT bp.*, u.FullName AS UpdatedByName "
-            + "FROM CentrePricing bp LEFT JOIN Users u ON u.UserID = bp.UpdatedBy "
-            + "WHERE bp.CentreID = ? "
-            + "ORDER BY bp.EffectiveFrom DESC, bp.CentrePricingID DESC";
+            """
+                SELECT bp.*, u.FullName AS UpdatedByName
+                FROM CentrePricing bp
+                LEFT
+                JOIN Users u ON u.UserID = bp.UpdatedBy
+                WHERE bp.CentreID = ?
+                ORDER BY bp.EffectiveFrom DESC, bp.CentrePricingID DESC
+                """;
 
         try (PreparedStatement ps =
                 connection.prepareStatement(sql)) {
@@ -217,32 +244,54 @@ public class CentrePricingDAO extends DBContext {
         if (!Double.isFinite(price) || price < 0 || price > 9999999999d)
             throw new IllegalArgumentException("Giá vé không hợp lệ.");
         if (c.getAutoCommit()) throw new SQLException("Pricing changes require a transaction");
-        try (PreparedStatement ps = c.prepareStatement("SELECT CentreID FROM Centres WITH (UPDLOCK,HOLDLOCK) WHERE CentreID=?")) {
+        try (PreparedStatement ps = c.prepareStatement("""
+            SELECT CentreID
+            FROM Centres WITH (UPDLOCK,HOLDLOCK)
+            WHERE CentreID=?
+            """)) {
             ps.setInt(1, centreId);
             try (ResultSet rs = ps.executeQuery()) {
                 if (!rs.next()) throw new IllegalArgumentException("Cụm rạp không tồn tại.");
             }
         }
         Timestamp now;
-        try (Statement ps = c.createStatement(); ResultSet rs = ps.executeQuery("SELECT SYSDATETIME()")) {
+        try (Statement ps = c.createStatement(); ResultSet rs = ps.executeQuery("""
+            SELECT SYSDATETIME()
+            """)) {
             rs.next(); now = rs.getTimestamp(1);
         }
         Timestamp start = requestedStart == null ? now : Timestamp.valueOf(requestedStart);
         if (requestedStart != null && !start.after(now))
             throw new IllegalArgumentException("Thời gian áp dụng phải nằm trong tương lai.");
         Timestamp next = null;
-        try (PreparedStatement ps = c.prepareStatement("SELECT TOP 1 EffectiveFrom FROM CentrePricing WITH (UPDLOCK,HOLDLOCK) WHERE CentreID=? AND EffectiveFrom>=? ORDER BY EffectiveFrom")) {
+        try (PreparedStatement ps = c.prepareStatement("""
+            SELECT TOP 1 EffectiveFrom
+            FROM CentrePricing WITH (UPDLOCK,HOLDLOCK)
+            WHERE CentreID=?
+            AND EffectiveFrom>=?
+            ORDER BY EffectiveFrom
+            """)) {
             ps.setInt(1, centreId); ps.setTimestamp(2, start);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) next = rs.getTimestamp(1);
             }
         }
         if (start.equals(next)) throw new IllegalArgumentException("Đã có mức giá bắt đầu tại thời điểm này.");
-        try (PreparedStatement ps = c.prepareStatement("UPDATE CentrePricing SET EffectiveTo=? WHERE CentreID=? AND EffectiveFrom<? AND (EffectiveTo IS NULL OR EffectiveTo>?)")) {
+        try (PreparedStatement ps = c.prepareStatement("""
+            UPDATE CentrePricing
+            SET EffectiveTo=?
+            WHERE CentreID=?
+            AND EffectiveFrom<?
+            AND (EffectiveTo IS NULL
+            OR EffectiveTo>?)
+            """)) {
             ps.setTimestamp(1, start); ps.setInt(2, centreId); ps.setTimestamp(3, start); ps.setTimestamp(4, start);
             ps.executeUpdate();
         }
-        try (PreparedStatement ps = c.prepareStatement("INSERT INTO CentrePricing (CentreID,BasePrice,EffectiveFrom,EffectiveTo,UpdatedBy) VALUES (?,?,?,?,?)")) {
+        try (PreparedStatement ps = c.prepareStatement("""
+            INSERT INTO CentrePricing (CentreID,BasePrice,EffectiveFrom,EffectiveTo,UpdatedBy)
+            VALUES (?,?,?,?,?)
+            """)) {
             ps.setInt(1, centreId); ps.setDouble(2, price); ps.setTimestamp(3, start);
             ps.setTimestamp(4, next); ps.setInt(5, managerId); ps.executeUpdate();
         }
@@ -253,13 +302,15 @@ public class CentrePricingDAO extends DBContext {
         Timestamp showtime) {
 
     String sql =
-        "SELECT TOP 1 BasePrice "
-        + "FROM CentrePricing "
-        + "WHERE CentreID = ? "
-        + "AND EffectiveFrom <= ? "
-        + "AND (EffectiveTo IS NULL "
-        + "OR ? < EffectiveTo) "
-        + "ORDER BY EffectiveFrom DESC";
+        """
+            SELECT TOP 1 BasePrice
+            FROM CentrePricing
+            WHERE CentreID = ?
+            AND EffectiveFrom <= ?
+            AND (EffectiveTo IS NULL
+            OR ? < EffectiveTo)
+            ORDER BY EffectiveFrom DESC
+            """;
 
     try (PreparedStatement ps =
             connection.prepareStatement(sql)) {
