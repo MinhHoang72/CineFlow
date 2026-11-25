@@ -18,9 +18,11 @@ import java.util.List;
  */
 public class BookingVoucherDAO {
 
-    private static final String COLUMNS = "v.VoucherID, v.VoucherCode, v.VoucherName, v.Description, v.CentreID, "
-            + "v.DiscountType, v.DiscountValue, v.MinimumOrderValue, v.MaximumDiscount, v.StartDate, v.EndDate, "
-            + "v.UsageLimit, v.UsedCount, v.PerCustomerLimit, v.Status";
+    private static final String COLUMNS = """
+            v.VoucherID, v.VoucherCode, v.VoucherName, v.Description, v.CentreID,
+            v.DiscountType, v.DiscountValue, v.MinimumOrderValue, v.MaximumDiscount, v.StartDate, v.EndDate,
+            v.UsageLimit, v.UsedCount, v.PerCustomerLimit, v.Status
+            """;
 
     /** Tìm voucher theo mã (không phân biệt hoa thường); không có thì null. */
     public Voucher findByCode(String code) throws SQLException {
@@ -131,8 +133,10 @@ public class BookingVoucherDAO {
     /** Ghi lượt dùng voucher của khách cho đơn vào VoucherUsages; đã ghi rồi thì bỏ qua. */
     public void insertUsageIfAbsent(Connection conn, int voucherId, int userId, int bookingId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
-                "INSERT INTO VoucherUsages (VoucherID, UserID, BookingID) SELECT ?, ?, ? "
-              + "WHERE NOT EXISTS (SELECT 1 FROM VoucherUsages WHERE VoucherID = ? AND BookingID = ?)")) {
+                """
+                        INSERT INTO VoucherUsages (VoucherID, UserID, BookingID) SELECT ?, ?, ?
+                        WHERE NOT EXISTS (SELECT 1 FROM VoucherUsages WHERE VoucherID = ? AND BookingID = ?)
+                        """)) {
             ps.setInt(1, voucherId);
             ps.setInt(2, userId);
             ps.setInt(3, bookingId);

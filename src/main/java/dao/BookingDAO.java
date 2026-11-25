@@ -37,10 +37,12 @@ public class BookingDAO {
      * Bảng: Bookings, Vouchers, BookingSeats, Showtimes, Movies, Halls, Centres, Seats.
      */
     public Booking getBooking(int bookingId) throws SQLException {
-        String sql = "SELECT BookingID, BookingCode, UserID, ShowtimeID, BookingType, BookingStatus, SubTotal, DiscountAmount, "
-                   + "  TotalAmount, CreatedAt, v.VoucherCode, "
-                   + "  (SELECT MIN(HoldUntil) FROM BookingSeats WHERE BookingID = b.BookingID AND SeatStatus = 'HELD') AS HoldUntil "
-                   + "FROM Bookings b LEFT JOIN Vouchers v ON v.VoucherID = b.VoucherID WHERE BookingID = ?";
+        String sql = """
+                SELECT BookingID, BookingCode, UserID, ShowtimeID, BookingType, BookingStatus, SubTotal, DiscountAmount,
+                  TotalAmount, CreatedAt, v.VoucherCode,
+                  (SELECT MIN(HoldUntil) FROM BookingSeats WHERE BookingID = b.BookingID AND SeatStatus = 'HELD') AS HoldUntil
+                FROM Bookings b LEFT JOIN Vouchers v ON v.VoucherID = b.VoucherID WHERE BookingID = ?
+                """;
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, bookingId);
@@ -90,9 +92,11 @@ public class BookingDAO {
 
     /** Tìm các đơn PENDING có ghế HELD đã quá HoldUntil (so theo giờ SQL Server). */
     public List<Integer> findExpiredPendingIds(Connection conn) throws SQLException {
-        return ids(conn, "SELECT BookingID FROM Bookings b WHERE b.BookingStatus = 'PENDING' AND EXISTS ("
-                       + "SELECT 1 FROM BookingSeats bs WHERE bs.BookingID = b.BookingID "
-                       + "AND bs.SeatStatus = 'HELD' AND bs.HoldUntil <= SYSDATETIME())");
+        return ids(conn, """
+                SELECT BookingID FROM Bookings b WHERE b.BookingStatus = 'PENDING' AND EXISTS (
+                SELECT 1 FROM BookingSeats bs WHERE bs.BookingID = b.BookingID
+                AND bs.SeatStatus = 'HELD' AND bs.HoldUntil <= SYSDATETIME())
+                """);
     }
 
     /** Tìm các đơn PENDING của một khách cho một suất chiếu (để huỷ trước khi khách giữ ghế mới). */
@@ -109,8 +113,10 @@ public class BookingDAO {
 
     /** Tìm đơn tại quầy PENDING có mã bookingId (danh sách 0 hoặc 1 phần tử). */
     public List<Integer> findPendingCounterId(Connection conn, int bookingId) throws SQLException {
-        return ids(conn, "SELECT BookingID FROM Bookings WHERE BookingStatus = 'PENDING' AND BookingID = ? "
-                       + "AND BookingType = 'COUNTER'", bookingId);
+        return ids(conn, """
+                SELECT BookingID FROM Bookings WHERE BookingStatus = 'PENDING' AND BookingID = ?
+                AND BookingType = 'COUNTER'
+                """, bookingId);
     }
 
     // ---------------------------------------------------------------- ghi don
@@ -121,8 +127,10 @@ public class BookingDAO {
      */
     public int insertBooking(Connection conn, String code, Integer userId, String bookingType, int showtimeId,
             BigDecimal subTotal) throws SQLException {
-        String sql = "INSERT INTO Bookings (BookingCode, UserID, ShowtimeID, BookingType, BookingStatus, "
-                   + "SubTotal, DiscountAmount, TotalAmount) VALUES (?, ?, ?, ?, 'PENDING', ?, 0, ?)";
+        String sql = """
+                INSERT INTO Bookings (BookingCode, UserID, ShowtimeID, BookingType, BookingStatus,
+                SubTotal, DiscountAmount, TotalAmount) VALUES (?, ?, ?, ?, 'PENDING', ?, 0, ?)
+                """;
         try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, code);
             if (userId == null) ps.setNull(2, Types.INTEGER);
@@ -170,9 +178,11 @@ public class BookingDAO {
      */
     public int completeFinishedBookings(Connection conn) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
-                "UPDATE b SET BookingStatus = 'COMPLETED', UpdatedAt = SYSDATETIME() "
-              + "FROM Bookings b JOIN Showtimes s ON s.ShowtimeID = b.ShowtimeID "
-              + "WHERE b.BookingStatus = 'CONFIRMED' AND s.Status <> 'CANCELLED' AND s.EndTime <= SYSDATETIME()")) {
+                """
+                        UPDATE b SET BookingStatus = 'COMPLETED', UpdatedAt = SYSDATETIME()
+                        FROM Bookings b JOIN Showtimes s ON s.ShowtimeID = b.ShowtimeID
+                        WHERE b.BookingStatus = 'CONFIRMED' AND s.Status <> 'CANCELLED' AND s.EndTime <= SYSDATETIME()
+                        """)) {
             return ps.executeUpdate();
         }
     }
@@ -193,8 +203,10 @@ public class BookingDAO {
      */
     public void updateVoucher(Connection conn, int bookingId, Integer voucherId, BigDecimal discount) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
-                "UPDATE Bookings SET VoucherID = ?, DiscountAmount = ?, UpdatedAt = SYSDATETIME() "
-              + "WHERE BookingID = ? AND BookingStatus = 'PENDING'")) {
+                """
+                        UPDATE Bookings SET VoucherID = ?, DiscountAmount = ?, UpdatedAt = SYSDATETIME()
+                        WHERE BookingID = ? AND BookingStatus = 'PENDING'
+                        """)) {
             if (voucherId == null) ps.setNull(1, Types.INTEGER);
             else ps.setInt(1, voucherId);
             ps.setBigDecimal(2, discount);
@@ -212,8 +224,10 @@ public class BookingDAO {
     public void insertHeldSeats(Connection conn, int bookingId, int showtimeId, List<Seat> seats, Timestamp holdUntil)
             throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
-                "INSERT INTO BookingSeats (BookingID, ShowtimeID, SeatID, Price, SeatStatus, HoldUntil) "
-              + "VALUES (?, ?, ?, ?, 'HELD', ?)")) {
+                """
+                        INSERT INTO BookingSeats (BookingID, ShowtimeID, SeatID, Price, SeatStatus, HoldUntil)
+                        VALUES (?, ?, ?, ?, 'HELD', ?)
+                        """)) {
             for (Seat seat : seats) {
                 ps.setInt(1, bookingId);
                 ps.setInt(2, showtimeId);
@@ -229,8 +243,10 @@ public class BookingDAO {
     /** Ghế HELD đã quá HoldUntil -> RELEASED. Khi đó ghế ra khỏi unique index nên người khác giữ được. */
     public void releaseOverdueSeats(Connection conn) throws SQLException {
         try (Statement st = conn.createStatement()) {
-            st.executeUpdate("UPDATE BookingSeats SET SeatStatus = 'RELEASED' "
-                    + "WHERE SeatStatus = 'HELD' AND HoldUntil <= SYSDATETIME()");
+            st.executeUpdate("""
+                    UPDATE BookingSeats SET SeatStatus = 'RELEASED'
+                    WHERE SeatStatus = 'HELD' AND HoldUntil <= SYSDATETIME()
+                    """);
         }
     }
 
@@ -251,8 +267,10 @@ public class BookingDAO {
      */
     public void confirmSeats(Connection conn, int bookingId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
-                "UPDATE BookingSeats SET SeatStatus = 'CONFIRMED', HoldUntil = NULL "
-              + "WHERE BookingID = ? AND SeatStatus IN ('HELD', 'RELEASED', 'CANCELLED')")) {
+                """
+                        UPDATE BookingSeats SET SeatStatus = 'CONFIRMED', HoldUntil = NULL
+                        WHERE BookingID = ? AND SeatStatus IN ('HELD', 'RELEASED', 'CANCELLED')
+                        """)) {
             ps.setInt(1, bookingId);
             ps.executeUpdate();
         }
@@ -260,9 +278,11 @@ public class BookingDAO {
 
     /** Các BookingSeatID đã CONFIRMED mà chưa có vé (để xuất vé, tránh xuất trùng). */
     public List<Integer> findConfirmedSeatsWithoutTicket(Connection conn, int bookingId) throws SQLException {
-        return ids(conn, "SELECT bs.BookingSeatID FROM BookingSeats bs "
-                       + "WHERE bs.BookingID = ? AND bs.SeatStatus = 'CONFIRMED' "
-                       + "AND NOT EXISTS (SELECT 1 FROM Tickets t WHERE t.BookingSeatID = bs.BookingSeatID)", bookingId);
+        return ids(conn, """
+                SELECT bs.BookingSeatID FROM BookingSeats bs
+                WHERE bs.BookingID = ? AND bs.SeatStatus = 'CONFIRMED'
+                AND NOT EXISTS (SELECT 1 FROM Tickets t WHERE t.BookingSeatID = bs.BookingSeatID)
+                """, bookingId);
     }
 
     /**
@@ -293,9 +313,11 @@ public class BookingDAO {
 
     /** Đọc danh sách ghế của đơn (nhãn ghế, loại, giá, trạng thái) để gắn vào đối tượng Booking. */
     private static List<Seat> loadSeats(Connection conn, int bookingId) throws SQLException {
-        String sql = "SELECT se.SeatID, se.SeatRow, se.SeatNumber, se.SeatType, bs.Price "
-                   + "FROM BookingSeats bs JOIN Seats se ON se.SeatID = bs.SeatID "
-                   + "WHERE bs.BookingID = ? ORDER BY se.SeatRow, se.SeatNumber";
+        String sql = """
+                SELECT se.SeatID, se.SeatRow, se.SeatNumber, se.SeatType, bs.Price
+                FROM BookingSeats bs JOIN Seats se ON se.SeatID = bs.SeatID
+                WHERE bs.BookingID = ? ORDER BY se.SeatRow, se.SeatNumber
+                """;
         List<Seat> seats = new ArrayList<>();
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, bookingId);

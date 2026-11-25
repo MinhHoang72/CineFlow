@@ -31,13 +31,15 @@ public class SeatDAO {
      * Giá ghế chưa tính (null): BookingService cộng giá suất chiếu với phụ thu loại ghế.
      */
     public List<Seat> getSeatMap(Connection conn, Showtime showtime) throws SQLException {
-        String sql = "SELECT se.SeatID, se.SeatRow, se.SeatNumber, se.SeatType, se.Status, "
-                   + "  CASE WHEN EXISTS (SELECT 1 FROM BookingSeats bs "
-                   + "       WHERE bs.ShowtimeID = ? AND bs.SeatID = se.SeatID "
-                   + "         AND (bs.SeatStatus = 'CONFIRMED' "
-                   + "              OR (bs.SeatStatus = 'HELD' AND bs.HoldUntil > SYSDATETIME()))) "
-                   + "  THEN 1 ELSE 0 END AS Taken "
-                   + "FROM Seats se WHERE se.HallID = ? ORDER BY se.SeatRow, se.SeatNumber";
+        String sql = """
+                SELECT se.SeatID, se.SeatRow, se.SeatNumber, se.SeatType, se.Status,
+                  CASE WHEN EXISTS (SELECT 1 FROM BookingSeats bs
+                       WHERE bs.ShowtimeID = ? AND bs.SeatID = se.SeatID
+                         AND (bs.SeatStatus = 'CONFIRMED'
+                              OR (bs.SeatStatus = 'HELD' AND bs.HoldUntil > SYSDATETIME())))
+                  THEN 1 ELSE 0 END AS Taken
+                FROM Seats se WHERE se.HallID = ? ORDER BY se.SeatRow, se.SeatNumber
+                """;
         List<Seat> seats = new ArrayList<>();
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, showtime.getId());

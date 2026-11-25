@@ -41,23 +41,27 @@ public class FnbOrderDAO {
 
     /** Mon le dang ban tai rap: ACTIVE, con hang trong kho cua rap. */
     private static final String MENU_ITEMS =
-            "SELECT i.FnbItemID, i.ItemName, i.Description, i.Price, inv.StockQuantity "
-          + "FROM FnbItems i JOIN CentreFnbInventory inv ON inv.FnbItemID = i.FnbItemID AND inv.CentreID = i.CentreID "
-          + "WHERE i.CentreID = ? AND i.Status = 'ACTIVE' AND inv.IsAvailable = 1 AND inv.StockQuantity > 0 "
-          + "ORDER BY i.ItemName";
+            """
+                    SELECT i.FnbItemID, i.ItemName, i.Description, i.Price, inv.StockQuantity
+                    FROM FnbItems i JOIN CentreFnbInventory inv ON inv.FnbItemID = i.FnbItemID AND inv.CentreID = i.CentreID
+                    WHERE i.CentreID = ? AND i.Status = 'ACTIVE' AND inv.IsAvailable = 1 AND inv.StockQuantity > 0
+                    ORDER BY i.ItemName
+                    """;
 
     /** Combo dang ban: moi thanh phan con hang; so phan toi da = MIN(ton kho / so luong trong combo). */
     private static final String MENU_COMBOS =
-            "SELECT c.ComboID, c.ComboName, c.Price, "
-          + "  (SELECT STRING_AGG(CAST(ci.Quantity AS VARCHAR(5)) + N' ' + i.ItemName, N', ') "
-          + "     FROM ComboItems ci JOIN FnbItems i ON i.FnbItemID = ci.FnbItemID WHERE ci.ComboID = c.ComboID) AS Parts, "
-          + "  (SELECT MIN(CASE WHEN i.Status = 'ACTIVE' AND inv.IsAvailable = 1 THEN inv.StockQuantity / ci.Quantity ELSE 0 END) "
-          + "     FROM ComboItems ci JOIN FnbItems i ON i.FnbItemID = ci.FnbItemID "
-          + "     LEFT JOIN CentreFnbInventory inv ON inv.FnbItemID = ci.FnbItemID AND inv.CentreID = c.CentreID "
-          + "     WHERE ci.ComboID = c.ComboID) AS Available "
-          + "FROM FnbCombos c WHERE c.CentreID = ? AND c.Status = 'ACTIVE' "
-          + "  AND EXISTS (SELECT 1 FROM ComboItems WHERE ComboID = c.ComboID) "
-          + "ORDER BY c.ComboName";
+            """
+                    SELECT c.ComboID, c.ComboName, c.Price,
+                      (SELECT STRING_AGG(CAST(ci.Quantity AS VARCHAR(5)) + N' ' + i.ItemName, N', ')
+                         FROM ComboItems ci JOIN FnbItems i ON i.FnbItemID = ci.FnbItemID WHERE ci.ComboID = c.ComboID) AS Parts,
+                      (SELECT MIN(CASE WHEN i.Status = 'ACTIVE' AND inv.IsAvailable = 1 THEN inv.StockQuantity / ci.Quantity ELSE 0 END)
+                         FROM ComboItems ci JOIN FnbItems i ON i.FnbItemID = ci.FnbItemID
+                         LEFT JOIN CentreFnbInventory inv ON inv.FnbItemID = ci.FnbItemID AND inv.CentreID = c.CentreID
+                         WHERE ci.ComboID = c.ComboID) AS Available
+                    FROM FnbCombos c WHERE c.CentreID = ? AND c.Status = 'ACTIVE'
+                      AND EXISTS (SELECT 1 FROM ComboItems WHERE ComboID = c.ComboID)
+                    ORDER BY c.ComboName
+                    """;
 
     // ---------------------------------------------------------------- menu, ton kho
 
@@ -110,9 +114,11 @@ public class FnbOrderDAO {
     /** Tồn kho đang bán của một món tại rạp; null nếu món không tồn tại. */
     public AvailableStock getAvailableStock(Connection conn, int centreId, int itemId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT i.ItemName, ISNULL(inv.StockQuantity, 0) FROM FnbItems i "
-              + "LEFT JOIN CentreFnbInventory inv ON inv.FnbItemID = i.FnbItemID AND inv.CentreID = ? AND inv.IsAvailable = 1 "
-              + "WHERE i.FnbItemID = ?")) {
+                """
+                        SELECT i.ItemName, ISNULL(inv.StockQuantity, 0) FROM FnbItems i
+                        LEFT JOIN CentreFnbInventory inv ON inv.FnbItemID = i.FnbItemID AND inv.CentreID = ? AND inv.IsAvailable = 1
+                        WHERE i.FnbItemID = ?
+                        """)) {
             ps.setInt(1, centreId);
             ps.setInt(2, itemId);
             try (ResultSet rs = ps.executeQuery()) {
@@ -124,8 +130,10 @@ public class FnbOrderDAO {
     /** Khoá dòng tồn kho (UPDLOCK) của món tại rạp trước khi trừ; null nếu rạp chưa có món này trong kho. */
     public Inventory lockInventory(Connection conn, int centreId, int itemId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT StockQuantity, IsAvailable FROM CentreFnbInventory WITH (UPDLOCK, ROWLOCK) "
-              + "WHERE CentreID = ? AND FnbItemID = ?")) {
+                """
+                        SELECT StockQuantity, IsAvailable FROM CentreFnbInventory WITH (UPDLOCK, ROWLOCK)
+                        WHERE CentreID = ? AND FnbItemID = ?
+                        """)) {
             ps.setInt(1, centreId);
             ps.setInt(2, itemId);
             try (ResultSet rs = ps.executeQuery()) {
@@ -138,8 +146,10 @@ public class FnbOrderDAO {
     public void updateInventory(Connection conn, int centreId, int itemId, int quantity, boolean available)
             throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
-                "UPDATE CentreFnbInventory SET StockQuantity = ?, IsAvailable = ?, UpdatedAt = SYSDATETIME() "
-              + "WHERE CentreID = ? AND FnbItemID = ?")) {
+                """
+                        UPDATE CentreFnbInventory SET StockQuantity = ?, IsAvailable = ?, UpdatedAt = SYSDATETIME()
+                        WHERE CentreID = ? AND FnbItemID = ?
+                        """)) {
             ps.setInt(1, quantity);
             ps.setBoolean(2, available);
             ps.setInt(3, centreId);
@@ -200,8 +210,10 @@ public class FnbOrderDAO {
      */
     public int markBookingOrdersPreparing(Connection conn, int bookingId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
-                "UPDATE FnbOrders SET OrderStatus = 'PREPARING', UpdatedAt = SYSDATETIME() "
-              + "WHERE BookingID = ? AND OrderStatus IN ('PENDING', 'CANCELLED')")) {
+                """
+                        UPDATE FnbOrders SET OrderStatus = 'PREPARING', UpdatedAt = SYSDATETIME()
+                        WHERE BookingID = ? AND OrderStatus IN ('PENDING', 'CANCELLED')
+                        """)) {
             ps.setInt(1, bookingId);
             return ps.executeUpdate();
         }
@@ -228,8 +240,10 @@ public class FnbOrderDAO {
     public int insertOrder(Connection conn, Integer bookingId, int centreId, Integer userId, String orderCode,
             String orderType, BigDecimal total) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
-                "INSERT INTO FnbOrders (BookingID, CentreID, UserID, OrderCode, OrderType, OrderStatus, TotalAmount) "
-              + "VALUES (?, ?, ?, ?, ?, 'PENDING', ?)", Statement.RETURN_GENERATED_KEYS)) {
+                """
+                        INSERT INTO FnbOrders (BookingID, CentreID, UserID, OrderCode, OrderType, OrderStatus, TotalAmount)
+                        VALUES (?, ?, ?, ?, ?, 'PENDING', ?)
+                        """, Statement.RETURN_GENERATED_KEYS)) {
             if (bookingId == null) ps.setNull(1, Types.INTEGER);
             else ps.setInt(1, bookingId);
             ps.setInt(2, centreId);
@@ -274,10 +288,12 @@ public class FnbOrderDAO {
         try (Connection conn = DBContext.getConnection()) {
             FnbSaleDTO sale;
             try (PreparedStatement ps = conn.prepareStatement(
-                    "SELECT o.FnbOrderID, o.OrderCode, o.CentreID, c.CentreName, o.OrderStatus, o.TotalAmount, o.CreatedAt, "
-                  + "  DATEDIFF(SECOND, SYSDATETIME(), DATEADD(MINUTE, ?, o.CreatedAt)) AS SecondsLeft "
-                  + "FROM FnbOrders o JOIN Centres c ON c.CentreID = o.CentreID "
-                  + "WHERE o.FnbOrderID = ? AND o.BookingID IS NULL")) {
+                    """
+                            SELECT o.FnbOrderID, o.OrderCode, o.CentreID, c.CentreName, o.OrderStatus, o.TotalAmount, o.CreatedAt,
+                              DATEDIFF(SECOND, SYSDATETIME(), DATEADD(MINUTE, ?, o.CreatedAt)) AS SecondsLeft
+                            FROM FnbOrders o JOIN Centres c ON c.CentreID = o.CentreID
+                            WHERE o.FnbOrderID = ? AND o.BookingID IS NULL
+                            """)) {
                 ps.setInt(1, pendingMinutes);
                 ps.setInt(2, orderId);
                 try (ResultSet rs = ps.executeQuery()) {
@@ -296,8 +312,10 @@ public class FnbOrderDAO {
     public List<Integer> findStalePendingStandalone(Connection conn, int minutes) throws SQLException {
         List<Integer> ids = new ArrayList<>();
         try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT FnbOrderID FROM FnbOrders WHERE BookingID IS NULL AND OrderStatus = 'PENDING' "
-              + "AND CreatedAt <= DATEADD(MINUTE, ?, SYSDATETIME())")) {
+                """
+                        SELECT FnbOrderID FROM FnbOrders WHERE BookingID IS NULL AND OrderStatus = 'PENDING'
+                        AND CreatedAt <= DATEADD(MINUTE, ?, SYSDATETIME())
+                        """)) {
             ps.setInt(1, -minutes);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) ids.add(rs.getInt(1));
@@ -327,8 +345,10 @@ public class FnbOrderDAO {
      */
     public int markStandalonePreparing(Connection conn, int orderId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
-                "UPDATE FnbOrders SET OrderStatus = 'PREPARING', UpdatedAt = SYSDATETIME() "
-              + "WHERE FnbOrderID = ? AND BookingID IS NULL AND OrderStatus IN ('PENDING', 'CANCELLED')")) {
+                """
+                        UPDATE FnbOrders SET OrderStatus = 'PREPARING', UpdatedAt = SYSDATETIME()
+                        WHERE FnbOrderID = ? AND BookingID IS NULL AND OrderStatus IN ('PENDING', 'CANCELLED')
+                        """)) {
             ps.setInt(1, orderId);
             return ps.executeUpdate();
         }

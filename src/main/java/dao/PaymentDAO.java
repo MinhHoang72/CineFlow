@@ -51,8 +51,10 @@ public class PaymentDAO {
 
     /** Giao dịch VNPay đang chờ của đơn -> CANCELLED (khách tạo giao dịch mới khi thanh toán lại). */
     public void cancelPendingQr(Connection conn, int bookingId) throws SQLException {
-        update(conn, "UPDATE Payments SET PaymentStatus = 'CANCELLED' "
-                   + "WHERE BookingID = ? AND PaymentMethod = 'QR' AND PaymentStatus = 'PENDING'", bookingId);
+        update(conn, """
+                UPDATE Payments SET PaymentStatus = 'CANCELLED'
+                WHERE BookingID = ? AND PaymentMethod = 'QR' AND PaymentStatus = 'PENDING'
+                """, bookingId);
     }
 
     /**
@@ -66,8 +68,10 @@ public class PaymentDAO {
     public VnpayRef findVnpay(String txnRef) throws SQLException {
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(
-                     "SELECT PaymentID, BookingID, Amount, PaymentStatus FROM Payments "
-                   + "WHERE TransactionCode = ? AND PaymentMethod = 'QR' AND BookingID IS NOT NULL")) {
+                     """
+                             SELECT PaymentID, BookingID, Amount, PaymentStatus FROM Payments
+                             WHERE TransactionCode = ? AND PaymentMethod = 'QR' AND BookingID IS NOT NULL
+                             """)) {
             ps.setString(1, txnRef);
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next() ? new VnpayRef(rs.getInt("PaymentID"), rs.getInt("BookingID"),
@@ -88,8 +92,10 @@ public class PaymentDAO {
     public String latestQrStatus(int bookingId) throws SQLException {
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(
-                     "SELECT TOP 1 PaymentStatus FROM Payments WHERE BookingID = ? AND PaymentMethod = 'QR' "
-                   + "ORDER BY PaymentID DESC")) {
+                     """
+                             SELECT TOP 1 PaymentStatus FROM Payments WHERE BookingID = ? AND PaymentMethod = 'QR'
+                             ORDER BY PaymentID DESC
+                             """)) {
             ps.setInt(1, bookingId);
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next() ? rs.getString(1) : null;
@@ -110,11 +116,13 @@ public class PaymentDAO {
             try (ResultSet rs = ps.executeQuery()) { while (rs.next()) { /* hold until commit */ } }
         }
         try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT p.BookingID, p.PaymentStatus, p.Amount, b.TotalAmount "
-              + "FROM Payments p WITH (UPDLOCK, ROWLOCK) "
-              + "JOIN Bookings b ON b.BookingID = p.BookingID "
-              + "JOIN Showtimes s ON s.ShowtimeID = b.ShowtimeID JOIN Halls h ON h.HallID = s.HallID "
-              + "WHERE p.PaymentID = ? AND (? IS NULL OR h.CentreID = ?)")) {
+                """
+                        SELECT p.BookingID, p.PaymentStatus, p.Amount, b.TotalAmount
+                        FROM Payments p WITH (UPDLOCK, ROWLOCK)
+                        JOIN Bookings b ON b.BookingID = p.BookingID
+                        JOIN Showtimes s ON s.ShowtimeID = b.ShowtimeID JOIN Halls h ON h.HallID = s.HallID
+                        WHERE p.PaymentID = ? AND (? IS NULL OR h.CentreID = ?)
+                        """)) {
             ps.setInt(1, paymentId);
             setNullableInt(ps, 2, centreId);
             setNullableInt(ps, 3, centreId);
@@ -164,24 +172,26 @@ public class PaymentDAO {
     public List<Payment> getTransactionsForTracking(Integer centreId, String status, String method, int days)
             throws SQLException {
         // Gom ca giao dich ban bap nuoc le (FnbOrderID, khong co BookingID): BookingType = 'FNB'
-        String sql = "SELECT TOP 300 p.PaymentID, p.TransactionCode, p.PaymentMethod, p.Amount, p.PaymentStatus, "
-                   + "  p.CreatedAt, p.PaidAt, COALESCE(b.BookingID, fo.FnbOrderID) AS BookingID, "
-                   + "  COALESCE(b.BookingCode, fo.OrderCode) AS BookingCode, COALESCE(b.BookingType, 'FNB') AS BookingType, "
-                   + "  COALESCE(b.BookingStatus, fo.OrderStatus) AS BookingStatus, "
-                   + "  u.FullName, u.Phone, br.CentreName, COALESCE(m.Title, N'Bán bắp nước lẻ') AS Title "
-                   + "FROM Payments p "
-                   + "LEFT JOIN Bookings b ON b.BookingID = p.BookingID "
-                   + "LEFT JOIN FnbOrders fo ON fo.FnbOrderID = p.FnbOrderID "
-                   + "LEFT JOIN Users u ON u.UserID = b.UserID "
-                   + "LEFT JOIN Showtimes s ON s.ShowtimeID = b.ShowtimeID "
-                   + "LEFT JOIN Movies m ON m.MovieID = s.MovieID "
-                   + "LEFT JOIN Halls h ON h.HallID = s.HallID "
-                   + "JOIN Centres br ON br.CentreID = COALESCE(h.CentreID, fo.CentreID) "
-                   + "WHERE p.CreatedAt > DATEADD(DAY, ?, SYSDATETIME()) "
-                   + "  AND (? IS NULL OR br.CentreID = ?) "
-                   + "  AND (? IS NULL OR p.PaymentStatus = ?) "
-                   + "  AND (? IS NULL OR p.PaymentMethod = ?) "
-                   + "ORDER BY p.CreatedAt DESC, p.PaymentID DESC";
+        String sql = """
+                SELECT TOP 300 p.PaymentID, p.TransactionCode, p.PaymentMethod, p.Amount, p.PaymentStatus,
+                  p.CreatedAt, p.PaidAt, COALESCE(b.BookingID, fo.FnbOrderID) AS BookingID,
+                  COALESCE(b.BookingCode, fo.OrderCode) AS BookingCode, COALESCE(b.BookingType, 'FNB') AS BookingType,
+                  COALESCE(b.BookingStatus, fo.OrderStatus) AS BookingStatus,
+                  u.FullName, u.Phone, br.CentreName, COALESCE(m.Title, N'Bán bắp nước lẻ') AS Title
+                FROM Payments p
+                LEFT JOIN Bookings b ON b.BookingID = p.BookingID
+                LEFT JOIN FnbOrders fo ON fo.FnbOrderID = p.FnbOrderID
+                LEFT JOIN Users u ON u.UserID = b.UserID
+                LEFT JOIN Showtimes s ON s.ShowtimeID = b.ShowtimeID
+                LEFT JOIN Movies m ON m.MovieID = s.MovieID
+                LEFT JOIN Halls h ON h.HallID = s.HallID
+                JOIN Centres br ON br.CentreID = COALESCE(h.CentreID, fo.CentreID)
+                WHERE p.CreatedAt > DATEADD(DAY, ?, SYSDATETIME())
+                  AND (? IS NULL OR br.CentreID = ?)
+                  AND (? IS NULL OR p.PaymentStatus = ?)
+                  AND (? IS NULL OR p.PaymentMethod = ?)
+                ORDER BY p.CreatedAt DESC, p.PaymentID DESC
+                """;
         List<Payment> list = new ArrayList<>();
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -225,10 +235,12 @@ public class PaymentDAO {
 
     /** Danh sách vé của đơn kèm thông tin phim, rạp, phòng, ghế để hiện và in vé. */
     public List<Ticket> getTickets(int bookingId) throws SQLException {
-        String sql = "SELECT t.TicketCode, t.QRCode, t.TicketStatus, se.SeatRow, se.SeatNumber, se.SeatType "
-                   + "FROM Tickets t JOIN BookingSeats bs ON bs.BookingSeatID = t.BookingSeatID "
-                   + "JOIN Seats se ON se.SeatID = bs.SeatID "
-                   + "WHERE bs.BookingID = ? ORDER BY se.SeatRow, se.SeatNumber";
+        String sql = """
+                SELECT t.TicketCode, t.QRCode, t.TicketStatus, se.SeatRow, se.SeatNumber, se.SeatType
+                FROM Tickets t JOIN BookingSeats bs ON bs.BookingSeatID = t.BookingSeatID
+                JOIN Seats se ON se.SeatID = bs.SeatID
+                WHERE bs.BookingID = ? ORDER BY se.SeatRow, se.SeatNumber
+                """;
         List<Ticket> list = new ArrayList<>();
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -257,8 +269,10 @@ public class PaymentDAO {
 
     /** Giao dịch VNPay đang chờ của đơn bắp nước lẻ -> CANCELLED. */
     public void cancelPendingQrForOrder(Connection conn, int orderId) throws SQLException {
-        update(conn, "UPDATE Payments SET PaymentStatus = 'CANCELLED' "
-                   + "WHERE FnbOrderID = ? AND PaymentMethod = 'QR' AND PaymentStatus = 'PENDING'", orderId);
+        update(conn, """
+                UPDATE Payments SET PaymentStatus = 'CANCELLED'
+                WHERE FnbOrderID = ? AND PaymentMethod = 'QR' AND PaymentStatus = 'PENDING'
+                """, orderId);
     }
 
     /** Giao dịch đang chờ của các đơn bắp nước lẻ -> trạng thái mới (CANCELLED / TIMEOUT). */
@@ -270,8 +284,10 @@ public class PaymentDAO {
     public FnbVnpayRef findFnbVnpay(String txnRef) throws SQLException {
         try (Connection conn = DBContext.getConnection();
              PreparedStatement ps = conn.prepareStatement(
-                     "SELECT PaymentID, FnbOrderID, Amount, PaymentStatus FROM Payments "
-                   + "WHERE TransactionCode = ? AND PaymentMethod = 'QR' AND FnbOrderID IS NOT NULL")) {
+                     """
+                             SELECT PaymentID, FnbOrderID, Amount, PaymentStatus FROM Payments
+                             WHERE TransactionCode = ? AND PaymentMethod = 'QR' AND FnbOrderID IS NOT NULL
+                             """)) {
             ps.setString(1, txnRef);
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next() ? new FnbVnpayRef(rs.getInt("PaymentID"), rs.getInt("FnbOrderID"),
@@ -287,9 +303,11 @@ public class PaymentDAO {
      */
     public LockedFnbPayment lockFnbPayment(Connection conn, int paymentId, Integer centreId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT p.FnbOrderID, p.PaymentStatus FROM Payments p WITH (UPDLOCK, ROWLOCK) "
-              + "JOIN FnbOrders o ON o.FnbOrderID = p.FnbOrderID "
-              + "WHERE p.PaymentID = ? AND o.BookingID IS NULL AND (? IS NULL OR o.CentreID = ?)")) {
+                """
+                        SELECT p.FnbOrderID, p.PaymentStatus FROM Payments p WITH (UPDLOCK, ROWLOCK)
+                        JOIN FnbOrders o ON o.FnbOrderID = p.FnbOrderID
+                        WHERE p.PaymentID = ? AND o.BookingID IS NULL AND (? IS NULL OR o.CentreID = ?)
+                        """)) {
             ps.setInt(1, paymentId);
             setNullableInt(ps, 2, centreId);
             setNullableInt(ps, 3, centreId);
