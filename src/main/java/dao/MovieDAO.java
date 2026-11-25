@@ -8,7 +8,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import model.entity.Centre;
@@ -141,6 +143,33 @@ public class MovieDAO {
             exception.printStackTrace();
         }
         return movies;
+    }
+
+    /**
+     * Đếm số lượng phim theo từng trạng thái trong bảng Movies.
+     *
+     * @return Map với key = Status, value = số lượng phim
+     */
+    public Map<String, Integer> getMovieCountByStatus() {
+        Map<String, Integer> counts = new HashMap<>();
+        String sql = """
+                SELECT Status, COUNT(*) AS Cnt
+                FROM Movies
+                GROUP BY Status
+                """;
+        try (Connection conn = DBContext.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                String status = rs.getString("Status");
+                if (status != null) {
+                    counts.put(status.trim().toUpperCase(), rs.getInt("Cnt"));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return counts;
     }
 
     /**
